@@ -153,14 +153,25 @@ function dedupePageFieldAssignments(pages: FormPage[]): FormPage[] {
   }));
 }
 
+/** Vanha kovakoodattu Materiaalit-sivu muuttuu tavalliseksi sivuksi. */
+function migrateMaterialsSystemPages(pages: FormPage[]): FormPage[] {
+  return pages.map((page) => {
+    if (page.system !== 'materials') return page;
+    const { system: _system, ...rest } = page;
+    return rest;
+  });
+}
+
 export function normalizeFormDefinition(raw: unknown): FormDefinition {
   const form = (raw ?? {}) as Partial<FormDefinition>;
   const legacyFields = (form.fields ?? []) as LegacyFormField[];
 
-  const pages = dedupePageFieldAssignments(
-    isLegacyForm(form)
-      ? migrateLegacyPages(form)
-      : (form.pages ?? []).map((page) => ({ ...page, fieldIds: [...(page.fieldIds ?? [])] })),
+  const pages = migrateMaterialsSystemPages(
+    dedupePageFieldAssignments(
+      isLegacyForm(form)
+        ? migrateLegacyPages(form)
+        : (form.pages ?? []).map((page) => ({ ...page, fieldIds: [...(page.fieldIds ?? [])] })),
+    ),
   );
 
   const fields = mergeSystemFields(

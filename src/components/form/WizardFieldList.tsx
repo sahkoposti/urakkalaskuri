@@ -2,7 +2,12 @@ import { Picker } from '@react-native-picker/picker';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AppInput, SectionTitle } from '@/src/components/common';
-import { findProductById, getSelectedProductId, productQuantityValueKey } from '@/src/core/form/productFieldUtils';
+import {
+  findProductById,
+  getSelectedProductId,
+  isProductField,
+  productQuantityValueKey,
+} from '@/src/core/form/productFieldUtils';
 import { isSystemField } from '@/src/core/form/systemFields';
 import type { FormField } from '@/src/core/form/types';
 import type { Product } from '@/src/core/models/types';
@@ -47,7 +52,7 @@ export function WizardFieldList({
           );
         }
 
-        if (field.type === 'product_select' || field.type === 'product_quantity') {
+        if (isProductField(field)) {
           const selectedId = getSelectedProductId(fieldValues, field.key) ?? '';
           const quantityKey = productQuantityValueKey(field.key);
           const selectedProduct = findProductById(products, selectedId);
@@ -77,6 +82,16 @@ export function WizardFieldList({
                   </Picker>
                 </View>
               )}
+              {selectedProduct ? (
+                <Text style={styles.productMeta}>
+                  {selectedProduct.name}
+                  {' · '}
+                  {formatCurrency(selectedProduct.unitPriceVat0)}/{selectedProduct.unit}
+                  {selectedProduct.attributes?.consumption !== undefined
+                    ? ` · menekki ${formatDecimal(selectedProduct.attributes.consumption)}`
+                    : ''}
+                </Text>
+              ) : null}
               {field.type === 'product_quantity' ? (
                 <AppInput
                   label={`Määrä${selectedProduct ? ` (${selectedProduct.unit})` : ''}`}
@@ -156,6 +171,14 @@ const styles = StyleSheet.create({
     color: AppColors.text,
     opacity: 0.75,
     fontFamily: 'IBMPlexSans_400Regular',
+  },
+  productMeta: {
+    marginTop: -4,
+    marginBottom: 12,
+    color: AppColors.text,
+    fontFamily: 'IBMPlexSans_400Regular',
+    fontSize: 13,
+    lineHeight: 18,
   },
   pickerWrap: {
     borderWidth: 1,

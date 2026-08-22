@@ -127,4 +127,45 @@ describe('runDebugPipeline', () => {
     expect(tyoryhma?.formula).toContain('asetukset.tyopaivan_pituus');
     expect(tyoryhma?.formula).not.toContain('settings.');
   });
+
+  test('debug pipeline exports product list attributes from example product', () => {
+    const form = defaultForm();
+    form.fields.push({
+      id: 'field_paint',
+      key: 'kaytettava_maali',
+      label: 'Käytettävä maali',
+      type: 'product_select',
+      required: true,
+      showOnSummary: true,
+      debugExampleValue: 'paint-1',
+    });
+    form.fields.push({
+      id: 'field_paint_amount',
+      key: 'materiaali_maara',
+      label: 'Maalimäärä',
+      type: 'computed',
+      required: false,
+      showOnSummary: true,
+      formula: 'laskenta_seinapinta_ala_m2 / kaytettava_maali.consumption',
+    });
+
+    const paint = {
+      id: 'paint-1',
+      name: 'Maali',
+      unit: 'l',
+      unitPriceVat0: 12,
+      attributes: { consumption: 8 },
+      createdAt: new Date(),
+    };
+
+    const trace = runDebugPipeline(form, 'materiaali_maara', {
+      settings: defaultSettings,
+      products: [paint],
+    });
+
+    expect(trace.errors).toHaveLength(0);
+    expect(trace.context['kaytettava_maali.unit_price']).toBe(12);
+    expect(trace.context['kaytettava_maali.consumption']).toBe(8);
+    expect(trace.context.materiaali_maara).toBeCloseTo(117.3 / 8, 2);
+  });
 });

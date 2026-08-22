@@ -1,7 +1,7 @@
 import { evaluateFormContext } from '@/src/core/form/evaluateFormContext';
 import { extractFormulaIdentifiers } from '@/src/core/form/formula/evaluator';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
-import type { AppSettings } from '@/src/core/models/types';
+import type { AppSettings, Product } from '@/src/core/models/types';
 import { defaultSettings } from '@/src/core/models/types';
 
 export type DebugStepSource = 'input' | 'select' | 'computed';
@@ -9,6 +9,7 @@ export type DebugStepSource = 'input' | 'select' | 'computed';
 export interface DebugPipelineOptions {
   settings?: AppSettings;
   materialsVat0?: number;
+  products?: Product[];
 }
 
 export interface DebugStep {
@@ -94,6 +95,7 @@ export function runDebugPipeline(
     form,
     settings,
     materialsTotal: materialsVat0,
+    products: options.products ?? [],
     useDebugExamples: true,
     collectTrace: true,
     strictSystemFields: false,

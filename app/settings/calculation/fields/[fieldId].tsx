@@ -3,7 +3,9 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { FieldEffectsEditor } from '@/src/components/form/FieldEffectsEditor';
 import { FormulaDebugPanel } from '@/src/components/form/FormulaDebugPanel';
+import { ProductFormulaHints } from '@/src/components/form/ProductFormulaHints';
 import { SelectOptionsEditor } from '@/src/components/form/SelectOptionsEditor';
 import {
   AppInput,
@@ -25,6 +27,7 @@ import {
   updateField,
 } from '@/src/core/form/formMutations';
 import { sanitizeKeyInput } from '@/src/core/form/formKeyUtils';
+import { isProductField } from '@/src/core/form/productFieldUtils';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { isSystemField, restoreSystemField } from '@/src/core/form/systemFields';
 import type { FieldType, FormField } from '@/src/core/form/types';
@@ -65,7 +68,7 @@ function applyFieldTypeChange(current: FormField, type: FieldType): FormField {
 
 export default function FormFieldEditorScreen() {
   const { fieldId } = useLocalSearchParams<{ fieldId: string }>();
-  const { ready, formDefinition, formDebug, settings, refreshFormSettings } = useApp();
+  const { ready, formDefinition, formDebug, settings, products, refreshFormSettings } = useApp();
   const { showAlert } = useThemedAlert();
   const [field, setField] = useState<FormField | null>(null);
   const [savedField, setSavedField] = useState<FormField | null>(null);
@@ -124,6 +127,13 @@ export default function FormFieldEditorScreen() {
         showAlert('Virhe', `Tuntemattomat muuttujat kaavassa: ${unknown.join(', ')}`);
         return false;
       }
+    }
+    const incompleteMaterial = field.effects?.find(
+      (effect) => effect.type === 'add_material' && (!effect.productRef || !effect.quantityRef),
+    );
+    if (incompleteMaterial) {
+      showAlert('Virhe', 'Materiaalirivillä on oltava tuotekenttä ja määräkenttä.');
+      return false;
     }
 
     const duplicateKey = formDefinition.fields.some(
@@ -274,14 +284,26 @@ export default function FormFieldEditorScreen() {
           />
         ) : null}
 
+        {isProductField(field) ? <ProductFormulaHints form={previewForm} field={field} /> : null}
+
         {isComputed ? (
           <AppInput
             label={isSystem ? 'Järjestelmäkaava' : 'Kaava'}
             value={field.formula ?? ''}
             onChangeText={(formula) => updateFieldState({ formula })}
             multiline
-            placeholder="(pinta_ala - aukot) * laudoitustyyppi"
+            placeholder="laskenta_seinapinta_ala_m2 / kaytettava_maali.consumption"
             compact
+          />
+        ) : null}
+
+        {isComputed && !isSystem ? <ProductFormulaHints form={previewForm} /> : null}
+
+        {!isSystem && field.type !== 'section' ? (
+          <FieldEffectsEditor
+            form={previewForm}
+            field={field}
+            onChange={(effects) => updateFieldState({ effects: effects.length ? effects : undefined })}
           />
         ) : null}
 
@@ -323,6 +345,20 @@ export default function FormFieldEditorScreen() {
                 <Picker.Item label="Valitse..." value="" />
                 {field.options?.map((option) => (
                   <Picker.Item key={option.value} label={option.label} value={option.value} />
+                ))}
+              </Picker>
+            </View>
+          ) : isProductField(field) ? (
+            <View style={styles.pickerWrap}>
+              <Text style={styles.pickerLabel}>Debug-esimerkki (tuote)</Text>
+              <Picker
+                selectedValue={field.debugExampleValue ?? ''}
+                onValueChange={(value) => updateFieldState({ debugExampleValue: value })}
+                style={styles.pickerControl}
+              >
+                <Picker.Item label="Valitse tuote..." value="" />
+                {products.map((product) => (
+                  <Picker.Item key={product.id} label={product.name} value={product.id} />
                 ))}
               </Picker>
             </View>
@@ -378,6 +414,7 @@ export default function FormFieldEditorScreen() {
             showIntermediateSteps={formDebug.showIntermediateSteps}
             settings={settings}
             materialsVat0={formDebug.materialsVat0 ?? 250}
+            products={products}
           />
         ) : null}
 

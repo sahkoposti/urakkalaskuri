@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { FormDefinition } from '@/src/core/form/types';
 import { runDebugPipeline } from '@/src/core/form/pipeline';
-import type { AppSettings } from '@/src/core/models/types';
+import type { AppSettings, Product } from '@/src/core/models/types';
 import { formatDecimal } from '@/src/core/utils/formatters';
 import { AppColors } from '@/src/theme/colors';
 
@@ -14,6 +14,7 @@ type FormulaDebugPanelProps = {
   showIntermediateSteps?: boolean;
   settings: AppSettings;
   materialsVat0?: number;
+  products?: Product[];
 };
 
 export function FormulaDebugPanel({
@@ -23,10 +24,11 @@ export function FormulaDebugPanel({
   showIntermediateSteps = true,
   settings,
   materialsVat0 = 0,
+  products = [],
 }: FormulaDebugPanelProps) {
   const trace = useMemo(
-    () => runDebugPipeline(form, focusFieldKey, { settings, materialsVat0 }),
-    [form, focusFieldKey, settings, materialsVat0],
+    () => runDebugPipeline(form, focusFieldKey, { settings, materialsVat0, products }),
+    [form, focusFieldKey, settings, materialsVat0, products],
   );
 
   const focusedStep = trace.steps.find((step) => step.fieldKey === focusFieldKey);

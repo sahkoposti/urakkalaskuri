@@ -3,6 +3,7 @@ import {
   findProductById,
   getFieldProductQuantity,
   getSelectedProductId,
+  isProductField,
 } from '@/src/core/form/productFieldUtils';
 import { isSystemField } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormPage } from '@/src/core/form/types';
@@ -33,10 +34,6 @@ export function validateFormPageWithValues(
     }
     return null;
   }
-  if (page.system === 'materials') {
-    return null;
-  }
-
   for (const field of fieldsForPage(form, page.id)) {
     if (field.type === 'section' || field.type === 'computed' || isSystemField(field)) {
       continue;
@@ -57,7 +54,7 @@ export function validateFormPageWithValues(
       }
     }
 
-    if (field.type === 'product_select' || field.type === 'product_quantity') {
+    if (isProductField(field)) {
       const productId = getSelectedProductId(fieldValues, field.key);
       if (field.required && !productId) {
         return `${field.label}: valitse tuote.`;

@@ -5,8 +5,10 @@ import {
   addFieldToPage,
   addPage,
   duplicateField,
+  EDITABLE_FIELD_TYPES,
   fieldsAvailableForPage,
   fieldsForPage,
+  isSystemPage,
   moveFieldOnPage,
   movePage,
   removeField,
@@ -287,6 +289,53 @@ describe('formMutations', () => {
     const form = normalizeFormDefinition(createDefaultFormDefinition());
     const unknown = unknownFormulaIdentifiers(form, 'tyoryhma_kesto_pv * asetukset.tyopaivan_pituus');
     expect(unknown).toHaveLength(0);
+  });
+
+  test('unknownFormulaIdentifiers allows product list attributes', () => {
+    const form = addField(normalizeFormDefinition(createDefaultFormDefinition()), 'product_select');
+    const created = form.fields.at(-1)!;
+    created.key = 'kaytettava_maali';
+    const unknown = unknownFormulaIdentifiers(
+      form,
+      'laskenta_seinapinta_ala_m2 / kaytettava_maali.consumption',
+    );
+    expect(unknown).toHaveLength(0);
+  });
+
+  test('product_select is an editable field type', () => {
+    expect(EDITABLE_FIELD_TYPES).toContain('product_select');
+    const form = createDefaultFormDefinition();
+    const next = addField(form, 'product_select');
+    expect(next.fields.at(-1)?.type).toBe('product_select');
+  });
+
+  test('default form has no hardcoded materials page', () => {
+    const form = createDefaultFormDefinition();
+    expect(form.pages.some((page) => page.system === 'materials')).toBe(false);
+    expect(form.pages.some((page) => page.id === 'page_materials')).toBe(false);
+  });
+
+  test('normalizeFormDefinition converts legacy materials pages to regular pages', () => {
+    const legacy = {
+      ...createDefaultFormDefinition(),
+      pages: [
+        ...createDefaultFormDefinition().pages,
+        {
+          id: 'page_materials',
+          title: 'Materiaalit',
+          sortOrder: 3,
+          system: 'materials' as const,
+          fieldIds: [] as string[],
+        },
+      ],
+    };
+    const normalized = normalizeFormDefinition(legacy);
+    const materials = normalized.pages.find((page) => page.id === 'page_materials');
+    expect(materials).toBeDefined();
+    expect(materials?.system).toBeUndefined();
+    expect(isSystemPage(materials!)).toBe(false);
+    const removed = removePage(normalized, materials!.id);
+    expect(removed.pages.some((page) => page.id === 'page_materials')).toBe(false);
   });
 
   test('normalizeFormDefinition migrates legacy formula keys to Finnish', () => {

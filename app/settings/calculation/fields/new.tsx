@@ -39,7 +39,8 @@ export default function NewFormFieldScreen() {
       <Stack.Screen options={{ title: 'Uusi kenttä' }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.help}>
-          Luo globaali kenttä. Lisää se haluamallesi sivulle kohdasta Lomakeasetukset → Sivut.
+          Luo globaali kenttä. Tuotelista noutaa vaihtoehdot tuoterekisteristä. Lisää kenttä
+          sivulle kohdasta Lomakeasetukset → Sivut.
         </Text>
 
         <View style={styles.pickerWrap}>

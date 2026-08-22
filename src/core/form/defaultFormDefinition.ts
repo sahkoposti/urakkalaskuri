@@ -86,19 +86,12 @@ export function createDefaultFormDefinition(): FormDefinition {
       sortOrder: 2,
       fieldIds: ['field_duration'],
     },
-    {
-      id: 'page_materials',
-      title: 'Materiaalit',
-      sortOrder: 3,
-      system: 'materials' as const,
-      fieldIds: [] as string[],
-    },
   ];
 
   return {
     id: 'default',
     name: 'Peruslaskenta',
-    version: 3,
+    version: 4,
     pages,
     fields: userFields,
     updatedAt: Date.now(),

@@ -35,6 +35,8 @@ export const EDITABLE_FIELD_TYPES: FieldType[] = [
   'text',
   'select',
   'boolean',
+  'product_select',
+  'product_quantity',
   'computed',
   'section',
 ];
@@ -45,7 +47,7 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   select: 'Valinta',
   boolean: 'Kyllä/Ei',
   product_quantity: 'Tuote + määrä',
-  product_select: 'Tuotevalinta',
+  product_select: 'Tuotelista',
   computed: 'Laskettu',
   section: 'Otsikko',
 };
@@ -55,7 +57,7 @@ export function generateId(prefix: string): string {
 }
 
 export function isSystemPage(page: FormPage): boolean {
-  return page.system === 'customer' || page.system === 'materials';
+  return page.system === 'customer';
 }
 
 export function uniqueFieldKey(form: FormDefinition, baseKey: string, excludeFieldId?: string): string {

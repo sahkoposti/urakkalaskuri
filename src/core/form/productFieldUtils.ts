@@ -1,7 +1,12 @@
+import type { FormField } from '@/src/core/form/types';
 import type { Product } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 
 export const PRODUCT_QUANTITY_SUFFIX = '__qty';
+
+export function isProductField(field: Pick<FormField, 'type'>): boolean {
+  return field.type === 'product_select' || field.type === 'product_quantity';
+}
 
 export function productQuantityValueKey(fieldKey: string): string {
   return `${fieldKey}${PRODUCT_QUANTITY_SUFFIX}`;

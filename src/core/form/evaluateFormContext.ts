@@ -10,6 +10,7 @@ import {
   findProductById,
   getFieldProductQuantity,
   getSelectedProductId,
+  isProductField,
 } from '@/src/core/form/productFieldUtils';
 import { buildSettingsFormulaContext } from '@/src/core/form/settingsFormulaContext';
 import { isSystemField } from '@/src/core/form/systemFields';
@@ -133,10 +134,19 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
   for (const field of pipelineFieldOrder(form)) {
     if (field.type === 'section') continue;
 
-    if (field.type === 'product_select' || field.type === 'product_quantity') {
-      if (!useDebugExamples) {
-        exportProductField(field, fieldValues, products, context);
+    if (isProductField(field)) {
+      if (useDebugExamples) {
+        const product = findProductById(products, field.debugExampleValue?.trim());
+        if (!product) {
+          if (collectTrace && field.required) {
+            errors.push(`${field.label}: debug-esimerkkiarvo puuttuu`);
+          }
+          continue;
+        }
+        exportProductToContext(field.key, product, context);
+        continue;
       }
+      exportProductField(field, fieldValues, products, context);
       continue;
     }
 

@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 
 import {
-  AppCard,
   AppInput,
   OutlinedButton,
   PrimaryButton,
@@ -27,10 +26,9 @@ import {
   runFormCalculation,
 } from '@/src/core/calculation/calculationPipeline';
 import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
-import type { CustomerInfo, CustomerType, Product, WizardDraft, WizardLineDraft } from '@/src/core/models/types';
+import type { CustomerInfo, CustomerType, WizardDraft } from '@/src/core/models/types';
 import { emptyCustomerInfo } from '@/src/core/models/types';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
-import { formatCurrency, formatDecimal, parseNumber } from '@/src/core/utils/formatters';
 import {
   buildPersistedWizardDraft,
   hasWizardDraftContent,
@@ -461,13 +459,6 @@ export default function WizardScreen() {
                 onNotesChange={setCustomerNotes}
               />
             )}
-            {currentPage?.system === 'materials' && (
-              <MaterialsStep
-                products={products}
-                lines={draft.lines}
-                onChange={(lines) => setDraft((current) => ({ ...current, lines }))}
-              />
-            )}
             {currentPage && !currentPage.system ? (
               <WizardFieldList
                 fields={pageFields}
@@ -615,76 +606,6 @@ function CustomerStep({
   );
 }
 
-type MaterialsStepProps = {
-  products: Product[];
-  lines: WizardLineDraft[];
-  onChange: (lines: WizardLineDraft[]) => void;
-};
-
-function MaterialsStep({ products, lines, onChange }: MaterialsStepProps) {
-  const [selectedId, setSelectedId] = useState<string>('');
-  const [quantity, setQuantity] = useState('');
-
-  const selectedProduct = products.find((product) => product.id === selectedId) ?? null;
-
-  function addLine() {
-    const parsedQuantity = parseNumber(quantity);
-    if (!selectedProduct || parsedQuantity === null || parsedQuantity <= 0) return;
-    onChange([...lines, { product: selectedProduct, quantity: parsedQuantity }]);
-    setSelectedId('');
-    setQuantity('');
-  }
-
-  if (products.length === 0) {
-    return <Text style={styles.emptyText}>Ei tuotteita. Voit jatkaa ilman materiaalirivejä.</Text>;
-  }
-
-  return (
-    <View>
-      <Text style={styles.inputLabel}>Tuote</Text>
-      <View style={styles.pickerWrap}>
-        <Picker selectedValue={selectedId} onValueChange={setSelectedId}>
-          <Picker.Item label="Valitse tuote..." value="" />
-          {products.map((product) => (
-            <Picker.Item
-              key={product.id}
-              label={`${product.name} (${formatCurrency(product.unitPriceVat0)}/${product.unit})`}
-              value={product.id}
-            />
-          ))}
-        </Picker>
-      </View>
-      <AppInput
-        label="Määrä"
-        value={quantity}
-        onChangeText={setQuantity}
-        keyboardType="decimal-pad"
-      />
-      <OutlinedButton title="Lisää rivi" onPress={addLine} />
-      <View style={styles.linesWrap}>
-        {lines.map((line, index) => (
-          <AppCard key={`${line.product.id}-${index}`} style={styles.lineCard}>
-            <View style={styles.lineRow}>
-              <Text style={styles.lineText}>
-                {line.product.name} × {formatDecimal(line.quantity)} {line.product.unit}
-              </Text>
-              <Text style={styles.linePrice}>
-                {formatCurrency(line.quantity * line.product.unitPriceVat0)}
-              </Text>
-              <Text
-                style={styles.removeButton}
-                onPress={() => onChange(lines.filter((_, lineIndex) => lineIndex !== index))}
-              >
-                ×
-              </Text>
-            </View>
-          </AppCard>
-        ))}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -708,10 +629,6 @@ const styles = StyleSheet.create({
   stepContent: {
     marginTop: 16,
   },
-  emptyText: {
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-  },
   inputLabel: {
     marginBottom: 6,
     fontFamily: 'IBMPlexSans_600SemiBold',
@@ -724,32 +641,6 @@ const styles = StyleSheet.create({
     backgroundColor: AppColors.secondary,
     marginBottom: 12,
     overflow: 'hidden',
-  },
-  linesWrap: {
-    marginTop: 16,
-    gap: 8,
-  },
-  lineCard: {
-    marginBottom: 0,
-  },
-  lineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  lineText: {
-    flex: 1,
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-  },
-  linePrice: {
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.primary,
-  },
-  removeButton: {
-    color: AppColors.accent,
-    fontSize: 24,
-    paddingHorizontal: 4,
   },
   toggleRow: {
     marginBottom: 12,

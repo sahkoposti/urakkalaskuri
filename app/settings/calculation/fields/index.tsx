@@ -75,8 +75,9 @@ export default function FormFieldsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <SectionTitle title="Omat kentät" />
         <Text style={styles.help}>
-          Kentät ovat globaaleja. Valitse mitkä näytetään kussakin sivussa kohdasta Lomakeasetukset →
-          Sivut. Jokainen kenttä voi olla vain yhdellä sivulla kerrallaan.
+          Kentät ovat globaaleja. Tuotelista noutaa vaihtoehdot tuoterekisteristä; kaavoissa
+          käytetään valitun tuotteen hintaa ja menekkiä. Valitse mitkä näytetään kussakin sivussa
+          kohdasta Lomakeasetukset → Sivut.
         </Text>
         {formDebug.enabled ? (
           <Text style={styles.debugHint}>
