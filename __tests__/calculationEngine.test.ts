@@ -37,4 +37,21 @@ describe('runCalculation', () => {
       }),
     ).toThrow(CalculationValidationError);
   });
+
+  test('reverse VAT sets vat amount to zero', () => {
+    const result = runCalculation({
+      groupDurationHours: 40,
+      crewSize: 2,
+      hourlyRate: 30,
+      materialsVat0: 250,
+      marginPercent: 35,
+      commissionPercent: 7,
+      vatPercent: 25.5,
+      workdayHours: 8,
+      reverseVat: true,
+    });
+
+    expect(result.vatAmount).toBe(0);
+    expect(result.totalPriceVat).toBeCloseTo(result.totalPriceVat0, 2);
+  });
 });

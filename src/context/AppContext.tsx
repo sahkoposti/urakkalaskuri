@@ -23,6 +23,8 @@ type WizardSession = {
   draft: WizardDraft;
   result: CalculationResult;
   settings: AppSettings;
+  editCalculationId?: string;
+  originalCreatedAt?: Date;
 };
 
 type AppContextValue = {

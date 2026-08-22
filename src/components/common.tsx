@@ -8,6 +8,8 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import { SymbolView } from 'expo-symbols';
 
 import { AppColors } from '@/src/theme/colors';
 
@@ -82,13 +84,44 @@ type ResultRowProps = {
   label: string;
   value: string;
   highlight?: boolean;
+  copyValue?: string;
+  onCopy?: () => void;
 };
 
-export function ResultRow({ label, value, highlight = false }: ResultRowProps) {
+export function ResultRow({
+  label,
+  value,
+  highlight = false,
+  copyValue,
+  onCopy,
+}: ResultRowProps) {
+  async function handleCopy() {
+    const text = copyValue ?? value;
+    if (text === '–') return;
+    await Clipboard.setStringAsync(text);
+    onCopy?.();
+  }
+
+  const canCopy = (copyValue ?? value) !== '–';
+
   return (
     <View style={styles.resultRow}>
       <Text style={[styles.resultLabel, highlight && styles.resultHighlight]}>{label}</Text>
-      <Text style={[styles.resultValue, highlight && styles.resultValueHighlight]}>{value}</Text>
+      <View style={styles.resultValueWrap}>
+        <Text style={[styles.resultValue, highlight && styles.resultValueHighlight]}>{value}</Text>
+        {canCopy ? (
+          <Pressable
+            onPress={() => {
+              void handleCopy();
+            }}
+            style={({ pressed }) => [styles.copyButton, pressed && styles.copyButtonPressed]}
+            accessibilityLabel={`Kopioi ${label}`}
+            hitSlop={8}
+          >
+            <SymbolView name="doc.on.doc" size={14} tintColor={AppColors.accent} />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -258,10 +291,23 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexSans_700Bold',
   },
   resultValue: {
-    flex: 1,
+    flexShrink: 1,
     textAlign: 'right',
     color: AppColors.primary,
     fontFamily: 'IBMPlexSans_600SemiBold',
+  },
+  resultValueWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 6,
+  },
+  copyButton: {
+    padding: 2,
+  },
+  copyButtonPressed: {
+    opacity: 0.6,
   },
   resultValueHighlight: {
     color: AppColors.accent,

@@ -21,6 +21,22 @@ async function getDb(): Promise<SQLite.SQLiteDatabase> {
   return dbPromise;
 }
 
+function inferVatPercent(row: Record<string, unknown>): number {
+  const totalVat0 = row.total_price_vat0 as number;
+  const vatAmount = row.vat_amount as number;
+  if (totalVat0 <= 0 || vatAmount <= 0) {
+    return defaultSettings.vatPercent;
+  }
+  return (vatAmount / totalVat0) * 100;
+}
+
+async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
+  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(calculations)');
+  if (!columns.some((column) => column.name === 'vat_percent')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN vat_percent REAL');
+  }
+}
+
 async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
   const db = await SQLite.openDatabaseAsync('urakkalaskuri.db');
   await db.execAsync(`
@@ -74,6 +90,8 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
       updated_at INTEGER NOT NULL
     );
   `);
+
+  await migrateDatabase(db);
 
   const settingsCount = await db.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) as count FROM settings',
@@ -155,6 +173,7 @@ function calculationFromRow(
     marginEur: row.margin_eur as number,
     commissionEur: row.commission_eur as number,
     totalPriceVat0: row.total_price_vat0 as number,
+    vatPercent: (row.vat_percent as number | null) ?? inferVatPercent(row),
     vatAmount: row.vat_amount as number,
     totalPriceVat: row.total_price_vat as number,
     workDurationDays: row.work_duration_days as number,
@@ -302,9 +321,9 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       `INSERT OR REPLACE INTO calculations (
         id, project_name, customer, group_duration_h, crew_size, hourly_rate,
         margin_percent, commission_percent, contract_price_vat0, materials_vat0,
-        margin_eur, commission_eur, total_price_vat0, vat_amount, total_price_vat,
+        margin_eur, commission_eur, total_price_vat0, vat_percent, vat_amount, total_price_vat,
         work_duration_days, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       record.id,
       record.projectName,
       record.customer ?? null,
@@ -318,6 +337,7 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.marginEur,
       record.commissionEur,
       record.totalPriceVat0,
+      record.vatPercent,
       record.vatAmount,
       record.totalPriceVat,
       record.workDurationDays,

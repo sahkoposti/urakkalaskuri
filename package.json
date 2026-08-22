@@ -6,6 +6,7 @@
     "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
     "@react-native-picker/picker": "2.11.1",
     "expo": "~54.0.0",
+    "expo-clipboard": "~8.0.8",
     "expo-constants": "~18.0.14",
     "expo-crypto": "~15.0.8",
     "expo-font": "~14.0.12",

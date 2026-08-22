@@ -4,17 +4,18 @@ import type {
   WizardDraft,
   WizardLineDraft,
 } from '@/src/core/models/types';
+import { emptyCustomerInfo } from '@/src/core/models/types';
 
 export type WizardFormState = {
   step: number;
   customerName: string;
+  customerType: 'private' | 'business';
+  reverseVat: boolean;
   customerPhone: string;
   customerEmail: string;
   customerAddress: string;
   customerNotes: string;
   duration: string;
-  margin: string;
-  commission: string;
   lines: WizardLineDraft[];
 };
 
@@ -35,13 +36,13 @@ export function buildPersistedWizardDraft(state: WizardFormState): PersistedWiza
   return {
     step: state.step,
     customerName: state.customerName,
+    customerType: state.customerType,
+    reverseVat: state.reverseVat,
     customerPhone: state.customerPhone,
     customerEmail: state.customerEmail,
     customerAddress: state.customerAddress,
     customerNotes: state.customerNotes,
     duration: state.duration,
-    margin: state.margin,
-    commission: state.commission,
     lines: state.lines.map((line) => ({
       productId: line.product.id,
       quantity: line.quantity,
@@ -71,26 +72,27 @@ export function persistedDraftToFormState(
   const form: WizardFormState = {
     step: draft.step,
     customerName: draft.customerName,
+    customerType: draft.customerType ?? 'private',
+    reverseVat: draft.reverseVat ?? false,
     customerPhone: draft.customerPhone,
     customerEmail: draft.customerEmail,
     customerAddress: draft.customerAddress,
     customerNotes: draft.customerNotes,
     duration: draft.duration,
-    margin: draft.margin,
-    commission: draft.commission,
     lines,
   };
   const wizardDraft: WizardDraft = {
     customer: {
+      ...emptyCustomerInfo(),
       name: draft.customerName,
+      customerType: draft.customerType ?? 'private',
+      reverseVat: draft.reverseVat ?? false,
       phone: draft.customerPhone || undefined,
       email: draft.customerEmail || undefined,
       address: draft.customerAddress || undefined,
       notes: draft.customerNotes || undefined,
     },
     lines,
-    marginPercent: Number.parseFloat(draft.margin.replace(',', '.')) || undefined,
-    commissionPercent: Number.parseFloat(draft.commission.replace(',', '.')) || undefined,
   };
   return { form, wizardDraft };
 }

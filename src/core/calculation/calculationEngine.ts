@@ -7,6 +7,7 @@ export interface CalculationInput {
   commissionPercent: number;
   vatPercent: number;
   workdayHours: number;
+  reverseVat?: boolean;
 }
 
 export interface CalculationResult {
@@ -56,8 +57,8 @@ export function runCalculation(input: CalculationInput): CalculationResult {
   const marginEur = totalPriceVat0 * margin;
   const commissionEur = totalPriceVat0 * commission;
   const vatRate = input.vatPercent / 100;
-  const vatAmount = totalPriceVat0 * vatRate;
-  const totalPriceVat = totalPriceVat0 + vatAmount;
+  const vatAmount = input.reverseVat ? 0 : totalPriceVat0 * vatRate;
+  const totalPriceVat = input.reverseVat ? totalPriceVat0 : totalPriceVat0 + vatAmount;
   const materialsVat = materials * (1 + vatRate);
   const workDurationDays = input.groupDurationHours / input.workdayHours;
 

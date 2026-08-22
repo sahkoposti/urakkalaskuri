@@ -1,10 +1,11 @@
 import { Picker } from '@react-native-picker/picker';
-import { router, Stack, useFocusEffect, useNavigation } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BackHandler,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,8 +24,9 @@ import {
   CalculationValidationError,
   runCalculation,
 } from '@/src/core/calculation/calculationEngine';
-import type { CustomerInfo, Product, WizardDraft, WizardLineDraft } from '@/src/core/models/types';
+import type { CustomerInfo, CustomerType, Product, WizardDraft, WizardLineDraft } from '@/src/core/models/types';
 import { emptyCustomerInfo, materialsTotal, WIZARD_STEP_META } from '@/src/core/models/types';
+import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
 import { formatCurrency, formatDecimal, parseNumber } from '@/src/core/utils/formatters';
 import {
   buildPersistedWizardDraft,
@@ -38,11 +40,14 @@ import { AppColors } from '@/src/theme/colors';
 
 export default function WizardScreen() {
   const navigation = useNavigation();
+  const { editId } = useLocalSearchParams<{ editId?: string }>();
   const { settings, products, wizardDraft, setWizardSession, refreshWizardDraft } = useApp();
   const { showAlert } = useThemedAlert();
   const stepOrder = settings.wizardStepOrder;
   const stepCount = stepOrder.length;
   const [step, setStep] = useState(0);
+  const [editCalculationId, setEditCalculationId] = useState<string | null>(null);
+  const [originalCreatedAt, setOriginalCreatedAt] = useState<Date | null>(null);
   const [draft, setDraft] = useState<WizardDraft>({
     customer: emptyCustomerInfo(),
     lines: [],
@@ -52,13 +57,13 @@ export default function WizardScreen() {
   });
 
   const [customerName, setCustomerName] = useState('');
+  const [customerType, setCustomerType] = useState<CustomerType>('private');
+  const [reverseVat, setReverseVat] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
   const [duration, setDuration] = useState('');
-  const [margin, setMargin] = useState(String(settings.defaultMarginPercent));
-  const [commission, setCommission] = useState(String(settings.defaultCommissionPercent));
 
   const hydratedRef = useRef(false);
   const allowExitRef = useRef(false);
@@ -67,6 +72,8 @@ export default function WizardScreen() {
 
   function resetWizardForm() {
     setStep(0);
+    setEditCalculationId(null);
+    setOriginalCreatedAt(null);
     setDraft({
       customer: emptyCustomerInfo(),
       lines: [],
@@ -75,18 +82,48 @@ export default function WizardScreen() {
       commissionPercent: settings.defaultCommissionPercent,
     });
     setCustomerName('');
+    setCustomerType('private');
+    setReverseVat(false);
     setCustomerPhone('');
     setCustomerEmail('');
     setCustomerAddress('');
     setCustomerNotes('');
     setDuration('');
-    setMargin(String(settings.defaultMarginPercent));
-    setCommission(String(settings.defaultCommissionPercent));
   }
 
   useFocusEffect(
     useCallback(() => {
       allowExitRef.current = false;
+
+      if (editId) {
+        let active = true;
+        (async () => {
+          const record = await db.getCalculation(editId);
+          if (!active || !record) return;
+          hydratedRef.current = true;
+          const { form, wizardDraft: restoredDraft } = calculationToFormState(record, products);
+          setEditCalculationId(record.id);
+          setOriginalCreatedAt(record.createdAt);
+          setStep(form.step);
+          setCustomerName(form.customerName);
+          setCustomerType(form.customerType);
+          setReverseVat(form.reverseVat);
+          setCustomerPhone(form.customerPhone);
+          setCustomerEmail(form.customerEmail);
+          setCustomerAddress(form.customerAddress);
+          setCustomerNotes(form.customerNotes);
+          setDuration(form.duration);
+          setDraft({
+            ...restoredDraft,
+            marginPercent: settings.defaultMarginPercent,
+            commissionPercent: settings.defaultCommissionPercent,
+            crewSize: settings.defaultCrewSize,
+          });
+        })();
+        return () => {
+          active = false;
+        };
+      }
 
       if (!wizardDraft) {
         hydratedRef.current = false;
@@ -99,25 +136,38 @@ export default function WizardScreen() {
       const { form, wizardDraft: restoredDraft } = persistedDraftToFormState(wizardDraft, products);
       setStep(form.step);
       setCustomerName(form.customerName);
+      setCustomerType(form.customerType);
+      setReverseVat(form.reverseVat);
       setCustomerPhone(form.customerPhone);
       setCustomerEmail(form.customerEmail);
       setCustomerAddress(form.customerAddress);
       setCustomerNotes(form.customerNotes);
       setDuration(form.duration);
-      setMargin(form.margin);
-      setCommission(form.commission);
       setDraft((current) => ({
         ...current,
         ...restoredDraft,
         crewSize: settings.defaultCrewSize,
+        marginPercent: settings.defaultMarginPercent,
+        commissionPercent: settings.defaultCommissionPercent,
       }));
-    }, [wizardDraft, products, settings]),
+    }, [editId, wizardDraft, products, settings]),
   );
 
   useEffect(() => {
-    if (wizardDraft) return;
-    setDraft((current) => ({ ...current, crewSize: settings.defaultCrewSize }));
-  }, [settings.defaultCrewSize, wizardDraft]);
+    if (wizardDraft || editId) return;
+    setDraft((current) => ({
+      ...current,
+      crewSize: settings.defaultCrewSize,
+      marginPercent: settings.defaultMarginPercent,
+      commissionPercent: settings.defaultCommissionPercent,
+    }));
+  }, [
+    settings.defaultCrewSize,
+    settings.defaultMarginPercent,
+    settings.defaultCommissionPercent,
+    wizardDraft,
+    editId,
+  ]);
 
   const currentStepId = stepOrder[step] ?? stepOrder[0];
   const title = useMemo(() => `Laskenta (${step + 1}/${stepCount})`, [step, stepCount]);
@@ -126,13 +176,13 @@ export default function WizardScreen() {
     return {
       step,
       customerName,
+      customerType,
+      reverseVat,
       customerPhone,
       customerEmail,
       customerAddress,
       customerNotes,
       duration,
-      margin,
-      commission,
       lines: draft.lines,
     };
   }
@@ -171,7 +221,7 @@ export default function WizardScreen() {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowExitRef.current || !hasWizardDraftContent(getFormState())) {
+      if (editId || allowExitRef.current || !hasWizardDraftContent(getFormState())) {
         return;
       }
 
@@ -189,9 +239,10 @@ export default function WizardScreen() {
     customerAddress,
     customerNotes,
     duration,
-    margin,
-    commission,
+    customerType,
+    reverseVat,
     draft.lines,
+    editId,
   ]);
 
   useEffect(() => {
@@ -201,7 +252,7 @@ export default function WizardScreen() {
         return true;
       }
 
-      if (!hasWizardDraftContent(getFormState())) {
+      if (editId || !hasWizardDraftContent(getFormState())) {
         return false;
       }
 
@@ -221,9 +272,10 @@ export default function WizardScreen() {
     customerAddress,
     customerNotes,
     duration,
-    margin,
-    commission,
+    customerType,
+    reverseVat,
     draft.lines,
+    editId,
   ]);
 
   function showError(message: string) {
@@ -233,6 +285,8 @@ export default function WizardScreen() {
   function buildCustomerInfo(): CustomerInfo {
     return {
       name: customerName.trim(),
+      customerType,
+      reverseVat: customerType === 'business' ? reverseVat : false,
       phone: customerPhone.trim() || undefined,
       email: customerEmail.trim() || undefined,
       address: customerAddress.trim() || undefined,
@@ -267,29 +321,6 @@ export default function WizardScreen() {
       }
       case 'materials':
         return true;
-      case 'margin': {
-        const parsed = parseNumber(margin);
-        if (parsed === null || parsed < 0) {
-          showError('Anna kelvollinen myyntikatetavoite.');
-          return false;
-        }
-        setDraft((current) => ({ ...current, marginPercent: parsed }));
-        return true;
-      }
-      case 'commission': {
-        const parsedCommission = parseNumber(commission);
-        const parsedMargin = parseNumber(margin) ?? 0;
-        if (parsedCommission === null || parsedCommission < 0) {
-          showError('Anna kelvollinen myyntipalkkio.');
-          return false;
-        }
-        if (parsedMargin + parsedCommission >= 100) {
-          showError('Myyntikate ja myyntipalkkio yhteensä on oltava alle 100 %.');
-          return false;
-        }
-        setDraft((current) => ({ ...current, commissionPercent: parsedCommission }));
-        return true;
-      }
       default:
         return true;
     }
@@ -314,8 +345,8 @@ export default function WizardScreen() {
       groupDurationHours:
         durationDays !== null ? durationDaysToHours(durationDays) : draft.groupDurationHours,
       crewSize: settings.defaultCrewSize,
-      marginPercent: parseNumber(margin) ?? draft.marginPercent,
-      commissionPercent: parseNumber(commission) ?? draft.commissionPercent,
+      marginPercent: settings.defaultMarginPercent,
+      commissionPercent: settings.defaultCommissionPercent,
     };
 
     try {
@@ -324,12 +355,19 @@ export default function WizardScreen() {
         crewSize: nextDraft.crewSize!,
         hourlyRate: settings.defaultHourlyRate,
         materialsVat0: materialsTotal(nextDraft.lines),
-        marginPercent: nextDraft.marginPercent!,
-        commissionPercent: nextDraft.commissionPercent!,
+        marginPercent: settings.defaultMarginPercent,
+        commissionPercent: settings.defaultCommissionPercent,
         vatPercent: settings.vatPercent,
         workdayHours: settings.workdayHours,
+        reverseVat: nextDraft.customer.reverseVat,
       });
-      setWizardSession({ draft: nextDraft, result, settings });
+      setWizardSession({
+        draft: nextDraft,
+        result,
+        settings,
+        editCalculationId: editCalculationId ?? undefined,
+        originalCreatedAt: originalCreatedAt ?? undefined,
+      });
       await db.clearWizardDraft();
       await refreshWizardDraft();
       allowExitRef.current = true;
@@ -349,7 +387,7 @@ export default function WizardScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title }} />
+      <Stack.Screen options={{ title: editId ? 'Muokkaa laskelmaa' : title }} />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -380,11 +418,20 @@ export default function WizardScreen() {
             {currentStepId === 'customer' && (
               <CustomerStep
                 name={customerName}
+                customerType={customerType}
+                reverseVat={reverseVat}
                 phone={customerPhone}
                 email={customerEmail}
                 address={customerAddress}
                 notes={customerNotes}
                 onNameChange={setCustomerName}
+                onCustomerTypeChange={(type) => {
+                  setCustomerType(type);
+                  if (type === 'private') {
+                    setReverseVat(false);
+                  }
+                }}
+                onReverseVatChange={setReverseVat}
                 onPhoneChange={setCustomerPhone}
                 onEmailChange={setCustomerEmail}
                 onAddressChange={setCustomerAddress}
@@ -405,22 +452,6 @@ export default function WizardScreen() {
                 products={products}
                 lines={draft.lines}
                 onChange={(lines) => setDraft((current) => ({ ...current, lines }))}
-              />
-            )}
-            {currentStepId === 'margin' && (
-              <AppInput
-                label="Kate (%) *"
-                value={margin}
-                onChangeText={setMargin}
-                keyboardType="decimal-pad"
-              />
-            )}
-            {currentStepId === 'commission' && (
-              <AppInput
-                label="Palkkio (%) *"
-                value={commission}
-                onChangeText={setCommission}
-                keyboardType="decimal-pad"
               />
             )}
           </View>
@@ -460,11 +491,15 @@ export default function WizardScreen() {
 
 type CustomerStepProps = {
   name: string;
+  customerType: CustomerType;
+  reverseVat: boolean;
   phone: string;
   email: string;
   address: string;
   notes: string;
   onNameChange: (value: string) => void;
+  onCustomerTypeChange: (value: CustomerType) => void;
+  onReverseVatChange: (value: boolean) => void;
   onPhoneChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onAddressChange: (value: string) => void;
@@ -473,11 +508,15 @@ type CustomerStepProps = {
 
 function CustomerStep({
   name,
+  customerType,
+  reverseVat,
   phone,
   email,
   address,
   notes,
   onNameChange,
+  onCustomerTypeChange,
+  onReverseVatChange,
   onPhoneChange,
   onEmailChange,
   onAddressChange,
@@ -506,6 +545,47 @@ function CustomerStep({
         multiline
         placeholder="Valinnainen"
       />
+      <Text style={styles.inputLabel}>Asiakastyyppi</Text>
+      <View style={styles.pickerWrap}>
+        <Picker
+          selectedValue={customerType}
+          onValueChange={(value) => onCustomerTypeChange(value as CustomerType)}
+        >
+          <Picker.Item label="Yksityisasiakas" value="private" />
+          <Picker.Item label="Yritysasiakas" value="business" />
+        </Picker>
+      </View>
+      {customerType === 'business' ? (
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>Käänteinen arvonlisävero</Text>
+          <View style={styles.toggleActions}>
+            <Pressable
+              style={[
+                styles.toggleButton,
+                reverseVat && styles.toggleButtonActive,
+              ]}
+              onPress={() => onReverseVatChange(true)}
+            >
+              <Text style={[styles.toggleButtonText, reverseVat && styles.toggleButtonTextActive]}>
+                Kyllä
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.toggleButton,
+                !reverseVat && styles.toggleButtonActive,
+              ]}
+              onPress={() => onReverseVatChange(false)}
+            >
+              <Text
+                style={[styles.toggleButtonText, !reverseVat && styles.toggleButtonTextActive]}
+              >
+                Ei
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -645,5 +725,36 @@ const styles = StyleSheet.create({
     color: AppColors.accent,
     fontSize: 24,
     paddingHorizontal: 4,
+  },
+  toggleRow: {
+    marginBottom: 12,
+  },
+  toggleLabel: {
+    marginBottom: 6,
+    fontFamily: 'IBMPlexSans_600SemiBold',
+    color: AppColors.text,
+  },
+  toggleActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  toggleButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: AppColors.accent,
+    borderRadius: 5,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: AppColors.secondary,
+  },
+  toggleButtonActive: {
+    backgroundColor: AppColors.accent,
+  },
+  toggleButtonText: {
+    fontFamily: 'IBMPlexSans_600SemiBold',
+    color: AppColors.accent,
+  },
+  toggleButtonTextActive: {
+    color: AppColors.secondary,
   },
 });

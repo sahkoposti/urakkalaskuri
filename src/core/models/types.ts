@@ -9,23 +9,17 @@ export interface AppSettings {
   theme: ThemeSettings;
 }
 
-export type WizardStepId = 'customer' | 'duration' | 'materials' | 'margin' | 'commission';
+export type WizardStepId = 'customer' | 'duration' | 'materials';
 
-export const DEFAULT_WIZARD_STEP_ORDER: WizardStepId[] = [
-  'customer',
-  'duration',
-  'materials',
-  'margin',
-  'commission',
-];
+export const DEFAULT_WIZARD_STEP_ORDER: WizardStepId[] = ['customer', 'duration', 'materials'];
 
 export const WIZARD_STEP_META: Record<WizardStepId, { title: string }> = {
   customer: { title: 'Asiakas' },
   duration: { title: 'Työryhmän arvioitu kesto (pv)' },
   materials: { title: 'Materiaalit' },
-  margin: { title: 'Myyntikatetavoite' },
-  commission: { title: 'Myyntipalkkio' },
 };
+
+export type CustomerType = 'private' | 'business';
 
 export interface ThemeSettings {
   accentColor: string;
@@ -89,6 +83,7 @@ export interface CalculationRecord {
   marginEur: number;
   commissionEur: number;
   totalPriceVat0: number;
+  vatPercent: number;
   vatAmount: number;
   totalPriceVat: number;
   workDurationDays: number;
@@ -98,6 +93,8 @@ export interface CalculationRecord {
 
 export interface CustomerInfo {
   name: string;
+  customerType?: CustomerType;
+  reverseVat?: boolean;
   phone?: string;
   email?: string;
   address?: string;
@@ -105,33 +102,36 @@ export interface CustomerInfo {
 }
 
 export function emptyCustomerInfo(): CustomerInfo {
-  return { name: '' };
+  return { name: '', customerType: 'private', reverseVat: false };
 }
 
-export function serializeCustomerDetails(customer: CustomerInfo): string | undefined {
-  const details = {
+export function serializeCustomerDetails(customer: CustomerInfo): string {
+  return JSON.stringify({
+    customerType: customer.customerType ?? 'private',
+    reverseVat: customer.reverseVat ?? false,
     phone: customer.phone?.trim() || undefined,
     email: customer.email?.trim() || undefined,
     address: customer.address?.trim() || undefined,
     notes: customer.notes?.trim() || undefined,
-  };
-  const hasDetails = Object.values(details).some(Boolean);
-  if (!hasDetails) return undefined;
-  return JSON.stringify(details);
+  });
 }
 
 export function parseCustomerDetails(raw?: string | null): Omit<CustomerInfo, 'name'> {
-  if (!raw?.trim()) return {};
+  if (!raw?.trim()) {
+    return { customerType: 'private', reverseVat: false };
+  }
   try {
     const parsed = JSON.parse(raw) as Omit<CustomerInfo, 'name'>;
     return {
+      customerType: parsed.customerType ?? 'private',
+      reverseVat: parsed.reverseVat ?? false,
       phone: parsed.phone,
       email: parsed.email,
       address: parsed.address,
       notes: parsed.notes,
     };
   } catch {
-    return { notes: raw };
+    return { notes: raw, customerType: 'private', reverseVat: false };
   }
 }
 
@@ -168,13 +168,13 @@ export interface PersistedWizardLineDraft {
 export interface PersistedWizardDraft {
   step: number;
   customerName: string;
+  customerType: CustomerType;
+  reverseVat: boolean;
   customerPhone: string;
   customerEmail: string;
   customerAddress: string;
   customerNotes: string;
   duration: string;
-  margin: string;
-  commission: string;
   lines: PersistedWizardLineDraft[];
   updatedAt: number;
 }
