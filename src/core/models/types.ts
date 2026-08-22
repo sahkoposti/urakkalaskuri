@@ -82,7 +82,13 @@ export interface FormSnapshotField {
 export interface FormSnapshot {
   formId: string;
   formVersion: number;
+  /** Näytettävät yhteenvedon rivit (formatoidut). */
   fields: FormSnapshotField[];
+  /**
+   * Raaka wizard-syöte (sis. piilotetut kentät ja computed-ylikirjoitukset).
+   * Tarvitaan muokkaukseen; vanhoissa tallenteissa voi puuttua.
+   */
+  fieldValues?: Record<string, string>;
 }
 
 export interface CalculationRecord {

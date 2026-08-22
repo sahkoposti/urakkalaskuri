@@ -1,5 +1,5 @@
 import { Picker } from '@react-native-picker/picker';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AppInput } from '@/src/components/common';
 import type { FieldEffect, FormDefinition, FormField } from '@/src/core/form/types';
@@ -45,7 +45,21 @@ function effectValuePlaceholder(type: FieldEffect['type']): string {
   }
 }
 
-function defaultEffect(type: FieldEffect['type']): FieldEffect {
+function canUseFieldValue(field: FormField, type: FieldEffect['type']): boolean {
+  if (type !== 'add_material_fixed' && type !== 'add_duration') return false;
+  return field.type === 'number' || field.type === 'computed' || field.type === 'select';
+}
+
+function usesFieldValue(effect: FieldEffect, field: FormField): boolean {
+  if (!canUseFieldValue(field, effect.type)) return false;
+  if (effect.value !== undefined && Number.isFinite(effect.value)) return false;
+  return !effect.quantityRef || effect.quantityRef === field.key;
+}
+
+function defaultEffect(type: FieldEffect['type'], field: FormField): FieldEffect {
+  if (canUseFieldValue(field, type) && (field.type === 'computed' || field.type === 'number')) {
+    return { type };
+  }
   return { type };
 }
 
@@ -62,8 +76,18 @@ export function FieldEffectsEditor({ field, onChange }: FieldEffectsEditorProps)
     onChange(effects.map((effect, i) => (i === index ? { ...effect, ...patch } : effect)));
   }
 
+  function setUseFieldValue(index: number, enabled: boolean) {
+    const effect = effects[index];
+    if (!effect) return;
+    if (enabled) {
+      updateEffect(index, { value: undefined, quantityRef: undefined });
+      return;
+    }
+    updateEffect(index, { value: effect.type === 'add_duration' ? 1 : 0, quantityRef: undefined });
+  }
+
   function addEffect(type: FieldEffect['type']) {
-    onChange([...effects, defaultEffect(type)]);
+    onChange([...effects, defaultEffect(type, field)]);
   }
 
   function removeEffect(index: number) {
@@ -74,39 +98,60 @@ export function FieldEffectsEditor({ field, onChange }: FieldEffectsEditorProps)
     <View style={styles.wrap}>
       <Text style={styles.heading}>Vaikutukset laskentaan</Text>
       <Text style={styles.help}>
-        Vaikutukset sovelletaan laskennan lopussa kaavojen jälkeen. Lisää materiaaleihin: kiinteä
-        €-summa (alv 0). Kerro materiaaleja / Kerro kestoa: kerroin (1,1 = +10 %). Lisää kestoon:
-        tuntien lisäys.
+        Vaikutukset sovelletaan laskennan lopussa kaavojen jälkeen. Lasketulle / numerokentälle
+        voit käyttää kentän omaa arvoa (esim. maali_hinta → materiaalit) tai kiinteää lukua.
       </Text>
 
       {effects.length === 0 ? (
         <Text style={styles.empty}>Ei vaikutuksia.</Text>
       ) : (
-        effects.map((effect, index) => (
-          <View key={`${effect.type}-${index}`} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{effectLabel(effect.type)}</Text>
-              <Pressable onPress={() => removeEffect(index)}>
-                <Text style={styles.removeText}>Poista</Text>
-              </Pressable>
-            </View>
+        effects.map((effect, index) => {
+          const fieldValueMode = usesFieldValue(effect, field);
+          const showFieldToggle = canUseFieldValue(field, effect.type);
 
-            <AppInput
-              compact
-              label={effectValueLabel(effect.type)}
-              value={effect.value !== undefined ? String(effect.value).replace('.', ',') : ''}
-              onChangeText={(text) => {
-                const parsed = parseNumber(text);
-                updateEffect(index, {
-                  value: parsed ?? undefined,
-                  quantityRef: undefined,
-                });
-              }}
-              keyboardType="decimal-pad"
-              placeholder={effectValuePlaceholder(effect.type)}
-            />
-          </View>
-        ))
+          return (
+            <View key={`${effect.type}-${index}`} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>{effectLabel(effect.type)}</Text>
+                <Pressable onPress={() => removeEffect(index)}>
+                  <Text style={styles.removeText}>Poista</Text>
+                </Pressable>
+              </View>
+
+              {showFieldToggle ? (
+                <View style={styles.switchRow}>
+                  <Text style={styles.switchLabel}>Käytä tämän kentän arvoa</Text>
+                  <Switch
+                    value={fieldValueMode}
+                    onValueChange={(value) => setUseFieldValue(index, value)}
+                    trackColor={{ true: AppColors.accent, false: AppColors.border }}
+                  />
+                </View>
+              ) : null}
+
+              {!fieldValueMode ? (
+                <AppInput
+                  compact
+                  label={effectValueLabel(effect.type)}
+                  value={effect.value !== undefined ? String(effect.value).replace('.', ',') : ''}
+                  onChangeText={(text) => {
+                    const parsed = parseNumber(text);
+                    updateEffect(index, {
+                      value: parsed ?? undefined,
+                      quantityRef: undefined,
+                    });
+                  }}
+                  keyboardType="decimal-pad"
+                  placeholder={effectValuePlaceholder(effect.type)}
+                />
+              ) : (
+                <Text style={styles.fieldHint}>
+                  Arvo tulee kentästä {field.key} kaavojen jälkeen.
+                </Text>
+              )}
+            </View>
+          );
+        })
       )}
 
       <View style={styles.pickerWrap}>
@@ -169,6 +214,25 @@ const styles = StyleSheet.create({
     color: AppColors.accent,
     fontFamily: 'IBMPlexSans_600SemiBold',
     fontSize: 13,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 4,
+  },
+  switchLabel: {
+    flex: 1,
+    fontFamily: 'IBMPlexSans_500Medium',
+    color: AppColors.text,
+    fontSize: 13,
+  },
+  fieldHint: {
+    fontFamily: 'IBMPlexSans_400Regular',
+    color: AppColors.text,
+    fontSize: 13,
+    marginBottom: 4,
   },
   pickerWrap: {
     backgroundColor: AppColors.secondary,

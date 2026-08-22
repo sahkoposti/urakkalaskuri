@@ -47,7 +47,7 @@ describe('runProductionPipeline', () => {
     );
 
     expect(context.laskenta_seinapinta_ala_m2).toBeCloseTo(117.3, 2);
-    expect(context.materiaalirivit_yhteensa).toBe(250);
+    expect(context.materiaalit).toBe(250);
     expect(context['asetukset.tyopaivan_pituus']).toBe(defaultSettings.workdayHours);
     expect(context['settings.workday_hours']).toBe(defaultSettings.workdayHours);
   });
@@ -261,7 +261,7 @@ describe('runFormCalculation', () => {
     const form = defaultForm();
     form.fields = form.fields.map((field) =>
       field.systemKey === 'kokonaishinta'
-        ? { ...field, formula: 'urakka_hinta_alv0 + materiaalit_alv0' }
+        ? { ...field, formula: 'urakka_hinta_alv0 + materiaalit' }
         : field.systemKey === 'kokonaishinta_alv0'
           ? { ...field, formula: 'kokonaishinta' }
           : field.systemKey === 'alv_maara'
@@ -328,11 +328,8 @@ describe('runFormCalculation', () => {
     expect(debug.context.kokonaishinta).toBeCloseTo(context.kokonaishinta, 2);
   });
 
-  test('materialsVat0 comes from materiaalit_alv0 formula', () => {
+  test('materialsVat0 comes from materiaalit pipeline variable', () => {
     const form = defaultForm();
-    form.fields = form.fields.map((field) =>
-      field.systemKey === 'materiaalit_alv0' ? { ...field, formula: '100' } : field,
-    );
 
     const { result, context } = runFormCalculation({
       form,
@@ -342,8 +339,10 @@ describe('runFormCalculation', () => {
       settings: defaultSettings,
     });
 
-    expect(context.materiaalit_alv0).toBe(100);
-    expect(result.materialsVat0).toBe(100);
+    expect(context.materiaalit).toBe(250);
+    expect(result.materialsVat0).toBe(250);
+    expect(form.fields.some((field) => field.systemKey === 'materiaalit_alv0')).toBe(false);
+    expect(form.fields.some((field) => field.key === 'materiaalit_alv0')).toBe(false);
   });
 
   test('previewFormContext matches finish path for system totals', () => {
@@ -361,6 +360,55 @@ describe('runFormCalculation', () => {
     });
 
     expect(preview.kokonaishinta).toBeCloseTo(context.kokonaishinta, 2);
-    expect(preview.materiaalit_alv0).toBeCloseTo(context.materiaalit_alv0, 2);
+    expect(preview.materiaalit).toBeCloseTo(context.materiaalit, 2);
+  });
+
+  test('manual override on computed field persists over live recalculation', () => {
+    const form = defaultForm();
+    const baseValues = {
+      kiintea_seinapinta_ala_m2: '120',
+      aukkovahennykset: '18',
+      laudoitustyyppi: '1.15',
+      tyoryhma_kesto_pv: '5',
+    };
+
+    const live = previewFormContext(form, baseValues, [], [], defaultSettings);
+    expect(live.laskenta_seinapinta_ala_m2).toBeCloseTo(117.3, 2);
+
+    const overridden = previewFormContext(
+      form,
+      { ...baseValues, laskenta_seinapinta_ala_m2: '200' },
+      [],
+      [],
+      defaultSettings,
+    );
+    expect(overridden.laskenta_seinapinta_ala_m2).toBe(200);
+
+    const afterInputChange = previewFormContext(
+      form,
+      {
+        ...baseValues,
+        kiintea_seinapinta_ala_m2: '200',
+        laskenta_seinapinta_ala_m2: '200',
+      },
+      [],
+      [],
+      defaultSettings,
+    );
+    expect(afterInputChange.laskenta_seinapinta_ala_m2).toBe(200);
+
+    const cleared = previewFormContext(
+      form,
+      {
+        kiintea_seinapinta_ala_m2: '200',
+        aukkovahennykset: '18',
+        laudoitustyyppi: '1.15',
+        tyoryhma_kesto_pv: '5',
+      },
+      [],
+      [],
+      defaultSettings,
+    );
+    expect(cleared.laskenta_seinapinta_ala_m2).toBeCloseTo(209.3, 2);
   });
 });

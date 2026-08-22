@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { FormDefinition } from '@/src/core/form/types';
 import { runDebugPipeline } from '@/src/core/form/pipeline';
 import type { AppSettings, Product } from '@/src/core/models/types';
-import { formatCurrency, formatDecimal } from '@/src/core/utils/formatters';
+import { formatCurrency, formatDebugDecimal } from '@/src/core/utils/formatters';
 import { AppColors } from '@/src/theme/colors';
 
 function formatDebugValue(form: FormDefinition, fieldKey: string, value: number): string {
@@ -12,7 +12,7 @@ function formatDebugValue(form: FormDefinition, fieldKey: string, value: number)
   if (field?.unit === '€') {
     return formatCurrency(value);
   }
-  return formatDecimal(value);
+  return formatDebugDecimal(value);
 }
 
 type FormulaDebugPanelProps = {
@@ -46,7 +46,8 @@ export function FormulaDebugPanel({
       <Text style={styles.title}>Live-laskenta (debug)</Text>
       <Text style={styles.help}>
         Syötekentät käyttävät debug-esimerkkiarvoja. Järjestelmäkaavat käyttävät myös Yleinen-asetuksia
-        (tuntihinta, kate, ALV…) ja oletusmateriaaleja ({formatCurrency(materialsVat0)} alv0).
+        (tuntihinta, kate, ALV…) ja automaattista materiaalit-muuttujaa (
+        {formatCurrency(materialsVat0)} alv0).
       </Text>
 
       {trace.errors.length > 0 ? (

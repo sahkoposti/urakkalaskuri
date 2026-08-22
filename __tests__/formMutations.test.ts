@@ -153,7 +153,12 @@ describe('formMutations', () => {
 
   test('UI-hidden system fields stay in form but are excluded from settings lists', () => {
     const form = normalizeFormDefinition(createDefaultFormDefinition());
-    const hiddenKeys = ['kokonaishinta_alv0', 'myyntikate_eur', 'myyntipalkkio_eur'] as const;
+    const hiddenKeys = [
+      'kokonaishinta_alv0',
+      'myyntikate_eur',
+      'myyntipalkkio_eur',
+      'alv_maara',
+    ] as const;
 
     for (const systemKey of hiddenKeys) {
       expect(form.fields.some((field) => field.systemKey === systemKey)).toBe(true);
@@ -322,6 +327,60 @@ describe('formMutations', () => {
     const unknown = unknownFormulaIdentifiers(form, 'kiintea_seinapinta_ala_m2 + puuttuva_avain');
     expect(unknown).toContain('puuttuva_avain');
     expect(unknown).not.toContain('kiintea_seinapinta_ala_m2');
+  });
+
+  test('unknownFormulaIdentifiers allows materiaalit pipeline variable', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const unknown = unknownFormulaIdentifiers(form, 'urakka_hinta_alv0 + materiaalit');
+    expect(unknown).toHaveLength(0);
+  });
+
+  test('normalize drops removed materiaalit system field and migrates formulas', () => {
+    const form = normalizeFormDefinition({
+      ...createDefaultFormDefinition(),
+      fields: [
+        ...createDefaultFormDefinition().fields,
+        {
+          id: 'field_system_materiaalit',
+          systemKey: 'materiaalit_alv0',
+          key: 'materiaalit_alv0',
+          label: 'Materiaalit yhteensä (alv0)',
+          type: 'computed',
+          required: false,
+          showOnSummary: true,
+          formula: 'materiaalirivit_yhteensa',
+        },
+        {
+          id: 'field_custom_total',
+          key: 'oma_summa',
+          label: 'Oma summa',
+          type: 'computed',
+          required: false,
+          showOnSummary: true,
+          formula: 'materiaalit_alv0 + 10',
+        },
+      ],
+      pages: [
+        {
+          id: 'page_surfaces',
+          title: 'Pinta-alat',
+          sortOrder: 1,
+          fieldIds: ['field_kiintea_seinapinta', 'field_system_materiaalit', 'field_custom_total'],
+        },
+      ],
+    });
+
+    expect(form.fields.some((field) => field.id === 'field_system_materiaalit')).toBe(false);
+    expect(form.fields.some((field) => field.systemKey === 'materiaalit_alv0')).toBe(false);
+    expect(form.pages[0].fieldIds).not.toContain('field_system_materiaalit');
+    expect(form.pages[0].fieldIds).toContain('field_custom_total');
+    expect(form.fields.find((field) => field.key === 'oma_summa')?.formula).toBe('materiaalit + 10');
+    expect(form.fields.find((field) => field.systemKey === 'kokonaishinta')?.formula).toContain(
+      'materiaalit',
+    );
+    expect(form.fields.find((field) => field.systemKey === 'kokonaishinta')?.formula).not.toContain(
+      'materiaalit_alv0',
+    );
   });
 
   test('unknownFormulaIdentifiers allows settings prefix', () => {

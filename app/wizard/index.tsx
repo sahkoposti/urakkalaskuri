@@ -26,6 +26,10 @@ import {
   runFormCalculation,
 } from '@/src/core/calculation/calculationPipeline';
 import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
+import {
+  formVersionMismatchMessage,
+  hasFormVersionMismatch,
+} from '@/src/core/form/formVersion';
 import type { CustomerInfo, CustomerType, WizardDraft } from '@/src/core/models/types';
 import { emptyCustomerInfo } from '@/src/core/models/types';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
@@ -50,6 +54,8 @@ export default function WizardScreen() {
   const [step, setStep] = useState(0);
   const [editCalculationId, setEditCalculationId] = useState<string | null>(null);
   const [originalCreatedAt, setOriginalCreatedAt] = useState<Date | null>(null);
+  const [editFormVersion, setEditFormVersion] = useState<number | null>(null);
+  const [versionWarningDismissed, setVersionWarningDismissed] = useState(false);
   const [draft, setDraft] = useState<WizardDraft>({
     customer: emptyCustomerInfo(),
     lines: [],
@@ -77,6 +83,8 @@ export default function WizardScreen() {
     setStep(0);
     setEditCalculationId(null);
     setOriginalCreatedAt(null);
+    setEditFormVersion(null);
+    setVersionWarningDismissed(false);
     setDraft({
       customer: emptyCustomerInfo(),
       lines: [],
@@ -122,6 +130,8 @@ export default function WizardScreen() {
           const { form, wizardDraft: restoredDraft } = calculationToFormState(record, products);
           setEditCalculationId(record.id);
           setOriginalCreatedAt(record.createdAt);
+          setEditFormVersion(record.formSnapshot?.formVersion ?? null);
+          setVersionWarningDismissed(false);
           applyFormState(form, {
             ...restoredDraft,
             marginPercent: settings.defaultMarginPercent,
@@ -139,6 +149,7 @@ export default function WizardScreen() {
         hydratedRef.current = true;
         setEditCalculationId(wizardSession.editCalculationId ?? null);
         setOriginalCreatedAt(wizardSession.originalCreatedAt ?? null);
+        setEditFormVersion(wizardSession.editFormVersion ?? null);
         applyFormState(wizardSession.form, wizardSession.draft);
         return;
       }
@@ -194,6 +205,15 @@ export default function WizardScreen() {
     () => `Laskenta (${step + 1}/${stepCount})`,
     [step, stepCount],
   );
+
+  const showFormVersionWarning =
+    !versionWarningDismissed &&
+    hasFormVersionMismatch(editFormVersion, formDefinition.version);
+
+  const formVersionWarningText =
+    editFormVersion != null
+      ? formVersionMismatchMessage(editFormVersion, formDefinition.version)
+      : null;
 
   useEffect(() => {
     if (step >= stepCount && stepCount > 0) {
@@ -387,6 +407,7 @@ export default function WizardScreen() {
         materialLines,
         editCalculationId: editCalculationId ?? undefined,
         originalCreatedAt: originalCreatedAt ?? undefined,
+        editFormVersion: editFormVersion ?? undefined,
       });
       await db.saveWizardDraft(buildPersistedWizardDraft(formState));
       await refreshWizardDraft();
@@ -420,6 +441,22 @@ export default function WizardScreen() {
           keyboardDismissMode="on-drag"
         >
           <SectionTitle title={currentPage?.title ?? 'Laskenta'} center />
+
+          {showFormVersionWarning && formVersionWarningText ? (
+            <View style={styles.versionWarning}>
+              <Text style={styles.versionWarningTitle}>Lomakepohja on muuttunut</Text>
+              <Text style={styles.versionWarningText}>{formVersionWarningText}</Text>
+              <Pressable
+                onPress={() => setVersionWarningDismissed(true)}
+                style={({ pressed }) => [
+                  styles.versionWarningDismiss,
+                  pressed && styles.versionWarningDismissPressed,
+                ]}
+              >
+                <Text style={styles.versionWarningDismissText}>Ymmärsin</Text>
+              </Pressable>
+            </View>
+          ) : null}
 
           <View style={styles.actionBar}>
             {step > 0 ? (
@@ -467,7 +504,15 @@ export default function WizardScreen() {
                 computedValues={computedValues}
                 products={products}
                 onChange={(key, value) =>
-                  setFieldValues((current) => ({ ...current, [key]: value }))
+                  setFieldValues((current) => {
+                    if (!value.trim()) {
+                      if (!(key in current)) return current;
+                      const next = { ...current };
+                      delete next[key];
+                      return next;
+                    }
+                    return { ...current, [key]: value };
+                  })
                 }
               />
             ) : null}
@@ -614,6 +659,43 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 32,
+  },
+  versionWarning: {
+    marginTop: 12,
+    marginBottom: 4,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: AppColors.accent,
+    borderRadius: 5,
+    backgroundColor: AppColors.surface,
+    gap: 8,
+  },
+  versionWarningTitle: {
+    fontFamily: 'IBMPlexSans_700Bold',
+    fontSize: 15,
+    color: AppColors.accent,
+  },
+  versionWarningText: {
+    fontFamily: 'IBMPlexSans_400Regular',
+    fontSize: 13,
+    lineHeight: 20,
+    color: AppColors.text,
+  },
+  versionWarningDismiss: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: AppColors.accent,
+  },
+  versionWarningDismissPressed: {
+    opacity: 0.85,
+  },
+  versionWarningDismissText: {
+    fontFamily: 'IBMPlexSans_600SemiBold',
+    fontSize: 13,
+    color: AppColors.accent,
   },
   actionBar: {
     flexDirection: 'row',

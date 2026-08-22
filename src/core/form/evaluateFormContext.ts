@@ -16,7 +16,7 @@ import {
   isProductField,
 } from '@/src/core/form/productFieldUtils';
 import { buildSettingsFormulaContext } from '@/src/core/form/settingsFormulaContext';
-import { isSystemField } from '@/src/core/form/systemFields';
+import { isSystemField, MATERIALS_CONTEXT_KEY } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { AppSettings, Product } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
@@ -121,7 +121,7 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
   } = options;
 
   const context: Record<string, number> = {
-    materiaalirivit_yhteensa: materialsTotal,
+    [MATERIALS_CONTEXT_KEY]: materialsTotal,
     ...buildSettingsFormulaContext(settings),
   };
   const steps: FormContextStep[] = [];

@@ -20,10 +20,12 @@ ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen 
 - **Puuttuu vielä:** Lomakeasetukset → Esikatselu, Oletusarvot, Ulkoverhous-pohja, lomakepohjan versionvaroitus muokkauksessa
 - Katso [docs/v1.1-suunnitelma.md](docs/v1.1-suunnitelma.md)
 
-## v1.2 (aloitettu)
+## v1.2 (käynnissä)
 
-- **Ehdollinen kenttänäkyvyys:** kentälle `showWhen` (riippuu Kyllä/Ei- tai valintalistakentästä)
-- Wizard / validointi / laskenta / yhteenveto ohittavat piilotetut kentät
+- **Ehdollinen kenttänäkyvyys:** `showWhen` (boolean/select, `eq`/`neq`)
+- **Kaavafunktiot:** `min`, `max`, `round`, `if` + vertailuoperaattorit
+- **Lomakepohja:** JSON-tuonti/vienti + oletuslomakkeen palautus
+- **Muokkaus:** tallennetun laskelman `fieldValues` palautuu wizardiin
 - Katso [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md)
 
 ## Kehitysympäristö

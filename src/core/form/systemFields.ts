@@ -4,12 +4,20 @@ export type SystemFieldKey =
   | 'tyoryhma_kesto_pv'
   | 'tyoryhma_kesto_h'
   | 'urakka_hinta_alv0'
-  | 'materiaalit_alv0'
   | 'myyntikate_eur'
   | 'myyntipalkkio_eur'
   | 'kokonaishinta_alv0'
   | 'alv_maara'
   | 'kokonaishinta';
+
+/**
+ * Automaattinen kaavamuuttuja (ei FormField / Kentät-UI).
+ * Alkaa nollasta; putki täyttää tuoteriveistä + materiaaliefekteistä.
+ */
+export const MATERIALS_CONTEXT_KEY = 'materiaalit';
+
+/** Putken varaamat avaimet – ei käyttäjäkenttien nimiä. */
+export const PIPELINE_CONTEXT_KEYS: ReadonlySet<string> = new Set([MATERIALS_CONTEXT_KEY]);
 
 /**
  * Järjestelmäkentät jotka säilyvät datamallissa ja laskennassa,
@@ -20,6 +28,12 @@ export const UI_HIDDEN_SYSTEM_FIELD_KEYS: ReadonlySet<SystemFieldKey> = new Set(
   'kokonaishinta_alv0',
   'myyntikate_eur',
   'myyntipalkkio_eur',
+  'alv_maara',
+]);
+
+/** Poistetut järjestelmäkentät (migraatio sivuilta / vanhoista pohjista). */
+export const REMOVED_SYSTEM_FIELD_IDS: ReadonlySet<string> = new Set([
+  'field_system_materiaalit',
 ]);
 
 const baseSystemField = (
@@ -81,19 +95,11 @@ export function createSystemFields(): FormField[] {
       '€',
     ),
     baseSystemField(
-      'field_system_materiaalit',
-      'materiaalit_alv0',
-      'materiaalit_alv0',
-      'Materiaalit yhteensä (alv0)',
-      'materiaalirivit_yhteensa',
-      '€',
-    ),
-    baseSystemField(
       'field_system_kokonaishinta',
       'kokonaishinta',
       'kokonaishinta',
       'Kokonaishinta (alv)',
-      '(urakka_hinta_alv0 + materiaalit_alv0) / (1 - asetukset.myyntikate_prosentti/100 - asetukset.myyntipalkkio_prosentti/100)',
+      `(urakka_hinta_alv0 + ${MATERIALS_CONTEXT_KEY}) / (1 - asetukset.myyntikate_prosentti/100 - asetukset.myyntipalkkio_prosentti/100)`,
       '€',
     ),
     baseSystemField(
@@ -156,10 +162,20 @@ export function restoreSystemField(field: FormField): FormField {
 
 export function mergeSystemFields(fields: FormField[]): FormField[] {
   const systemDefaults = createSystemFields();
-  const reservedKeys = new Set(systemDefaults.map((field) => field.key));
+  const reservedKeys = new Set([
+    ...systemDefaults.map((field) => field.key),
+    ...PIPELINE_CONTEXT_KEYS,
+  ]);
   const userFields = fields.filter((field) => !isSystemField(field) && !reservedKeys.has(field.key));
-  const existingSystem = fields.filter(isSystemField);
-  const promoted = fields.filter((field) => !isSystemField(field) && reservedKeys.has(field.key));
+  const existingSystem = fields.filter(
+    (field) => isSystemField(field) && !REMOVED_SYSTEM_FIELD_IDS.has(field.id),
+  );
+  const promoted = fields.filter(
+    (field) =>
+      !isSystemField(field) &&
+      reservedKeys.has(field.key) &&
+      !PIPELINE_CONTEXT_KEYS.has(field.key),
+  );
   const mergedSystem = systemDefaults.map((template) => {
     const current =
       existingSystem.find((field) => field.systemKey === template.systemKey) ??
@@ -188,6 +204,8 @@ export const LEGACY_KEY_MAP: Record<string, string> = {
   aukkovähennykset: 'aukkovahennykset',
   myyntikate_eur: 'myyntikate',
   myyntipalkkio_eur: 'myyntipalkkio',
+  materiaalirivit_yhteensa: MATERIALS_CONTEXT_KEY,
+  materiaalit_alv0: MATERIALS_CONTEXT_KEY,
   'settings.vat_percent': 'asetukset.alv_prosentti',
   'settings.default_margin_percent': 'asetukset.myyntikate_prosentti',
   'settings.default_commission_percent': 'asetukset.myyntipalkkio_prosentti',

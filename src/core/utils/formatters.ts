@@ -10,6 +10,12 @@ const decimalFormatter = new Intl.NumberFormat('fi-FI', {
   maximumFractionDigits: 1,
 });
 
+/** Debug-laskenta: summat/määrät enintään 2 desimaalia (vain näyttö). */
+const debugDecimalFormatter = new Intl.NumberFormat('fi-FI', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
 const percentFormatter = new Intl.NumberFormat('fi-FI', {
   minimumFractionDigits: 0,
   maximumFractionDigits: 1,
@@ -21,6 +27,10 @@ export function formatCurrency(value: number): string {
 
 export function formatDecimal(value: number): string {
   return decimalFormatter.format(value);
+}
+
+export function formatDebugDecimal(value: number): string {
+  return debugDecimalFormatter.format(value);
 }
 
 export function formatPercent(value: number): string {

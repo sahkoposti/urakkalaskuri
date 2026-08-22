@@ -14,6 +14,7 @@ import { defaultSettings, defaultThemeSettings } from '../models/types';
 import { parseProductAttributesJson } from '../product/productAttributes';
 import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../form/formDefinitionHelpers';
+import { bumpFormVersion } from '../form/formVersion';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
 import { defaultFormDebugSettings } from '../form/types';
 import { normalizeWizardStepOrder } from '../wizard/wizardSteps';
@@ -442,24 +443,28 @@ export async function getFormDefinition(): Promise<FormDefinition> {
   );
   if (!row) {
     const defaults = normalizeFormDefinition(createDefaultFormDefinition());
-    await saveFormDefinition(defaults);
+    await saveFormDefinition(defaults, { preserveVersion: true });
     return defaults;
   }
   try {
     return normalizeFormDefinition(JSON.parse(row.value));
   } catch {
     const defaults = normalizeFormDefinition(createDefaultFormDefinition());
-    await saveFormDefinition(defaults);
+    await saveFormDefinition(defaults, { preserveVersion: true });
     return defaults;
   }
 }
 
-export async function saveFormDefinition(form: FormDefinition): Promise<void> {
+export async function saveFormDefinition(
+  form: FormDefinition,
+  options?: { preserveVersion?: boolean },
+): Promise<void> {
   const db = await getDb();
+  const toSave = options?.preserveVersion ? form : bumpFormVersion(form);
   await db.runAsync(
     'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
     'form_definition',
-    JSON.stringify({ ...form, updatedAt: Date.now() }),
+    JSON.stringify({ ...toSave, updatedAt: Date.now() }),
   );
 }
 

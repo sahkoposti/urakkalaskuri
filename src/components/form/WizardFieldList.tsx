@@ -45,32 +45,40 @@ export function WizardFieldList({
         if (field.type === 'computed') {
           const computed = computedValues[field.key];
           const canOverride = field.allowManualOverride !== false;
-          if (canOverride) {
-            const label = `${field.label}${field.unit ? ` (${field.unit})` : ''}`;
-            const computedText =
-              computed !== undefined && Number.isFinite(computed)
-                ? field.unit === '€'
-                  ? formatCurrency(computed)
-                  : formatDecimal(computed)
-                : '';
-            return (
-              <AppInput
-                key={field.id}
-                label={label}
-                value={fieldValues[field.key] ?? computedText}
-                onChangeText={(value) => onChange(field.key, value)}
-                keyboardType="decimal-pad"
-                placeholder={computedText || 'Esim. 5'}
-              />
-            );
-          }
-
-          const display =
+          const computedText =
             computed !== undefined && Number.isFinite(computed)
               ? field.unit === '€'
                 ? formatCurrency(computed)
-                : `${formatDecimal(computed)}${field.unit ? ` ${field.unit}` : ''}`
-              : '–';
+                : formatDecimal(computed)
+              : '';
+          const overrideRaw = fieldValues[field.key];
+          const isOverridden = overrideRaw !== undefined && overrideRaw.trim() !== '';
+
+          if (canOverride) {
+            const label = `${field.label}${field.unit ? ` (${field.unit})` : ''}`;
+            return (
+              <View key={field.id}>
+                <AppInput
+                  label={label}
+                  value={isOverridden ? overrideRaw : computedText}
+                  onChangeText={(value) => onChange(field.key, value)}
+                  keyboardType="decimal-pad"
+                  placeholder={computedText || 'Esim. 5'}
+                />
+                {isOverridden ? (
+                  <Text style={styles.overrideHint}>
+                    Manuaalinen arvo – tyhjennä kenttä palauttaaksesi kaavan
+                  </Text>
+                ) : null}
+              </View>
+            );
+          }
+
+          const display = computedText
+            ? field.unit === '€'
+              ? computedText
+              : `${computedText}${field.unit ? ` ${field.unit}` : ''}`
+            : '–';
           return (
             <View key={field.id} style={styles.readOnlyField}>
               <Text style={styles.inputLabel}>{field.label}</Text>
@@ -191,6 +199,14 @@ const styles = StyleSheet.create({
     color: AppColors.text,
     opacity: 0.75,
     fontFamily: 'IBMPlexSans_400Regular',
+  },
+  overrideHint: {
+    marginTop: -8,
+    marginBottom: 12,
+    color: AppColors.text,
+    opacity: 0.7,
+    fontFamily: 'IBMPlexSans_400Regular',
+    fontSize: 12,
   },
   productMeta: {
     marginTop: -4,

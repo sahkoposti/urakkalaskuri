@@ -2,24 +2,33 @@ import type { CalculationRecord, Product, WizardDraft, WizardLineDraft } from '@
 import { customerFromRecord } from '@/src/core/models/types';
 import type { WizardFormState } from '@/src/core/wizard/wizardDraftHelpers';
 
+/** Palauttaa tallennetun laskelman wizard-tilaksi (asiakas, rivit, fieldValues). */
 export function calculationToFormState(
   record: CalculationRecord,
   products: Product[],
 ): { form: WizardFormState; wizardDraft: WizardDraft } {
   const customer = customerFromRecord(record);
-  const lines: WizardLineDraft[] = record.lines
-    .map((line) => {
-      const product =
-        (line.productId ? products.find((item) => item.id === line.productId) : null) ??
-        ({
-          id: line.productId ?? line.id,
-          name: line.productName,
-          unit: line.unit,
-          unitPriceVat0: line.unitPriceVat0,
-          createdAt: record.createdAt,
-        } satisfies Product);
-      return { product, quantity: line.quantity };
-    });
+  const lines: WizardLineDraft[] = record.lines.map((line) => {
+    const product =
+      (line.productId ? products.find((item) => item.id === line.productId) : null) ??
+      ({
+        id: line.productId ?? line.id,
+        name: line.productName,
+        unit: line.unit,
+        unitPriceVat0: line.unitPriceVat0,
+        createdAt: record.createdAt,
+      } satisfies Product);
+    return { product, quantity: line.quantity };
+  });
+
+  const duration = String(record.workDurationDays).replace('.', ',');
+  const snapshotValues = record.formSnapshot?.fieldValues ?? {};
+  const fieldValues: Record<string, string> = { ...snapshotValues };
+
+  // Varmista kesto sekä fieldValuesissä että legacy duration-kentässä
+  if (!fieldValues.tyoryhma_kesto_pv?.trim()) {
+    fieldValues.tyoryhma_kesto_pv = duration;
+  }
 
   const form: WizardFormState = {
     step: 0,
@@ -30,10 +39,8 @@ export function calculationToFormState(
     customerEmail: customer.email ?? '',
     customerAddress: customer.address ?? '',
     customerNotes: customer.notes ?? '',
-    duration: String(record.workDurationDays).replace('.', ','),
-    fieldValues: {
-      tyoryhma_kesto_pv: String(record.workDurationDays).replace('.', ','),
-    },
+    duration: fieldValues.tyoryhma_kesto_pv || duration,
+    fieldValues,
     lines,
   };
 

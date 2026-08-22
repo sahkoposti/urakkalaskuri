@@ -1,16 +1,22 @@
-import { extractFormulaIdentifiers } from '@/src/core/form/formula/evaluator';
+import {
+  extractFormulaIdentifiers,
+  FORMULA_FUNCTIONS,
+} from '@/src/core/form/formula/evaluator';
 import { computedFieldDependencies } from '@/src/core/form/formula/formulaDependencies';
 import { slugifyKey } from '@/src/core/form/formKeyUtils';
 import {
   createSystemFields,
   isSystemFieldHiddenFromUi,
   LEGACY_KEY_MAP,
+  MATERIALS_CONTEXT_KEY,
   mergeSystemFields,
   migrateFormulaKeys,
+  PIPELINE_CONTEXT_KEYS,
+  REMOVED_SYSTEM_FIELD_IDS,
 } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormField, FormPage, SelectOption } from '@/src/core/form/types';
 
-const ALLOWED_FORMULA_IDENTIFIERS = new Set(['materiaalirivit_yhteensa']);
+const ALLOWED_FORMULA_IDENTIFIERS = new Set([MATERIALS_CONTEXT_KEY]);
 
 export function collectKnownFormulaIdentifiers(form: FormDefinition): Set<string> {
   const known = new Set<string>();
@@ -21,6 +27,7 @@ export function collectKnownFormulaIdentifiers(form: FormDefinition): Set<string
 }
 
 function isKnownFormulaIdentifier(ident: string, known: Set<string>): boolean {
+  if (FORMULA_FUNCTIONS.has(ident)) return true;
   if (ident.startsWith('asetukset.') || ident.startsWith('settings.')) return true;
   if (ALLOWED_FORMULA_IDENTIFIERS.has(ident)) return true;
   if (known.has(ident)) return true;
@@ -164,12 +171,17 @@ function dedupePageFieldAssignments(pages: FormPage[]): FormPage[] {
 
 /** Vanha käyttäjäkenttä tyoryhma_kesto_pv → järjestelmäkentän id sivulla. */
 function remapPromotedSystemFieldIds(pages: FormPage[], rawFields: FormField[]): FormPage[] {
-  const reservedKeys = new Set(createSystemFields().map((field) => field.key));
+  const reservedKeys = new Set([
+    ...createSystemFields().map((field) => field.key),
+    ...PIPELINE_CONTEXT_KEYS,
+  ]);
   const keyToSystemId = new Map(createSystemFields().map((field) => [field.key, field.id]));
   const oldIdToSystemId = new Map<string, string>();
 
   for (const field of rawFields) {
-    if (field.systemKey || !reservedKeys.has(field.key)) continue;
+    if (field.systemKey || !reservedKeys.has(field.key) || PIPELINE_CONTEXT_KEYS.has(field.key)) {
+      continue;
+    }
     const systemId = keyToSystemId.get(field.key);
     if (systemId) oldIdToSystemId.set(field.id, systemId);
   }
@@ -179,6 +191,17 @@ function remapPromotedSystemFieldIds(pages: FormPage[], rawFields: FormField[]):
   return pages.map((page) => ({
     ...page,
     fieldIds: (page.fieldIds ?? []).map((fieldId) => oldIdToSystemId.get(fieldId) ?? fieldId),
+  }));
+}
+
+/** Poistaa sivuilta poistetut / tuntemattomat kenttä-id:t. */
+function pruneMissingFieldIds(pages: FormPage[], fields: FormField[]): FormPage[] {
+  const knownIds = new Set(fields.map((field) => field.id));
+  return pages.map((page) => ({
+    ...page,
+    fieldIds: (page.fieldIds ?? []).filter(
+      (fieldId) => knownIds.has(fieldId) && !REMOVED_SYSTEM_FIELD_IDS.has(fieldId),
+    ),
   }));
 }
 
@@ -216,7 +239,7 @@ export function normalizeFormDefinition(raw: unknown): FormDefinition {
     id: form.id ?? 'default',
     name: form.name ?? 'Peruslaskenta',
     version: typeof form.version === 'number' ? form.version : 3,
-    pages,
+    pages: pruneMissingFieldIds(pages, fields),
     fields,
     updatedAt: form.updatedAt ?? Date.now(),
   };

@@ -94,5 +94,7 @@ export function buildFormSnapshot(
     formId: form.id,
     formVersion: form.version,
     fields,
+    /** Kaikki syötetyt arvot (myös piilotetut) – muokkauksen palautukseen */
+    fieldValues: { ...fieldValues },
   };
 }

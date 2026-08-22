@@ -1,12 +1,15 @@
 import { Picker } from '@react-native-picker/picker';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import {
+  isNumericVisibilityOperator,
   isVisibilitySourceField,
+  operatorsForVisibilitySource,
   visibilityConditionSummary,
 } from '@/src/core/form/fieldVisibility';
 import type {
   FieldVisibilityCondition,
+  FieldVisibilityOperator,
   FormDefinition,
   FormField,
 } from '@/src/core/form/types';
@@ -18,6 +21,30 @@ type FieldVisibilityEditorProps = {
   onChange: (showWhen: FieldVisibilityCondition | undefined) => void;
 };
 
+const OPERATOR_LABELS: Record<FieldVisibilityOperator, string> = {
+  eq: 'Yhtä kuin',
+  neq: 'Eri kuin',
+  gt: 'Suurempi kuin',
+  lt: 'Pienempi kuin',
+  gte: 'Suurempi tai yhtä suuri',
+  lte: 'Pienempi tai yhtä suuri',
+};
+
+function defaultValueForSource(source: FormField): string {
+  if (source.type === 'boolean') return 'true';
+  if (source.type === 'select') return source.options?.[0]?.value ?? '';
+  return '0';
+}
+
+function coerceOperator(
+  source: FormField | undefined,
+  operator: FieldVisibilityOperator | undefined,
+): FieldVisibilityOperator {
+  const allowed = operatorsForVisibilitySource(source);
+  const current = operator ?? 'eq';
+  return allowed.includes(current) ? current : 'eq';
+}
+
 export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibilityEditorProps) {
   const sources = form.fields.filter(
     (item) => item.id !== field.id && isVisibilitySourceField(item),
@@ -25,20 +52,29 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
   const enabled = Boolean(field.showWhen?.fieldKey);
   const condition = field.showWhen;
   const selectedSource = sources.find((item) => item.key === condition?.fieldKey);
+  const allowedOperators = operatorsForVisibilitySource(selectedSource);
 
   function enableWithDefault() {
     const first = sources[0];
     if (!first) return;
-    const value =
-      first.type === 'boolean' ? 'true' : (first.options?.[0]?.value ?? '');
-    onChange({ fieldKey: first.key, operator: 'eq', value });
+    onChange({
+      fieldKey: first.key,
+      operator: 'eq',
+      value: defaultValueForSource(first),
+    });
   }
 
   function patch(partial: Partial<FieldVisibilityCondition>) {
     if (!condition?.fieldKey && !partial.fieldKey) return;
+    const fieldKey = partial.fieldKey ?? condition!.fieldKey;
+    const source = sources.find((item) => item.key === fieldKey);
+    const operator = coerceOperator(
+      source,
+      partial.operator ?? condition?.operator ?? 'eq',
+    );
     const next: FieldVisibilityCondition = {
-      fieldKey: partial.fieldKey ?? condition!.fieldKey,
-      operator: partial.operator ?? condition?.operator ?? 'eq',
+      fieldKey,
+      operator,
       value: partial.value ?? condition?.value ?? 'true',
     };
     onChange(next);
@@ -47,9 +83,12 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
   function handleSourceChange(fieldKey: string) {
     const source = sources.find((item) => item.key === fieldKey);
     if (!source) return;
-    const value =
-      source.type === 'boolean' ? 'true' : (source.options?.[0]?.value ?? '');
-    onChange({ fieldKey, operator: condition?.operator ?? 'eq', value });
+    const operator = coerceOperator(source, condition?.operator);
+    onChange({
+      fieldKey,
+      operator,
+      value: defaultValueForSource(source),
+    });
   }
 
   const summary = visibilityConditionSummary(condition, form);
@@ -58,8 +97,9 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
     <View style={styles.wrap}>
       <Text style={styles.heading}>Näkyvyysehto</Text>
       <Text style={styles.help}>
-        Piilota kenttä wizardissa kunnes ehto täyttyy. Sopii Kyllä/Ei- ja valintalistakentille
-        (esim. näytä räystäsmetrit vain jos räystäät = Kyllä).
+        Piilota kenttä wizardissa kunnes ehto täyttyy. Sopii Kyllä/Ei-, valintalista- ja
+        numerokentille (esim. näytä räystäsmetrit vain jos räystäät = Kyllä, tai lisärivi jos
+        pinta-ala {'>'} 100).
       </Text>
 
       <View style={styles.switchRow}>
@@ -77,7 +117,7 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
 
       {sources.length === 0 ? (
         <Text style={styles.empty}>
-          Lisää ensin Kyllä/Ei- tai valintalistakenttä, johon ehto voi viitata.
+          Lisää ensin Kyllä/Ei-, valintalista- tai numerokenttä, johon ehto voi viitata.
         </Text>
       ) : null}
 
@@ -98,13 +138,14 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
           <View style={styles.pickerWrap}>
             <Text style={styles.pickerLabel}>Vertailu</Text>
             <Picker
-              selectedValue={condition.operator ?? 'eq'}
+              selectedValue={coerceOperator(selectedSource, condition.operator)}
               onValueChange={(value) =>
-                patch({ operator: value === 'neq' ? 'neq' : 'eq' })
+                patch({ operator: value as FieldVisibilityOperator })
               }
             >
-              <Picker.Item label="Yhtä kuin" value="eq" />
-              <Picker.Item label="Eri kuin" value="neq" />
+              {allowedOperators.map((op) => (
+                <Picker.Item key={op} label={OPERATOR_LABELS[op]} value={op} />
+              ))}
             </Picker>
           </View>
 
@@ -118,6 +159,19 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
                 <Picker.Item label="Kyllä" value="true" />
                 <Picker.Item label="Ei" value="false" />
               </Picker>
+            ) : selectedSource?.type === 'number' ? (
+              <View style={styles.numberInputWrap}>
+                <TextInput
+                  style={styles.numberInput}
+                  value={condition.value}
+                  onChangeText={(value) => patch({ value })}
+                  keyboardType="decimal-pad"
+                  placeholder={
+                    isNumericVisibilityOperator(condition.operator) ? 'esim. 100' : '0'
+                  }
+                  placeholderTextColor="#999"
+                />
+              </View>
             ) : (
               <Picker
                 selectedValue={condition.value}
@@ -188,6 +242,21 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexSans_600SemiBold',
     color: AppColors.text,
     fontSize: 14,
+  },
+  numberInputWrap: {
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+  },
+  numberInput: {
+    borderWidth: 1,
+    borderColor: AppColors.border,
+    borderRadius: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: 'IBMPlexSans_400Regular',
+    fontSize: 16,
+    color: AppColors.text,
+    backgroundColor: AppColors.surface,
   },
   summary: {
     fontFamily: 'IBMPlexSans_400Regular',

@@ -42,6 +42,7 @@ describe('buildFormSnapshot', () => {
       snapshot.fields.find((field) => field.key === 'laskenta_seinapinta_ala_m2')?.value,
     ).toContain('117');
     expect(snapshot.fields.find((field) => field.key === 'laudoitustyyppi')?.value).toBe('Paneeli');
+    expect(snapshot.fieldValues).toEqual(fieldValues);
   });
 });
 

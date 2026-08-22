@@ -35,6 +35,8 @@ type WizardSession = {
   materialLines: WizardLineDraft[];
   editCalculationId?: string;
   originalCreatedAt?: Date;
+  /** Muokattavan laskelman snapshotin formVersion (varoitus jos eroaa nykyisestä). */
+  editFormVersion?: number;
 };
 
 type AppContextValue = {

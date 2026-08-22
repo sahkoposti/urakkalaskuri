@@ -85,6 +85,23 @@ describe('fieldEffects', () => {
     expect(applyDurationEffects(40, result)).toBe(43);
   });
 
+  test('add_material_fixed without value uses the field key from context', () => {
+    const form = minimalForm([
+      {
+        id: 'f1',
+        key: 'maali_hinta',
+        label: 'Maalihinta',
+        type: 'computed',
+        required: false,
+        showOnSummary: true,
+        effects: [{ type: 'add_material_fixed' }],
+      },
+    ]);
+
+    const result = applyFieldEffects(form, { maali_hinta: 175.95 });
+    expect(applyMaterialEffects(0, result)).toBeCloseTo(175.95, 2);
+  });
+
   test('legacy quantityRef still resolves from context when value is missing', () => {
     const form = minimalForm([
       {

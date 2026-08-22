@@ -5,10 +5,17 @@ export class FormulaEvaluationError extends Error {
   }
 }
 
+/** Sisäänrakennetut kaavafunktiot (eivät ole lomakemuuttujia). */
+export const FORMULA_FUNCTIONS = new Set(['min', 'max', 'round', 'if']);
+
+type CompareOp = '>' | '<' | '>=' | '<=' | '==' | '!=';
+
 type Token =
   | { type: 'number'; value: number }
   | { type: 'ident'; value: string }
   | { type: 'op'; value: '+' | '-' | '*' | '/' }
+  | { type: 'compare'; value: CompareOp }
+  | { type: 'comma' }
   | { type: 'lparen' }
   | { type: 'rparen' };
 
@@ -30,19 +37,56 @@ function tokenize(expression: string): Token[] {
       i += 1;
       continue;
     }
+    if (char === ',') {
+      tokens.push({ type: 'comma' });
+      i += 1;
+      continue;
+    }
+
+    if (char === '=' && input[i + 1] === '=') {
+      tokens.push({ type: 'compare', value: '==' });
+      i += 2;
+      continue;
+    }
+    if (char === '!' && input[i + 1] === '=') {
+      tokens.push({ type: 'compare', value: '!=' });
+      i += 2;
+      continue;
+    }
+    if (char === '>' && input[i + 1] === '=') {
+      tokens.push({ type: 'compare', value: '>=' });
+      i += 2;
+      continue;
+    }
+    if (char === '<' && input[i + 1] === '=') {
+      tokens.push({ type: 'compare', value: '<=' });
+      i += 2;
+      continue;
+    }
+    if (char === '>') {
+      tokens.push({ type: 'compare', value: '>' });
+      i += 1;
+      continue;
+    }
+    if (char === '<') {
+      tokens.push({ type: 'compare', value: '<' });
+      i += 1;
+      continue;
+    }
+
     if ('+-*/'.includes(char)) {
       tokens.push({ type: 'op', value: char as '+' | '-' | '*' | '/' });
       i += 1;
       continue;
     }
 
-    if (/[0-9.,]/.test(char)) {
+    if (/[0-9.]/.test(char)) {
       let raw = '';
-      while (i < input.length && /[0-9.,]/.test(input[i])) {
+      while (i < input.length && /[0-9.]/.test(input[i])) {
         raw += input[i];
         i += 1;
       }
-      const value = Number.parseFloat(raw.replace(',', '.'));
+      const value = Number.parseFloat(raw);
       if (!Number.isFinite(value)) {
         throw new FormulaEvaluationError(`Virheellinen luku: ${raw}`);
       }
@@ -73,8 +117,79 @@ function resolveIdentifier(name: string, context: Record<string, number>): numbe
   throw new FormulaEvaluationError(`Tuntematon muuttuja: ${name}`);
 }
 
+function applyCompare(op: CompareOp, left: number, right: number): number {
+  switch (op) {
+    case '>':
+      return left > right ? 1 : 0;
+    case '<':
+      return left < right ? 1 : 0;
+    case '>=':
+      return left >= right ? 1 : 0;
+    case '<=':
+      return left <= right ? 1 : 0;
+    case '==':
+      return left === right ? 1 : 0;
+    case '!=':
+      return left !== right ? 1 : 0;
+  }
+}
+
+function callFormulaFunction(name: string, args: number[]): number {
+  switch (name) {
+    case 'min': {
+      if (args.length < 2) {
+        throw new FormulaEvaluationError('min() vaatii vähintään kaksi argumenttia');
+      }
+      return Math.min(...args);
+    }
+    case 'max': {
+      if (args.length < 2) {
+        throw new FormulaEvaluationError('max() vaatii vähintään kaksi argumenttia');
+      }
+      return Math.max(...args);
+    }
+    case 'round': {
+      if (args.length < 1 || args.length > 2) {
+        throw new FormulaEvaluationError('round() ottaa 1–2 argumenttia');
+      }
+      const value = args[0]!;
+      const digits = args[1] ?? 0;
+      if (!Number.isInteger(digits) || digits < 0 || digits > 10) {
+        throw new FormulaEvaluationError('round()-desimaalien on oltava kokonaisluku 0–10');
+      }
+      const factor = 10 ** digits;
+      return Math.round(value * factor) / factor;
+    }
+    case 'if': {
+      if (args.length !== 3) {
+        throw new FormulaEvaluationError('if() vaatii kolme argumenttia: if(ehto, sitten, muuten)');
+      }
+      return args[0]! !== 0 ? args[1]! : args[2]!;
+    }
+    default:
+      throw new FormulaEvaluationError(`Tuntematon funktio: ${name}`);
+  }
+}
+
 function parseExpression(tokens: Token[], context: Record<string, number>, pos = 0): [number, number] {
-  return parseAddSub(tokens, context, pos);
+  return parseComparison(tokens, context, pos);
+}
+
+function parseComparison(
+  tokens: Token[],
+  context: Record<string, number>,
+  pos: number,
+): [number, number] {
+  let [left, index] = parseAddSub(tokens, context, pos);
+
+  while (index < tokens.length && tokens[index]?.type === 'compare') {
+    const op = (tokens[index] as Extract<Token, { type: 'compare' }>).value;
+    const [right, nextIndex] = parseAddSub(tokens, context, index + 1);
+    left = applyCompare(op, left, right);
+    index = nextIndex;
+  }
+
+  return [left, index];
 }
 
 function parseAddSub(tokens: Token[], context: Record<string, number>, pos: number): [number, number] {
@@ -116,6 +231,30 @@ function parseUnary(tokens: Token[], context: Record<string, number>, pos: numbe
   return parsePrimary(tokens, context, pos);
 }
 
+function parseArgList(
+  tokens: Token[],
+  context: Record<string, number>,
+  pos: number,
+): [number[], number] {
+  if (tokens[pos]?.type === 'rparen') {
+    return [[], pos];
+  }
+
+  const args: number[] = [];
+  let index = pos;
+  while (true) {
+    const [value, nextIndex] = parseExpression(tokens, context, index);
+    args.push(value);
+    index = nextIndex;
+    if (tokens[index]?.type === 'comma') {
+      index += 1;
+      continue;
+    }
+    break;
+  }
+  return [args, index];
+}
+
 function parsePrimary(tokens: Token[], context: Record<string, number>, pos: number): [number, number] {
   const token = tokens[pos];
   if (!token) {
@@ -127,6 +266,16 @@ function parsePrimary(tokens: Token[], context: Record<string, number>, pos: num
   }
 
   if (token.type === 'ident') {
+    if (tokens[pos + 1]?.type === 'lparen') {
+      if (!FORMULA_FUNCTIONS.has(token.value)) {
+        throw new FormulaEvaluationError(`Tuntematon funktio: ${token.value}`);
+      }
+      const [args, afterArgs] = parseArgList(tokens, context, pos + 2);
+      if (tokens[afterArgs]?.type !== 'rparen') {
+        throw new FormulaEvaluationError('Puuttuva sulkeva sulku funktiokutsussa');
+      }
+      return [callFormulaFunction(token.value, args), afterArgs + 1];
+    }
     return [resolveIdentifier(token.value, context), pos + 1];
   }
 
@@ -143,13 +292,22 @@ function parsePrimary(tokens: Token[], context: Record<string, number>, pos: num
 
 export function extractFormulaIdentifiers(formula: string): string[] {
   const matches = formula.match(/[a-zA-Z_äöåÄÖÅ][a-zA-Z0-9_äöåÄÖÅ.]*/g) ?? [];
-  return [...new Set(matches)];
+  return [...new Set(matches)].filter((ident) => !FORMULA_FUNCTIONS.has(ident));
+}
+
+/** Debug-sijoitus: enintään 2 desimaalia (ei vaikuta laskentaan). */
+function formatSubstitutedNumber(value: number): string {
+  if (!Number.isFinite(value)) return String(value);
+  const rounded = Math.round(value * 100) / 100;
+  if (Number.isInteger(rounded)) return String(rounded);
+  return String(rounded);
 }
 
 export function substituteFormula(formula: string, context: Record<string, number>): string {
   return formula.replace(/[a-zA-Z0-9_äöåÄÖÅ.]+/g, (ident) => {
+    if (FORMULA_FUNCTIONS.has(ident)) return ident;
     if (ident in context) {
-      return String(context[ident]);
+      return formatSubstitutedNumber(context[ident]!);
     }
     return ident;
   });

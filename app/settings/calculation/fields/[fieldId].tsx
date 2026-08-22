@@ -28,6 +28,7 @@ import {
   updateField,
 } from '@/src/core/form/formMutations';
 import { sanitizeKeyInput } from '@/src/core/form/formKeyUtils';
+import { MATERIALS_CONTEXT_KEY } from '@/src/core/form/systemFields';
 import { isProductField } from '@/src/core/form/productFieldUtils';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { isSystemField, isSystemFieldHiddenFromUi, restoreSystemField } from '@/src/core/form/systemFields';
@@ -300,14 +301,20 @@ export default function FormFieldEditorScreen() {
         {isProductField(field) ? <ProductFormulaHints form={previewForm} field={field} /> : null}
 
         {isComputed ? (
-          <AppInput
-            label={isSystem ? 'Järjestelmäkaava' : 'Kaava'}
-            value={field.formula ?? ''}
-            onChangeText={(formula) => updateFieldState({ formula })}
-            multiline
-            placeholder="laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki"
-            compact
-          />
+          <>
+            <AppInput
+              label={isSystem ? 'Järjestelmäkaava' : 'Kaava'}
+              value={field.formula ?? ''}
+              onChangeText={(formula) => updateFieldState({ formula })}
+              multiline
+              placeholder="laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki"
+              compact
+            />
+            <Text style={styles.formulaHint}>
+              Automaattinen muuttuja: {MATERIALS_CONTEXT_KEY} (materiaalit alv0, oletus 0). Funktiot:
+              min(), max(), round(), if(). Vertailut: {'>'} {'<'} {'>='} {'<='} == !=
+            </Text>
+          </>
         ) : null}
 
         {!isSystem && field.type !== 'section' ? (
@@ -341,7 +348,9 @@ export default function FormFieldEditorScreen() {
 
         {isComputed ? (
           <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Muokattavissa lomakkeella (esitäytetty laskennalla)</Text>
+            <Text style={styles.switchLabel}>
+              Muokattavissa lomakkeella (manuaalinen arvo ohittaa kaavan kunnes tyhjennetään)
+            </Text>
             <Switch
               value={field.allowManualOverride !== false}
               onValueChange={(allowManualOverride) => updateFieldState({ allowManualOverride })}
@@ -526,6 +535,15 @@ const styles = StyleSheet.create({
     color: AppColors.text,
     lineHeight: 18,
     fontSize: 14,
+  },
+  formulaHint: {
+    marginTop: -4,
+    marginBottom: 10,
+    fontFamily: 'IBMPlexSans_400Regular',
+    color: AppColors.text,
+    opacity: 0.75,
+    fontSize: 13,
+    lineHeight: 18,
   },
   pickerWrap: {
     backgroundColor: AppColors.secondary,

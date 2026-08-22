@@ -164,6 +164,78 @@ describe('fieldVisibility', () => {
     );
   });
 
+  test('numeric gt/lt/gte/lte on number fields', () => {
+    const form = sampleForm();
+    const pinta = baseField({
+      id: 'f_pinta',
+      key: 'pinta_ala',
+      label: 'Pinta-ala',
+      type: 'number',
+      unit: 'm2',
+    });
+    const lisarivi = baseField({
+      id: 'f_lisa',
+      key: 'lisarivi',
+      label: 'Lisärivi',
+      type: 'text',
+      showWhen: { fieldKey: 'pinta_ala', operator: 'gt', value: '100' },
+    });
+    form.fields.push(pinta, lisarivi);
+
+    expect(isFieldVisible(lisarivi, { pinta_ala: '120' }, form)).toBe(true);
+    expect(isFieldVisible(lisarivi, { pinta_ala: '100' }, form)).toBe(false);
+    expect(isFieldVisible(lisarivi, { pinta_ala: '80' }, form)).toBe(false);
+    expect(isFieldVisible(lisarivi, { pinta_ala: '100,5' }, form)).toBe(true);
+
+    lisarivi.showWhen = { fieldKey: 'pinta_ala', operator: 'gte', value: '100' };
+    expect(isFieldVisible(lisarivi, { pinta_ala: '100' }, form)).toBe(true);
+    expect(isFieldVisible(lisarivi, { pinta_ala: '99' }, form)).toBe(false);
+
+    lisarivi.showWhen = { fieldKey: 'pinta_ala', operator: 'lt', value: '50' };
+    expect(isFieldVisible(lisarivi, { pinta_ala: '49' }, form)).toBe(true);
+    expect(isFieldVisible(lisarivi, { pinta_ala: '50' }, form)).toBe(false);
+
+    lisarivi.showWhen = { fieldKey: 'pinta_ala', operator: 'lte', value: '50' };
+    expect(isFieldVisible(lisarivi, { pinta_ala: '50' }, form)).toBe(true);
+
+    lisarivi.showWhen = { fieldKey: 'pinta_ala', operator: 'eq', value: '12,5' };
+    expect(isFieldVisible(lisarivi, { pinta_ala: '12.5' }, form)).toBe(true);
+  });
+
+  test('numeric operator on boolean source is never visible', () => {
+    const form = sampleForm();
+    const field = baseField({
+      id: 'f_bad',
+      key: 'huono',
+      label: 'Huono',
+      type: 'number',
+      showWhen: {
+        fieldKey: 'raystaan_aluset_ja_otsalaudat',
+        operator: 'gt',
+        value: '0',
+      },
+    });
+    expect(isFieldVisible(field, { raystaan_aluset_ja_otsalaudat: 'true' }, form)).toBe(false);
+  });
+
+  test('visibilityConditionSummary for numeric gt', () => {
+    const form = sampleForm();
+    form.fields.push(
+      baseField({
+        id: 'f_pinta',
+        key: 'pinta_ala',
+        label: 'Pinta-ala',
+        type: 'number',
+      }),
+    );
+    expect(
+      visibilityConditionSummary(
+        { fieldKey: 'pinta_ala', operator: 'gt', value: '100' },
+        form,
+      ),
+    ).toBe('Pinta-ala > 100');
+  });
+
   test('validation skips required hidden fields', () => {
     const form = sampleForm();
     const page = form.pages[0];

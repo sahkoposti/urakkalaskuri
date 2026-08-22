@@ -28,8 +28,12 @@ export interface FieldEffect {
   quantityRef?: string;
 }
 
-/** Näkyvyysehto: näytä kenttä jos toisen kentän arvo täyttää vertailun. */
-export type FieldVisibilityOperator = 'eq' | 'neq';
+/**
+ * Näkyvyysehto: näytä kenttä jos toisen kentän arvo täyttää vertailun.
+ * eq/neq: boolean, select, number
+ * gt/lt/gte/lte: number (numeerinen vertailu)
+ */
+export type FieldVisibilityOperator = 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte';
 
 export interface FieldVisibilityCondition {
   /** Riippuvan kentän muuttuja (key), esim. raystaan_aluset */
@@ -40,6 +44,7 @@ export interface FieldVisibilityCondition {
    * Odotettu raaka-arvo:
    * - boolean: "true" | "false"
    * - select: option.value (esim. "1.15")
+   * - number: desimaali merkkijonona (esim. "10" tai "10,5")
    */
   value: string;
 }

@@ -12,6 +12,10 @@ import {
   ScreenMessage,
   SectionTitle,
 } from '@/src/components/common';
+import {
+  formVersionMismatchFromRecord,
+  formVersionMismatchMessage,
+} from '@/src/core/form/formVersion';
 import type { CalculationRecord } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import {
@@ -26,13 +30,14 @@ import {
   reverseVatLabel,
 } from '@/src/core/utils/priceDisplay';
 import { formatCurrency, formatDecimal, formatPercent } from '@/src/core/utils/formatters';
-import { db } from '@/src/context/AppContext';
+import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { AppColors } from '@/src/theme/colors';
 
 export default function HistoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { showAlert } = useThemedAlert();
+  const { formDefinition } = useApp();
   const [loading, setLoading] = useState(true);
   const [record, setRecord] = useState<CalculationRecord | null>(null);
 
@@ -61,12 +66,24 @@ export default function HistoryDetailScreen() {
   const privateCustomer = isPrivateCustomer(customer);
   const vatRate = record.vatPercent;
   const displayTotal = formatDisplayPrice(record.totalPriceVat0, record.totalPriceVat, customer);
+  const formVersionMismatch = formVersionMismatchFromRecord(record, formDefinition);
+  const snapshotVersion = record.formSnapshot?.formVersion;
 
   return (
     <>
       <Stack.Screen options={{ title: 'Laskelman tiedot' }} />
       <ScrollView contentContainerStyle={styles.content}>
         <SectionTitle title={customer.name} />
+
+        {formVersionMismatch && snapshotVersion != null ? (
+          <View style={styles.versionWarning}>
+            <Text style={styles.versionWarningTitle}>Lomakepohja on muuttunut</Text>
+            <Text style={styles.versionWarningText}>
+              {formVersionMismatchMessage(snapshotVersion, formDefinition.version)}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.actions}>
           <PrimaryButton
             title="Muokkaa"
@@ -264,6 +281,25 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
     gap: 12,
+  },
+  versionWarning: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: AppColors.accent,
+    borderRadius: 5,
+    backgroundColor: AppColors.surface,
+    gap: 6,
+  },
+  versionWarningTitle: {
+    fontFamily: 'IBMPlexSans_700Bold',
+    fontSize: 15,
+    color: AppColors.accent,
+  },
+  versionWarningText: {
+    fontFamily: 'IBMPlexSans_400Regular',
+    fontSize: 13,
+    lineHeight: 20,
+    color: AppColors.text,
   },
   actions: {
     marginTop: 8,

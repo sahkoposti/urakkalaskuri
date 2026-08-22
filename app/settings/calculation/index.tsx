@@ -1,10 +1,61 @@
+import * as Clipboard from 'expo-clipboard';
 import { router, Stack, type Href } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { SectionTitle } from '@/src/components/common';
+import { OutlinedButton, SectionTitle } from '@/src/components/common';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { SettingsNavCard } from '@/src/components/SettingsNavCard';
+import { createDefaultFormDefinition } from '@/src/core/form/defaultFormDefinition';
+import {
+  FormDefinitionImportError,
+  parseImportedFormDefinition,
+  serializeFormDefinition,
+} from '@/src/core/form/formDefinitionIo';
+import { normalizeFormDefinition } from '@/src/core/form/formDefinitionHelpers';
+import { db, useApp } from '@/src/context/AppContext';
+import { useSaveToast } from '@/src/context/SaveToastContext';
+import { useThemedAlert } from '@/src/context/ThemedAlertContext';
+import { AppColors } from '@/src/theme/colors';
 
 export default function CalculationSettingsScreen() {
+  const { formDefinition, refreshFormSettings } = useApp();
+  const { showAlert } = useThemedAlert();
+  const { showSaved } = useSaveToast();
+  const [importVisible, setImportVisible] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [resetVisible, setResetVisible] = useState(false);
+
+  async function handleExport() {
+    await Clipboard.setStringAsync(serializeFormDefinition(formDefinition));
+    showSaved('Lomakepohja kopioitu');
+  }
+
+  async function handleImport() {
+    try {
+      const imported = parseImportedFormDefinition(importText);
+      await db.saveFormDefinition(imported, { preserveVersion: true });
+      await refreshFormSettings();
+      setImportVisible(false);
+      setImportText('');
+      showSaved('Lomakepohja tuotu');
+    } catch (error) {
+      const message =
+        error instanceof FormDefinitionImportError
+          ? error.message
+          : 'Tuonti epäonnistui';
+      showAlert('Virhe', message);
+    }
+  }
+
+  async function handleResetDefault() {
+    setResetVisible(false);
+    const defaults = normalizeFormDefinition(createDefaultFormDefinition());
+    await db.saveFormDefinition(defaults, { preserveVersion: true });
+    await refreshFormSettings();
+    showSaved('Oletuslomake palautettu');
+  }
+
   return (
     <>
       <Stack.Screen options={{ title: 'Lomakeasetukset' }} />
@@ -25,7 +76,60 @@ export default function CalculationSettingsScreen() {
           subtitle="Live-laskenta kaavojen kalibrointiin"
           onPress={() => router.push('/settings/calculation/debug')}
         />
+
+        <SectionTitle title="Lomakepohja" />
+        <OutlinedButton title="Vie JSON (leikepöytä)" onPress={() => void handleExport()} />
+        <OutlinedButton
+          title="Tuo JSON…"
+          onPress={() => {
+            setImportText('');
+            setImportVisible(true);
+          }}
+        />
+        <OutlinedButton title="Palauta oletuslomake…" onPress={() => setResetVisible(true)} />
       </ScrollView>
+
+      <Modal
+        visible={importVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setImportVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={styles.modalDismiss} onPress={() => setImportVisible(false)} />
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Tuo lomakepohja</Text>
+            <Text style={styles.modalHelp}>
+              Liitä aiemmin viety FormDefinition-JSON. Nykyinen lomakepohja korvataan.
+            </Text>
+            <TextInput
+              style={styles.importInput}
+              value={importText}
+              onChangeText={setImportText}
+              multiline
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder='{"name":"…","pages":[],"fields":[]}'
+              placeholderTextColor={AppColors.border}
+            />
+            <View style={styles.modalActions}>
+              <OutlinedButton title="Peruuta" onPress={() => setImportVisible(false)} />
+              <OutlinedButton title="Tuo" onPress={() => void handleImport()} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <ConfirmDialog
+        visible={resetVisible}
+        title="Palauta oletuslomake?"
+        message="Nykyinen lomakepohja korvataan Peruslaskenta-oletuksella. Tätä ei voi peruuttaa."
+        onClose={() => setResetVisible(false)}
+        buttons={[
+          { title: 'Peruuta', variant: 'outlined', onPress: () => setResetVisible(false) },
+          { title: 'Palauta', variant: 'destructive', onPress: () => void handleResetDefault() },
+        ]}
+      />
     </>
   );
 }
@@ -34,5 +138,48 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 40,
+    gap: 10,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalDismiss: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalCard: {
+    backgroundColor: AppColors.secondary,
+    borderRadius: 8,
+    padding: 16,
+    gap: 10,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontFamily: 'IBMPlexSans_700Bold',
+    fontSize: 18,
+    color: AppColors.primary,
+  },
+  modalHelp: {
+    fontFamily: 'IBMPlexSans_400Regular',
+    fontSize: 13,
+    color: AppColors.text,
+    lineHeight: 20,
+  },
+  importInput: {
+    minHeight: 160,
+    borderWidth: 1,
+    borderColor: AppColors.border,
+    borderRadius: 5,
+    padding: 10,
+    fontFamily: 'IBMPlexSans_400Regular',
+    fontSize: 13,
+    color: AppColors.text,
+    textAlignVertical: 'top',
+    backgroundColor: AppColors.surface,
+  },
+  modalActions: {
+    gap: 8,
   },
 });

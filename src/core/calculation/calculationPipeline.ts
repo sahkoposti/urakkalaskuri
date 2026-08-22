@@ -133,7 +133,7 @@ export function buildResultFromFormulaContext(
   }
 
   const contractPriceVat0 = readContextNumber(context, ['urakka_hinta_alv0'], 'Urakkahinta');
-  const materialsVat0 = readContextNumber(context, ['materiaalit_alv0'], 'Materiaalit');
+  const materialsVat0 = readContextNumber(context, ['materiaalit', 'materiaalit_alv0'], 'Materiaalit');
   const totalPriceVat = readContextNumber(context, ['kokonaishinta'], 'Kokonaishinta');
   const marginEur = readContextNumber(context, ['myyntikate', 'myyntikate_eur'], 'Myyntikate');
   const commissionEur = readContextNumber(

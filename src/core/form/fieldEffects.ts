@@ -19,10 +19,14 @@ function emptyEffectsResult(): FieldEffectsResult {
   };
 }
 
-/** Lukee vaikutuksen numeerisen arvon; vanha quantityRef toimii vielä taaksepäin yhteensopivuutena. */
+/**
+ * Lukee vaikutuksen numeerisen arvon.
+ * Järjestys: litteraali value → quantityRef → kentän oma kontekstiavain (fallbackKey).
+ */
 function resolveEffectValue(
   effect: FieldEffect,
   context: Record<string, number>,
+  fallbackKey?: string,
 ): number | null {
   if (effect.value !== undefined && Number.isFinite(effect.value)) {
     return effect.value;
@@ -31,6 +35,10 @@ function resolveEffectValue(
     const legacy = context[effect.quantityRef];
     if (legacy !== undefined && Number.isFinite(legacy)) return legacy;
   }
+  if (fallbackKey !== undefined) {
+    const own = context[fallbackKey];
+    if (own !== undefined && Number.isFinite(own)) return own;
+  }
   return null;
 }
 
@@ -38,30 +46,31 @@ function applyEffect(
   effect: FieldEffect,
   context: Record<string, number>,
   result: FieldEffectsResult,
+  fieldKey: string,
 ): void {
   switch (effect.type) {
     case 'add_material':
       return;
     case 'add_material_fixed': {
-      const amount = resolveEffectValue(effect, context);
+      const amount = resolveEffectValue(effect, context, fieldKey);
       if (amount === null) return;
       result.materialsFixedAdd += amount;
       return;
     }
     case 'multiply_duration': {
-      const factor = resolveEffectValue(effect, context);
+      const factor = resolveEffectValue(effect, context, fieldKey);
       if (factor === null || factor <= 0) return;
       result.durationMultiplier *= factor;
       return;
     }
     case 'add_duration': {
-      const hours = resolveEffectValue(effect, context);
+      const hours = resolveEffectValue(effect, context, fieldKey);
       if (hours === null) return;
       result.durationAddHours += hours;
       return;
     }
     case 'multiply_materials': {
-      const factor = resolveEffectValue(effect, context);
+      const factor = resolveEffectValue(effect, context, fieldKey);
       if (factor === null || factor <= 0) return;
       result.materialsMultiplier *= factor;
       return;
@@ -84,7 +93,7 @@ export function applyFieldEffects(
     if (!field.effects?.length) continue;
     if (!isFieldVisible(field, fieldValues, form)) continue;
     for (const effect of field.effects) {
-      applyEffect(effect, context, result);
+      applyEffect(effect, context, result, field.key);
     }
   }
 

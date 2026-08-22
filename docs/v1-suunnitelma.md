@@ -102,7 +102,7 @@ Oletuspohja **Peruslaskenta** (`defaultFormDefinition.ts`) sisältää tyyppilli
 | Käyttäjän sivut | esim. Pinta-alat (numero-, valinta- ja laskentakentät) |
 | Kesto | järjestelmäkenttä `tyoryhma_kesto_pv` |
 
-Materiaalikustannukset tulevat **järjestelmäkaavoista** (`materiaalit_alv0` ← `materiaalirivit_yhteensa` + kenttävaikutukset), ei erillisestä kiinteästä materiaalisivusta. Vanhat tuoterivit säilyvät historiassa ja luonnoksissa; uudessa laskennassa materiaalit voidaan lisätä esim. `add_material_fixed` -vaikutuksella tai lasketulla kaavalla.
+Materiaalikustannukset tulevat **automaattisesta kaavamuuttujasta** (`materiaalit` ← tuoterivit + kenttävaikutukset), ei erillisestä kiinteästä materiaalisivusta eikä FormField-järjestelmäkentästä. Vanhat tuoterivit säilyvät historiassa ja luonnoksissa; uudessa laskennassa materiaalit voidaan lisätä esim. `add_material_fixed` -vaikutuksella.
 
 **Huom.** Työryhmän koko, tuntihinta, myyntikate (%) ja myyntipalkkio (%) tulevat **Yleinen**-asetuksista. Kesto muunnetaan tunneiksi kaavalla: `tyoryhma_kesto_pv × asetukset.tyopaivan_pituus`.
 
@@ -151,7 +151,7 @@ Materiaalirivit laskennassa:
 
 ```
 rivisumma_alv0 = määrä × yksikköhinta_alv0
-materiaalit_alv0 = materiaalirivit_yhteensa (+ kenttävaikutukset laskennan lopussa)
+materiaalit = tuoterivit (+ kenttävaikutukset laskennan lopussa)
 ```
 
 ---
@@ -175,8 +175,7 @@ Hinnat lasketaan **järjestelmäkenttien kaavoilla** (`systemFields.ts`), ei eri
 | `asetukset.tyoryhman_koko` | Työryhmän koko | Yleinen-asetukset |
 | `asetukset.tuntihinta` | Tuntihinta (alv0) | Yleinen-asetukset |
 | `urakka_hinta_alv0` | Urakkahinta (alv0) | `tyoryhma_kesto_h × asetukset.tyoryhman_koko × asetukset.tuntihinta` |
-| `materiaalirivit_yhteensa` | Tuoterivit (alv0) | wizard-luonnos / historia |
-| `materiaalit_alv0` | Materiaalit yhteensä | `materiaalirivit_yhteensa` + efektit |
+| `materiaalit` | Materiaalit yhteensä (alv0) | putki: tuoterivit + efektit (ei FormField) |
 | `asetukset.myyntikate_prosentti`, `asetukset.myyntipalkkio_prosentti` | Kate ja palkkio (%) | Yleinen-asetukset |
 | `kokonaishinta` | Kokonaishinta (alv) | järjestelmäkaava |
 | `asetukset.alv_prosentti` | ALV (%) | Yleinen-asetukset |
@@ -279,7 +278,7 @@ Katso: [v1.1-suunnitelma.md](./v1.1-suunnitelma.md)
 
 ### Avoinna / v1.1 loppu
 - [ ] Lomakeasetukset: Esikatselu, Oletusarvot, Ulkoverhous-pohja
-- [ ] Lomakepohjan versionvaroitus muokkauksessa
+- [x] Lomakepohjan versionvaroitus muokkauksessa
 - [ ] Teeman soveltaminen koko UI:hin
 - [ ] Logon ja taustakuvan valinta galleriasta
 - [ ] APK (EAS Build) + Play Store

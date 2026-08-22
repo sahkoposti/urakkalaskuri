@@ -21,6 +21,14 @@ describe('evaluateFormula', () => {
       }),
     ).toBe(102);
   });
+
+  test('supports min max round and if with comparisons', () => {
+    expect(evaluateFormula('min(10, 3, 7)', {})).toBe(3);
+    expect(evaluateFormula('max(10, 3)', {})).toBe(10);
+    expect(evaluateFormula('round(1.234, 2)', {})).toBeCloseTo(1.23, 5);
+    expect(evaluateFormula('if(pinta_ala > 100, 1.1, 1)', { pinta_ala: 120 })).toBeCloseTo(1.1, 5);
+    expect(evaluateFormula('if(kaytossa, 15, 0)', { kaytossa: 0 })).toBe(0);
+  });
 });
 
 describe('runDebugPipeline', () => {
@@ -76,7 +84,7 @@ describe('runDebugPipeline', () => {
     expect(trace.errors).toHaveLength(0);
     expect(trace.context.tyoryhma_kesto_h).toBeCloseTo(40, 2);
     expect(trace.context.urakka_hinta_alv0).toBeCloseTo(2400, 2);
-    expect(trace.context.materiaalit_alv0).toBe(250);
+    expect(trace.context.materiaalit).toBe(250);
     expect(trace.context.kokonaishinta).toBeGreaterThan(0);
   });
 
