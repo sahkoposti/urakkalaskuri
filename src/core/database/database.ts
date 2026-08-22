@@ -1,0 +1,290 @@
+import * as SQLite from 'expo-sqlite';
+
+import type { AppSettings, CalculationLine, CalculationRecord, Product } from '../models/types';
+import { defaultSettings } from '../models/types';
+
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+
+async function getDb(): Promise<SQLite.SQLiteDatabase> {
+  if (!dbPromise) {
+    dbPromise = openDatabase();
+  }
+  return dbPromise;
+}
+
+async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
+  const db = await SQLite.openDatabaseAsync('urakkalaskuri.db');
+  await db.execAsync(`
+    PRAGMA foreign_keys = ON;
+    CREATE TABLE IF NOT EXISTS products (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      unit TEXT NOT NULL,
+      unit_price_vat0 REAL NOT NULL,
+      description TEXT,
+      created_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS calculations (
+      id TEXT PRIMARY KEY NOT NULL,
+      project_name TEXT NOT NULL,
+      customer TEXT,
+      group_duration_h REAL NOT NULL,
+      crew_size INTEGER NOT NULL,
+      hourly_rate REAL NOT NULL,
+      margin_percent REAL NOT NULL,
+      commission_percent REAL NOT NULL,
+      contract_price_vat0 REAL NOT NULL,
+      materials_vat0 REAL NOT NULL,
+      margin_eur REAL NOT NULL,
+      commission_eur REAL NOT NULL,
+      total_price_vat0 REAL NOT NULL,
+      vat_amount REAL NOT NULL,
+      total_price_vat REAL NOT NULL,
+      work_duration_days REAL NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS calculation_lines (
+      id TEXT PRIMARY KEY NOT NULL,
+      calculation_id TEXT NOT NULL,
+      product_id TEXT,
+      product_name TEXT NOT NULL,
+      unit TEXT NOT NULL,
+      unit_price_vat0 REAL NOT NULL,
+      quantity REAL NOT NULL,
+      line_total_vat0 REAL NOT NULL,
+      FOREIGN KEY (calculation_id) REFERENCES calculations(id)
+    );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT NOT NULL
+    );
+  `);
+
+  const settingsCount = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM settings',
+  );
+  if ((settingsCount?.count ?? 0) === 0) {
+    for (const [key, value] of Object.entries(defaultSettingRows)) {
+      await db.runAsync('INSERT INTO settings (key, value) VALUES (?, ?)', key, value);
+    }
+  }
+
+  return db;
+}
+
+const defaultSettingRows: Record<string, string> = {
+  vat_percent: String(defaultSettings.vatPercent),
+  default_margin_percent: String(defaultSettings.defaultMarginPercent),
+  default_commission_percent: String(defaultSettings.defaultCommissionPercent),
+  default_hourly_rate: String(defaultSettings.defaultHourlyRate),
+  default_crew_size: String(defaultSettings.defaultCrewSize),
+  workday_hours: String(defaultSettings.workdayHours),
+};
+
+function productFromRow(row: Record<string, unknown>): Product {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    unit: row.unit as string,
+    unitPriceVat0: row.unit_price_vat0 as number,
+    description: (row.description as string | null) ?? undefined,
+    createdAt: new Date(row.created_at as number),
+  };
+}
+
+function calculationFromRow(
+  row: Record<string, unknown>,
+  lines: CalculationLine[],
+): CalculationRecord {
+  return {
+    id: row.id as string,
+    projectName: row.project_name as string,
+    customer: (row.customer as string | null) ?? undefined,
+    groupDurationHours: row.group_duration_h as number,
+    crewSize: row.crew_size as number,
+    hourlyRate: row.hourly_rate as number,
+    marginPercent: row.margin_percent as number,
+    commissionPercent: row.commission_percent as number,
+    contractPriceVat0: row.contract_price_vat0 as number,
+    materialsVat0: row.materials_vat0 as number,
+    marginEur: row.margin_eur as number,
+    commissionEur: row.commission_eur as number,
+    totalPriceVat0: row.total_price_vat0 as number,
+    vatAmount: row.vat_amount as number,
+    totalPriceVat: row.total_price_vat as number,
+    workDurationDays: row.work_duration_days as number,
+    createdAt: new Date(row.created_at as number),
+    lines,
+  };
+}
+
+export async function getSettings(): Promise<AppSettings> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ key: string; value: string }>('SELECT key, value FROM settings');
+  const map = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+  return {
+    vatPercent: Number.parseFloat(map.vat_percent ?? String(defaultSettings.vatPercent)),
+    defaultMarginPercent: Number.parseFloat(
+      map.default_margin_percent ?? String(defaultSettings.defaultMarginPercent),
+    ),
+    defaultCommissionPercent: Number.parseFloat(
+      map.default_commission_percent ?? String(defaultSettings.defaultCommissionPercent),
+    ),
+    defaultHourlyRate: Number.parseFloat(
+      map.default_hourly_rate ?? String(defaultSettings.defaultHourlyRate),
+    ),
+    defaultCrewSize: Number.parseInt(map.default_crew_size ?? String(defaultSettings.defaultCrewSize), 10),
+    workdayHours: Number.parseFloat(map.workday_hours ?? String(defaultSettings.workdayHours)),
+  };
+}
+
+export async function saveSettings(settings: AppSettings): Promise<void> {
+  const db = await getDb();
+  const entries: Record<string, string> = {
+    vat_percent: String(settings.vatPercent),
+    default_margin_percent: String(settings.defaultMarginPercent),
+    default_commission_percent: String(settings.defaultCommissionPercent),
+    default_hourly_rate: String(settings.defaultHourlyRate),
+    default_crew_size: String(settings.defaultCrewSize),
+    workday_hours: String(settings.workdayHours),
+  };
+  for (const [key, value] of Object.entries(entries)) {
+    await db.runAsync(
+      'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+      key,
+      value,
+    );
+  }
+}
+
+export async function getProducts(): Promise<Product[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    'SELECT * FROM products ORDER BY name COLLATE NOCASE ASC',
+  );
+  return rows.map(productFromRow);
+}
+
+export async function getProduct(id: string): Promise<Product | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<Record<string, unknown>>(
+    'SELECT * FROM products WHERE id = ? LIMIT 1',
+    id,
+  );
+  return row ? productFromRow(row) : null;
+}
+
+export async function upsertProduct(product: Product): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO products (id, name, unit, unit_price_vat0, description, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    product.id,
+    product.name,
+    product.unit,
+    product.unitPriceVat0,
+    product.description ?? null,
+    product.createdAt.getTime(),
+  );
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('DELETE FROM products WHERE id = ?', id);
+}
+
+export async function getCalculations(): Promise<CalculationRecord[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    'SELECT * FROM calculations ORDER BY created_at DESC',
+  );
+  const records: CalculationRecord[] = [];
+  for (const row of rows) {
+    const lineRows = await db.getAllAsync<Record<string, unknown>>(
+      'SELECT * FROM calculation_lines WHERE calculation_id = ?',
+      row.id as string,
+    );
+    const lines: CalculationLine[] = lineRows.map((line) => ({
+      id: line.id as string,
+      productId: (line.product_id as string | null) ?? undefined,
+      productName: line.product_name as string,
+      unit: line.unit as string,
+      unitPriceVat0: line.unit_price_vat0 as number,
+      quantity: line.quantity as number,
+      lineTotalVat0: line.line_total_vat0 as number,
+    }));
+    records.push(calculationFromRow(row, lines));
+  }
+  return records;
+}
+
+export async function getCalculation(id: string): Promise<CalculationRecord | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<Record<string, unknown>>(
+    'SELECT * FROM calculations WHERE id = ?',
+    id,
+  );
+  if (!row) return null;
+  const lineRows = await db.getAllAsync<Record<string, unknown>>(
+    'SELECT * FROM calculation_lines WHERE calculation_id = ?',
+    id,
+  );
+  const lines: CalculationLine[] = lineRows.map((line) => ({
+    id: line.id as string,
+    productId: (line.product_id as string | null) ?? undefined,
+    productName: line.product_name as string,
+    unit: line.unit as string,
+    unitPriceVat0: line.unit_price_vat0 as number,
+    quantity: line.quantity as number,
+    lineTotalVat0: line.line_total_vat0 as number,
+  }));
+  return calculationFromRow(row, lines);
+}
+
+export async function saveCalculation(record: CalculationRecord): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      `INSERT OR REPLACE INTO calculations (
+        id, project_name, customer, group_duration_h, crew_size, hourly_rate,
+        margin_percent, commission_percent, contract_price_vat0, materials_vat0,
+        margin_eur, commission_eur, total_price_vat0, vat_amount, total_price_vat,
+        work_duration_days, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      record.id,
+      record.projectName,
+      record.customer ?? null,
+      record.groupDurationHours,
+      record.crewSize,
+      record.hourlyRate,
+      record.marginPercent,
+      record.commissionPercent,
+      record.contractPriceVat0,
+      record.materialsVat0,
+      record.marginEur,
+      record.commissionEur,
+      record.totalPriceVat0,
+      record.vatAmount,
+      record.totalPriceVat,
+      record.workDurationDays,
+      record.createdAt.getTime(),
+    );
+    await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', record.id);
+    for (const line of record.lines) {
+      await db.runAsync(
+        `INSERT INTO calculation_lines (
+          id, calculation_id, product_id, product_name, unit,
+          unit_price_vat0, quantity, line_total_vat0
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        line.id,
+        record.id,
+        line.productId ?? null,
+        line.productName,
+        line.unit,
+        line.unitPriceVat0,
+        line.quantity,
+        line.lineTotalVat0,
+      );
+    }
+  });
+}

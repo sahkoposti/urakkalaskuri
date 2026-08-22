@@ -4,7 +4,7 @@
 > **Brändi:** ColoRajaton / [colorajaton.fi](https://colorajaton.fi)  
 > **Alusta:** Android (APK)  
 > **Tallennus:** Paikallinen (SQLite), offline  
-> **Kehys:** Flutter  
+> **Kehys:** Expo (React Native) / Android
 
 ---
 
@@ -109,21 +109,21 @@ Sivuston tapaan otsikon alle kapea punainen viiva:
 - Valikon kortit/napit: valkoinen kortti varjolla, punainen ikoni tai accent-viiva
 - Aktiivinen kohta: punainen alleviivaus tai vasen accent-palkki
 
-### 3.5 Flutter-teema (toteutuksessa)
+### 3.5 Expo-teema (toteutuksessa)
 
-```dart
-// lib/theme/app_theme.dart – luonnos
-class AppColors {
-  static const primary   = Color(0xFF000000);
-  static const secondary = Color(0xFFFFFFFF);
-  static const text      = Color(0xFF3C3C3C);
-  static const accent    = Color(0xFFC90000);
-  static const surface   = Color(0xFFF9FAFA);
-  static const border    = Color(0xFFE1E8ED);
-}
+```typescript
+// src/theme/colors.ts
+export const AppColors = {
+  primary: '#000000',
+  secondary: '#FFFFFF',
+  text: '#3C3C3C',
+  accent: '#C90000',
+  surface: '#F9FAFA',
+  border: '#E1E8ED',
+};
 
-// ThemeData: Material 3, IBM Plex Sans, accentColor #C90000
-// ElevatedButton: accent tausta, valkoinen teksti, borderRadius 5
+// IBM Plex Sans (@expo-google-fonts/ibm-plex-sans)
+// PrimaryButton: accent tausta, valkoinen teksti, borderRadius 5
 // OutlinedButton: accent reunus ja teksti
 ```
 
@@ -488,14 +488,14 @@ settings (
 
 ## 11. Toteutusjärjestys
 
-1. Flutter-projekti, **ColoRajaton-teema** (luku 3), navigaatio
+1. Expo-projekti, **ColoRajaton-teema** (luku 3), navigaatio (Expo Router)
 2. SQLite-skeema ja asetukset
 3. Tuotteet-osio (CRUD)
 4. Laskentamoottori (`runPipeline`) + yksikkötestit esimerkkiluvulla 7
 5. Wizard + tuoterivit
 6. Yhteenveto + tallennus
 7. Historia
-8. APK-build ja manuaalinen testaus
+8. EAS Build (APK) ja manuaalinen testaus Expo Go:lla
 
 **Arvio:** 2–4 viikkoa.
 

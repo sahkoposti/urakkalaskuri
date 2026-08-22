@@ -1,6 +1,6 @@
 # Urakkalaskuri
 
-ColoRajatonin urakkalaskuri – Flutter/Android-sovellus tarjoushintojen laskentaan.
+ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen laskentaan (Android).
 
 ## Ominaisuudet (v1)
 
@@ -11,73 +11,60 @@ ColoRajatonin urakkalaskuri – Flutter/Android-sovellus tarjoushintojen laskent
 - Asetukset (ALV, kate 35 %, palkkio 7 %, tuntihinta 30 €/h)
 - ColoRajaton-brändi (colorajaton.fi)
 
-## GitHub-repositorio
-
-Projekti on valmis pushattavaksi GitHubiin. **Kerran kirjauduttuasi** GitHub CLI:hin:
-
-```powershell
-gh auth login
-gh repo create urakkalaskuri --public --source=. --remote=origin --push
-```
-
-Jos repo on jo olemassa omalla tililläsi:
-
-```powershell
-git remote add origin https://github.com/KAYTTAJA/urakkalaskuri.git
-git push -u origin main
-```
-
-Tämän jälkeen voit jatkaa projektia **Cursor Cloud Agentissa** kloonaamalla saman GitHub-repon.
-
 ## Kehitysympäristö
 
-### Paikallinen kehitys
+### Vaatimukset
 
-1. Asenna [Flutter SDK](https://docs.flutter.dev/get-started/install) (stable)
-2. Asenna Android SDK / Android Studio (APK-buildiin)
-3. Kloonaa repo ja asenna riippuvuudet:
+- [Node.js](https://nodejs.org/) (LTS)
+- Puhelimessa **Expo Go** -sovellus (Android/iOS)
 
-```bash
-git clone https://github.com/YOUR_USER/urakkalaskuri.git
-cd urakkalaskuri
-flutter pub get
-flutter test
-flutter run
+Ei tarvita Visual Studioa eikä Android Studioa kehitykseen.
+
+### Käynnistys
+
+```powershell
+cd C:\Users\eemil\.cursor\projects\Urakkalaskuri
+npm install
+npm start
 ```
 
-### Pilvessä (Cursor Cloud Agent)
+Skannaa terminaalissa näkyvä QR-koodi **Expo Go** -sovelluksella.
 
-Projekti on suunniteltu pilvikehitykseen:
+### Testit
 
-- Kaikki lähdekoodi versionhallinnassa GitHubissa
-- `flutter pub get` + `flutter test` toimivat ilman fyysistä laitetta
-- APK-build vaatii Android SDK:n (CI tai paikallinen build)
-
-**Cursor Cloud Agent -käyttö:**
-
-1. Avaa repo Cursorissa (Clone from GitHub)
-2. Käynnistä Cloud Agent samassa repossa
-3. Agent voi jatkaa kehitystä, ajaa testejä ja tehdä committeja
-
-## APK-build
-
-```bash
-flutter build apk --release
+```powershell
+npm test
 ```
 
-Tuotos: `build/app/outputs/flutter-apk/app-release.apk`
+## APK-build (tuotanto)
+
+Asenna EAS CLI ja kirjaudu Expo-tilille:
+
+```powershell
+npm install -g eas-cli
+eas login
+eas build:configure
+eas build --platform android --profile preview
+```
+
+Build tapahtuu pilvessä – paikallista Android SDK:ta ei tarvita.
 
 ## Projektirakenne
 
 ```
-lib/
+app/              # Expo Router -näytöt
+src/
   core/           # Laskenta, tietokanta, mallit
-  features/       # Näytöt (home, wizard, products, history, settings)
-  theme/          # ColoRajaton-teema
-  app/            # Reititys
+  components/     # UI-komponentit
+  context/        # Sovelluksen tila
+  theme/          # ColoRajaton-värit
 docs/             # v1-suunnitelma ja brändi
-test/             # Yksikkötestit
+__tests__/        # Yksikkötestit
 ```
+
+## GitHub
+
+https://github.com/sahkoposti/urakkalaskuri
 
 ## Suunnitelma
 
