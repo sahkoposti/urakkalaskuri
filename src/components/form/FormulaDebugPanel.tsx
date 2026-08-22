@@ -13,6 +13,7 @@ type FormulaDebugPanelProps = {
   formula?: string;
   products?: Product[];
   settings?: AppSettings;
+  defaults?: Record<string, number>;
   showIntermediateSteps?: boolean;
 };
 
@@ -22,11 +23,12 @@ export function FormulaDebugPanel({
   formula,
   products,
   settings,
+  defaults,
   showIntermediateSteps = true,
 }: FormulaDebugPanelProps) {
   const trace = useMemo(
-    () => runDebugPipeline(form, { focusFieldKey, products, settings }),
-    [form, focusFieldKey, products, settings],
+    () => runDebugPipeline(form, { focusFieldKey, products, settings, defaults }),
+    [form, focusFieldKey, products, settings, defaults],
   );
 
   const focusedStep = trace.steps.find((step) => step.fieldKey === focusFieldKey);

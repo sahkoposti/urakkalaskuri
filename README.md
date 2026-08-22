@@ -70,4 +70,4 @@ https://github.com/sahkoposti/urakkalaskuri
 
 ## Suunnitelma
 
-Katso [docs/v1-suunnitelma.md](docs/v1-suunnitelma.md).
+Katso [docs/v1-suunnitelma.md](docs/v1-suunnitelma.md) ja [docs/v1.1-suunnitelma.md](docs/v1.1-suunnitelma.md). Lomake-editorin ohje: [docs/lomakeohje.md](docs/lomakeohje.md).

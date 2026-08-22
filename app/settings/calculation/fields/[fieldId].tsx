@@ -43,7 +43,7 @@ function numberInput(value?: number): string {
 
 export default function FormFieldEditorScreen() {
   const { fieldId } = useLocalSearchParams<{ fieldId: string }>();
-  const { ready, formDefinition, formDebug, products, settings, refreshFormSettings } = useApp();
+  const { ready, formDefinition, formDebug, products, settings, formDefaults, refreshFormSettings } = useApp();
   const { showAlert } = useThemedAlert();
   const [field, setField] = useState<FormField | null>(null);
   const [draftForm, setDraftForm] = useState(formDefinition);
@@ -217,6 +217,7 @@ export default function FormFieldEditorScreen() {
             formula={field.formula}
             products={products}
             settings={settings}
+            defaults={formDefaults}
             showIntermediateSteps={formDebug.showIntermediateSteps}
           />
         ) : null}

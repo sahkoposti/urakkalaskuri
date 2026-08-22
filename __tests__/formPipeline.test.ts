@@ -13,7 +13,9 @@ import {
   validateFieldKey,
 } from '../src/core/form/formEditor';
 import { runDebugPipeline, runPipeline } from '../src/core/form/pipeline';
-import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
+import { createDefaultFormDefinition, createSurfaceExampleForm } from '../src/core/form/defaultFormDefinition';
+import { createCladdingFormDefinition } from '../src/core/form/claddingFormDefinition';
+import { defaultFormDefaults } from '../src/core/form/formDefaults';
 import type { FormDefinition, FormField } from '../src/core/form/types';
 import { defaultSettings, type Product } from '../src/core/models/types';
 
@@ -54,7 +56,7 @@ describe('evaluateFormula', () => {
 
 describe('runDebugPipeline', () => {
   test('combines per-field debug examples through full chain', () => {
-    const form = createDefaultFormDefinition();
+    const form = createSurfaceExampleForm();
     const trace = runDebugPipeline(form, 'laskenta_seinäpinta_ala_m2');
 
     expect(trace.errors).toHaveLength(0);
@@ -63,7 +65,7 @@ describe('runDebugPipeline', () => {
   });
 
   test('reports missing debug example for required field', () => {
-    const form = createDefaultFormDefinition();
+    const form = createSurfaceExampleForm();
     form.fields = form.fields.map((field) =>
       field.key === 'kiinteä_seinäpinta_ala_m2'
         ? { ...field, debugExampleValue: undefined }
@@ -272,7 +274,8 @@ describe('runPipeline', () => {
     });
 
     expect(result.errors.some((error) => error.includes('Kautettava maali'))).toBe(true);
-    expect(result.errors.some((error) => error.includes('kautettavamaali.consumption'))).toBe(true);
+    expect(result.materialLines).toHaveLength(0);
+    expect(result.steps.some((step) => step.fieldKey === 'materiaali_maara' && step.error)).toBe(true);
   });
 
   test('orders computed fields by dependency, not list order', () => {
@@ -382,19 +385,19 @@ describe('formEditor', () => {
 
   test('adds unique field keys and reorders fields on a page', () => {
     let form = createDefaultFormDefinition();
-    const first = createFieldDraft('nf1', form, 'page_surfaces');
+    const first = createFieldDraft('nf1', form, 'page_duration');
     form = addField(form, first);
-    const second = createFieldDraft('nf2', form, 'page_surfaces');
+    const second = createFieldDraft('nf2', form, 'page_duration');
     expect(second.key).not.toBe(first.key);
     form = addField(form, second);
 
     const before = form.fields
-      .filter((field) => field.pageId === 'page_surfaces')
+      .filter((field) => field.pageId === 'page_duration')
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((field) => field.id);
     form = moveField(form, second.id, -1);
     const after = form.fields
-      .filter((field) => field.pageId === 'page_surfaces')
+      .filter((field) => field.pageId === 'page_duration')
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((field) => field.id);
     expect(after.indexOf(second.id)).toBeLessThan(before.indexOf(second.id));
@@ -405,9 +408,86 @@ describe('formEditor', () => {
 
   test('validates field keys', () => {
     const form = createDefaultFormDefinition();
-    expect(validateFieldKey(form, 'kiinteä_seinäpinta_ala_m2')).toBeTruthy();
+    expect(validateFieldKey(form, 'työryhmän_kesto_pv')).toBeTruthy();
     expect(validateFieldKey(form, 'Uusi Key')).toBeTruthy();
     expect(validateFieldKey(form, 'uusi_kentta')).toBeNull();
-    expect(uniqueFieldKey(form, 'Kiinteä seinäpinta-ala')).not.toBe('kiinteä_seinäpinta_ala_m2');
+    expect(uniqueFieldKey(form, 'Kesto')).not.toBe('työryhmän_kesto_pv');
+  });
+});
+
+describe('default and cladding forms', () => {
+  test('Peruslaskenta has customer, duration and materials pages', () => {
+    const form = createDefaultFormDefinition();
+    expect(form.pages.map((page) => page.id)).toEqual([
+      'page_customer',
+      'page_duration',
+      'page_materials',
+    ]);
+    const result = runPipeline({
+      formDefinition: form,
+      fieldValues: { työryhmän_kesto_pv: 5 },
+      settings: defaultSettings,
+      products: [],
+    });
+    expect(result.errors).toHaveLength(0);
+    expect(result.groupDurationHours).toBe(40);
+    expect(result.calculation?.contractPriceVat0).toBeCloseTo(2400);
+  });
+
+  test('Ulkoverhous computes PDF wall area and eaves from defaults', () => {
+    const form = createCladdingFormDefinition();
+    const trace = runDebugPipeline(form, {
+      defaults: defaultFormDefaults,
+      products: [paint],
+    });
+
+    expect(trace.context.laskenta_seinäpinta_ala_m2).toBeCloseTo(117.3, 2);
+    expect(trace.context.räystäspinta_ala).toBeCloseTo(10, 2);
+    expect(trace.context.aukko_laskettu_m2).toBeCloseTo(3 * 1.2 * 1.4 + 2 * 0.9 * 2.1, 2);
+  });
+
+  test('Ulkoverhous paint formula adds a material line when product is selected', () => {
+    const form = createCladdingFormDefinition();
+    const values = {
+      kiinteä_seinäpinta_ala_m2: 120,
+      aukkovähennykset: 18,
+      laudoitustyyppi: 'paneeli',
+      kautettavamaali: 'paint-1',
+      työryhmän_kesto_pv: 5,
+    };
+    const result = runPipeline({
+      formDefinition: form,
+      fieldValues: values,
+      settings: defaultSettings,
+      defaults: defaultFormDefaults,
+      products: [paint],
+    });
+
+    expect(result.context.materiaali_maara).toBeCloseTo(117.3 / 8, 2);
+    expect(result.materialLines.some((line) => line.productId === 'paint-1')).toBe(true);
+  });
+
+  test('merges extra material lines into pipeline totals', () => {
+    const form = createDefaultFormDefinition();
+    const result = runPipeline({
+      formDefinition: form,
+      fieldValues: { työryhmän_kesto_pv: 5 },
+      settings: defaultSettings,
+      products: [paint],
+      extraMaterialLines: [
+        {
+          id: 'extra_1',
+          productId: paint.id,
+          productName: paint.name,
+          unit: paint.unit,
+          unitPriceVat0: paint.unitPriceVat0,
+          quantity: 2,
+          lineTotalVat0: 24,
+        },
+      ],
+    });
+
+    expect(result.materialsVat0).toBeCloseTo(24);
+    expect(result.materialLines).toHaveLength(1);
   });
 });

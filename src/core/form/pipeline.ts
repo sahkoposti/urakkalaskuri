@@ -50,6 +50,8 @@ export interface PipelineInput {
   settings: AppSettings;
   defaults?: Record<string, number>;
   products: Product[];
+  extraMaterialLines?: CalculationLine[];
+  reverseVat?: boolean;
 }
 
 export interface SummaryFieldValue {
@@ -227,7 +229,7 @@ function evaluateForm(input: PipelineInput): Omit<PipelineResult, 'calculation'>
   const steps: DebugStep[] = [];
   const errors: string[] = [];
   const selectedProducts: Record<string, Product> = {};
-  const materialLines: CalculationLine[] = [];
+  const materialLines: CalculationLine[] = [...(input.extraMaterialLines ?? [])];
   let durationFactor = 1;
   let durationAddHours = 0;
   let materialFactor = 1;
@@ -359,7 +361,7 @@ function evaluateForm(input: PipelineInput): Omit<PipelineResult, 'calculation'>
 
   for (const field of computedFields) {
     if (!field.formula) {
-      errors.push(`${field.label}: kaava puuttuu`);
+      if (field.required) errors.push(`${field.label}: kaava puuttuu`);
       continue;
     }
     try {
@@ -376,7 +378,9 @@ function evaluateForm(input: PipelineInput): Omit<PipelineResult, 'calculation'>
       });
     } catch (error) {
       const message = error instanceof FormulaEvaluationError ? error.message : 'Kaavavirhe';
-      errors.push(`${field.label}: ${message}`);
+      if (field.required) {
+        errors.push(`${field.label}: ${message}`);
+      }
       steps.push({
         fieldKey: field.key,
         label: field.label,
@@ -393,12 +397,7 @@ function evaluateForm(input: PipelineInput): Omit<PipelineResult, 'calculation'>
       if (effect.type === 'add_material') {
         const product = resolveProduct(effect.productRef, selectedProducts, products);
         const quantity = resolveContextNumber(context, effect.quantityRef ?? field.key, effect.amount);
-        if (!product) {
-          errors.push(`${field.label}: materiaalirivin tuote puuttuu`);
-          continue;
-        }
-        if (quantity === null) {
-          errors.push(`${field.label}: materiaalirivin määrä puuttuu`);
+        if (!product || quantity === null) {
           continue;
         }
         materialLines.push(makeMaterialLine(product, quantity, field.key));
@@ -500,6 +499,7 @@ export function runPipeline(input: PipelineInput): PipelineResult {
       commissionPercent: input.settings.defaultCommissionPercent,
       vatPercent: input.settings.vatPercent,
       workdayHours: input.settings.workdayHours,
+      reverseVat: input.reverseVat,
     });
     return { ...evaluated, calculation };
   } catch (error) {

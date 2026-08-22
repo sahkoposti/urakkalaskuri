@@ -21,6 +21,7 @@ import {
   reverseVatLabel,
 } from '@/src/core/utils/priceDisplay';
 import { formatCurrency, formatDecimal, formatPercent } from '@/src/core/utils/formatters';
+import { formatSummaryDisplay, groupSummaryFields } from '@/src/core/form/fieldValues';
 import { db } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { AppColors } from '@/src/theme/colors';
@@ -109,6 +110,23 @@ export default function HistoryDetailScreen() {
             onCopy={notifyCopied}
           />
         </AppCard>
+
+        {record.formSnapshot?.summaryFields?.length ? (
+          groupSummaryFields(record.formSnapshot.summaryFields).map((group) => (
+            <AppCard key={group.title || group.fields[0]?.key} style={styles.card}>
+              {group.title ? <Text style={styles.groupTitle}>{group.title}</Text> : null}
+              {group.fields.map((field) => (
+                <ResultRow
+                  key={field.key}
+                  label={field.label}
+                  value={formatSummaryDisplay(field.value, field.unit)}
+                  copyValue={formatSummaryDisplay(field.value)}
+                  onCopy={notifyCopied}
+                />
+              ))}
+            </AppCard>
+          ))
+        ) : null}
 
         <AppCard style={styles.card}>
           <ResultRow
@@ -288,6 +306,12 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: AppColors.border,
     marginVertical: 8,
+  },
+  groupTitle: {
+    fontFamily: 'IBMPlexSans_700Bold',
+    color: AppColors.primary,
+    fontSize: 15,
+    marginBottom: 8,
   },
   lineCard: {
     marginBottom: 0,

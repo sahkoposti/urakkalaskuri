@@ -20,7 +20,10 @@ import type {
 import { defaultSettings } from '@/src/core/models/types';
 import type { FormDebugSettings, FormDefinition } from '@/src/core/form/types';
 import { createDefaultFormDefinition } from '@/src/core/form/defaultFormDefinition';
+import { defaultFormDefaults } from '@/src/core/form/formDefaults';
 import { defaultFormDebugSettings } from '@/src/core/form/types';
+import type { SummaryFieldValue } from '@/src/core/form/pipeline';
+import type { CalculationLine, FormSnapshot } from '@/src/core/models/types';
 
 type WizardSession = {
   draft: WizardDraft;
@@ -28,6 +31,9 @@ type WizardSession = {
   settings: AppSettings;
   editCalculationId?: string;
   originalCreatedAt?: Date;
+  summaryFields: SummaryFieldValue[];
+  materialLines: CalculationLine[];
+  formSnapshot: FormSnapshot;
 };
 
 type AppContextValue = {
@@ -39,6 +45,7 @@ type AppContextValue = {
   wizardDraft: PersistedWizardDraft | null;
   formDefinition: FormDefinition;
   formDebug: FormDebugSettings;
+  formDefaults: Record<string, number>;
   refreshSettings: () => Promise<void>;
   refreshProducts: () => Promise<void>;
   refreshCalculations: () => Promise<void>;
@@ -58,10 +65,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [wizardDraft, setWizardDraft] = useState<PersistedWizardDraft | null>(null);
   const [formDefinition, setFormDefinition] = useState<FormDefinition>(createDefaultFormDefinition());
   const [formDebug, setFormDebug] = useState<FormDebugSettings>(defaultFormDebugSettings);
+  const [formDefaults, setFormDefaults] = useState<Record<string, number>>({ ...defaultFormDefaults });
 
   const refreshFormSettings = useCallback(async () => {
     setFormDefinition(await db.getFormDefinition());
     setFormDebug(await db.getFormDebugSettings());
+    setFormDefaults(await db.getFormDefaults());
   }, []);
 
   const refreshSettings = useCallback(async () => {
@@ -105,6 +114,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       wizardDraft,
       formDefinition,
       formDebug,
+      formDefaults,
       refreshSettings,
       refreshProducts,
       refreshCalculations,
@@ -121,6 +131,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       wizardDraft,
       formDefinition,
       formDebug,
+      formDefaults,
       refreshSettings,
       refreshProducts,
       refreshCalculations,

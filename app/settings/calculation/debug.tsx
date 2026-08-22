@@ -10,7 +10,7 @@ import { db, useApp } from '@/src/context/AppContext';
 import { AppColors } from '@/src/theme/colors';
 
 export default function FormDebugSettingsScreen() {
-  const { ready, formDebug, formDefinition, products, settings, refreshFormSettings } = useApp();
+  const { ready, formDebug, formDefinition, products, settings, formDefaults, refreshFormSettings } = useApp();
   const [debug, setDebug] = useState<FormDebugSettings>(formDebug);
 
   useEffect(() => {
@@ -19,8 +19,8 @@ export default function FormDebugSettingsScreen() {
 
   const preview = useMemo(() => {
     if (!debug.enabled) return null;
-    return runDebugPipeline(formDefinition, { products, settings });
-  }, [debug.enabled, formDefinition, products, settings]);
+    return runDebugPipeline(formDefinition, { products, settings, defaults: formDefaults });
+  }, [debug.enabled, formDefinition, products, settings, formDefaults]);
 
   if (!ready) return <ScreenLoading />;
 

@@ -4,6 +4,7 @@ import type {
   AppSettings,
   CalculationLine,
   CalculationRecord,
+  FormSnapshot,
   PersistedWizardDraft,
   Product,
   ProductAttributes,
@@ -12,6 +13,7 @@ import type {
 } from '../models/types';
 import { defaultSettings, defaultThemeSettings } from '../models/types';
 import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
+import { defaultFormDefaults } from '../form/formDefaults';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
 import { defaultFormDebugSettings } from '../form/types';
 import { normalizeWizardStepOrder } from '../wizard/wizardSteps';
@@ -38,6 +40,10 @@ async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
   const calculationColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(calculations)');
   if (!calculationColumns.some((column) => column.name === 'vat_percent')) {
     await db.execAsync('ALTER TABLE calculations ADD COLUMN vat_percent REAL');
+  }
+
+  if (!calculationColumns.some((column) => column.name === 'form_snapshot')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN form_snapshot TEXT');
   }
 
   const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
@@ -76,7 +82,8 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
       vat_amount REAL NOT NULL,
       total_price_vat REAL NOT NULL,
       work_duration_days REAL NOT NULL,
-      created_at INTEGER NOT NULL
+      created_at INTEGER NOT NULL,
+      form_snapshot TEXT
     );
     CREATE TABLE IF NOT EXISTS calculation_lines (
       id TEXT PRIMARY KEY NOT NULL,
@@ -193,6 +200,15 @@ function productFromRow(row: Record<string, unknown>): Product {
   };
 }
 
+function parseFormSnapshot(raw: unknown): FormSnapshot | null {
+  if (!raw || typeof raw !== 'string') return null;
+  try {
+    return JSON.parse(raw) as FormSnapshot;
+  } catch {
+    return null;
+  }
+}
+
 function calculationFromRow(
   row: Record<string, unknown>,
   lines: CalculationLine[],
@@ -217,6 +233,7 @@ function calculationFromRow(
     workDurationDays: row.work_duration_days as number,
     createdAt: new Date(row.created_at as number),
     lines,
+    formSnapshot: parseFormSnapshot(row.form_snapshot),
   };
 }
 
@@ -361,8 +378,8 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
         id, project_name, customer, group_duration_h, crew_size, hourly_rate,
         margin_percent, commission_percent, contract_price_vat0, materials_vat0,
         margin_eur, commission_eur, total_price_vat0, vat_percent, vat_amount, total_price_vat,
-        work_duration_days, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        work_duration_days, created_at, form_snapshot
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       record.id,
       record.projectName,
       record.customer ?? null,
@@ -381,6 +398,7 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.totalPriceVat,
       record.workDurationDays,
       record.createdAt.getTime(),
+      record.formSnapshot ? JSON.stringify(record.formSnapshot) : null,
     );
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', record.id);
     for (const line of record.lines) {
@@ -484,5 +502,28 @@ export async function saveFormDebugSettings(debug: FormDebugSettings): Promise<v
     'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
     'form_debug',
     JSON.stringify(debug),
+  );
+}
+
+export async function getFormDefaults(): Promise<Record<string, number>> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    'form_defaults',
+  );
+  if (!row) return { ...defaultFormDefaults };
+  try {
+    return { ...defaultFormDefaults, ...(JSON.parse(row.value) as Record<string, number>) };
+  } catch {
+    return { ...defaultFormDefaults };
+  }
+}
+
+export async function saveFormDefaults(defaults: Record<string, number>): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    'form_defaults',
+    JSON.stringify(defaults),
   );
 }

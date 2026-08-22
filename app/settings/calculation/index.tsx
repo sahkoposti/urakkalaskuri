@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 
 import { OutlinedButton, SectionTitle } from '@/src/components/common';
 import { SettingsNavCard } from '@/src/components/SettingsNavCard';
+import { createCladdingFormDefinition } from '@/src/core/form/claddingFormDefinition';
 import { createDefaultFormDefinition } from '@/src/core/form/defaultFormDefinition';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
@@ -31,6 +32,26 @@ export default function CalculationSettingsScreen() {
     );
   }
 
+  function handleCladding() {
+    showAlert(
+      'Asenna Ulkoverhous-pohja',
+      'Nykyinen lomake korvataan PDF:n mukaisella ulkoverhouspohjalla (pinta-alat, räystäs, maali, työvaiheet).',
+      [
+        { text: 'Peruuta', style: 'cancel' },
+        {
+          text: 'Asenna',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              await db.saveFormDefinition(createCladdingFormDefinition());
+              await refreshFormSettings();
+            })();
+          },
+        },
+      ],
+    );
+  }
+
   return (
     <>
       <Stack.Screen options={{ title: 'Lomakeasetukset' }} />
@@ -47,15 +68,21 @@ export default function CalculationSettingsScreen() {
           onPress={() => router.push('/settings/calculation/fields' as Href)}
         />
         <SettingsNavCard
-          title="Järjestys"
-          subtitle="Laskennan vaiheiden järjestys (v1-wizard)"
-          onPress={() => router.push('/settings/calculation/order')}
+          title="Oletusarvot"
+          subtitle="Ikkuna, ovi, räystäs – kaavojen defaults.*"
+          onPress={() => router.push('/settings/calculation/defaults' as Href)}
         />
         <SettingsNavCard
           title="Debug"
           subtitle="Live-laskenta kaavojen kalibrointiin"
           onPress={() => router.push('/settings/calculation/debug')}
         />
+        <SettingsNavCard
+          title="Lomakeohje"
+          subtitle="Lyhyt ohje sivuihin, kaavoihin ja tuotteisiin"
+          onPress={() => router.push('/settings/calculation/help' as Href)}
+        />
+        <OutlinedButton title="Asenna Ulkoverhous-pohja" onPress={handleCladding} />
         <OutlinedButton title="Palauta oletuslomake" onPress={handleReset} />
       </ScrollView>
     </>
@@ -66,5 +93,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 40,
+    gap: 4,
   },
 });
