@@ -1,10 +1,17 @@
 import type {
+  FieldValue,
+  FormDefinition,
+} from '@/src/core/form/types';
+import { DURATION_DAYS_KEY } from '@/src/core/form/types';
+import { hasFieldContent } from '@/src/core/form/fieldValues';
+import type {
   PersistedWizardDraft,
   Product,
   WizardDraft,
   WizardLineDraft,
 } from '@/src/core/models/types';
 import { emptyCustomerInfo } from '@/src/core/models/types';
+import { parseNumber } from '@/src/core/utils/formatters';
 
 export type WizardFormState = {
   step: number;
@@ -17,6 +24,7 @@ export type WizardFormState = {
   customerNotes: string;
   duration: string;
   lines: WizardLineDraft[];
+  fieldValues: Record<string, FieldValue>;
 };
 
 export function hasWizardDraftContent(state: WizardFormState): boolean {
@@ -28,11 +36,15 @@ export function hasWizardDraftContent(state: WizardFormState): boolean {
     state.customerAddress.trim().length > 0 ||
     state.customerNotes.trim().length > 0 ||
     state.duration.trim().length > 0 ||
-    state.lines.length > 0
+    state.lines.length > 0 ||
+    hasFieldContent(state.fieldValues)
   );
 }
 
-export function buildPersistedWizardDraft(state: WizardFormState): PersistedWizardDraft {
+export function buildPersistedWizardDraft(
+  state: WizardFormState,
+  form?: FormDefinition,
+): PersistedWizardDraft {
   return {
     step: state.step,
     customerName: state.customerName,
@@ -47,6 +59,9 @@ export function buildPersistedWizardDraft(state: WizardFormState): PersistedWiza
       productId: line.product.id,
       quantity: line.quantity,
     })),
+    fieldValues: state.fieldValues as Record<string, unknown>,
+    formId: form?.id,
+    formUpdatedAt: form?.updatedAt,
     updatedAt: Date.now(),
   };
 }
@@ -62,6 +77,15 @@ export function hydrateWizardLines(
       return { product, quantity: line.quantity };
     })
     .filter((line): line is WizardLineDraft => line !== null);
+}
+
+function fieldValuesFromDraft(draft: PersistedWizardDraft): Record<string, FieldValue> {
+  const values = { ...(draft.fieldValues as Record<string, FieldValue> | undefined) };
+  if (values[DURATION_DAYS_KEY] == null && draft.duration.trim()) {
+    const parsed = parseNumber(draft.duration);
+    if (parsed !== null) values[DURATION_DAYS_KEY] = parsed;
+  }
+  return values;
 }
 
 export function persistedDraftToFormState(
@@ -80,6 +104,7 @@ export function persistedDraftToFormState(
     customerNotes: draft.customerNotes,
     duration: draft.duration,
     lines,
+    fieldValues: fieldValuesFromDraft(draft),
   };
   const wizardDraft: WizardDraft = {
     customer: {

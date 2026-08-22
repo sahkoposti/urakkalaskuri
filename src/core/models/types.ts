@@ -50,12 +50,21 @@ export const defaultSettings: AppSettings = {
   theme: { ...defaultThemeSettings },
 };
 
+export interface ProductAttributes {
+  consumption?: number;
+  purchasePrice?: number;
+  salePrice?: number;
+  workFactor?: number;
+  materialFactor?: number;
+}
+
 export interface Product {
   id: string;
   name: string;
   unit: string;
   unitPriceVat0: number;
   description?: string;
+  attributes?: ProductAttributes;
   createdAt: Date;
 }
 
@@ -89,6 +98,23 @@ export interface CalculationRecord {
   workDurationDays: number;
   createdAt: Date;
   lines: CalculationLine[];
+  formSnapshot?: FormSnapshot | null;
+}
+
+export interface FormSnapshot {
+  formId: string;
+  formName: string;
+  formVersion: number;
+  formUpdatedAt: number;
+  fieldValues: Record<string, unknown>;
+  extraLines: PersistedWizardLineDraft[];
+  summaryFields: {
+    key: string;
+    label: string;
+    value: string | number | boolean;
+    unit?: string;
+    pageTitle: string;
+  }[];
 }
 
 export interface CustomerInfo {
@@ -176,5 +202,8 @@ export interface PersistedWizardDraft {
   customerNotes: string;
   duration: string;
   lines: PersistedWizardLineDraft[];
+  fieldValues?: Record<string, unknown>;
+  formId?: string;
+  formUpdatedAt?: number;
   updatedAt: number;
 }

@@ -40,7 +40,8 @@ export default function WizardOrderSettingsScreen() {
       <Stack.Screen options={{ title: 'Järjestys' }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.helpText}>
-          Järjestä laskennan vaiheet haluamaasi järjestykseen. Muutos vaikuttaa uusiin laskentoihin.
+          Sivujen järjestys uudessa laskennassa tulee Lomakepohjasta. Tämä näkymä säilyttää v1-järjestyksen
+          vanhoja asetuksia varten.
         </Text>
         {order.map((stepId, index) => (
           <View key={stepId} style={styles.row}>

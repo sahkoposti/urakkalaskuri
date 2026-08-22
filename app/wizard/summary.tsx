@@ -8,7 +8,7 @@ import {
   ScreenMessage,
   SectionTitle,
 } from '@/src/components/common';
-import type { CalculationLine, CalculationRecord } from '@/src/core/models/types';
+import type { CalculationRecord } from '@/src/core/models/types';
 import { serializeCustomerDetails } from '@/src/core/models/types';
 import {
   applyVat,
@@ -18,6 +18,7 @@ import {
   reverseVatLabel,
 } from '@/src/core/utils/priceDisplay';
 import { formatCurrency, formatDecimal, formatPercent } from '@/src/core/utils/formatters';
+import { formatSummaryDisplay, groupSummaryFields } from '@/src/core/form/fieldValues';
 import { createId } from '@/src/core/utils/id';
 import { db, useApp } from '@/src/context/AppContext';
 import { AppColors } from '@/src/theme/colors';
@@ -29,11 +30,21 @@ export default function SummaryScreen() {
     return <ScreenMessage message="Ei laskentaa" />;
   }
 
-  const { draft, result, settings, editCalculationId, originalCreatedAt } = wizardSession;
+  const {
+    draft,
+    result,
+    settings,
+    editCalculationId,
+    originalCreatedAt,
+    summaryFields,
+    materialLines,
+    formSnapshot,
+  } = wizardSession;
   const customer = draft.customer;
   const privateCustomer = isPrivateCustomer(customer);
   const vatRate = settings.vatPercent;
   const totalLabel = privateCustomer ? 'Kokonaishinta (alv)' : 'Kokonaishinta (alv0)';
+  const summaryGroups = groupSummaryFields(summaryFields);
 
   async function handleSave() {
     const record: CalculationRecord = {
@@ -55,17 +66,8 @@ export default function SummaryScreen() {
       totalPriceVat: result.totalPriceVat,
       workDurationDays: result.workDurationDays,
       createdAt: originalCreatedAt ?? new Date(),
-      lines: draft.lines.map(
-        (line): CalculationLine => ({
-          id: createId(),
-          productId: line.product.id,
-          productName: line.product.name,
-          unit: line.product.unit,
-          unitPriceVat0: line.product.unitPriceVat0,
-          quantity: line.quantity,
-          lineTotalVat0: line.quantity * line.product.unitPriceVat0,
-        }),
-      ),
+      lines: materialLines.map((line) => ({ ...line, id: line.id || createId() })),
+      formSnapshot,
     };
 
     await db.saveCalculation(record);
@@ -85,6 +87,36 @@ export default function SummaryScreen() {
           <ResultRow label="Käänteinen ALV" value={reverseVatLabel(customer)} />
         ) : null}
       </AppCard>
+
+      {summaryGroups.map((group) => (
+        <AppCard key={group.title || group.fields[0]?.key} style={styles.card}>
+          {group.title ? <Text style={styles.groupTitle}>{group.title}</Text> : null}
+          {group.fields.map((field) => (
+            <ResultRow
+              key={field.key}
+              label={field.label}
+              value={formatSummaryDisplay(field.value, field.unit)}
+            />
+          ))}
+        </AppCard>
+      ))}
+
+      {materialLines.length > 0 ? (
+        <AppCard style={styles.card}>
+          <Text style={styles.groupTitle}>Materiaalirivit</Text>
+          {materialLines.map((line) => (
+            <ResultRow
+              key={line.id}
+              label={`${line.productName} × ${formatDecimal(line.quantity)} ${line.unit}`}
+              value={formatDisplayPrice(
+                line.lineTotalVat0,
+                applyVat(line.lineTotalVat0, vatRate),
+                customer,
+              )}
+            />
+          ))}
+        </AppCard>
+      ) : null}
 
       <AppCard style={styles.card}>
         <Text style={styles.formula}>
@@ -225,6 +257,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'IBMPlexSans_400Regular',
     marginBottom: 12,
+  },
+  groupTitle: {
+    fontFamily: 'IBMPlexSans_700Bold',
+    color: AppColors.primary,
+    fontSize: 15,
+    marginBottom: 8,
   },
   divider: {
     height: 1,

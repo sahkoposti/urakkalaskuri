@@ -4,13 +4,16 @@ import type {
   AppSettings,
   CalculationLine,
   CalculationRecord,
+  FormSnapshot,
   PersistedWizardDraft,
   Product,
+  ProductAttributes,
   ThemeSettings,
   WizardStepId,
 } from '../models/types';
 import { defaultSettings, defaultThemeSettings } from '../models/types';
 import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
+import { defaultFormDefaults } from '../form/formDefaults';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
 import { defaultFormDebugSettings } from '../form/types';
 import { normalizeWizardStepOrder } from '../wizard/wizardSteps';
@@ -34,9 +37,18 @@ function inferVatPercent(row: Record<string, unknown>): number {
 }
 
 async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
-  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(calculations)');
-  if (!columns.some((column) => column.name === 'vat_percent')) {
+  const calculationColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(calculations)');
+  if (!calculationColumns.some((column) => column.name === 'vat_percent')) {
     await db.execAsync('ALTER TABLE calculations ADD COLUMN vat_percent REAL');
+  }
+
+  if (!calculationColumns.some((column) => column.name === 'form_snapshot')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN form_snapshot TEXT');
+  }
+
+  const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
+  if (!productColumns.some((column) => column.name === 'attributes')) {
+    await db.execAsync('ALTER TABLE products ADD COLUMN attributes TEXT');
   }
 }
 
@@ -50,6 +62,7 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
       unit TEXT NOT NULL,
       unit_price_vat0 REAL NOT NULL,
       description TEXT,
+      attributes TEXT,
       created_at INTEGER NOT NULL
     );
     CREATE TABLE IF NOT EXISTS calculations (
@@ -69,7 +82,8 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
       vat_amount REAL NOT NULL,
       total_price_vat REAL NOT NULL,
       work_duration_days REAL NOT NULL,
-      created_at INTEGER NOT NULL
+      created_at INTEGER NOT NULL,
+      form_snapshot TEXT
     );
     CREATE TABLE IF NOT EXISTS calculation_lines (
       id TEXT PRIMARY KEY NOT NULL,
@@ -147,6 +161,33 @@ function parseThemeSettings(map: Record<string, string>): ThemeSettings {
   };
 }
 
+function parseProductAttributes(raw: unknown): ProductAttributes | undefined {
+  if (!raw || typeof raw !== 'string') return undefined;
+  try {
+    const parsed = JSON.parse(raw) as ProductAttributes;
+    const cleaned: ProductAttributes = {};
+    if (Number.isFinite(parsed.consumption)) cleaned.consumption = parsed.consumption;
+    if (Number.isFinite(parsed.purchasePrice)) cleaned.purchasePrice = parsed.purchasePrice;
+    if (Number.isFinite(parsed.salePrice)) cleaned.salePrice = parsed.salePrice;
+    if (Number.isFinite(parsed.workFactor)) cleaned.workFactor = parsed.workFactor;
+    if (Number.isFinite(parsed.materialFactor)) cleaned.materialFactor = parsed.materialFactor;
+    return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function serializeProductAttributes(attributes?: ProductAttributes): string | null {
+  if (!attributes) return null;
+  const cleaned: ProductAttributes = {};
+  if (Number.isFinite(attributes.consumption)) cleaned.consumption = attributes.consumption;
+  if (Number.isFinite(attributes.purchasePrice)) cleaned.purchasePrice = attributes.purchasePrice;
+  if (Number.isFinite(attributes.salePrice)) cleaned.salePrice = attributes.salePrice;
+  if (Number.isFinite(attributes.workFactor)) cleaned.workFactor = attributes.workFactor;
+  if (Number.isFinite(attributes.materialFactor)) cleaned.materialFactor = attributes.materialFactor;
+  return Object.keys(cleaned).length > 0 ? JSON.stringify(cleaned) : null;
+}
+
 function productFromRow(row: Record<string, unknown>): Product {
   return {
     id: row.id as string,
@@ -154,8 +195,18 @@ function productFromRow(row: Record<string, unknown>): Product {
     unit: row.unit as string,
     unitPriceVat0: row.unit_price_vat0 as number,
     description: (row.description as string | null) ?? undefined,
+    attributes: parseProductAttributes(row.attributes),
     createdAt: new Date(row.created_at as number),
   };
+}
+
+function parseFormSnapshot(raw: unknown): FormSnapshot | null {
+  if (!raw || typeof raw !== 'string') return null;
+  try {
+    return JSON.parse(raw) as FormSnapshot;
+  } catch {
+    return null;
+  }
 }
 
 function calculationFromRow(
@@ -182,6 +233,7 @@ function calculationFromRow(
     workDurationDays: row.work_duration_days as number,
     createdAt: new Date(row.created_at as number),
     lines,
+    formSnapshot: parseFormSnapshot(row.form_snapshot),
   };
 }
 
@@ -253,13 +305,14 @@ export async function getProduct(id: string): Promise<Product | null> {
 export async function upsertProduct(product: Product): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    `INSERT OR REPLACE INTO products (id, name, unit, unit_price_vat0, description, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO products (id, name, unit, unit_price_vat0, description, attributes, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     product.id,
     product.name,
     product.unit,
     product.unitPriceVat0,
     product.description ?? null,
+    serializeProductAttributes(product.attributes),
     product.createdAt.getTime(),
   );
 }
@@ -325,8 +378,8 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
         id, project_name, customer, group_duration_h, crew_size, hourly_rate,
         margin_percent, commission_percent, contract_price_vat0, materials_vat0,
         margin_eur, commission_eur, total_price_vat0, vat_percent, vat_amount, total_price_vat,
-        work_duration_days, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        work_duration_days, created_at, form_snapshot
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       record.id,
       record.projectName,
       record.customer ?? null,
@@ -345,6 +398,7 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.totalPriceVat,
       record.workDurationDays,
       record.createdAt.getTime(),
+      record.formSnapshot ? JSON.stringify(record.formSnapshot) : null,
     );
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', record.id);
     for (const line of record.lines) {
@@ -448,5 +502,28 @@ export async function saveFormDebugSettings(debug: FormDebugSettings): Promise<v
     'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
     'form_debug',
     JSON.stringify(debug),
+  );
+}
+
+export async function getFormDefaults(): Promise<Record<string, number>> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    'form_defaults',
+  );
+  if (!row) return { ...defaultFormDefaults };
+  try {
+    return { ...defaultFormDefaults, ...(JSON.parse(row.value) as Record<string, number>) };
+  } catch {
+    return { ...defaultFormDefaults };
+  }
+}
+
+export async function saveFormDefaults(defaults: Record<string, number>): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    'form_defaults',
+    JSON.stringify(defaults),
   );
 }

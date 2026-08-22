@@ -20,12 +20,20 @@ import {
   SectionTitle,
 } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
-import {
-  CalculationValidationError,
-  runCalculation,
-} from '@/src/core/calculation/calculationEngine';
-import type { CustomerInfo, CustomerType, Product, WizardDraft, WizardLineDraft } from '@/src/core/models/types';
-import { emptyCustomerInfo, materialsTotal, WIZARD_STEP_META } from '@/src/core/models/types';
+import { FormFieldsPage } from '@/src/components/form/FormFieldsPage';
+import { runPipeline } from '@/src/core/form/pipeline';
+import { fieldValueToInput, pageFields, sortedFormPages, validatePageValues } from '@/src/core/form/fieldValues';
+import type { FieldValue } from '@/src/core/form/types';
+import { DURATION_DAYS_KEY } from '@/src/core/form/types';
+import type {
+  CalculationLine,
+  CustomerInfo,
+  CustomerType,
+  Product,
+  WizardDraft,
+  WizardLineDraft,
+} from '@/src/core/models/types';
+import { emptyCustomerInfo } from '@/src/core/models/types';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
 import { formatCurrency, formatDecimal, parseNumber } from '@/src/core/utils/formatters';
 import {
@@ -38,13 +46,33 @@ import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { AppColors } from '@/src/theme/colors';
 
+function extraLinesToCalculation(lines: WizardLineDraft[]): CalculationLine[] {
+  return lines.map((line, index) => ({
+    id: `extra_${index}_${line.product.id}`,
+    productId: line.product.id,
+    productName: line.product.name,
+    unit: line.product.unit,
+    unitPriceVat0: line.product.unitPriceVat0,
+    quantity: line.quantity,
+    lineTotalVat0: line.quantity * line.product.unitPriceVat0,
+  }));
+}
+
 export default function WizardScreen() {
   const navigation = useNavigation();
   const { editId } = useLocalSearchParams<{ editId?: string }>();
-  const { settings, products, wizardDraft, setWizardSession, refreshWizardDraft } = useApp();
+  const {
+    settings,
+    products,
+    wizardDraft,
+    setWizardSession,
+    refreshWizardDraft,
+    formDefinition,
+    formDefaults,
+  } = useApp();
   const { showAlert } = useThemedAlert();
-  const stepOrder = settings.wizardStepOrder;
-  const stepCount = stepOrder.length;
+  const pages = sortedFormPages(formDefinition);
+  const stepCount = Math.max(pages.length, 1);
   const [step, setStep] = useState(0);
   const [editCalculationId, setEditCalculationId] = useState<string | null>(null);
   const [originalCreatedAt, setOriginalCreatedAt] = useState<Date | null>(null);
@@ -64,10 +92,12 @@ export default function WizardScreen() {
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
   const [duration, setDuration] = useState('');
+  const [fieldValues, setFieldValues] = useState<Record<string, FieldValue>>({});
 
   const hydratedRef = useRef(false);
   const allowExitRef = useRef(false);
   const pendingExitRef = useRef<(() => void) | null>(null);
+  const staleWarnedRef = useRef(false);
   const [exitDialogVisible, setExitDialogVisible] = useState(false);
 
   function resetWizardForm() {
@@ -89,6 +119,7 @@ export default function WizardScreen() {
     setCustomerAddress('');
     setCustomerNotes('');
     setDuration('');
+    setFieldValues({});
   }
 
   useFocusEffect(
@@ -101,7 +132,11 @@ export default function WizardScreen() {
           const record = await db.getCalculation(editId);
           if (!active || !record) return;
           hydratedRef.current = true;
-          const { form, wizardDraft: restoredDraft } = calculationToFormState(record, products);
+          const { form, wizardDraft: restoredDraft, formStale } = calculationToFormState(
+            record,
+            products,
+            formDefinition,
+          );
           setEditCalculationId(record.id);
           setOriginalCreatedAt(record.createdAt);
           setStep(form.step);
@@ -113,12 +148,17 @@ export default function WizardScreen() {
           setCustomerAddress(form.customerAddress);
           setCustomerNotes(form.customerNotes);
           setDuration(form.duration);
+          setFieldValues(form.fieldValues);
           setDraft({
             ...restoredDraft,
             marginPercent: settings.defaultMarginPercent,
             commissionPercent: settings.defaultCommissionPercent,
             crewSize: settings.defaultCrewSize,
           });
+          if (formStale && !staleWarnedRef.current) {
+            staleWarnedRef.current = true;
+            showAlert('Lomake on päivittynyt', 'Laskelma avataan nykyisellä lomakepohjalla. Tarkista kentät.');
+          }
         })();
         return () => {
           active = false;
@@ -143,6 +183,7 @@ export default function WizardScreen() {
       setCustomerAddress(form.customerAddress);
       setCustomerNotes(form.customerNotes);
       setDuration(form.duration);
+      setFieldValues(form.fieldValues);
       setDraft((current) => ({
         ...current,
         ...restoredDraft,
@@ -150,7 +191,7 @@ export default function WizardScreen() {
         marginPercent: settings.defaultMarginPercent,
         commissionPercent: settings.defaultCommissionPercent,
       }));
-    }, [editId, wizardDraft, products, settings]),
+    }, [editId, wizardDraft, products, settings, formDefinition, showAlert]),
   );
 
   useEffect(() => {
@@ -169,8 +210,25 @@ export default function WizardScreen() {
     editId,
   ]);
 
-  const currentStepId = stepOrder[step] ?? stepOrder[0];
-  const title = useMemo(() => `Laskenta (${step + 1}/${stepCount})`, [step, stepCount]);
+  const currentPage = pages[Math.min(step, pages.length - 1)] ?? pages[0];
+  const title = useMemo(
+    () => `${currentPage?.title ?? 'Laskenta'} (${step + 1}/${stepCount})`,
+    [currentPage?.title, step, stepCount],
+  );
+
+  const livePreview = useMemo(
+    () =>
+      runPipeline({
+        formDefinition,
+        fieldValues,
+        settings,
+        defaults: formDefaults,
+        products,
+        extraMaterialLines: extraLinesToCalculation(draft.lines),
+        reverseVat: customerType === 'business' ? reverseVat : false,
+      }),
+    [formDefinition, fieldValues, settings, formDefaults, products, draft.lines, customerType, reverseVat],
+  );
 
   function getFormState(): WizardFormState {
     return {
@@ -184,11 +242,12 @@ export default function WizardScreen() {
       customerNotes,
       duration,
       lines: draft.lines,
+      fieldValues,
     };
   }
 
   async function persistDraft() {
-    await db.saveWizardDraft(buildPersistedWizardDraft(getFormState()));
+    await db.saveWizardDraft(buildPersistedWizardDraft(getFormState(), formDefinition));
     await refreshWizardDraft();
   }
 
@@ -242,6 +301,7 @@ export default function WizardScreen() {
     customerType,
     reverseVat,
     draft.lines,
+    fieldValues,
     editId,
   ]);
 
@@ -275,6 +335,7 @@ export default function WizardScreen() {
     customerType,
     reverseVat,
     draft.lines,
+    fieldValues,
     editId,
   ]);
 
@@ -294,35 +355,28 @@ export default function WizardScreen() {
     };
   }
 
-  function durationDaysToHours(days: number): number {
-    return days * settings.workdayHours;
+  function validateStep(): boolean {
+    if (!currentPage) return false;
+    if (currentPage.system === 'customer') {
+      if (!customerName.trim()) {
+        showError('Anna asiakkaan nimi.');
+        return false;
+      }
+      setDraft((current) => ({ ...current, customer: buildCustomerInfo() }));
+      return true;
+    }
+    const pageError = validatePageValues(formDefinition, currentPage.id, fieldValues);
+    if (pageError) {
+      showError(pageError);
+      return false;
+    }
+    return true;
   }
 
-  function validateStep(): boolean {
-    switch (currentStepId) {
-      case 'customer':
-        if (!customerName.trim()) {
-          showError('Anna asiakkaan nimi.');
-          return false;
-        }
-        setDraft((current) => ({ ...current, customer: buildCustomerInfo() }));
-        return true;
-      case 'duration': {
-        const parsed = parseNumber(duration);
-        if (parsed === null || parsed <= 0) {
-          showError('Anna kelvollinen kesto päivinä.');
-          return false;
-        }
-        setDraft((current) => ({
-          ...current,
-          groupDurationHours: durationDaysToHours(parsed),
-        }));
-        return true;
-      }
-      case 'materials':
-        return true;
-      default:
-        return true;
+  function handleFieldChange(key: string, value: FieldValue) {
+    setFieldValues((current) => ({ ...current, [key]: value }));
+    if (key === DURATION_DAYS_KEY) {
+      setDuration(fieldValueToInput(value));
     }
   }
 
@@ -338,47 +392,56 @@ export default function WizardScreen() {
   }
 
   async function finishCalculation() {
-    const durationDays = parseNumber(duration);
+    const customer = buildCustomerInfo();
+    const pipeline = runPipeline({
+      formDefinition,
+      fieldValues,
+      settings,
+      defaults: formDefaults,
+      products,
+      extraMaterialLines: extraLinesToCalculation(draft.lines),
+      reverseVat: customer.reverseVat,
+    });
+
+    if (!pipeline.calculation) {
+      showError(pipeline.errors[0] ?? 'Laskenta epäonnistui.');
+      return;
+    }
+
     const nextDraft: WizardDraft = {
       ...draft,
-      customer: buildCustomerInfo(),
-      groupDurationHours:
-        durationDays !== null ? durationDaysToHours(durationDays) : draft.groupDurationHours,
+      customer,
+      groupDurationHours: pipeline.groupDurationHours,
       crewSize: settings.defaultCrewSize,
       marginPercent: settings.defaultMarginPercent,
       commissionPercent: settings.defaultCommissionPercent,
     };
 
-    try {
-      const result = runCalculation({
-        groupDurationHours: nextDraft.groupDurationHours!,
-        crewSize: nextDraft.crewSize!,
-        hourlyRate: settings.defaultHourlyRate,
-        materialsVat0: materialsTotal(nextDraft.lines),
-        marginPercent: settings.defaultMarginPercent,
-        commissionPercent: settings.defaultCommissionPercent,
-        vatPercent: settings.vatPercent,
-        workdayHours: settings.workdayHours,
-        reverseVat: nextDraft.customer.reverseVat,
-      });
-      setWizardSession({
-        draft: nextDraft,
-        result,
-        settings,
-        editCalculationId: editCalculationId ?? undefined,
-        originalCreatedAt: originalCreatedAt ?? undefined,
-      });
-      await db.clearWizardDraft();
-      await refreshWizardDraft();
-      allowExitRef.current = true;
-      router.push('/wizard/summary');
-    } catch (error) {
-      if (error instanceof CalculationValidationError) {
-        showError(error.message);
-      } else {
-        showError('Laskenta epäonnistui.');
-      }
-    }
+    setWizardSession({
+      draft: nextDraft,
+      result: pipeline.calculation,
+      settings,
+      editCalculationId: editCalculationId ?? undefined,
+      originalCreatedAt: originalCreatedAt ?? undefined,
+      summaryFields: pipeline.summaryFields,
+      materialLines: pipeline.materialLines,
+      formSnapshot: {
+        formId: formDefinition.id,
+        formName: formDefinition.name,
+        formVersion: formDefinition.version,
+        formUpdatedAt: formDefinition.updatedAt,
+        fieldValues: fieldValues as Record<string, unknown>,
+        extraLines: draft.lines.map((line) => ({
+          productId: line.product.id,
+          quantity: line.quantity,
+        })),
+        summaryFields: pipeline.summaryFields,
+      },
+    });
+    await db.clearWizardDraft();
+    await refreshWizardDraft();
+    allowExitRef.current = true;
+    router.push('/wizard/summary');
   }
 
   function handleBack() {
@@ -398,7 +461,7 @@ export default function WizardScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          <SectionTitle title={WIZARD_STEP_META[currentStepId].title} center />
+          <SectionTitle title={currentPage?.title ?? 'Laskenta'} center />
 
           <View style={styles.actionBar}>
             {step > 0 ? (
@@ -415,7 +478,7 @@ export default function WizardScreen() {
           </View>
 
           <View style={styles.stepContent}>
-            {currentStepId === 'customer' && (
+            {currentPage?.system === 'customer' ? (
               <CustomerStep
                 name={customerName}
                 customerType={customerType}
@@ -437,23 +500,23 @@ export default function WizardScreen() {
                 onAddressChange={setCustomerAddress}
                 onNotesChange={setCustomerNotes}
               />
-            )}
-            {currentStepId === 'duration' && (
-              <AppInput
-                label="Kesto (pv) *"
-                value={duration}
-                onChangeText={setDuration}
-                keyboardType="decimal-pad"
-                placeholder="Esim. 1,1"
+            ) : null}
+            {currentPage && currentPage.system !== 'customer' ? (
+              <FormFieldsPage
+                fields={pageFields(formDefinition, currentPage.id)}
+                values={fieldValues}
+                computedValues={livePreview.context}
+                products={products}
+                onChange={handleFieldChange}
               />
-            )}
-            {currentStepId === 'materials' && (
+            ) : null}
+            {currentPage?.system === 'materials' ? (
               <MaterialsStep
                 products={products}
                 lines={draft.lines}
                 onChange={(lines) => setDraft((current) => ({ ...current, lines }))}
               />
-            )}
+            ) : null}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
