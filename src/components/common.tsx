@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -11,15 +12,34 @@ import {
 import { AppColors } from '@/src/theme/colors';
 
 type BrandLogoProps = {
-  fontSize?: number;
+  width?: number;
 };
 
-export function BrandLogo({ fontSize = 28 }: BrandLogoProps) {
+const LOGO_ASPECT_RATIO = 1024 / 139;
+
+export function BrandLogo({ width = 260 }: BrandLogoProps) {
   return (
-    <Text style={[styles.logo, { fontSize }]}>
-      <Text style={styles.colorPart}>COLOR</Text>
-      <Text style={styles.ajatonPart}>AJATON</Text>
-    </Text>
+    <Image
+      source={require('@/assets/images/logo-colorajaton.png')}
+      style={{ width, height: width / LOGO_ASPECT_RATIO }}
+      resizeMode="contain"
+      accessibilityLabel="ColoRajaton"
+    />
+  );
+}
+
+type BrandIconProps = {
+  size?: number;
+};
+
+export function BrandIcon({ size = 32 }: BrandIconProps) {
+  return (
+    <Image
+      source={require('@/assets/images/icon-r.png')}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+      accessibilityLabel="ColoRajaton"
+    />
   );
 }
 
@@ -142,7 +162,7 @@ type AppInputProps = {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
-  keyboardType?: 'default' | 'numeric' | 'decimal-pad';
+  keyboardType?: 'default' | 'numeric' | 'decimal-pad' | 'phone-pad' | 'email-address';
   multiline?: boolean;
   placeholder?: string;
 };
@@ -188,18 +208,6 @@ export function ScreenMessage({ message }: { message: string }) {
 }
 
 const styles = StyleSheet.create({
-  logo: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    textAlign: 'center',
-  },
-  colorPart: {
-    color: AppColors.primary,
-    fontFamily: 'IBMPlexSans_700Bold',
-  },
-  ajatonPart: {
-    color: AppColors.accent,
-    fontFamily: 'IBMPlexSans_700Bold',
-  },
   sectionTitleWrap: {
     marginBottom: 8,
   },

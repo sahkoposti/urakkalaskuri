@@ -30,6 +30,8 @@ npm start
 
 Skannaa terminaalissa näkyvä QR-koodi **Expo Go** -sovelluksella.
 
+> **Expo Go -yhteensopivuus:** Projekti käyttää **Expo SDK 54**, joka vastaa Play Store -version Expo Go -sovellusta. Jos saat virheen *incompatible version*, varmista että Play Store -Expo Go on ajan tasalla – tai asenna SDK 54 -versio: `npx expo-go download android 54`.
+
 ### Testit
 
 ```powershell

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard, ScreenLoading, ScreenMessage } from '@/src/components/common';
+import { customerFromRecord } from '@/src/core/models/types';
 import { formatCurrency, formatDate } from '@/src/core/utils/formatters';
 import { useApp } from '@/src/context/AppContext';
 import { AppColors } from '@/src/theme/colors';
@@ -20,14 +21,17 @@ export default function HistoryScreen() {
       data={calculations}
       keyExtractor={(item) => item.id}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
-      renderItem={({ item }) => (
-        <AppCard onPress={() => router.push(`/history/${item.id}`)}>
-          <Text style={styles.title}>{item.projectName}</Text>
-          {item.customer ? <Text style={styles.customer}>{item.customer}</Text> : null}
-          <Text style={styles.price}>{formatCurrency(item.totalPriceVat0)}</Text>
-          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-        </AppCard>
-      )}
+      renderItem={({ item }) => {
+        const customer = customerFromRecord(item);
+        return (
+          <AppCard onPress={() => router.push(`/history/${item.id}`)}>
+            <Text style={styles.title}>{customer.name}</Text>
+            {customer.phone ? <Text style={styles.subtitle}>{customer.phone}</Text> : null}
+            <Text style={styles.price}>{formatCurrency(item.totalPriceVat0)}</Text>
+            <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+          </AppCard>
+        );
+      }}
     />
   );
 }
@@ -44,7 +48,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: AppColors.primary,
   },
-  customer: {
+  subtitle: {
     marginTop: 4,
     color: AppColors.text,
     fontFamily: 'IBMPlexSans_400Regular',

@@ -1,25 +1,29 @@
 import { router } from 'expo-router';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard, ScreenLoading, ScreenMessage } from '@/src/components/common';
-import { formatCurrency, formatDate } from '@/src/core/utils/formatters';
+import { formatCurrency } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
+import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { AppColors } from '@/src/theme/colors';
 
 export default function ProductsScreen() {
   const { ready, products, refreshProducts } = useApp();
+  const { showAlert } = useThemedAlert();
 
   if (!ready) return <ScreenLoading />;
 
-  async function handleDelete(id: string) {
-    Alert.alert('Poista tuote', 'Haluatko varmasti poistaa tuotteen?', [
+  function handleDelete(id: string) {
+    showAlert('Poista tuote', 'Haluatko varmasti poistaa tuotteen?', [
       { text: 'Peruuta', style: 'cancel' },
       {
         text: 'Poista',
         style: 'destructive',
-        onPress: async () => {
-          await db.deleteProduct(id);
-          await refreshProducts();
+        onPress: () => {
+          void (async () => {
+            await db.deleteProduct(id);
+            await refreshProducts();
+          })();
         },
       },
     ]);

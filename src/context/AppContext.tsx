@@ -13,6 +13,7 @@ import * as db from '@/src/core/database/database';
 import type {
   AppSettings,
   CalculationRecord,
+  PersistedWizardDraft,
   Product,
   WizardDraft,
 } from '@/src/core/models/types';
@@ -30,9 +31,11 @@ type AppContextValue = {
   products: Product[];
   calculations: CalculationRecord[];
   wizardSession: WizardSession | null;
+  wizardDraft: PersistedWizardDraft | null;
   refreshSettings: () => Promise<void>;
   refreshProducts: () => Promise<void>;
   refreshCalculations: () => Promise<void>;
+  refreshWizardDraft: () => Promise<void>;
   setWizardSession: (session: WizardSession | null) => void;
 };
 
@@ -44,6 +47,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [calculations, setCalculations] = useState<CalculationRecord[]>([]);
   const [wizardSession, setWizardSession] = useState<WizardSession | null>(null);
+  const [wizardDraft, setWizardDraft] = useState<PersistedWizardDraft | null>(null);
 
   const refreshSettings = useCallback(async () => {
     setSettings(await db.getSettings());
@@ -57,18 +61,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCalculations(await db.getCalculations());
   }, []);
 
+  const refreshWizardDraft = useCallback(async () => {
+    setWizardDraft(await db.getWizardDraft());
+  }, []);
+
   useEffect(() => {
     let active = true;
     (async () => {
       await refreshSettings();
       await refreshProducts();
       await refreshCalculations();
+      await refreshWizardDraft();
       if (active) setReady(true);
     })();
     return () => {
       active = false;
     };
-  }, [refreshCalculations, refreshProducts, refreshSettings]);
+  }, [refreshCalculations, refreshProducts, refreshSettings, refreshWizardDraft]);
 
   const value = useMemo(
     () => ({
@@ -77,9 +86,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       products,
       calculations,
       wizardSession,
+      wizardDraft,
       refreshSettings,
       refreshProducts,
       refreshCalculations,
+      refreshWizardDraft,
       setWizardSession,
     }),
     [
@@ -88,9 +99,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       products,
       calculations,
       wizardSession,
+      wizardDraft,
       refreshSettings,
       refreshProducts,
       refreshCalculations,
+      refreshWizardDraft,
     ],
   );
 

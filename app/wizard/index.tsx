@@ -1,8 +1,10 @@
 import { Picker } from '@react-native-picker/picker';
-import { router, Stack } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, Stack, useFocusEffect, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
+  BackHandler,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,90 +18,256 @@ import {
   PrimaryButton,
   SectionTitle,
 } from '@/src/components/common';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import {
   CalculationValidationError,
   runCalculation,
 } from '@/src/core/calculation/calculationEngine';
-import type { Product, WizardDraft, WizardLineDraft } from '@/src/core/models/types';
-import { materialsTotal } from '@/src/core/models/types';
+import type { CustomerInfo, Product, WizardDraft, WizardLineDraft } from '@/src/core/models/types';
+import { emptyCustomerInfo, materialsTotal, WIZARD_STEP_META } from '@/src/core/models/types';
 import { formatCurrency, formatDecimal, parseNumber } from '@/src/core/utils/formatters';
-import { useApp } from '@/src/context/AppContext';
+import {
+  buildPersistedWizardDraft,
+  hasWizardDraftContent,
+  persistedDraftToFormState,
+  type WizardFormState,
+} from '@/src/core/wizard/wizardDraftHelpers';
+import { db, useApp } from '@/src/context/AppContext';
+import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { AppColors } from '@/src/theme/colors';
 
-const STEP_TITLES = [
-  'Projektin nimi',
-  'Asiakas',
-  'Työryhmän arvioitu kesto',
-  'Työryhmän koko',
-  'Materiaalit',
-  'Myyntikatetavoite',
-  'Myyntipalkkio',
-];
-
 export default function WizardScreen() {
-  const { settings, products, setWizardSession } = useApp();
+  const navigation = useNavigation();
+  const { settings, products, wizardDraft, setWizardSession, refreshWizardDraft } = useApp();
+  const { showAlert } = useThemedAlert();
+  const stepOrder = settings.wizardStepOrder;
+  const stepCount = stepOrder.length;
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<WizardDraft>({
-    projectName: '',
-    customer: '',
+    customer: emptyCustomerInfo(),
     lines: [],
     crewSize: settings.defaultCrewSize,
     marginPercent: settings.defaultMarginPercent,
     commissionPercent: settings.defaultCommissionPercent,
   });
 
-  const [projectName, setProjectName] = useState('');
-  const [customer, setCustomer] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerNotes, setCustomerNotes] = useState('');
   const [duration, setDuration] = useState('');
-  const [crewSize, setCrewSize] = useState(String(settings.defaultCrewSize));
   const [margin, setMargin] = useState(String(settings.defaultMarginPercent));
   const [commission, setCommission] = useState(String(settings.defaultCommissionPercent));
 
-  useEffect(() => {
-    setCrewSize(String(settings.defaultCrewSize));
+  const hydratedRef = useRef(false);
+  const allowExitRef = useRef(false);
+  const pendingExitRef = useRef<(() => void) | null>(null);
+  const [exitDialogVisible, setExitDialogVisible] = useState(false);
+
+  function resetWizardForm() {
+    setStep(0);
+    setDraft({
+      customer: emptyCustomerInfo(),
+      lines: [],
+      crewSize: settings.defaultCrewSize,
+      marginPercent: settings.defaultMarginPercent,
+      commissionPercent: settings.defaultCommissionPercent,
+    });
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerEmail('');
+    setCustomerAddress('');
+    setCustomerNotes('');
+    setDuration('');
     setMargin(String(settings.defaultMarginPercent));
     setCommission(String(settings.defaultCommissionPercent));
-  }, [settings]);
+  }
 
-  const title = useMemo(() => `Laskenta (${step + 1}/7)`, [step]);
+  useFocusEffect(
+    useCallback(() => {
+      allowExitRef.current = false;
+
+      if (!wizardDraft) {
+        hydratedRef.current = false;
+        resetWizardForm();
+        return;
+      }
+
+      if (hydratedRef.current) return;
+      hydratedRef.current = true;
+      const { form, wizardDraft: restoredDraft } = persistedDraftToFormState(wizardDraft, products);
+      setStep(form.step);
+      setCustomerName(form.customerName);
+      setCustomerPhone(form.customerPhone);
+      setCustomerEmail(form.customerEmail);
+      setCustomerAddress(form.customerAddress);
+      setCustomerNotes(form.customerNotes);
+      setDuration(form.duration);
+      setMargin(form.margin);
+      setCommission(form.commission);
+      setDraft((current) => ({
+        ...current,
+        ...restoredDraft,
+        crewSize: settings.defaultCrewSize,
+      }));
+    }, [wizardDraft, products, settings]),
+  );
+
+  useEffect(() => {
+    if (wizardDraft) return;
+    setDraft((current) => ({ ...current, crewSize: settings.defaultCrewSize }));
+  }, [settings.defaultCrewSize, wizardDraft]);
+
+  const currentStepId = stepOrder[step] ?? stepOrder[0];
+  const title = useMemo(() => `Laskenta (${step + 1}/${stepCount})`, [step, stepCount]);
+
+  function getFormState(): WizardFormState {
+    return {
+      step,
+      customerName,
+      customerPhone,
+      customerEmail,
+      customerAddress,
+      customerNotes,
+      duration,
+      margin,
+      commission,
+      lines: draft.lines,
+    };
+  }
+
+  async function persistDraft() {
+    await db.saveWizardDraft(buildPersistedWizardDraft(getFormState()));
+    await refreshWizardDraft();
+  }
+
+  function closeExitDialog() {
+    setExitDialogVisible(false);
+    pendingExitRef.current = null;
+  }
+
+  function confirmExit(onLeave: () => void) {
+    pendingExitRef.current = onLeave;
+    setExitDialogVisible(true);
+  }
+
+  async function discardDraftAndExit() {
+    await db.clearWizardDraft();
+    await refreshWizardDraft();
+    allowExitRef.current = true;
+    const action = pendingExitRef.current;
+    closeExitDialog();
+    action?.();
+  }
+
+  async function saveDraftAndExit() {
+    await persistDraft();
+    allowExitRef.current = true;
+    const action = pendingExitRef.current;
+    closeExitDialog();
+    action?.();
+  }
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      if (allowExitRef.current || !hasWizardDraftContent(getFormState())) {
+        return;
+      }
+
+      event.preventDefault();
+      confirmExit(() => navigation.dispatch(event.data.action));
+    });
+
+    return unsubscribe;
+  }, [
+    navigation,
+    step,
+    customerName,
+    customerPhone,
+    customerEmail,
+    customerAddress,
+    customerNotes,
+    duration,
+    margin,
+    commission,
+    draft.lines,
+  ]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (step > 0) {
+        setStep((current) => current - 1);
+        return true;
+      }
+
+      if (!hasWizardDraftContent(getFormState())) {
+        return false;
+      }
+
+      confirmExit(() => {
+        allowExitRef.current = true;
+        router.back();
+      });
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [
+    step,
+    customerName,
+    customerPhone,
+    customerEmail,
+    customerAddress,
+    customerNotes,
+    duration,
+    margin,
+    commission,
+    draft.lines,
+  ]);
 
   function showError(message: string) {
-    Alert.alert('Virhe', message);
+    showAlert('Virhe', message);
+  }
+
+  function buildCustomerInfo(): CustomerInfo {
+    return {
+      name: customerName.trim(),
+      phone: customerPhone.trim() || undefined,
+      email: customerEmail.trim() || undefined,
+      address: customerAddress.trim() || undefined,
+      notes: customerNotes.trim() || undefined,
+    };
+  }
+
+  function durationDaysToHours(days: number): number {
+    return days * settings.workdayHours;
   }
 
   function validateStep(): boolean {
-    switch (step) {
-      case 0:
-        if (!projectName.trim()) {
-          showError('Anna projektin nimi.');
+    switch (currentStepId) {
+      case 'customer':
+        if (!customerName.trim()) {
+          showError('Anna asiakkaan nimi.');
           return false;
         }
-        setDraft((current) => ({ ...current, projectName: projectName.trim() }));
+        setDraft((current) => ({ ...current, customer: buildCustomerInfo() }));
         return true;
-      case 1:
-        setDraft((current) => ({ ...current, customer: customer.trim() }));
-        return true;
-      case 2: {
+      case 'duration': {
         const parsed = parseNumber(duration);
         if (parsed === null || parsed <= 0) {
-          showError('Anna kelvollinen kesto tunneissa.');
+          showError('Anna kelvollinen kesto päivinä.');
           return false;
         }
-        setDraft((current) => ({ ...current, groupDurationHours: parsed }));
+        setDraft((current) => ({
+          ...current,
+          groupDurationHours: durationDaysToHours(parsed),
+        }));
         return true;
       }
-      case 3: {
-        const parsed = Number.parseInt(crewSize, 10);
-        if (!Number.isFinite(parsed) || parsed <= 0) {
-          showError('Anna kelvollinen työryhmän koko.');
-          return false;
-        }
-        setDraft((current) => ({ ...current, crewSize: parsed }));
+      case 'materials':
         return true;
-      }
-      case 4:
-        return true;
-      case 5: {
+      case 'margin': {
         const parsed = parseNumber(margin);
         if (parsed === null || parsed < 0) {
           showError('Anna kelvollinen myyntikatetavoite.');
@@ -108,7 +276,7 @@ export default function WizardScreen() {
         setDraft((current) => ({ ...current, marginPercent: parsed }));
         return true;
       }
-      case 6: {
+      case 'commission': {
         const parsedCommission = parseNumber(commission);
         const parsedMargin = parseNumber(margin) ?? 0;
         if (parsedCommission === null || parsedCommission < 0) {
@@ -130,17 +298,22 @@ export default function WizardScreen() {
   function handleNext() {
     if (!validateStep()) return;
 
-    if (step < 6) {
+    if (step < stepCount - 1) {
       setStep((current) => current + 1);
       return;
     }
 
+    void finishCalculation();
+  }
+
+  async function finishCalculation() {
+    const durationDays = parseNumber(duration);
     const nextDraft: WizardDraft = {
       ...draft,
-      projectName: projectName.trim(),
-      customer: customer.trim(),
-      groupDurationHours: parseNumber(duration) ?? draft.groupDurationHours,
-      crewSize: Number.parseInt(crewSize, 10),
+      customer: buildCustomerInfo(),
+      groupDurationHours:
+        durationDays !== null ? durationDaysToHours(durationDays) : draft.groupDurationHours,
+      crewSize: settings.defaultCrewSize,
       marginPercent: parseNumber(margin) ?? draft.marginPercent,
       commissionPercent: parseNumber(commission) ?? draft.commissionPercent,
     };
@@ -157,6 +330,9 @@ export default function WizardScreen() {
         workdayHours: settings.workdayHours,
       });
       setWizardSession({ draft: nextDraft, result, settings });
+      await db.clearWizardDraft();
+      await refreshWizardDraft();
+      allowExitRef.current = true;
       router.push('/wizard/summary');
     } catch (error) {
       if (error instanceof CalculationValidationError) {
@@ -167,47 +343,71 @@ export default function WizardScreen() {
     }
   }
 
+  function handleBack() {
+    setStep((current) => current - 1);
+  }
+
   return (
     <>
       <Stack.Screen options={{ title }} />
-      <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <SectionTitle title={STEP_TITLES[step]} center />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          <SectionTitle title={WIZARD_STEP_META[currentStepId].title} center />
+
+          <View style={styles.actionBar}>
+            {step > 0 ? (
+              <View style={styles.actionButton}>
+                <OutlinedButton title="Edellinen" onPress={handleBack} />
+              </View>
+            ) : null}
+            <View style={[styles.actionButton, step === 0 && styles.actionButtonFull]}>
+              <PrimaryButton
+                title={step === stepCount - 1 ? 'Laske' : 'Seuraava'}
+                onPress={handleNext}
+              />
+            </View>
+          </View>
+
           <View style={styles.stepContent}>
-            {step === 0 && (
-              <AppInput label="Projektin nimi *" value={projectName} onChangeText={setProjectName} />
-            )}
-            {step === 1 && (
-              <AppInput
-                label="Asiakas (valinnainen)"
-                value={customer}
-                onChangeText={setCustomer}
+            {currentStepId === 'customer' && (
+              <CustomerStep
+                name={customerName}
+                phone={customerPhone}
+                email={customerEmail}
+                address={customerAddress}
+                notes={customerNotes}
+                onNameChange={setCustomerName}
+                onPhoneChange={setCustomerPhone}
+                onEmailChange={setCustomerEmail}
+                onAddressChange={setCustomerAddress}
+                onNotesChange={setCustomerNotes}
               />
             )}
-            {step === 2 && (
+            {currentStepId === 'duration' && (
               <AppInput
-                label="Kesto (h) *"
+                label="Kesto (pv) *"
                 value={duration}
                 onChangeText={setDuration}
                 keyboardType="decimal-pad"
+                placeholder="Esim. 1,1"
               />
             )}
-            {step === 3 && (
-              <AppInput
-                label="Henkilömäärä *"
-                value={crewSize}
-                onChangeText={setCrewSize}
-                keyboardType="numeric"
-              />
-            )}
-            {step === 4 && (
+            {currentStepId === 'materials' && (
               <MaterialsStep
                 products={products}
                 lines={draft.lines}
                 onChange={(lines) => setDraft((current) => ({ ...current, lines }))}
               />
             )}
-            {step === 5 && (
+            {currentStepId === 'margin' && (
               <AppInput
                 label="Kate (%) *"
                 value={margin}
@@ -215,7 +415,7 @@ export default function WizardScreen() {
                 keyboardType="decimal-pad"
               />
             )}
-            {step === 6 && (
+            {currentStepId === 'commission' && (
               <AppInput
                 label="Palkkio (%) *"
                 value={commission}
@@ -225,19 +425,88 @@ export default function WizardScreen() {
             )}
           </View>
         </ScrollView>
+      </KeyboardAvoidingView>
 
-        <View style={styles.footer}>
-          {step > 0 && (
-            <View style={styles.footerButton}>
-              <OutlinedButton title="Takaisin" onPress={() => setStep((current) => current - 1)} />
-            </View>
-          )}
-          <View style={styles.footerButton}>
-            <PrimaryButton title={step === 6 ? 'Laske' : 'Seuraava'} onPress={handleNext} />
-          </View>
-        </View>
-      </View>
+      <ConfirmDialog
+        visible={exitDialogVisible}
+        title="Kesken jäänyt laskenta"
+        message="Haluatko tallentaa laskennan keskeneräisenä?"
+        onClose={closeExitDialog}
+        buttons={[
+          {
+            title: 'Peruuta',
+            variant: 'outlined',
+            onPress: closeExitDialog,
+          },
+          {
+            title: 'Hylkää',
+            variant: 'destructive',
+            onPress: () => {
+              void discardDraftAndExit();
+            },
+          },
+          {
+            title: 'Tallenna',
+            variant: 'primary',
+            onPress: () => {
+              void saveDraftAndExit();
+            },
+          },
+        ]}
+      />
     </>
+  );
+}
+
+type CustomerStepProps = {
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  notes: string;
+  onNameChange: (value: string) => void;
+  onPhoneChange: (value: string) => void;
+  onEmailChange: (value: string) => void;
+  onAddressChange: (value: string) => void;
+  onNotesChange: (value: string) => void;
+};
+
+function CustomerStep({
+  name,
+  phone,
+  email,
+  address,
+  notes,
+  onNameChange,
+  onPhoneChange,
+  onEmailChange,
+  onAddressChange,
+  onNotesChange,
+}: CustomerStepProps) {
+  return (
+    <View>
+      <AppInput label="Nimi *" value={name} onChangeText={onNameChange} />
+      <AppInput
+        label="Puh."
+        value={phone}
+        onChangeText={onPhoneChange}
+        keyboardType="phone-pad"
+      />
+      <AppInput
+        label="Sähköposti"
+        value={email}
+        onChangeText={onEmailChange}
+        keyboardType="email-address"
+      />
+      <AppInput label="Osoite" value={address} onChangeText={onAddressChange} />
+      <AppInput
+        label="Lisätiedot"
+        value={notes}
+        onChangeText={onNotesChange}
+        multiline
+        placeholder="Valinnainen"
+      />
+    </View>
   );
 }
 
@@ -317,19 +586,22 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 12,
+    paddingBottom: 32,
   },
-  stepContent: {
-    marginTop: 24,
-  },
-  footer: {
+  actionBar: {
     flexDirection: 'row',
     gap: 12,
-    padding: 20,
-    paddingTop: 12,
+    marginTop: 20,
+    marginBottom: 8,
   },
-  footerButton: {
+  actionButton: {
     flex: 1,
+  },
+  actionButtonFull: {
+    flex: 1,
+  },
+  stepContent: {
+    marginTop: 16,
   },
   emptyText: {
     color: AppColors.text,

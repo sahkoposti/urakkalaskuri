@@ -10,6 +10,7 @@ import {
   SectionTitle,
 } from '@/src/components/common';
 import type { CalculationRecord } from '@/src/core/models/types';
+import { customerFromRecord } from '@/src/core/models/types';
 import { formatCurrency, formatDecimal, formatPercent } from '@/src/core/utils/formatters';
 import { db } from '@/src/context/AppContext';
 import { AppColors } from '@/src/theme/colors';
@@ -36,12 +37,19 @@ export default function HistoryDetailScreen() {
   if (loading) return <ScreenLoading />;
   if (!record) return <ScreenMessage message="Laskelmaa ei löytynyt." />;
 
+  const customer = customerFromRecord(record);
+
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <SectionTitle title={record.projectName} />
+      <SectionTitle title={customer.name} />
       <AppCard style={styles.card}>
-        <ResultRow label="Asiakas" value={record.customer ?? '–'} />
-        <ResultRow label="Työryhmän kesto (h)" value={formatDecimal(record.groupDurationHours)} />
+        <ResultRow label="Puh." value={customer.phone ?? '–'} />
+        <ResultRow label="Sähköposti" value={customer.email ?? '–'} />
+        <ResultRow label="Osoite" value={customer.address ?? '–'} />
+        <ResultRow label="Lisätiedot" value={customer.notes ?? '–'} />
+      </AppCard>
+      <AppCard style={styles.card}>
+        <ResultRow label="Työryhmän kesto (pv)" value={formatDecimal(record.workDurationDays)} />
         <ResultRow label="Työryhmän koko (hlö)" value={`${record.crewSize} hlö`} />
         <ResultRow label="Tuntihinta (alv0)" value={formatCurrency(record.hourlyRate)} />
         <ResultRow label="Urakkahinta (alv0)" value={formatCurrency(record.contractPriceVat0)} />
@@ -62,7 +70,6 @@ export default function HistoryDetailScreen() {
           value={formatCurrency(record.totalPriceVat)}
           highlight
         />
-        <ResultRow label="Työkesto (pv)" value={formatDecimal(record.workDurationDays)} />
       </AppCard>
 
       {record.lines.length > 0 ? (

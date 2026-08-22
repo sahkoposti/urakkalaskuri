@@ -1,30 +1,50 @@
-import { router, Stack } from 'expo-router';
+import { router, Stack, type Href } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BrandLogo, SectionTitle } from '@/src/components/common';
 import { AppCard } from '@/src/components/common';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { db, useApp } from '@/src/context/AppContext';
 import { AppColors } from '@/src/theme/colors';
 
 export default function HomeScreen() {
+  const { wizardDraft, refreshWizardDraft } = useApp();
+  const [newCalcDialogVisible, setNewCalcDialogVisible] = useState(false);
+
+  function handleNewCalculation() {
+    if (wizardDraft) {
+      setNewCalcDialogVisible(true);
+      return;
+    }
+
+    router.push('/wizard');
+  }
+
+  async function startNewCalculation() {
+    await db.clearWizardDraft();
+    await refreshWizardDraft();
+    setNewCalcDialogVisible(false);
+    router.push('/wizard');
+  }
+
   return (
     <>
       <Stack.Screen
         options={{
-          headerTitle: () => <BrandLogo fontSize={20} />,
+          headerTitle: () => <BrandLogo width={170} />,
           headerTitleAlign: 'center',
         }}
       />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.hero}>
-          <BrandLogo />
           <SectionTitle title="Urakkalaskuri" center />
-          <Text style={styles.subtitle}>Laske tarjoushinta vaiheittain.</Text>
         </View>
 
         <NavCard
           title="Uusi laskenta"
-          subtitle="Aloita wizard"
-          onPress={() => router.push('/wizard')}
+          subtitle="Aloita laskenta"
+          onPress={handleNewCalculation}
         />
         <NavCard
           title="Historia"
@@ -39,9 +59,30 @@ export default function HomeScreen() {
         <NavCard
           title="Asetukset"
           subtitle="ALV, kate, tuntihinta"
-          onPress={() => router.push('/settings')}
+          onPress={() => router.push('/settings' as Href)}
         />
       </ScrollView>
+
+      <ConfirmDialog
+        visible={newCalcDialogVisible}
+        title="Uusi laskenta"
+        message="Kesken jäänyt laskenta poistetaan. Haluatko aloittaa uuden?"
+        onClose={() => setNewCalcDialogVisible(false)}
+        buttons={[
+          {
+            title: 'Peruuta',
+            variant: 'outlined',
+            onPress: () => setNewCalcDialogVisible(false),
+          },
+          {
+            title: 'Aloita uusi',
+            variant: 'primary',
+            onPress: () => {
+              void startNewCalculation();
+            },
+          },
+        ]}
+      />
     </>
   );
 }
@@ -75,11 +116,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
     gap: 8,
-  },
-  subtitle: {
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-    textAlign: 'center',
   },
   navCard: {
     marginBottom: 12,

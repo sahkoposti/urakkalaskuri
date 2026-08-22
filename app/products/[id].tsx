@@ -1,15 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import { AppInput, PrimaryButton, ScreenLoading, ScreenMessage } from '@/src/components/common';
 import type { Product } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
+import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 
 export default function EditProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { refreshProducts } = useApp();
+  const { showAlert } = useThemedAlert();
   const [loading, setLoading] = useState(true);
   const [product, setProduct] = useState<Product | null>(null);
   const [name, setName] = useState('');
@@ -41,16 +43,16 @@ export default function EditProductScreen() {
 
   async function handleSave() {
     if (!name.trim()) {
-      Alert.alert('Virhe', 'Anna nimi');
+      showAlert('Virhe', 'Anna nimi');
       return;
     }
     if (!unit.trim()) {
-      Alert.alert('Virhe', 'Anna yksikkö');
+      showAlert('Virhe', 'Anna yksikkö');
       return;
     }
     const parsedPrice = parseNumber(price);
     if (parsedPrice === null || parsedPrice < 0) {
-      Alert.alert('Virhe', 'Virheellinen hinta');
+      showAlert('Virhe', 'Virheellinen hinta');
       return;
     }
 

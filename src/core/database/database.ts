@@ -1,7 +1,16 @@
 import * as SQLite from 'expo-sqlite';
 
-import type { AppSettings, CalculationLine, CalculationRecord, Product } from '../models/types';
-import { defaultSettings } from '../models/types';
+import type {
+  AppSettings,
+  CalculationLine,
+  CalculationRecord,
+  PersistedWizardDraft,
+  Product,
+  ThemeSettings,
+  WizardStepId,
+} from '../models/types';
+import { defaultSettings, defaultThemeSettings } from '../models/types';
+import { normalizeWizardStepOrder } from '../wizard/wizardSteps';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -58,6 +67,12 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
       key TEXT PRIMARY KEY NOT NULL,
       value TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS wizard_drafts (
+      id TEXT PRIMARY KEY NOT NULL,
+      step INTEGER NOT NULL,
+      payload TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
   `);
 
   const settingsCount = await db.getFirstAsync<{ count: number }>(
@@ -79,7 +94,37 @@ const defaultSettingRows: Record<string, string> = {
   default_hourly_rate: String(defaultSettings.defaultHourlyRate),
   default_crew_size: String(defaultSettings.defaultCrewSize),
   workday_hours: String(defaultSettings.workdayHours),
+  wizard_step_order: JSON.stringify(defaultSettings.wizardStepOrder),
+  theme_accent_color: defaultSettings.theme.accentColor,
+  theme_primary_color: defaultSettings.theme.primaryColor,
+  theme_text_color: defaultSettings.theme.textColor,
+  theme_surface_color: defaultSettings.theme.surfaceColor,
+  theme_background_image_uri: defaultSettings.theme.backgroundImageUri,
+  theme_background_opacity: String(defaultSettings.theme.backgroundOpacity),
 };
+
+function parseWizardStepOrder(raw?: string): WizardStepId[] {
+  if (!raw) return [...defaultSettings.wizardStepOrder];
+  try {
+    const parsed = JSON.parse(raw) as WizardStepId[];
+    return normalizeWizardStepOrder(parsed);
+  } catch {
+    return [...defaultSettings.wizardStepOrder];
+  }
+}
+
+function parseThemeSettings(map: Record<string, string>): ThemeSettings {
+  return {
+    accentColor: map.theme_accent_color ?? defaultThemeSettings.accentColor,
+    primaryColor: map.theme_primary_color ?? defaultThemeSettings.primaryColor,
+    textColor: map.theme_text_color ?? defaultThemeSettings.textColor,
+    surfaceColor: map.theme_surface_color ?? defaultThemeSettings.surfaceColor,
+    backgroundImageUri: map.theme_background_image_uri ?? defaultThemeSettings.backgroundImageUri,
+    backgroundOpacity: Number.parseFloat(
+      map.theme_background_opacity ?? String(defaultThemeSettings.backgroundOpacity),
+    ),
+  };
+}
 
 function productFromRow(row: Record<string, unknown>): Product {
   return {
@@ -135,6 +180,8 @@ export async function getSettings(): Promise<AppSettings> {
     ),
     defaultCrewSize: Number.parseInt(map.default_crew_size ?? String(defaultSettings.defaultCrewSize), 10),
     workdayHours: Number.parseFloat(map.workday_hours ?? String(defaultSettings.workdayHours)),
+    wizardStepOrder: parseWizardStepOrder(map.wizard_step_order),
+    theme: parseThemeSettings(map),
   };
 }
 
@@ -147,6 +194,13 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
     default_hourly_rate: String(settings.defaultHourlyRate),
     default_crew_size: String(settings.defaultCrewSize),
     workday_hours: String(settings.workdayHours),
+    wizard_step_order: JSON.stringify(normalizeWizardStepOrder(settings.wizardStepOrder)),
+    theme_accent_color: settings.theme.accentColor,
+    theme_primary_color: settings.theme.primaryColor,
+    theme_text_color: settings.theme.textColor,
+    theme_surface_color: settings.theme.surfaceColor,
+    theme_background_image_uri: settings.theme.backgroundImageUri,
+    theme_background_opacity: String(settings.theme.backgroundOpacity),
   };
   for (const [key, value] of Object.entries(entries)) {
     await db.runAsync(
@@ -287,4 +341,37 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       );
     }
   });
+}
+
+const WIZARD_DRAFT_ID = 'current';
+
+export async function getWizardDraft(): Promise<PersistedWizardDraft | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ payload: string }>(
+    'SELECT payload FROM wizard_drafts WHERE id = ? LIMIT 1',
+    WIZARD_DRAFT_ID,
+  );
+  if (!row) return null;
+  try {
+    return JSON.parse(row.payload) as PersistedWizardDraft;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveWizardDraft(draft: PersistedWizardDraft): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO wizard_drafts (id, step, payload, updated_at)
+     VALUES (?, ?, ?, ?)`,
+    WIZARD_DRAFT_ID,
+    draft.step,
+    JSON.stringify(draft),
+    draft.updatedAt,
+  );
+}
+
+export async function clearWizardDraft(): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('DELETE FROM wizard_drafts WHERE id = ?', WIZARD_DRAFT_ID);
 }

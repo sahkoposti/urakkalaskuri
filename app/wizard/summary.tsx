@@ -1,6 +1,5 @@
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
 
 import {
   AppCard,
@@ -10,12 +9,14 @@ import {
   SectionTitle,
 } from '@/src/components/common';
 import type { CalculationLine, CalculationRecord } from '@/src/core/models/types';
+import { serializeCustomerDetails } from '@/src/core/models/types';
 import { formatCurrency, formatDecimal, formatPercent } from '@/src/core/utils/formatters';
+import { createId } from '@/src/core/utils/id';
 import { db, useApp } from '@/src/context/AppContext';
 import { AppColors } from '@/src/theme/colors';
 
 export default function SummaryScreen() {
-  const { wizardSession, refreshCalculations, setWizardSession } = useApp();
+  const { wizardSession, refreshCalculations, refreshWizardDraft, setWizardSession } = useApp();
 
   if (!wizardSession) {
     return <ScreenMessage message="Ei laskentaa" />;
@@ -25,9 +26,9 @@ export default function SummaryScreen() {
 
   async function handleSave() {
     const record: CalculationRecord = {
-      id: uuidv4(),
-      projectName: draft.projectName,
-      customer: draft.customer || undefined,
+      id: createId(),
+      projectName: draft.customer.name,
+      customer: serializeCustomerDetails(draft.customer),
       groupDurationHours: draft.groupDurationHours!,
       crewSize: draft.crewSize!,
       hourlyRate: settings.defaultHourlyRate,
@@ -44,7 +45,7 @@ export default function SummaryScreen() {
       createdAt: new Date(),
       lines: draft.lines.map(
         (line): CalculationLine => ({
-          id: uuidv4(),
+          id: createId(),
           productId: line.product.id,
           productName: line.product.name,
           unit: line.product.unit,
@@ -56,7 +57,9 @@ export default function SummaryScreen() {
     };
 
     await db.saveCalculation(record);
+    await db.clearWizardDraft();
     await refreshCalculations();
+    await refreshWizardDraft();
     setWizardSession(null);
     router.replace('/history');
   }
@@ -82,8 +85,8 @@ export default function SummaryScreen() {
 
       <AppCard style={styles.card}>
         <ResultRow
-          label="Työryhmän kesto (h)"
-          value={formatDecimal(draft.groupDurationHours!)}
+          label="Työryhmän kesto (pv)"
+          value={formatDecimal(result.workDurationDays)}
         />
         <ResultRow label="Työryhmän koko (hlö)" value={String(draft.crewSize)} />
         <ResultRow label="Urakkahinta (alv0)" value={formatCurrency(result.contractPriceVat0)} />
@@ -107,7 +110,6 @@ export default function SummaryScreen() {
           value={formatCurrency(result.totalPriceVat)}
           highlight
         />
-        <ResultRow label="Työkesto (pv)" value={formatDecimal(result.workDurationDays)} />
       </AppCard>
 
       <PrimaryButton title="Tallenna laskelma" onPress={handleSave} />

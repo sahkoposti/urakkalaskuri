@@ -1,63 +1,87 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
+import { ScrollView, StyleSheet } from 'react-native';
 
 import { AppInput, PrimaryButton } from '@/src/components/common';
 import { parseNumber } from '@/src/core/utils/formatters';
+import { createId } from '@/src/core/utils/id';
 import { db, useApp } from '@/src/context/AppContext';
+import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 
 export default function NewProductScreen() {
   const { refreshProducts } = useApp();
+  const { showAlert } = useThemedAlert();
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('kpl');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
 
   async function handleSave() {
+    if (saving) return;
+
     if (!name.trim()) {
-      Alert.alert('Virhe', 'Anna nimi');
+      showAlert('Virhe', 'Anna nimi');
       return;
     }
     if (!unit.trim()) {
-      Alert.alert('Virhe', 'Anna yksikkö');
+      showAlert('Virhe', 'Anna yksikkö');
       return;
     }
     const parsedPrice = parseNumber(price);
     if (parsedPrice === null || parsedPrice < 0) {
-      Alert.alert('Virhe', 'Virheellinen hinta');
+      showAlert('Virhe', 'Virheellinen hinta');
       return;
     }
 
-    await db.upsertProduct({
-      id: uuidv4(),
-      name: name.trim(),
-      unit: unit.trim(),
-      unitPriceVat0: parsedPrice,
-      description: description.trim() || undefined,
-      createdAt: new Date(),
-    });
-    await refreshProducts();
-    router.back();
+    setSaving(true);
+    try {
+      await db.upsertProduct({
+        id: createId(),
+        name: name.trim(),
+        unit: unit.trim(),
+        unitPriceVat0: parsedPrice,
+        description: description.trim() || undefined,
+        createdAt: new Date(),
+      });
+      await refreshProducts();
+      router.back();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Tuotteen tallennus epäonnistui.';
+      showAlert('Virhe', message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 4 }}>
-      <AppInput label="Nimi *" value={name} onChangeText={setName} />
-      <AppInput label="Yksikkö *" value={unit} onChangeText={setUnit} />
-      <AppInput
-        label="Yksikköhinta (alv0) € *"
-        value={price}
-        onChangeText={setPrice}
-        keyboardType="decimal-pad"
-      />
-      <AppInput
-        label="Kuvaus"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-      />
-      <PrimaryButton title="Tallenna" onPress={handleSave} />
-    </ScrollView>
+    <>
+      <Stack.Screen options={{ title: 'Lisää tuote' }} />
+      <ScrollView contentContainerStyle={styles.content}>
+        <AppInput label="Nimi *" value={name} onChangeText={setName} />
+        <AppInput label="Yksikkö *" value={unit} onChangeText={setUnit} />
+        <AppInput
+          label="Yksikköhinta (alv0) € *"
+          value={price}
+          onChangeText={setPrice}
+          keyboardType="decimal-pad"
+        />
+        <AppInput
+          label="Kuvaus"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+        />
+        <PrimaryButton title="Tallenna" onPress={handleSave} disabled={saving} />
+      </ScrollView>
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    padding: 16,
+    gap: 4,
+    paddingBottom: 32,
+  },
+});
