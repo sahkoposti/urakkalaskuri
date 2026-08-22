@@ -297,7 +297,7 @@ describe('formMutations', () => {
     created.key = 'kaytettava_maali';
     const unknown = unknownFormulaIdentifiers(
       form,
-      'laskenta_seinapinta_ala_m2 / kaytettava_maali.consumption',
+      'laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki',
     );
     expect(unknown).toHaveLength(0);
   });

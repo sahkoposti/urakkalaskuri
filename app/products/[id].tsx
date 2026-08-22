@@ -85,7 +85,7 @@ export default function EditProductScreen() {
       <AppInput label="Nimi *" value={name} onChangeText={setName} />
       <AppInput label="Yksikkö *" value={unit} onChangeText={setUnit} />
       <AppInput
-        label="Yksikköhinta (alv0) € *"
+        label="Yksikköhinta (alv0) € * · kaavassa yksikkohinta"
         value={price}
         onChangeText={setPrice}
         keyboardType="decimal-pad"

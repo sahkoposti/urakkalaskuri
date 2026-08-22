@@ -292,7 +292,7 @@ export default function FormFieldEditorScreen() {
             value={field.formula ?? ''}
             onChangeText={(formula) => updateFieldState({ formula })}
             multiline
-            placeholder="laskenta_seinapinta_ala_m2 / kaytettava_maali.consumption"
+            placeholder="laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki"
             compact
           />
         ) : null}

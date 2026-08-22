@@ -75,7 +75,9 @@ describe('runProductionPipeline', () => {
     );
 
     expect(context['kautettavamaali.unit_price']).toBe(12);
+    expect(context['kautettavamaali.yksikkohinta']).toBe(12);
     expect(context['kautettavamaali.consumption']).toBe(8);
+    expect(context['kautettavamaali.menekki']).toBe(8);
   });
 });
 
@@ -175,6 +177,49 @@ describe('runFormCalculation', () => {
     });
 
     expect(materialLines).toHaveLength(1);
+    expect(result.materialsVat0).toBeCloseTo(175.95, 2);
+  });
+
+  test('finnish product aliases calculate material price', () => {
+    const form = defaultForm();
+    form.fields.push(
+      {
+        id: 'field_paint',
+        key: 'kaytettava_maali',
+        label: 'Käytettävä maali',
+        type: 'product_select',
+        required: false,
+        showOnSummary: false,
+      },
+      {
+        id: 'field_paint_price',
+        key: 'maali_hinta',
+        label: 'Maalihinta',
+        type: 'computed',
+        required: false,
+        showOnSummary: true,
+        unit: '€',
+        formula:
+          'laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta',
+        effects: [{ type: 'add_material_fixed', quantityRef: 'maali_hinta' }],
+      },
+    );
+
+    const { result, context } = runFormCalculation({
+      form,
+      fieldValues: {
+        kiintea_seinapinta_ala_m2: '120',
+        aukkovahennykset: '18',
+        laudoitustyyppi: '1.15',
+        tyoryhma_kesto_pv: '5',
+        kaytettava_maali: 'paint-1',
+      },
+      materialLines: [],
+      products: [paintProduct],
+      settings: defaultSettings,
+    });
+
+    expect(context.maali_hinta).toBeCloseTo(175.95, 2);
     expect(result.materialsVat0).toBeCloseTo(175.95, 2);
   });
 

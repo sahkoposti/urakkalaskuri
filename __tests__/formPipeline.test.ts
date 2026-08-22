@@ -146,7 +146,7 @@ describe('runDebugPipeline', () => {
       type: 'computed',
       required: false,
       showOnSummary: true,
-      formula: 'laskenta_seinapinta_ala_m2 / kaytettava_maali.consumption',
+      formula: 'laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki',
     });
 
     const paint = {
@@ -165,7 +165,9 @@ describe('runDebugPipeline', () => {
 
     expect(trace.errors).toHaveLength(0);
     expect(trace.context['kaytettava_maali.unit_price']).toBe(12);
+    expect(trace.context['kaytettava_maali.yksikkohinta']).toBe(12);
     expect(trace.context['kaytettava_maali.consumption']).toBe(8);
+    expect(trace.context['kaytettava_maali.menekki']).toBe(8);
     expect(trace.context.materiaali_maara).toBeCloseTo(117.3 / 8, 2);
   });
 });

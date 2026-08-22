@@ -56,7 +56,7 @@ export interface Product {
   unit: string;
   unitPriceVat0: number;
   description?: string;
-  /** Kaavoissa: consumption, work_factor, material_factor jne. */
+  /** Kaavoissa: menekki, yksikkohinta, tyokerroin, materiaalikerroin jne. */
   attributes?: Record<string, number>;
   createdAt: Date;
 }

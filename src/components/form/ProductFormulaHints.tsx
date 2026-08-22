@@ -12,28 +12,41 @@ type ProductFormulaHintsProps = {
   field?: FormField;
 };
 
+function VariableRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.variableRow}>
+      <Text style={styles.variableLabel}>{label}</Text>
+      <Text style={styles.variableValue} selectable>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 export function ProductFormulaHints({ form, field }: ProductFormulaHintsProps) {
   const productFields = field ? [field] : productFieldsInForm(form);
   if (productFields.length === 0) return null;
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.heading}>Tuotelistan muuttujat kaavoissa</Text>
+      <Text style={styles.heading}>Kaavamuuttujat</Text>
       <Text style={styles.help}>
-        Vaihtoehdot tulevat tuoterekisteristä. Nimi näkyy lomakkeella ja yhteenvedossa. Hinta ja
-        menekki tulevat valitusta tuotteesta kaavamuuttujina.
+        Valitun tuotteen menekki ja hinta tulevat kaavoihin näillä nimillä. Nimi näkyy lomakkeella,
+        ei kaavassa.
       </Text>
       {productFields.map((productField) => (
         <View key={productField.id} style={styles.fieldBlock}>
-          <Text style={styles.fieldLabel}>
-            {productField.label} ({productField.key})
-          </Text>
-          {PRODUCT_FORMULA_ATTRIBUTES.map((attribute) => (
-            <Text key={attribute.key} style={styles.ident}>
-              {productField.key}.{attribute.key}
-              {'  '}
-              <Text style={styles.identLabel}>{attribute.label}</Text>
+          {!field ? (
+            <Text style={styles.fieldLabel}>
+              {productField.label} ({productField.key})
             </Text>
+          ) : null}
+          {PRODUCT_FORMULA_ATTRIBUTES.map((attribute) => (
+            <VariableRow
+              key={attribute.key}
+              label={attribute.label}
+              value={productField.key ? `${productField.key}.${attribute.key}` : `… .${attribute.key}`}
+            />
           ))}
         </View>
       ))}
@@ -50,7 +63,7 @@ const styles = StyleSheet.create({
     borderColor: AppColors.border,
     borderRadius: 5,
     backgroundColor: AppColors.surface,
-    gap: 6,
+    gap: 8,
   },
   heading: {
     fontFamily: 'IBMPlexSans_700Bold',
@@ -64,20 +77,31 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   fieldBlock: {
-    marginTop: 4,
-    gap: 2,
+    gap: 8,
   },
   fieldLabel: {
     fontFamily: 'IBMPlexSans_600SemiBold',
     color: AppColors.text,
     fontSize: 13,
   },
-  ident: {
+  variableRow: {
+    backgroundColor: AppColors.secondary,
+    borderWidth: 1,
+    borderColor: AppColors.border,
+    borderRadius: 5,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 10,
+  },
+  variableLabel: {
+    fontFamily: 'IBMPlexSans_600SemiBold',
+    color: AppColors.text,
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  variableValue: {
     fontFamily: 'IBMPlexSans_400Regular',
     color: AppColors.primary,
-    fontSize: 13,
-  },
-  identLabel: {
-    color: AppColors.text,
+    fontSize: 15,
   },
 });
