@@ -43,7 +43,7 @@ export default function FormPagesSettingsScreen() {
     return true;
   }
 
-  const { exitDialog } = useUnsavedChangesGuard({
+  const { exitDialog, save } = useUnsavedChangesGuard({
     isDirty,
     onSave: persistSettings,
   });
@@ -53,8 +53,7 @@ export default function FormPagesSettingsScreen() {
   const pages = sortedPages(draft);
 
   async function handleSave() {
-    const saved = await persistSettings();
-    if (!saved) return;
+    await save();
   }
 
   function handleAddPage() {
@@ -76,8 +75,8 @@ export default function FormPagesSettingsScreen() {
       <Stack.Screen options={{ title: 'Sivut' }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.helpText}>
-          Luo ja järjestä laskennan sivut. Valitse kunkin sivun kentät erikseen. Järjestelmäsivuja
-          (Asiakas, Materiaalit) ei voi poistaa.
+          Luo ja järjestä laskennan sivut. Valitse kunkin sivun kentät erikseen. Asiakas- ja
+          Materiaalit-sivuja ei voi poistaa.
         </Text>
 
         {pages.map((page, index) => (
@@ -86,7 +85,7 @@ export default function FormPagesSettingsScreen() {
               <Text style={styles.index}>{index + 1}.</Text>
               <View style={styles.rowFields}>
                 <AppInput
-                  label={isSystemPage(page) ? `${page.title} (järjestelmä)` : 'Sivun nimi'}
+                  label="Sivun nimi"
                   value={page.title}
                   onChangeText={(title) => handleRenamePage(page.id, title)}
                 />

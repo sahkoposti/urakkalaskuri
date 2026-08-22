@@ -13,8 +13,9 @@ ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen 
 
 ## v1.1 (kesken)
 
-- **Lomakeasetukset:** sivut, kentät, valintalistojen kertoimet (export → kaavat), debug-laskenta
-- Katso [docs/v1.1-suunnitelma.md](docs/v1.1-suunnitelma.md)
+- **Lomakeasetukset:** globaalit kentät (näyttönimi + muuttuja), sivujen kenttävalinta (yksi kenttä / sivu), valintalistojen kertoimet, lasketut kentät, kaavavalidointi, kentän kopiointi, debug-laskenta
+- **Järjestelmäkentät:** kesto, hinnat, ALV – v1-kaavoilla, palautettavissa oletukseen
+- Katso [docs/v1.1-suunnitelma.md](docs/v1.1-suunnitelma.md) (Phase A valmis, Phase B kesken)
 
 ## Kehitysympäristö
 
@@ -65,7 +66,7 @@ src/
   components/     # UI-komponentit
   context/        # Sovelluksen tila
   theme/          # ColoRajaton-värit
-docs/             # v1-suunnitelma ja brändi
+docs/             # Suunnitelmat (v1, v1.1) ja brändi
 __tests__/        # Yksikkötestit
 ```
 
@@ -76,4 +77,4 @@ https://github.com/sahkoposti/urakkalaskuri
 ## Suunnitelma
 
 - [v1](docs/v1-suunnitelma.md)
-- [v1.1 – modulaarinen lomake](docs/v1.1-suunnitelma.md) *(kesken)*
+- [v1.1 – modulaarinen lomake](docs/v1.1-suunnitelma.md) *(Phase A valmis, Phase B kesken)*

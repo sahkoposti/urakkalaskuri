@@ -56,6 +56,8 @@ export interface Product {
   unit: string;
   unitPriceVat0: number;
   description?: string;
+  /** Kaavoissa: consumption, work_factor, material_factor jne. */
+  attributes?: Record<string, number>;
   createdAt: Date;
 }
 
@@ -67,6 +69,20 @@ export interface CalculationLine {
   unitPriceVat0: number;
   quantity: number;
   lineTotalVat0: number;
+}
+
+export interface FormSnapshotField {
+  key: string;
+  label: string;
+  unit?: string;
+  value: string;
+  pageTitle?: string;
+}
+
+export interface FormSnapshot {
+  formId: string;
+  formVersion: number;
+  fields: FormSnapshotField[];
 }
 
 export interface CalculationRecord {
@@ -88,6 +104,7 @@ export interface CalculationRecord {
   totalPriceVat: number;
   workDurationDays: number;
   createdAt: Date;
+  formSnapshot?: FormSnapshot;
   lines: CalculationLine[];
 }
 
@@ -175,6 +192,7 @@ export interface PersistedWizardDraft {
   customerAddress: string;
   customerNotes: string;
   duration: string;
+  fieldValues?: Record<string, string>;
   lines: PersistedWizardLineDraft[];
   updatedAt: number;
 }

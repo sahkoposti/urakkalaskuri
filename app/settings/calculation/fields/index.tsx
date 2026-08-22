@@ -4,10 +4,53 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { AppCard, OutlinedButton, ScreenLoading, SectionTitle } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
-import { removeField, sortedGlobalFields } from '@/src/core/form/formMutations';
+import {
+  FIELD_TYPE_LABELS,
+  removeField,
+  sortedSystemFields,
+  sortedUserFields,
+} from '@/src/core/form/formMutations';
 import type { FormField } from '@/src/core/form/types';
 import { db, useApp } from '@/src/context/AppContext';
 import { AppColors } from '@/src/theme/colors';
+
+function FieldCard({
+  field,
+  formDebugEnabled,
+  deletable,
+  onPress,
+  onDelete,
+}: {
+  field: FormField;
+  formDebugEnabled: boolean;
+  deletable: boolean;
+  onPress: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <AppCard key={field.id} style={styles.card} onPress={onPress}>
+      <Text style={styles.fieldLabel}>{field.label}</Text>
+      <Text style={styles.fieldMeta}>
+        {field.key} · {FIELD_TYPE_LABELS[field.type]}
+        {field.type === 'select' && field.options ? ` · ${field.options.length} valintaa` : ''}
+        {field.type === 'computed' ? (field.systemKey ? ' · järjestelmäkaava' : ' · kaava') : ''}
+      </Text>
+      {field.type === 'computed' && field.formula ? (
+        <Text style={styles.formula} numberOfLines={2}>
+          {field.formula}
+        </Text>
+      ) : null}
+      {formDebugEnabled && field.debugExampleValue ? (
+        <Text style={styles.example}>Esimerkki: {field.debugExampleValue}</Text>
+      ) : null}
+      {deletable && onDelete ? (
+        <Pressable onPress={onDelete} style={styles.deleteWrap}>
+          <Text style={styles.deleteText}>Poista</Text>
+        </Pressable>
+      ) : null}
+    </AppCard>
+  );
+}
 
 export default function FormFieldsScreen() {
   const { ready, formDefinition, formDebug, refreshFormSettings } = useApp();
@@ -15,7 +58,8 @@ export default function FormFieldsScreen() {
 
   if (!ready) return <ScreenLoading />;
 
-  const fields = sortedGlobalFields(formDefinition);
+  const userFields = sortedUserFields(formDefinition);
+  const systemFields = sortedSystemFields(formDefinition);
 
   async function confirmDeleteField() {
     if (!deleteTarget) return;
@@ -29,10 +73,10 @@ export default function FormFieldsScreen() {
     <>
       <Stack.Screen options={{ title: 'Kentät' }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <SectionTitle title="Lomakekentät" />
+        <SectionTitle title="Omat kentät" />
         <Text style={styles.help}>
           Kentät ovat globaaleja. Valitse mitkä näytetään kussakin sivussa kohdasta Lomakeasetukset →
-          Sivut.
+          Sivut. Jokainen kenttä voi olla vain yhdellä sivulla kerrallaan.
         </Text>
         {formDebug.enabled ? (
           <Text style={styles.debugHint}>
@@ -45,28 +89,38 @@ export default function FormFieldsScreen() {
           onPress={() => router.push('/settings/calculation/fields/new' as Href)}
         />
 
-        {fields.length === 0 ? (
-          <Text style={styles.empty}>Ei kenttiä</Text>
+        {userFields.length === 0 ? (
+          <Text style={styles.empty}>Ei omia kenttiä</Text>
         ) : (
-          fields.map((field) => (
-            <AppCard
+          userFields.map((field) => (
+            <FieldCard
               key={field.id}
-              style={styles.card}
+              field={field}
+              formDebugEnabled={formDebug.enabled}
+              deletable
               onPress={() => router.push(`/settings/calculation/fields/${field.id}` as Href)}
-            >
-              <Text style={styles.fieldLabel}>{field.label}</Text>
-              <Text style={styles.fieldMeta}>
-                {field.key} · {field.type}
-                {field.type === 'select' && field.options ? ` · ${field.options.length} valintaa` : ''}
-                {field.type === 'computed' ? ' · kaava' : ''}
-              </Text>
-              {formDebug.enabled && field.debugExampleValue ? (
-                <Text style={styles.example}>Esimerkki: {field.debugExampleValue}</Text>
-              ) : null}
-              <Pressable onPress={() => setDeleteTarget(field)} style={styles.deleteWrap}>
-                <Text style={styles.deleteText}>Poista</Text>
-              </Pressable>
-            </AppCard>
+              onDelete={() => setDeleteTarget(field)}
+            />
+          ))
+        )}
+
+        <SectionTitle title="Järjestelmäkentät" />
+        <Text style={styles.help}>
+          Laskennan tulokset (kesto, hinnat, ALV). Nämä kaavat ajavat wizardin hintaa. Voit muokata
+          näyttönimeä ja kaavaa; oletusarvot saa palautettua editorissa.
+        </Text>
+
+        {systemFields.length === 0 ? (
+          <Text style={styles.empty}>Ei järjestelmäkenttiä</Text>
+        ) : (
+          systemFields.map((field) => (
+            <FieldCard
+              key={field.id}
+              field={field}
+              formDebugEnabled={formDebug.enabled}
+              deletable={false}
+              onPress={() => router.push(`/settings/calculation/fields/${field.id}` as Href)}
+            />
           ))
         )}
       </ScrollView>
@@ -99,7 +153,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 32,
-    gap: 12,
+    gap: 8,
   },
   help: {
     fontFamily: 'IBMPlexSans_400Regular',
@@ -116,6 +170,7 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 0,
+    padding: 12,
   },
   fieldLabel: {
     fontFamily: 'IBMPlexSans_600SemiBold',
@@ -123,13 +178,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   fieldMeta: {
-    marginTop: 4,
+    marginTop: 2,
     fontFamily: 'IBMPlexSans_400Regular',
     color: AppColors.text,
     fontSize: 13,
   },
+  formula: {
+    marginTop: 4,
+    fontFamily: 'IBMPlexSans_400Regular',
+    color: AppColors.text,
+    fontSize: 12,
+    lineHeight: 18,
+  },
   example: {
-    marginTop: 6,
+    marginTop: 4,
     fontFamily: 'IBMPlexSans_500Medium',
     color: AppColors.accent,
     fontSize: 13,

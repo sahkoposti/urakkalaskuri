@@ -3,6 +3,11 @@ import { useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 
 import { AppInput, PrimaryButton, ScreenLoading, ScreenMessage } from '@/src/components/common';
+import {
+  attributeFieldValues,
+  buildProductAttributes,
+  ProductAttributeFields,
+} from '@/src/components/product/ProductAttributeFields';
 import type { Product } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
@@ -18,6 +23,9 @@ export default function EditProductScreen() {
   const [unit, setUnit] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [consumption, setConsumption] = useState('');
+  const [workFactor, setWorkFactor] = useState('');
+  const [materialFactor, setMaterialFactor] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -30,6 +38,10 @@ export default function EditProductScreen() {
         setUnit(loaded.unit);
         setPrice(String(loaded.unitPriceVat0));
         setDescription(loaded.description ?? '');
+        const attrs = attributeFieldValues(loaded.attributes);
+        setConsumption(attrs.consumption);
+        setWorkFactor(attrs.workFactor);
+        setMaterialFactor(attrs.materialFactor);
       }
       setLoading(false);
     })();
@@ -62,6 +74,7 @@ export default function EditProductScreen() {
       unit: unit.trim(),
       unitPriceVat0: parsedPrice,
       description: description.trim() || undefined,
+      attributes: buildProductAttributes(consumption, workFactor, materialFactor),
     });
     await refreshProducts();
     router.back();
@@ -82,6 +95,14 @@ export default function EditProductScreen() {
         value={description}
         onChangeText={setDescription}
         multiline
+      />
+      <ProductAttributeFields
+        consumption={consumption}
+        workFactor={workFactor}
+        materialFactor={materialFactor}
+        onConsumptionChange={setConsumption}
+        onWorkFactorChange={setWorkFactor}
+        onMaterialFactorChange={setMaterialFactor}
       />
       <PrimaryButton title="Tallenna" onPress={handleSave} />
     </ScrollView>

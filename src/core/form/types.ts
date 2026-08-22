@@ -10,13 +10,8 @@ export type FieldType =
 
 export interface SelectOption {
   label: string;
+  /** Numeerinen arvo kaavoissa (merkkijonona, esim. "1.15") */
   value: string;
-  multiplier?: number;
-  workFactor?: number;
-  materialFactor?: number;
-  /** Kirjoittaa arvon kontekstiin tällä avaimella (esim. laudoituskerroin) */
-  exportKey?: string;
-  exportValue?: number;
 }
 
 export interface FieldEffect {
@@ -47,6 +42,8 @@ export interface FormField {
   helpText?: string;
   /** Debug-tilassa käytettävä esimerkkiarvo (merkkijonona, parsitaan tyypin mukaan) */
   debugExampleValue?: string;
+  /** Järjestelmäkenttä (hinta, kesto…) – kaavaa ei voi poistaa */
+  systemKey?: string;
 }
 
 export interface FormPage {
@@ -70,9 +67,12 @@ export interface FormDefinition {
 export interface FormDebugSettings {
   enabled: boolean;
   showIntermediateSteps: boolean;
+  /** Debug-laskennan oletusmateriaalit (alv0) järjestelmäkaavoille */
+  materialsVat0?: number;
 }
 
 export const defaultFormDebugSettings: FormDebugSettings = {
   enabled: false,
   showIntermediateSteps: true,
+  materialsVat0: 250,
 };

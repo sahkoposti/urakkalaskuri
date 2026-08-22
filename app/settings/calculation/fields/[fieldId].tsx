@@ -15,14 +15,18 @@ import {
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import {
   createSelectOption,
-  defaultExportKey,
+  duplicateField,
   EDITABLE_FIELD_TYPES,
   FIELD_TYPE_LABELS,
   getFieldById,
   pagesUsingField,
   removeField,
+  unknownFormulaIdentifiers,
   updateField,
 } from '@/src/core/form/formMutations';
+import { sanitizeKeyInput } from '@/src/core/form/formKeyUtils';
+import { parseNumber } from '@/src/core/utils/formatters';
+import { isSystemField, restoreSystemField } from '@/src/core/form/systemFields';
 import type { FieldType, FormField } from '@/src/core/form/types';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
@@ -43,9 +47,7 @@ function applyFieldTypeChange(current: FormField, type: FieldType): FormField {
   if (type === 'select') {
     return {
       ...next,
-      options: current.options?.length
-        ? current.options
-        : [{ ...createSelectOption('Vaihtoehto 1'), exportKey: defaultExportKey(current.key) }],
+      options: current.options?.length ? current.options : [createSelectOption('Vaihtoehto 1')],
     };
   }
 
@@ -63,7 +65,7 @@ function applyFieldTypeChange(current: FormField, type: FieldType): FormField {
 
 export default function FormFieldEditorScreen() {
   const { fieldId } = useLocalSearchParams<{ fieldId: string }>();
-  const { ready, formDefinition, formDebug, refreshFormSettings } = useApp();
+  const { ready, formDefinition, formDebug, settings, refreshFormSettings } = useApp();
   const { showAlert } = useThemedAlert();
   const [field, setField] = useState<FormField | null>(null);
   const [savedField, setSavedField] = useState<FormField | null>(null);
@@ -91,11 +93,11 @@ export default function FormFieldEditorScreen() {
     if (!field) return false;
 
     if (!field.label.trim()) {
-      showAlert('Virhe', 'Kentällä on oltava nimi.');
+      showAlert('Virhe', 'Näyttönimi on pakollinen.');
       return false;
     }
-    if (!/^[a-z0-9_]+$/i.test(field.key)) {
-      showAlert('Virhe', 'Muuttujan nimi saa sisältää vain kirjaimia, numeroita ja alaviivoja.');
+    if (!field.systemKey && !/^[a-z0-9_]+$/.test(field.key)) {
+      showAlert('Virhe', 'Muuttujan nimi saa sisältää vain pienet kirjaimet, numeroita ja alaviivoja (ei ä/ö/spaces).');
       return false;
     }
     if (field.type === 'select' && (!field.options || field.options.length === 0)) {
@@ -103,17 +105,25 @@ export default function FormFieldEditorScreen() {
       return false;
     }
     if (field.type === 'select') {
-      const missingExport = field.options?.some(
-        (option) => !option.exportKey?.trim() || option.multiplier === undefined,
-      );
-      if (missingExport) {
-        showAlert('Virhe', 'Jokaisella valinnalla on oltava kerroin ja export-muuttuja.');
+      const invalidOption = field.options?.some((option) => {
+        if (!option.label.trim()) return true;
+        return parseNumber(option.value) === null;
+      });
+      if (invalidOption) {
+        showAlert('Virhe', 'Jokaisella valinnalla on oltava nimi ja numeerinen arvo.');
         return false;
       }
     }
     if (field.type === 'computed' && !field.formula?.trim()) {
       showAlert('Virhe', 'Lasketulla kentällä on oltava kaava.');
       return false;
+    }
+    if (field.type === 'computed' && field.formula?.trim()) {
+      const unknown = unknownFormulaIdentifiers(formDefinition, field.formula);
+      if (unknown.length > 0) {
+        showAlert('Virhe', `Tuntemattomat muuttujat kaavassa: ${unknown.join(', ')}`);
+        return false;
+      }
     }
 
     const duplicateKey = formDefinition.fields.some(
@@ -132,7 +142,7 @@ export default function FormFieldEditorScreen() {
     return true;
   }
 
-  const { allowExit, exitDialog } = useUnsavedChangesGuard({
+  const { allowExit, exitDialog, save } = useUnsavedChangesGuard({
     isDirty,
     onSave: persistSettings,
   });
@@ -141,12 +151,28 @@ export default function FormFieldEditorScreen() {
   if (!field) return <ScreenMessage message="Kenttää ei löytynyt." />;
 
   const editingField = field;
+  const isSystem = isSystemField(editingField);
+
+  async function handleRestoreSystemDefaults() {
+    const restored = restoreSystemField(editingField);
+    setField(restored);
+  }
 
   async function handleSave() {
-    const saved = await persistSettings();
+    const saved = await save();
     if (!saved) return;
     allowExit();
     router.back();
+  }
+
+  async function handleDuplicate() {
+    const next = duplicateField(formDefinition, editingField.id);
+    const created = next.fields.at(-1);
+    if (!created) return;
+    await db.saveFormDefinition(next);
+    await refreshFormSettings();
+    allowExit();
+    router.replace(`/settings/calculation/fields/${created.id}`);
   }
 
   async function handleDelete() {
@@ -170,10 +196,6 @@ export default function FormFieldEditorScreen() {
   const isComputed = editingField.type === 'computed';
   const isNumberLike = editingField.type === 'number' || editingField.type === 'computed';
   const usedOnPages = pagesUsingField(formDefinition, editingField.id);
-  const exportKeyDefault =
-    editingField.type === 'select'
-      ? editingField.options?.[0]?.exportKey ?? defaultExportKey(editingField.key)
-      : defaultExportKey(editingField.key);
 
   return (
     <>
@@ -186,32 +208,53 @@ export default function FormFieldEditorScreen() {
             : ' Ei vielä millään sivulla.'}
         </Text>
 
-        <View style={styles.pickerWrap}>
-          <Text style={styles.pickerLabel}>Kenttätyyppi</Text>
-          <Picker
-            selectedValue={field.type}
-            onValueChange={(value) => handleTypeChange(value as FieldType)}
-          >
-            {EDITABLE_FIELD_TYPES.includes(field.type) ? null : (
-              <Picker.Item label={FIELD_TYPE_LABELS[field.type]} value={field.type} />
-            )}
-            {EDITABLE_FIELD_TYPES.map((fieldType) => (
-              <Picker.Item
-                key={fieldType}
-                label={FIELD_TYPE_LABELS[fieldType]}
-                value={fieldType}
-              />
-            ))}
-          </Picker>
-        </View>
+        {isSystem ? (
+          <Text style={styles.systemBadge}>
+            Järjestelmäkenttä – kaava ajaa wizardin hintaa. Voit muokata kaavaa itse; „Palauta
+            oletusarvot” palauttaa alkuperäisen kaavan ja nimen. Live-laskenta käyttää
+            Yleinen-asetuksia ja muiden kenttien debug-esimerkkejä.
+          </Text>
+        ) : null}
 
-        <AppInput label="Nimi" value={field.label} onChangeText={(label) => updateFieldState({ label })} />
+        {!isSystem ? (
+          <View style={styles.pickerWrap}>
+            <Text style={styles.pickerLabel}>Kenttätyyppi</Text>
+            <Picker
+              selectedValue={field.type}
+              onValueChange={(value) => handleTypeChange(value as FieldType)}
+              style={styles.pickerControl}
+            >
+              {EDITABLE_FIELD_TYPES.map((fieldType) => (
+                <Picker.Item
+                  key={fieldType}
+                  label={FIELD_TYPE_LABELS[fieldType]}
+                  value={fieldType}
+                />
+              ))}
+            </Picker>
+          </View>
+        ) : (
+          <Text style={styles.metaLine}>Tyyppi: {FIELD_TYPE_LABELS[field.type]} (järjestelmä)</Text>
+        )}
+
         <AppInput
-          label="Muuttuja (key)"
-          value={field.key}
-          onChangeText={(key) => updateFieldState({ key: key.trim().toLowerCase() })}
-          placeholder="esim. pinta_ala"
+          label="Näyttönimi"
+          value={field.label}
+          onChangeText={(label) => updateFieldState({ label })}
+          placeholder="Esimerkki: Kiinteä seinäpinta-ala"
+          compact
         />
+        {!isSystem ? (
+          <AppInput
+            label="Muuttuja (key)"
+            value={field.key}
+            onChangeText={(key) => updateFieldState({ key: sanitizeKeyInput(key) })}
+            placeholder="esim. pinta_ala"
+            compact
+          />
+        ) : (
+          <Text style={styles.metaLine}>Muuttuja: {field.key}</Text>
+        )}
 
         {isNumberLike ? (
           <AppInput
@@ -219,28 +262,34 @@ export default function FormFieldEditorScreen() {
             value={field.unit ?? ''}
             onChangeText={(unit) => updateFieldState({ unit })}
             placeholder="esim. m²"
+            compact
           />
         ) : null}
 
         {field.type === 'select' ? (
           <SelectOptionsEditor
+            fieldKey={field.key}
             options={field.options ?? []}
-            defaultExportKey={exportKeyDefault}
             onChange={(options) => updateFieldState({ options })}
           />
         ) : null}
 
         {isComputed ? (
           <AppInput
-            label="Kaava"
+            label={isSystem ? 'Järjestelmäkaava' : 'Kaava'}
             value={field.formula ?? ''}
             onChangeText={(formula) => updateFieldState({ formula })}
             multiline
-            placeholder="(pinta_ala - aukot) * laudoituskerroin"
+            placeholder="(pinta_ala - aukot) * laudoitustyyppi"
+            compact
           />
         ) : null}
 
-        {isComputed ? (
+        {isSystem ? (
+          <OutlinedButton title="Palauta oletusarvot" onPress={handleRestoreSystemDefaults} />
+        ) : null}
+
+        {isComputed && !isSystem ? (
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>Muokattavissa lomakkeella (esitäytetty laskennalla)</Text>
             <Switch
@@ -269,6 +318,7 @@ export default function FormFieldEditorScreen() {
               <Picker
                 selectedValue={field.debugExampleValue ?? ''}
                 onValueChange={(value) => updateFieldState({ debugExampleValue: value })}
+                style={styles.pickerControl}
               >
                 <Picker.Item label="Valitse..." value="" />
                 {field.options?.map((option) => (
@@ -282,6 +332,7 @@ export default function FormFieldEditorScreen() {
               <Picker
                 selectedValue={field.debugExampleValue ?? 'false'}
                 onValueChange={(value) => updateFieldState({ debugExampleValue: value })}
+                style={styles.pickerControl}
               >
                 <Picker.Item label="Ei" value="false" />
                 <Picker.Item label="Kyllä" value="true" />
@@ -294,6 +345,7 @@ export default function FormFieldEditorScreen() {
               onChangeText={(debugExampleValue) => updateFieldState({ debugExampleValue })}
               placeholder={field.type === 'number' ? 'Esim. 120' : 'Esimerkkiarvo'}
               keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
+              compact
             />
           )
         ) : null}
@@ -315,6 +367,7 @@ export default function FormFieldEditorScreen() {
           onChangeText={(helpText) => updateFieldState({ helpText })}
           multiline
           placeholder="Näytetään kentän alla laskennassa"
+          compact
         />
 
         {formDebug.enabled && isComputed ? (
@@ -323,6 +376,8 @@ export default function FormFieldEditorScreen() {
             focusFieldKey={field.key}
             formula={field.formula}
             showIntermediateSteps={formDebug.showIntermediateSteps}
+            settings={settings}
+            materialsVat0={formDebug.materialsVat0 ?? 250}
           />
         ) : null}
 
@@ -333,7 +388,12 @@ export default function FormFieldEditorScreen() {
         ) : null}
 
         <PrimaryButton title="Tallenna" onPress={handleSave} />
-        <OutlinedButton title="Poista kenttä" onPress={() => setDeleteVisible(true)} />
+        {!isSystem ? (
+          <OutlinedButton title="Kopioi kenttä" onPress={() => void handleDuplicate()} />
+        ) : null}
+        {!isSystem ? (
+          <OutlinedButton title="Poista kenttä" onPress={() => setDeleteVisible(true)} />
+        ) : null}
       </ScrollView>
 
       <ConfirmDialog
@@ -369,24 +429,63 @@ const styles = StyleSheet.create({
     color: AppColors.text,
     lineHeight: 20,
   },
+  systemBadge: {
+    marginBottom: 8,
+    padding: 10,
+    borderRadius: 5,
+    backgroundColor: AppColors.surface,
+    borderWidth: 1,
+    borderColor: AppColors.accent,
+    fontFamily: 'IBMPlexSans_500Medium',
+    color: AppColors.accent,
+    fontSize: 13,
+  },
+  metaLine: {
+    marginBottom: 8,
+    fontFamily: 'IBMPlexSans_400Regular',
+    color: AppColors.text,
+    fontSize: 13,
+  },
+  formulaReadonly: {
+    backgroundColor: AppColors.secondary,
+    borderWidth: 1,
+    borderColor: AppColors.border,
+    borderRadius: 5,
+    marginBottom: 8,
+    paddingBottom: 8,
+  },
+  formulaText: {
+    paddingHorizontal: 12,
+    paddingBottom: 4,
+    fontFamily: 'IBMPlexSans_400Regular',
+    color: AppColors.text,
+    lineHeight: 18,
+    fontSize: 14,
+  },
   pickerWrap: {
     backgroundColor: AppColors.secondary,
     borderWidth: 1,
     borderColor: AppColors.border,
     borderRadius: 5,
-    marginBottom: 12,
+    marginBottom: 8,
+    overflow: 'hidden',
   },
   pickerLabel: {
-    paddingHorizontal: 14,
-    paddingTop: 12,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 2,
     fontFamily: 'IBMPlexSans_600SemiBold',
     color: AppColors.text,
+    fontSize: 14,
+  },
+  pickerControl: {
+    marginTop: -4,
   },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginVertical: 12,
+    marginVertical: 8,
     gap: 12,
   },
   switchLabel: {

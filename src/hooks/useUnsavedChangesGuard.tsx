@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler } from 'react-native';
 
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { useSaveToast } from '@/src/context/SaveToastContext';
 
 type UseUnsavedChangesGuardOptions = {
   isDirty: boolean;
@@ -11,6 +12,7 @@ type UseUnsavedChangesGuardOptions = {
 
 export function useUnsavedChangesGuard({ isDirty, onSave }: UseUnsavedChangesGuardOptions) {
   const navigation = useNavigation();
+  const { showSaved } = useSaveToast();
   const allowExitRef = useRef(false);
   const pendingExitRef = useRef<(() => void) | null>(null);
   const [exitDialogVisible, setExitDialogVisible] = useState(false);
@@ -32,18 +34,22 @@ export function useUnsavedChangesGuard({ isDirty, onSave }: UseUnsavedChangesGua
     action?.();
   }, [closeExitDialog]);
 
-  const saveAndExit = useCallback(async () => {
-    if (!onSave) {
-      leaveWithoutSaving();
-      return;
-    }
+  const save = useCallback(async (): Promise<boolean> => {
+    if (!onSave) return false;
     const result = await onSave();
-    if (result === false) return;
+    if (result === false) return false;
+    showSaved();
+    return true;
+  }, [onSave, showSaved]);
+
+  const saveAndExit = useCallback(async () => {
+    const saved = await save();
+    if (!saved) return;
     allowExitRef.current = true;
     const action = pendingExitRef.current;
     closeExitDialog();
     action?.();
-  }, [closeExitDialog, leaveWithoutSaving, onSave]);
+  }, [closeExitDialog, save]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
@@ -106,5 +112,5 @@ export function useUnsavedChangesGuard({ isDirty, onSave }: UseUnsavedChangesGua
     />
   );
 
-  return { allowExit, exitDialog };
+  return { allowExit, exitDialog, save };
 }

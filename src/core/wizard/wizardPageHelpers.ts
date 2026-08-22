@@ -1,0 +1,82 @@
+import { fieldsForPage } from '@/src/core/form/formDefinitionHelpers';
+import {
+  findProductById,
+  getFieldProductQuantity,
+  getSelectedProductId,
+} from '@/src/core/form/productFieldUtils';
+import { isSystemField } from '@/src/core/form/systemFields';
+import type { FormDefinition, FormPage } from '@/src/core/form/types';
+import type { Product } from '@/src/core/models/types';
+import { parseNumber } from '@/src/core/utils/formatters';
+
+export function getDurationDaysFromValues(
+  fieldValues: Record<string, string>,
+  legacyDuration = '',
+): number | null {
+  const raw = fieldValues.tyoryhma_kesto_pv?.trim() || legacyDuration.trim();
+  if (!raw) return null;
+  const parsed = parseNumber(raw);
+  if (parsed === null || parsed <= 0) return null;
+  return parsed;
+}
+
+export function validateFormPageWithValues(
+  form: FormDefinition,
+  page: FormPage,
+  fieldValues: Record<string, string>,
+  customerName = '',
+  products: Product[] = [],
+): string | null {
+  if (page.system === 'customer') {
+    if (!customerName.trim()) {
+      return 'Anna asiakkaan nimi.';
+    }
+    return null;
+  }
+  if (page.system === 'materials') {
+    return null;
+  }
+
+  for (const field of fieldsForPage(form, page.id)) {
+    if (field.type === 'section' || field.type === 'computed' || isSystemField(field)) {
+      continue;
+    }
+
+    const raw = fieldValues[field.key]?.trim();
+    if (field.required && !raw) {
+      return `${field.label}: kenttä on pakollinen.`;
+    }
+
+    if (field.type === 'number' && raw) {
+      const parsed = parseNumber(raw);
+      if (parsed === null) {
+        return `${field.label}: anna kelvollinen numero.`;
+      }
+      if (field.key === 'tyoryhma_kesto_pv' && parsed <= 0) {
+        return `${field.label}: keston on oltava suurempi kuin 0.`;
+      }
+    }
+
+    if (field.type === 'product_select' || field.type === 'product_quantity') {
+      const productId = getSelectedProductId(fieldValues, field.key);
+      if (field.required && !productId) {
+        return `${field.label}: valitse tuote.`;
+      }
+      if (productId && !findProductById(products, productId)) {
+        return `${field.label}: valittu tuote ei ole enää saatavilla.`;
+      }
+      if (field.type === 'product_quantity' && field.required) {
+        const quantity = getFieldProductQuantity(fieldValues, field.key);
+        if (quantity === null) {
+          return `${field.label}: anna kelvollinen määrä.`;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+export function hasFieldValueContent(fieldValues: Record<string, string>): boolean {
+  return Object.values(fieldValues).some((value) => value.trim().length > 0);
+}

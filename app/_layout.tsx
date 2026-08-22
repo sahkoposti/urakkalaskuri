@@ -15,6 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { DraftResumeBanner } from '@/src/components/DraftResumeBanner';
 import { AppProvider } from '@/src/context/AppContext';
 import { ThemedAlertProvider } from '@/src/context/ThemedAlertContext';
+import { SaveToastProvider } from '@/src/context/SaveToastContext';
 import { AppColors } from '@/src/theme/colors';
 
 SplashScreen.preventAutoHideAsync();
@@ -45,6 +46,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AppProvider>
         <ThemedAlertProvider>
+          <SaveToastProvider>
           <StatusBar style="dark" />
           <View style={{ flex: 1 }}>
           <Stack
@@ -79,6 +81,7 @@ export default function RootLayout() {
           </Stack>
           <DraftResumeBanner />
           </View>
+          </SaveToastProvider>
         </ThemedAlertProvider>
       </AppProvider>
     </SafeAreaProvider>

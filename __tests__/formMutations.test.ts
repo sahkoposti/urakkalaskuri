@@ -4,19 +4,44 @@ import {
   addField,
   addFieldToPage,
   addPage,
+  duplicateField,
+  fieldsAvailableForPage,
   fieldsForPage,
   moveFieldOnPage,
   movePage,
   removeField,
   removePage,
   slugifyKey,
+  sanitizeKeyInput,
   uniqueFieldKey,
+  unknownFormulaIdentifiers,
 } from '../src/core/form/formMutations';
+import { isSystemField, restoreSystemField } from '../src/core/form/systemFields';
 
 describe('formMutations', () => {
   test('slugifyKey converts finnish labels', () => {
     expect(slugifyKey('Laudoitustyyppi')).toBe('laudoitustyyppi');
     expect(slugifyKey('Kiinteä seinäpinta')).toBe('kiintea_seinapinta');
+  });
+
+  test('sanitizeKeyInput allows empty while editing', () => {
+    expect(sanitizeKeyInput('')).toBe('');
+    expect(sanitizeKeyInput('   ')).toBe('');
+  });
+
+  test('sanitizeKeyInput slugifies non-empty input', () => {
+    expect(sanitizeKeyInput('Pinta Ala')).toBe('pintaala');
+    expect(sanitizeKeyInput('Määrä')).toBe('maara');
+  });
+
+  test('sanitizeKeyInput preserves underscores while typing', () => {
+    expect(sanitizeKeyInput('pinta_')).toBe('pinta_');
+    expect(sanitizeKeyInput('pinta_ala')).toBe('pinta_ala');
+    expect(sanitizeKeyInput('kiintea_seinapinta_ala_m2')).toBe('kiintea_seinapinta_ala_m2');
+  });
+
+  test('slugifyKey defaults empty label to kentta', () => {
+    expect(slugifyKey('')).toBe('kentta');
   });
 
   test('addPage appends with empty fieldIds', () => {
@@ -65,12 +90,12 @@ describe('formMutations', () => {
     const created = next.fields.at(-1);
     expect(created?.type).toBe('select');
     expect(created?.options?.length).toBe(1);
-    expect(created?.options?.[0].exportKey).toContain('_kerroin');
+    expect(created?.options?.[0].value).toBe('1');
   });
 
   test('uniqueFieldKey avoids collisions', () => {
     const form = createDefaultFormDefinition();
-    expect(uniqueFieldKey(form, 'kiinteä_seinäpinta_ala_m2')).toBe('kiinteä_seinäpinta_ala_m2_2');
+    expect(uniqueFieldKey(form, 'kiintea_seinapinta_ala_m2')).toBe('kiintea_seinapinta_ala_m2_2');
   });
 
   test('moveFieldOnPage reorders page fieldIds', () => {
@@ -92,6 +117,59 @@ describe('formMutations', () => {
     const next = removeField(form, target.id);
     expect(next.fields.some((field) => field.id === target.id)).toBe(false);
     expect(fieldsForPage(next, pageId).some((field) => field.id === target.id)).toBe(false);
+  });
+
+  test('addFieldToPage moves field from other pages', () => {
+    const form = createDefaultFormDefinition();
+    const sourcePageId = form.pages.find((page) => page.title === 'Pinta-alat')!.id;
+    const targetPageId = form.pages.find((page) => page.title.includes('kesto'))!.id;
+    const field = fieldsForPage(form, sourcePageId)[0];
+
+    const next = addFieldToPage(form, targetPageId, field.id);
+    expect(fieldsForPage(next, sourcePageId).some((item) => item.id === field.id)).toBe(false);
+    expect(fieldsForPage(next, targetPageId).some((item) => item.id === field.id)).toBe(true);
+  });
+
+  test('fieldsAvailableForPage excludes assigned fields', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const assignedPage = form.pages.find((page) => (page.fieldIds ?? []).length > 0)!;
+    const available = fieldsAvailableForPage(form, assignedPage.id);
+    const assignedIds = new Set(assignedPage.fieldIds);
+    expect(available.every((field) => !assignedIds.has(field.id))).toBe(true);
+    expect(available.some((field) => field.key === 'kiintea_seinapinta_ala_m2')).toBe(false);
+  });
+
+  test('removeField blocks system fields', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const systemField = form.fields.find((field) => isSystemField(field))!;
+    const next = removeField(form, systemField.id);
+    expect(next.fields.some((field) => field.id === systemField.id)).toBe(true);
+  });
+
+  test('restoreSystemField resets label and formula to defaults', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const systemField = form.fields.find((field) => field.systemKey === 'kokonaishinta')!;
+    const edited = { ...systemField, label: 'Muokattu', formula: '1 + 1' };
+    const restored = restoreSystemField(edited);
+    expect(restored.label).toBe('Kokonaishinta (alv)');
+    expect(restored.formula).toContain('urakka_hinta_alv0');
+  });
+
+  test('mergeSystemFields preserves custom system formula', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const systemField = form.fields.find((field) => field.systemKey === 'kokonaishinta')!;
+    const customized = {
+      ...form,
+      fields: form.fields.map((field) =>
+        field.id === systemField.id
+          ? { ...field, formula: 'urakka_hinta_alv0 * 2', label: 'Oma nimi' }
+          : field,
+      ),
+    };
+    const normalized = normalizeFormDefinition(customized);
+    const restored = normalized.fields.find((field) => field.systemKey === 'kokonaishinta')!;
+    expect(restored.label).toBe('Oma nimi');
+    expect(restored.formula).toBe('urakka_hinta_alv0 * 2');
   });
 
   test('normalizeFormDefinition migrates legacy pageId fields', () => {
@@ -117,5 +195,109 @@ describe('formMutations', () => {
     const normalized = normalizeFormDefinition(legacy);
     expect(normalized.fields[0]).not.toHaveProperty('pageId');
     expect(normalized.pages[0].fieldIds).toEqual(['f1']);
+  });
+
+  test('normalizeFormDefinition merges system fields', () => {
+    const normalized = normalizeFormDefinition(createDefaultFormDefinition());
+    expect(normalized.fields.some((field) => field.systemKey === 'kokonaishinta')).toBe(true);
+    expect(normalized.fields.some((field) => field.systemKey === 'tyoryhma_kesto_h')).toBe(true);
+  });
+
+  test('normalizeFormDefinition migrates legacy select options', () => {
+    const legacy = {
+      ...createDefaultFormDefinition(),
+      fields: createDefaultFormDefinition().fields.map((field) => {
+        if (field.key === 'laudoitustyyppi') {
+          return {
+            ...field,
+            debugExampleValue: 'paneeli',
+            options: [
+              {
+                label: 'Paneeli',
+                value: 'paneeli',
+                multiplier: 1.15,
+                exportKey: 'laudoituskerroin',
+              },
+            ],
+          };
+        }
+        if (field.key === 'laskenta_seinapinta_ala_m2') {
+          return {
+            ...field,
+            formula: '(kiintea_seinapinta_ala_m2 - aukkovahennykset) * laudoituskerroin',
+          };
+        }
+        return field;
+      }),
+    };
+
+    const form = normalizeFormDefinition(legacy);
+    const select = form.fields.find((field) => field.key === 'laudoitustyyppi')!;
+    expect(select.options?.[0]).toEqual({ label: 'Paneeli', value: '1.15' });
+    expect(select.debugExampleValue).toBe('1.15');
+    const computed = form.fields.find((field) => field.key === 'laskenta_seinapinta_ala_m2')!;
+    expect(computed.formula).toContain('laudoitustyyppi');
+    expect(computed.formula).not.toContain('laudoituskerroin');
+  });
+
+  test('normalizeFormDefinition migrates legacy finnish keys', () => {
+    const legacy = normalizeFormDefinition({
+      ...createDefaultFormDefinition(),
+      fields: createDefaultFormDefinition().fields.map((field) =>
+        field.key === 'kiintea_seinapinta_ala_m2'
+          ? { ...field, key: 'kiinteä_seinäpinta_ala_m2' }
+          : field,
+      ),
+    });
+    expect(legacy.fields.some((field) => field.key === 'kiintea_seinapinta_ala_m2')).toBe(true);
+  });
+
+  test('duplicateField creates copy with new id and key', () => {
+    const form = createDefaultFormDefinition();
+    const source = form.fields[0];
+    const next = duplicateField(form, source.id);
+    expect(next.fields).toHaveLength(form.fields.length + 1);
+    const copy = next.fields.at(-1)!;
+    expect(copy.id).not.toBe(source.id);
+    expect(copy.key).not.toBe(source.key);
+    expect(copy.label).toContain('kopio');
+  });
+
+  test('duplicateField skips system fields', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const systemField = form.fields.find((field) => field.systemKey)!;
+    const next = duplicateField(form, systemField.id);
+    expect(next.fields).toHaveLength(form.fields.length);
+  });
+
+  test('unknownFormulaIdentifiers flags missing keys', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const unknown = unknownFormulaIdentifiers(form, 'kiintea_seinapinta_ala_m2 + puuttuva_avain');
+    expect(unknown).toContain('puuttuva_avain');
+    expect(unknown).not.toContain('kiintea_seinapinta_ala_m2');
+  });
+
+  test('unknownFormulaIdentifiers allows settings prefix', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const unknown = unknownFormulaIdentifiers(form, 'tyoryhma_kesto_pv * settings.workday_hours');
+    expect(unknown).toHaveLength(0);
+  });
+
+  test('unknownFormulaIdentifiers allows asetukset prefix', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const unknown = unknownFormulaIdentifiers(form, 'tyoryhma_kesto_pv * asetukset.tyopaivan_pituus');
+    expect(unknown).toHaveLength(0);
+  });
+
+  test('normalizeFormDefinition migrates legacy formula keys to Finnish', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    form.fields = form.fields.map((field) =>
+      field.systemKey === 'tyoryhma_kesto_h'
+        ? { ...field, formula: 'tyoryhma_kesto_pv * settings.workday_hours' }
+        : field,
+    );
+    const normalized = normalizeFormDefinition(form);
+    const tyoryhma = normalized.fields.find((field) => field.systemKey === 'tyoryhma_kesto_h');
+    expect(tyoryhma?.formula).toContain('asetukset.tyopaivan_pituus');
   });
 });

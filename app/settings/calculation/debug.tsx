@@ -29,7 +29,7 @@ export default function FormDebugSettingsScreen() {
     return true;
   }
 
-  const { allowExit, exitDialog } = useUnsavedChangesGuard({
+  const { allowExit, exitDialog, save } = useUnsavedChangesGuard({
     isDirty,
     onSave: persistSettings,
   });
@@ -37,7 +37,7 @@ export default function FormDebugSettingsScreen() {
   if (!ready) return <ScreenLoading />;
 
   async function handleSave() {
-    const saved = await persistSettings();
+    const saved = await save();
     if (!saved) return;
     allowExit();
     router.back();

@@ -5,8 +5,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppCard, OutlinedButton, PrimaryButton, ScreenLoading, ScreenMessage } from '@/src/components/common';
 import {
   addFieldToPage,
+  fieldsAvailableForPage,
   fieldsForPage,
-  fieldsNotOnPage,
   FIELD_TYPE_LABELS,
   formsEqual,
   moveFieldOnPage,
@@ -36,7 +36,7 @@ export default function PageFieldsSettingsScreen() {
     return true;
   }
 
-  const { exitDialog } = useUnsavedChangesGuard({
+  const { exitDialog, save } = useUnsavedChangesGuard({
     isDirty,
     onSave: persistSettings,
   });
@@ -45,10 +45,10 @@ export default function PageFieldsSettingsScreen() {
   if (!page) return <ScreenMessage message="Sivua ei löytynyt." />;
 
   const assigned = fieldsForPage(draft, page.id);
-  const available = fieldsNotOnPage(draft, page.id);
+  const available = fieldsAvailableForPage(draft, page.id);
 
   async function handleSave() {
-    await persistSettings();
+    await save();
   }
 
   return (
@@ -56,8 +56,8 @@ export default function PageFieldsSettingsScreen() {
       <Stack.Screen options={{ title: `${page.title} – kentät` }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.help}>
-          Valitse mitkä globaalit kentät näytetään tällä sivulla ja missä järjestyksessä. Laskettu
-          kenttä näytetään lomakkeella muokattavana arvona (esitäytettynä laskennalla).
+          Valitse mitkä kentät näytetään tällä sivulla. Jokainen kenttä voi olla vain yhdellä
+          sivulla kerrallaan. Laskettu kenttä näytetään lomakkeella muokattavana arvona.
         </Text>
 
         <Text style={styles.sectionTitle}>Sivulla ({assigned.length})</Text>
@@ -104,7 +104,7 @@ export default function PageFieldsSettingsScreen() {
 
         <Text style={styles.sectionTitle}>Lisää kenttä</Text>
         {available.length === 0 ? (
-          <Text style={styles.empty}>Kaikki kentät on jo lisätty tälle sivulle</Text>
+          <Text style={styles.empty}>Kaikki kentät on jo lisätty jollekin sivulle</Text>
         ) : (
           available.map((field) => (
             <AppCard

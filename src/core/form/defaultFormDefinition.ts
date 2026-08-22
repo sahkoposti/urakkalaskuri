@@ -2,10 +2,10 @@ import type { FormDefinition } from '@/src/core/form/types';
 
 /** v1 wizard + esimerkkikentät modulaarisen laskennan debuggausta varten */
 export function createDefaultFormDefinition(): FormDefinition {
-  const fields = [
+  const userFields = [
     {
-      id: 'field_kiinteä_seinäpinta',
-      key: 'kiinteä_seinäpinta_ala_m2',
+      id: 'field_kiintea_seinapinta',
+      key: 'kiintea_seinapinta_ala_m2',
       label: 'Kiinteä seinäpinta-ala',
       type: 'number' as const,
       required: true,
@@ -14,8 +14,8 @@ export function createDefaultFormDefinition(): FormDefinition {
       debugExampleValue: '120',
     },
     {
-      id: 'field_aukkovähennykset',
-      key: 'aukkovähennykset',
+      id: 'field_aukkovahennykset',
+      key: 'aukkovahennykset',
       label: 'Aukkovähennykset',
       type: 'number' as const,
       required: false,
@@ -30,29 +30,29 @@ export function createDefaultFormDefinition(): FormDefinition {
       type: 'select' as const,
       required: true,
       showOnSummary: true,
-      debugExampleValue: 'paneeli',
+      debugExampleValue: '1.15',
       options: [
-        { label: 'Paneeli', value: 'paneeli', multiplier: 1.15, exportKey: 'laudoituskerroin' },
-        { label: 'Lomalaudoitus', value: 'lomalaudoitus', multiplier: 1.25, exportKey: 'laudoituskerroin' },
-        { label: 'Rimalaudoitus', value: 'rimalaudoitus', multiplier: 1.3, exportKey: 'laudoituskerroin' },
-        { label: 'Hirsi', value: 'hirsi', multiplier: 1.0, exportKey: 'laudoituskerroin' },
+        { label: 'Paneeli', value: '1.15' },
+        { label: 'Lomalaudoitus', value: '1.25' },
+        { label: 'Rimalaudoitus', value: '1.3' },
+        { label: 'Hirsi', value: '1' },
       ],
     },
     {
-      id: 'field_laskenta_seinäpinta',
-      key: 'laskenta_seinäpinta_ala_m2',
+      id: 'field_laskenta_seinapinta',
+      key: 'laskenta_seinapinta_ala_m2',
       label: 'Seinäpinta-ala (laskettu)',
       type: 'computed' as const,
       required: false,
       showOnSummary: true,
       allowManualOverride: true,
       unit: 'm²',
-      formula: '(kiinteä_seinäpinta_ala_m2 - aukkovähennykset) * laudoituskerroin',
+      formula: '(kiintea_seinapinta_ala_m2 - aukkovahennykset) * laudoitustyyppi',
     },
     {
       id: 'field_duration',
-      key: 'työryhmän_kesto_pv',
-      label: 'Kesto',
+      key: 'tyoryhma_kesto_pv',
+      label: 'Työryhmän kesto',
       type: 'number' as const,
       required: true,
       showOnSummary: true,
@@ -74,10 +74,10 @@ export function createDefaultFormDefinition(): FormDefinition {
       title: 'Pinta-alat',
       sortOrder: 1,
       fieldIds: [
-        'field_kiinteä_seinäpinta',
-        'field_aukkovähennykset',
+        'field_kiintea_seinapinta',
+        'field_aukkovahennykset',
         'field_laudoitustyyppi',
-        'field_laskenta_seinäpinta',
+        'field_laskenta_seinapinta',
       ],
     },
     {
@@ -98,9 +98,9 @@ export function createDefaultFormDefinition(): FormDefinition {
   return {
     id: 'default',
     name: 'Peruslaskenta',
-    version: 2,
+    version: 3,
     pages,
-    fields,
+    fields: userFields,
     updatedAt: Date.now(),
   };
 }

@@ -27,7 +27,7 @@ Sovelluksen visuaalinen tyyli noudattaa [colorajaton.fi](https://colorajaton.fi)
 | **Laskenta (wizard)** | Vaiheittainen syöttö + tuoterivit, kesken jääneen tallennus | Kyllä |
 | **Yhteenveto** | Lasketut tulokset + tallennus | Kyllä |
 | **Historia** | Aiempien laskelmien lista ja avaus | Kyllä |
-| **Asetukset** | Yleinen, Laskenta, Teema (ks. luku 4.2) | Kyllä |
+| **Asetukset** | Yleinen, Lomakeasetukset (v1.1), Teema | Kyllä |
 | Custom-muuttujat / kaavaeditori | Käyttäjän määrittelemät kentät ja vaikutukset | Ei (v1.1+, paikka valmiina) |
 | Teeman soveltaminen koko UI:hin | Tallennetut värit/taustakuva käyttöön | Ei (v1.1+) |
 | PDF-vienti / pilvisynkka | | Ei |
@@ -90,17 +90,15 @@ Etusivu
     └── Teema (logo, värit, taustakuva, himmeys)
 ```
 
-### 4.1 Wizard-vaiheet (oletusjärjestys, säädettävissä)
+### 4.1 Wizard-vaiheet (oletusjärjestys)
 
 | ID | Vaihe | Syöte | Pakollinen |
 |----|-------|-------|------------|
 | `customer` | Asiakas | nimi, puh, sähköposti, osoite, lisätiedot | Nimi kyllä |
 | `duration` | Työryhmän arvioitu kesto | päivää (desimaali ok) | Kyllä |
 | `materials` | Materiaalit – tuoterivit | tuote + määrä | Ei |
-| `margin` | Myyntikatetavoite (%) | % | Kyllä (oletus asetuksista) |
-| `commission` | Myyntipalkkio (%) | % | Kyllä (oletus asetuksista) |
 
-**Huom.** Työryhmän koko ja tuntihinta tulevat **asetuksista** (Yleinen), eivät wizardista. Kesto muunnetaan tunneiksi: `päivät × työpäivän pituus`.
+**Huom.** Työryhmän koko, tuntihinta, myyntikate (%) ja myyntipalkkio (%) tulevat **Yleinen**-asetuksista, eivät wizard-vaiheina. Kesto muunnetaan tunneiksi: `päivät × työpäivän pituus`.
 
 **Kesken jäänyt laskenta:** poistuessa kysytään tallennusta. Luonnos näkyy yläpalkin punaisessa bannerissa „Jatka laskentaa →”. Uusi laskenta poistaa luonnoksen vahvistuksella.
 
@@ -158,7 +156,7 @@ rivisumma_alv0 = määrä × yksikköhinta_alv0
 | `h` | Tuntihinta (alv0) | asetukset |
 | `U` | Urakkahinta (alv0) | `t × n × h` |
 | `M` | Materiaalit (alv0) | tuoterivit |
-| `k`, `p` | Kate ja palkkio (%) | wizard / oletus |
+| `k`, `p` | Kate ja palkkio (%) | Yleinen-asetukset |
 | `P` | Kokonaishinta (alv0) | `(U + M) / (1 - k - p)` |
 | `a` | ALV (%) | asetukset |
 | `d` | Työpäivän pituus (h) | asetukset |
@@ -219,22 +217,24 @@ docs/
 ### 7.3 WizardStepId
 
 ```typescript
-type WizardStepId = 'customer' | 'duration' | 'materials' | 'margin' | 'commission';
+type WizardStepId = 'customer' | 'duration' | 'materials';
 ```
 
-Järjestys: `settings.wizardStepOrder` (normalisoidaan `normalizeWizardStepOrder()`).
+Järjestys: `settings.wizardStepOrder` (normalisoidaan `normalizeWizardStepOrder()`). v1.1:ssä lomakepohjan sivujärjestys korvaa tämän, kun dynaaminen wizard on valmis.
 
 ### 7.4 Modulaarisuus (v1.1+)
 
 ```
 [Syötteet + tuoterivit]
         ↓
-[Custom-muuttujien vaikutukset]  ← settings/calculation/variables
+[Lomakepohjan kentät + kaavat]  ← Lomakeasetukset
         ↓
 [runCalculation / runPipeline]
         ↓
 [Tulos]
 ```
+
+Katso: [v1.1-suunnitelma.md](./v1.1-suunnitelma.md)
 
 ---
 
@@ -243,11 +243,11 @@ Järjestys: `settings.wizardStepOrder` (normalisoidaan `normalizeWizardStepOrder
 ### Toteutettu (MVP)
 - [x] ColoRajaton-teema, logo, IBM Plex Sans
 - [x] Tuotteiden CRUD
-- [x] Wizard 5 vaihetta, validointi, päivät → tunnit
+- [x] Wizard 3 vaihetta (asiakas, kesto, materiaalit), validointi, päivät → tunnit
 - [x] Laskentakaavat + yksikkötestit
 - [x] Yhteenveto + erittely + tallennus
 - [x] Historia
-- [x] Asetukset: Yleinen, Laskenta (järjestys), Teema (tallennus)
+- [x] Asetukset: Yleinen, Lomakeasetukset (v1.1), Teema (tallennus)
 - [x] Kesken jääneen laskennan tallennus ja jatko
 - [x] Expo Go (SDK 54)
 

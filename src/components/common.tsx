@@ -198,6 +198,7 @@ type AppInputProps = {
   keyboardType?: 'default' | 'numeric' | 'decimal-pad' | 'phone-pad' | 'email-address';
   multiline?: boolean;
   placeholder?: string;
+  compact?: boolean;
 };
 
 export function AppInput({
@@ -207,10 +208,11 @@ export function AppInput({
   keyboardType = 'default',
   multiline = false,
   placeholder,
+  compact = false,
 }: AppInputProps) {
   return (
-    <View style={styles.inputWrap}>
-      <Text style={styles.inputLabel}>{label}</Text>
+    <View style={[styles.inputWrap, compact && styles.inputWrapCompact]}>
+      <Text style={[styles.inputLabel, compact && styles.inputLabelCompact]}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -218,7 +220,12 @@ export function AppInput({
         multiline={multiline}
         placeholder={placeholder}
         placeholderTextColor="#999"
-        style={[styles.input, multiline && styles.inputMultiline]}
+        style={[
+          styles.input,
+          compact && styles.inputCompact,
+          multiline && styles.inputMultiline,
+          compact && multiline && styles.inputMultilineCompact,
+        ]}
       />
     </View>
   );
@@ -346,10 +353,17 @@ const styles = StyleSheet.create({
   inputWrap: {
     marginBottom: 12,
   },
+  inputWrapCompact: {
+    marginBottom: 8,
+  },
   inputLabel: {
     marginBottom: 6,
     fontFamily: 'IBMPlexSans_600SemiBold',
     color: AppColors.text,
+  },
+  inputLabelCompact: {
+    marginBottom: 4,
+    fontSize: 14,
   },
   input: {
     backgroundColor: AppColors.secondary,
@@ -361,9 +375,18 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexSans_400Regular',
     color: AppColors.primary,
   },
+  inputCompact: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 15,
+  },
   inputMultiline: {
     minHeight: 90,
     textAlignVertical: 'top',
+  },
+  inputMultilineCompact: {
+    minHeight: 64,
+    paddingVertical: 8,
   },
   loadingWrap: {
     flex: 1,

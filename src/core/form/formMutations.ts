@@ -10,17 +10,25 @@ import {
   getFieldById,
   sortedPages,
 } from '@/src/core/form/formDefinitionHelpers';
+import { slugifyKey } from '@/src/core/form/formKeyUtils';
+
+export { slugifyKey, sanitizeKeyInput } from '@/src/core/form/formKeyUtils';
 
 export {
+  collectKnownFormulaIdentifiers,
+  fieldsAvailableForPage,
   fieldsForPage,
-  fieldsNotOnPage,
   getFieldById,
   normalizeFormDefinition,
   pagesUsingField,
   pipelineFieldOrder,
   sortedGlobalFields,
   sortedPages,
+  sortedSystemFields,
+  sortedUserFields,
+  unknownFormulaIdentifiers,
 } from '@/src/core/form/formDefinitionHelpers';
+export { isSystemField, restoreSystemField } from '@/src/core/form/systemFields';
 
 export const EDITABLE_FIELD_TYPES: FieldType[] = [
   'number',
@@ -50,21 +58,6 @@ export function isSystemPage(page: FormPage): boolean {
   return page.system === 'customer' || page.system === 'materials';
 }
 
-export function slugifyKey(label: string): string {
-  return (
-    label
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/ä/g, 'a')
-      .replace(/ö/g, 'o')
-      .replace(/å/g, 'a')
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '')
-      .replace(/_+/g, '_') || 'kentta'
-  );
-}
-
 export function uniqueFieldKey(form: FormDefinition, baseKey: string, excludeFieldId?: string): string {
   const taken = new Set(
     form.fields.filter((field) => field.id !== excludeFieldId).map((field) => field.key),
@@ -77,17 +70,10 @@ export function uniqueFieldKey(form: FormDefinition, baseKey: string, excludeFie
   return `${baseKey}_${index}`;
 }
 
-export function defaultExportKey(fieldKey: string): string {
-  return `${fieldKey}_kerroin`;
-}
-
 export function createSelectOption(label = 'Uusi valinta'): SelectOption {
-  const value = slugifyKey(label);
   return {
     label,
-    value,
-    multiplier: 1,
-    exportKey: 'kerroin',
+    value: '1',
   };
 }
 
@@ -107,14 +93,7 @@ export function createField(type: FieldType, form: FormDefinition): FormField {
   if (type === 'select') {
     return {
       ...base,
-      options: [
-        {
-          label: 'Vaihtoehto 1',
-          value: 'vaihtoehto_1',
-          multiplier: 1,
-          exportKey: defaultExportKey(key),
-        },
-      ],
+      options: [createSelectOption('Vaihtoehto 1')],
     };
   }
 
@@ -217,7 +196,30 @@ export function updateField(form: FormDefinition, updated: FormField): FormDefin
   };
 }
 
+export function duplicateField(form: FormDefinition, fieldId: string): FormDefinition {
+  const source = getFieldById(form, fieldId);
+  if (!source || source.systemKey) return form;
+
+  const label = `${source.label} (kopio)`;
+  const key = uniqueFieldKey(form, `${source.key}_kopio`);
+  const copy: FormField = {
+    ...source,
+    id: generateId('field'),
+    label,
+    key,
+    options: source.options?.map((option) => ({ ...option })),
+  };
+
+  return {
+    ...form,
+    fields: [...form.fields, copy],
+    updatedAt: Date.now(),
+  };
+}
+
 export function removeField(form: FormDefinition, fieldId: string): FormDefinition {
+  const target = getFieldById(form, fieldId);
+  if (!target || target.systemKey) return form;
   return {
     ...form,
     fields: form.fields.filter((field) => field.id !== fieldId),
@@ -231,7 +233,15 @@ export function removeField(form: FormDefinition, fieldId: string): FormDefiniti
 
 export function addFieldToPage(form: FormDefinition, pageId: string, fieldId: string): FormDefinition {
   if (!getFieldById(form, fieldId)) return form;
-  return mapPageFieldIds(form, pageId, (fieldIds) =>
+  const withoutElsewhere = {
+    ...form,
+    pages: form.pages.map((page) => ({
+      ...page,
+      fieldIds: (page.fieldIds ?? []).filter((id) => id !== fieldId),
+    })),
+    updatedAt: Date.now(),
+  };
+  return mapPageFieldIds(withoutElsewhere, pageId, (fieldIds) =>
     fieldIds.includes(fieldId) ? fieldIds : [...fieldIds, fieldId],
   );
 }

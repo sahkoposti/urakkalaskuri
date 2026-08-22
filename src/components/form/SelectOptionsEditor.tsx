@@ -2,27 +2,22 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppInput, OutlinedButton } from '@/src/components/common';
 import type { SelectOption } from '@/src/core/form/types';
-import { createSelectOption, slugifyKey } from '@/src/core/form/formMutations';
+import { createSelectOption } from '@/src/core/form/formMutations';
 import { AppColors } from '@/src/theme/colors';
 
 type SelectOptionsEditorProps = {
+  fieldKey: string;
   options: SelectOption[];
-  defaultExportKey: string;
   onChange: (options: SelectOption[]) => void;
 };
 
-export function SelectOptionsEditor({
-  options,
-  defaultExportKey,
-  onChange,
-}: SelectOptionsEditorProps) {
+export function SelectOptionsEditor({ fieldKey, options, onChange }: SelectOptionsEditorProps) {
   function updateOption(index: number, patch: Partial<SelectOption>) {
     onChange(options.map((option, i) => (i === index ? { ...option, ...patch } : option)));
   }
 
   function addOption() {
-    const next = createSelectOption(`Vaihtoehto ${options.length + 1}`);
-    onChange([...options, { ...next, exportKey: defaultExportKey }]);
+    onChange([...options, createSelectOption(`Vaihtoehto ${options.length + 1}`)]);
   }
 
   function removeOption(index: number) {
@@ -41,14 +36,14 @@ export function SelectOptionsEditor({
     <View style={styles.wrap}>
       <Text style={styles.heading}>Valinnat</Text>
       <Text style={styles.help}>
-        Jokainen valinta voi kirjoittaa kertoimen kaavaan export-muuttujalla (esim. laudoituskerroin).
+        Kaavoissa käytetään kentän muuttujaa ({fieldKey}). Valitun vaihtoehdon arvo tulee laskentaan.
       </Text>
 
       {options.length === 0 ? (
         <Text style={styles.empty}>Ei valintoja. Lisää vähintään yksi.</Text>
       ) : (
         options.map((option, index) => (
-          <View key={`${option.value}-${index}`} style={styles.optionCard}>
+          <View key={`${option.label}-${index}`} style={styles.optionCard}>
             <View style={styles.optionHeader}>
               <Text style={styles.optionIndex}>{index + 1}.</Text>
               <View style={styles.optionActions}>
@@ -78,43 +73,17 @@ export function SelectOptionsEditor({
             <AppInput
               label="Nimi"
               value={option.label}
-              onChangeText={(label) => {
-                const patch: Partial<SelectOption> = { label };
-                if (!option.value || option.value === slugifyKey(option.label)) {
-                  patch.value = slugifyKey(label);
-                }
-                updateOption(index, patch);
-              }}
+              onChangeText={(label) => updateOption(index, { label })}
+              compact
             />
             <AppInput
-              label="Arvo (tallennetaan)"
+              label="Arvo"
               value={option.value}
-              onChangeText={(value) => updateOption(index, { value: slugifyKey(value) })}
-              placeholder="esim. paneeli"
-            />
-            <AppInput
-              label="Kerroin"
-              value={option.multiplier !== undefined ? String(option.multiplier) : ''}
-              onChangeText={(raw) => {
-                const parsed = Number.parseFloat(raw.replace(',', '.'));
-                updateOption(index, {
-                  multiplier: Number.isFinite(parsed) ? parsed : undefined,
-                });
-              }}
+              onChangeText={(value) => updateOption(index, { value: value.replace(',', '.') })}
               keyboardType="decimal-pad"
               placeholder="1.15"
+              compact
             />
-            <AppInput
-              label="Export-muuttuja (kaavoissa)"
-              value={option.exportKey ?? ''}
-              onChangeText={(exportKey) => updateOption(index, { exportKey: exportKey.trim() })}
-              placeholder={defaultExportKey}
-            />
-            {option.exportKey && option.multiplier !== undefined ? (
-              <Text style={styles.preview}>
-                → {option.exportKey} = {option.multiplier}
-              </Text>
-            ) : null}
           </View>
         ))
       )}
@@ -152,7 +121,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: AppColors.border,
     borderRadius: 5,
-    padding: 12,
+    padding: 8,
     marginBottom: 4,
   },
   optionHeader: {
@@ -195,13 +164,6 @@ const styles = StyleSheet.create({
   removeButtonText: {
     color: AppColors.accent,
     fontFamily: 'IBMPlexSans_600SemiBold',
-    fontSize: 13,
-  },
-  preview: {
-    marginTop: -4,
-    marginBottom: 8,
-    fontFamily: 'IBMPlexSans_500Medium',
-    color: AppColors.accent,
     fontSize: 13,
   },
 });

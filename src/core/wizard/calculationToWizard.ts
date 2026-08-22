@@ -31,6 +31,9 @@ export function calculationToFormState(
     customerAddress: customer.address ?? '',
     customerNotes: customer.notes ?? '',
     duration: String(record.workDurationDays).replace('.', ','),
+    fieldValues: {
+      tyoryhma_kesto_pv: String(record.workDurationDays).replace('.', ','),
+    },
     lines,
   };
 

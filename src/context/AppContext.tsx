@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import type { CalculationResult } from '@/src/core/calculation/calculationEngine';
+import type { CalculationResult } from '@/src/core/calculation/calculationPipeline';
 import * as db from '@/src/core/database/database';
 import type {
   AppSettings,
@@ -16,16 +16,23 @@ import type {
   PersistedWizardDraft,
   Product,
   WizardDraft,
+  WizardLineDraft,
 } from '@/src/core/models/types';
 import { defaultSettings } from '@/src/core/models/types';
 import type { FormDebugSettings, FormDefinition } from '@/src/core/form/types';
 import { createDefaultFormDefinition } from '@/src/core/form/defaultFormDefinition';
+import { normalizeFormDefinition } from '@/src/core/form/formDefinitionHelpers';
 import { defaultFormDebugSettings } from '@/src/core/form/types';
+
+import type { WizardFormState } from '@/src/core/wizard/wizardDraftHelpers';
 
 type WizardSession = {
   draft: WizardDraft;
   result: CalculationResult;
   settings: AppSettings;
+  form: WizardFormState;
+  formContext: Record<string, number>;
+  materialLines: WizardLineDraft[];
   editCalculationId?: string;
   originalCreatedAt?: Date;
 };
@@ -56,7 +63,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [calculations, setCalculations] = useState<CalculationRecord[]>([]);
   const [wizardSession, setWizardSession] = useState<WizardSession | null>(null);
   const [wizardDraft, setWizardDraft] = useState<PersistedWizardDraft | null>(null);
-  const [formDefinition, setFormDefinition] = useState<FormDefinition>(createDefaultFormDefinition());
+  const [formDefinition, setFormDefinition] = useState<FormDefinition>(
+    normalizeFormDefinition(createDefaultFormDefinition()),
+  );
   const [formDebug, setFormDebug] = useState<FormDebugSettings>(defaultFormDebugSettings);
 
   const refreshFormSettings = useCallback(async () => {

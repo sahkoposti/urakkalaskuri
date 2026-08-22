@@ -2,6 +2,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { FormSummarySection } from '@/src/components/form/FormSummarySection';
 import {
   AppCard,
   OutlinedButton,
@@ -16,8 +17,12 @@ import { customerFromRecord } from '@/src/core/models/types';
 import {
   applyVat,
   customerTypeLabel,
+  formatContractPriceVat0,
   formatDisplayPrice,
+  formatMarginCommissionPrice,
+  formatMaterialsPrice,
   isPrivateCustomer,
+  materialsPriceLabel,
   reverseVatLabel,
 } from '@/src/core/utils/priceDisplay';
 import { formatCurrency, formatDecimal, formatPercent } from '@/src/core/utils/formatters';
@@ -134,32 +139,20 @@ export default function HistoryDetailScreen() {
             onCopy={notifyCopied}
           />
           <ResultRow
-            label={privateCustomer ? 'Urakkahinta (alv)' : 'Urakkahinta (alv0)'}
-            value={formatDisplayPrice(
-              record.contractPriceVat0,
-              applyVat(record.contractPriceVat0, vatRate),
-              customer,
-            )}
+            label="Urakkahinta (alv0)"
+            value={formatContractPriceVat0(record.contractPriceVat0)}
             copyValue={String(record.contractPriceVat0)}
             onCopy={notifyCopied}
           />
           <ResultRow
-            label={privateCustomer ? 'Materiaalit (alv)' : 'Materiaalit (alv0)'}
-            value={formatDisplayPrice(
-              record.materialsVat0,
-              applyVat(record.materialsVat0, vatRate),
-              customer,
-            )}
+            label={materialsPriceLabel(customer)}
+            value={formatMaterialsPrice(record.materialsVat0, customer, vatRate)}
             copyValue={String(record.materialsVat0)}
             onCopy={notifyCopied}
           />
           <ResultRow
-            label="Myyntikate (€)"
-            value={formatDisplayPrice(
-              record.marginEur,
-              applyVat(record.marginEur, vatRate),
-              customer,
-            )}
+            label="Myyntikate (alv0)"
+            value={formatMarginCommissionPrice(record.marginEur, customer, vatRate)}
             copyValue={String(record.marginEur)}
             onCopy={notifyCopied}
           />
@@ -170,12 +163,8 @@ export default function HistoryDetailScreen() {
             onCopy={notifyCopied}
           />
           <ResultRow
-            label="Myyntipalkkio (€)"
-            value={formatDisplayPrice(
-              record.commissionEur,
-              applyVat(record.commissionEur, vatRate),
-              customer,
-            )}
+            label="Myyntipalkkio (alv0)"
+            value={formatMarginCommissionPrice(record.commissionEur, customer, vatRate)}
             copyValue={String(record.commissionEur)}
             onCopy={notifyCopied}
           />
@@ -244,6 +233,8 @@ export default function HistoryDetailScreen() {
           )}
         </AppCard>
 
+        <FormSummarySection snapshot={record.formSnapshot} />
+
         {record.lines.length > 0 ? (
           <>
             <SectionTitle title="Materiaalirivit" />
@@ -254,11 +245,7 @@ export default function HistoryDetailScreen() {
                     {line.productName} × {formatDecimal(line.quantity)} {line.unit}
                   </Text>
                   <Text style={styles.linePrice}>
-                    {formatDisplayPrice(
-                      line.lineTotalVat0,
-                      applyVat(line.lineTotalVat0, vatRate),
-                      customer,
-                    )}
+                    {formatMaterialsPrice(line.lineTotalVat0, customer, vatRate)}
                   </Text>
                 </View>
               </AppCard>

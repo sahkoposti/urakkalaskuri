@@ -1,7 +1,100 @@
 import { extractFormulaIdentifiers } from '@/src/core/form/formula/evaluator';
-import type { FieldType, FormDefinition, FormField, FormPage } from '@/src/core/form/types';
+import { computedFieldDependencies } from '@/src/core/form/formula/formulaDependencies';
+import { slugifyKey } from '@/src/core/form/formKeyUtils';
+import {
+  LEGACY_KEY_MAP,
+  mergeSystemFields,
+  migrateFormulaKeys,
+} from '@/src/core/form/systemFields';
+import type { FormDefinition, FormField, FormPage, SelectOption } from '@/src/core/form/types';
 
-type LegacyFormField = FormField & { pageId?: string; sortOrder?: number };
+const ALLOWED_FORMULA_IDENTIFIERS = new Set(['materiaalirivit_yhteensa']);
+
+export function collectKnownFormulaIdentifiers(form: FormDefinition): Set<string> {
+  const known = new Set<string>();
+  for (const field of form.fields) {
+    known.add(field.key);
+  }
+  return known;
+}
+
+function isKnownFormulaIdentifier(ident: string, known: Set<string>): boolean {
+  if (ident.startsWith('asetukset.') || ident.startsWith('settings.')) return true;
+  if (ALLOWED_FORMULA_IDENTIFIERS.has(ident)) return true;
+  if (known.has(ident)) return true;
+  const base = ident.split('.')[0];
+  return base !== ident && known.has(base);
+}
+
+/** Palauttaa kaavassa olevat tunnisteet, joita ei löydy lomakkeesta. */
+export function unknownFormulaIdentifiers(
+  form: FormDefinition,
+  formula: string,
+): string[] {
+  const known = collectKnownFormulaIdentifiers(form);
+  return extractFormulaIdentifiers(formula).filter((ident) => !isKnownFormulaIdentifier(ident, known));
+}
+type LegacySelectOption = SelectOption & {
+  multiplier?: number;
+  exportValue?: number;
+  exportKey?: string;
+};
+
+type LegacyFormField = FormField & {
+  pageId?: string;
+  sortOrder?: number;
+  options?: LegacySelectOption[];
+};
+
+function migrateSelectFields(fields: FormField[]): FormField[] {
+  const exportKeyToFieldKey = new Map<string, string>();
+  for (const field of fields) {
+    if (field.type !== 'select') continue;
+    for (const option of (field.options ?? []) as LegacySelectOption[]) {
+      if (option.exportKey?.trim()) {
+        exportKeyToFieldKey.set(option.exportKey.trim(), field.key);
+      }
+    }
+  }
+
+  return fields.map((field) => {
+    let next: FormField = field;
+
+    if (field.type === 'select' && field.options) {
+      let debugExampleValue = field.debugExampleValue;
+      if (debugExampleValue) {
+        const legacy = (field.options as LegacySelectOption[]).find(
+          (option) => option.value === debugExampleValue,
+        );
+        if (legacy?.multiplier !== undefined) {
+          debugExampleValue = String(legacy.multiplier);
+        }
+      }
+
+      next = {
+        ...next,
+        debugExampleValue,
+        options: (field.options as LegacySelectOption[]).map((option) => {
+          const numeric = option.multiplier ?? option.exportValue;
+          if (numeric !== undefined) {
+            return { label: option.label, value: String(numeric) };
+          }
+          return { label: option.label, value: option.value };
+        }),
+      };
+    }
+
+    if (field.formula && exportKeyToFieldKey.size > 0) {
+      let formula = field.formula;
+      for (const [exportKey, fieldKey] of exportKeyToFieldKey) {
+        formula = formula.replaceAll(exportKey, fieldKey);
+      }
+      next = { ...next, formula };
+    }
+
+    return next;
+  });
+}
 
 function isLegacyForm(raw: Partial<FormDefinition>): boolean {
   const fields = raw.fields as LegacyFormField[] | undefined;
@@ -29,27 +122,55 @@ function migrateLegacyPages(raw: Partial<FormDefinition>): FormPage[] {
 
 function stripLegacyFieldProps(fields: LegacyFormField[]): FormField[] {
   return fields.map(({ pageId: _pageId, sortOrder: _sortOrder, ...field }) => {
-    if (field.type === 'computed' && field.allowManualOverride === undefined) {
+    if (field.type === 'computed' && field.allowManualOverride === undefined && !field.systemKey) {
       return { ...field, allowManualOverride: true };
     }
     return field;
   });
 }
 
+function normalizeFieldKeys(fields: FormField[]): FormField[] {
+  return fields.map((field) => {
+    const mapped = LEGACY_KEY_MAP[field.key];
+    const key = mapped ?? (/^[a-z0-9_]+$/.test(field.key) ? field.key : slugifyKey(field.key));
+    return {
+      ...field,
+      key,
+      formula: field.formula ? migrateFormulaKeys(field.formula) : field.formula,
+    };
+  });
+}
+
+function dedupePageFieldAssignments(pages: FormPage[]): FormPage[] {
+  const seen = new Set<string>();
+  return pages.map((page) => ({
+    ...page,
+    fieldIds: (page.fieldIds ?? []).filter((fieldId) => {
+      if (seen.has(fieldId)) return false;
+      seen.add(fieldId);
+      return true;
+    }),
+  }));
+}
+
 export function normalizeFormDefinition(raw: unknown): FormDefinition {
   const form = (raw ?? {}) as Partial<FormDefinition>;
   const legacyFields = (form.fields ?? []) as LegacyFormField[];
 
-  const pages = isLegacyForm(form)
-    ? migrateLegacyPages(form)
-    : (form.pages ?? []).map((page) => ({ ...page, fieldIds: [...(page.fieldIds ?? [])] }));
+  const pages = dedupePageFieldAssignments(
+    isLegacyForm(form)
+      ? migrateLegacyPages(form)
+      : (form.pages ?? []).map((page) => ({ ...page, fieldIds: [...(page.fieldIds ?? [])] })),
+  );
 
-  const fields = stripLegacyFieldProps(legacyFields);
+  const fields = mergeSystemFields(
+    normalizeFieldKeys(migrateSelectFields(stripLegacyFieldProps(legacyFields))),
+  );
 
   return {
     id: form.id ?? 'default',
     name: form.name ?? 'Peruslaskenta',
-    version: typeof form.version === 'number' ? form.version : 2,
+    version: typeof form.version === 'number' ? form.version : 3,
     pages,
     fields,
     updatedAt: form.updatedAt ?? Date.now(),
@@ -64,6 +185,24 @@ export function sortedGlobalFields(form: FormDefinition): FormField[] {
   return [...form.fields].sort((a, b) => a.label.localeCompare(b.label, 'fi'));
 }
 
+export function sortedUserFields(form: FormDefinition): FormField[] {
+  return sortedGlobalFields(form).filter((field) => !field.systemKey);
+}
+
+export function sortedSystemFields(form: FormDefinition): FormField[] {
+  return sortedGlobalFields(form).filter((field) => field.systemKey);
+}
+
+export function assignedFieldIds(form: FormDefinition): Set<string> {
+  const ids = new Set<string>();
+  for (const page of form.pages) {
+    for (const fieldId of page.fieldIds ?? []) {
+      ids.add(fieldId);
+    }
+  }
+  return ids;
+}
+
 export function fieldsForPage(form: FormDefinition, pageId: string): FormField[] {
   const page = form.pages.find((item) => item.id === pageId);
   if (!page) return [];
@@ -72,9 +211,9 @@ export function fieldsForPage(form: FormDefinition, pageId: string): FormField[]
     .filter((field): field is FormField => field !== undefined);
 }
 
-export function fieldsNotOnPage(form: FormDefinition, pageId: string): FormField[] {
-  const page = form.pages.find((item) => item.id === pageId);
-  const assigned = new Set(page?.fieldIds ?? []);
+/** Kentät joita voi lisätä tälle sivulle (ei vielä millään sivulla). */
+export function fieldsAvailableForPage(form: FormDefinition, _pageId: string): FormField[] {
+  const assigned = assignedFieldIds(form);
   return sortedGlobalFields(form).filter((field) => !assigned.has(field.id));
 }
 
@@ -118,37 +257,50 @@ export function pipelineFieldOrder(form: FormDefinition): FormField[] {
 }
 
 function topologicalComputedFields(form: FormDefinition, computed: FormField[]): FormField[] {
-  const remaining = [...computed];
-  const sorted: FormField[] = [];
-  const keysDone = new Set<string>();
+  if (computed.length === 0) return [];
 
-  const inputKeys = new Set(
-    form.fields.filter((field) => field.type !== 'computed' && field.type !== 'section').map((f) => f.key),
-  );
+  const byKey = new Map(computed.map((field) => [field.key, field]));
+  const inDegree = new Map<string, number>();
+  const dependents = new Map<string, string[]>();
 
-  let progress = true;
-  while (remaining.length > 0 && progress) {
-    progress = false;
-    for (let i = 0; i < remaining.length; i += 1) {
-      const field = remaining[i]!;
-      const deps = extractComputedDeps(form, field);
-      const ready = deps.every((dep) => keysDone.has(dep) || inputKeys.has(dep));
-      if (!ready) continue;
-      sorted.push(field);
-      keysDone.add(field.key);
-      remaining.splice(i, 1);
-      progress = true;
-      break;
+  for (const field of computed) {
+    inDegree.set(field.key, 0);
+    dependents.set(field.key, []);
+  }
+
+  for (const field of computed) {
+    for (const dep of computedFieldDependencies(form, field)) {
+      if (!byKey.has(dep)) continue;
+      inDegree.set(field.key, (inDegree.get(field.key) ?? 0) + 1);
+      dependents.get(dep)?.push(field.key);
     }
   }
 
-  return [...sorted, ...remaining];
-}
+  const queue = computed
+    .filter((field) => (inDegree.get(field.key) ?? 0) === 0)
+    .sort((a, b) => a.key.localeCompare(b.key, 'fi'));
 
-function extractComputedDeps(form: FormDefinition, field: FormField): string[] {
-  if (!field.formula) return [];
-  return extractFormulaIdentifiers(field.formula).filter((ident) => {
-    const provider = form.fields.find((item) => item.key === ident);
-    return provider?.type === 'computed';
-  });
+  const sorted: FormField[] = [];
+  while (queue.length > 0) {
+    const field = queue.shift()!;
+    sorted.push(field);
+    for (const nextKey of dependents.get(field.key) ?? []) {
+      const nextDegree = (inDegree.get(nextKey) ?? 1) - 1;
+      inDegree.set(nextKey, nextDegree);
+      if (nextDegree === 0) {
+        const nextField = byKey.get(nextKey);
+        if (nextField) {
+          queue.push(nextField);
+          queue.sort((a, b) => a.key.localeCompare(b.key, 'fi'));
+        }
+      }
+    }
+  }
+
+  if (sorted.length === computed.length) {
+    return sorted;
+  }
+
+  const sortedKeys = new Set(sorted.map((field) => field.key));
+  return [...sorted, ...computed.filter((field) => !sortedKeys.has(field.key))];
 }

@@ -3,6 +3,10 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { AppInput, PrimaryButton } from '@/src/components/common';
+import {
+  buildProductAttributes,
+  ProductAttributeFields,
+} from '@/src/components/product/ProductAttributeFields';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { createId } from '@/src/core/utils/id';
 import { db, useApp } from '@/src/context/AppContext';
@@ -15,6 +19,9 @@ export default function NewProductScreen() {
   const [unit, setUnit] = useState('kpl');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [consumption, setConsumption] = useState('');
+  const [workFactor, setWorkFactor] = useState('');
+  const [materialFactor, setMaterialFactor] = useState('');
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
@@ -42,6 +49,7 @@ export default function NewProductScreen() {
         unit: unit.trim(),
         unitPriceVat0: parsedPrice,
         description: description.trim() || undefined,
+        attributes: buildProductAttributes(consumption, workFactor, materialFactor),
         createdAt: new Date(),
       });
       await refreshProducts();
@@ -71,6 +79,14 @@ export default function NewProductScreen() {
           value={description}
           onChangeText={setDescription}
           multiline
+        />
+        <ProductAttributeFields
+          consumption={consumption}
+          workFactor={workFactor}
+          materialFactor={materialFactor}
+          onConsumptionChange={setConsumption}
+          onWorkFactorChange={setWorkFactor}
+          onMaterialFactorChange={setMaterialFactor}
         />
         <PrimaryButton title="Tallenna" onPress={handleSave} disabled={saving} />
       </ScrollView>

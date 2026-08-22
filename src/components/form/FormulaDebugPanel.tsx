@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { FormDefinition } from '@/src/core/form/types';
 import { runDebugPipeline } from '@/src/core/form/pipeline';
+import type { AppSettings } from '@/src/core/models/types';
 import { formatDecimal } from '@/src/core/utils/formatters';
 import { AppColors } from '@/src/theme/colors';
 
@@ -11,6 +12,8 @@ type FormulaDebugPanelProps = {
   focusFieldKey: string;
   formula?: string;
   showIntermediateSteps?: boolean;
+  settings: AppSettings;
+  materialsVat0?: number;
 };
 
 export function FormulaDebugPanel({
@@ -18,10 +21,12 @@ export function FormulaDebugPanel({
   focusFieldKey,
   formula,
   showIntermediateSteps = true,
+  settings,
+  materialsVat0 = 0,
 }: FormulaDebugPanelProps) {
   const trace = useMemo(
-    () => runDebugPipeline(form, focusFieldKey),
-    [form, focusFieldKey],
+    () => runDebugPipeline(form, focusFieldKey, { settings, materialsVat0 }),
+    [form, focusFieldKey, settings, materialsVat0],
   );
 
   const focusedStep = trace.steps.find((step) => step.fieldKey === focusFieldKey);
@@ -30,8 +35,8 @@ export function FormulaDebugPanel({
     <View style={styles.wrap}>
       <Text style={styles.title}>Live-laskenta (debug)</Text>
       <Text style={styles.help}>
-        Esimerkkiarvot tulevat kunkin syötekentän debug-kentästä. Pipeline yhdistää ne koko
-        logiikan mukaisesti.
+        Syötekentät käyttävät debug-esimerkkiarvoja. Järjestelmäkaavat käyttävät myös Yleinen-asetuksia
+        (tuntihinta, kate, ALV…) ja oletusmateriaaleja ({formatDecimal(materialsVat0)} € alv0).
       </Text>
 
       {trace.errors.length > 0 ? (

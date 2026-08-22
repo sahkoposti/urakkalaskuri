@@ -5,6 +5,7 @@ import type {
   WizardLineDraft,
 } from '@/src/core/models/types';
 import { emptyCustomerInfo } from '@/src/core/models/types';
+import { hasFieldValueContent } from '@/src/core/wizard/wizardPageHelpers';
 
 export type WizardFormState = {
   step: number;
@@ -16,6 +17,7 @@ export type WizardFormState = {
   customerAddress: string;
   customerNotes: string;
   duration: string;
+  fieldValues: Record<string, string>;
   lines: WizardLineDraft[];
 };
 
@@ -28,6 +30,7 @@ export function hasWizardDraftContent(state: WizardFormState): boolean {
     state.customerAddress.trim().length > 0 ||
     state.customerNotes.trim().length > 0 ||
     state.duration.trim().length > 0 ||
+    hasFieldValueContent(state.fieldValues) ||
     state.lines.length > 0
   );
 }
@@ -43,6 +46,7 @@ export function buildPersistedWizardDraft(state: WizardFormState): PersistedWiza
     customerAddress: state.customerAddress,
     customerNotes: state.customerNotes,
     duration: state.duration,
+    fieldValues: state.fieldValues,
     lines: state.lines.map((line) => ({
       productId: line.product.id,
       quantity: line.quantity,
@@ -69,6 +73,12 @@ export function persistedDraftToFormState(
   products: Product[],
 ): { form: WizardFormState; wizardDraft: WizardDraft } {
   const lines = hydrateWizardLines(draft.lines, products);
+  const fieldValues = {
+    ...(draft.fieldValues ?? {}),
+    ...(draft.duration.trim() && !draft.fieldValues?.tyoryhma_kesto_pv
+      ? { tyoryhma_kesto_pv: draft.duration }
+      : {}),
+  };
   const form: WizardFormState = {
     step: draft.step,
     customerName: draft.customerName,
@@ -79,6 +89,7 @@ export function persistedDraftToFormState(
     customerAddress: draft.customerAddress,
     customerNotes: draft.customerNotes,
     duration: draft.duration,
+    fieldValues,
     lines,
   };
   const wizardDraft: WizardDraft = {

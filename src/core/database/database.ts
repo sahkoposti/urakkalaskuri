@@ -4,12 +4,14 @@ import type {
   AppSettings,
   CalculationLine,
   CalculationRecord,
+  FormSnapshot,
   PersistedWizardDraft,
   Product,
   ThemeSettings,
   WizardStepId,
 } from '../models/types';
 import { defaultSettings, defaultThemeSettings } from '../models/types';
+import { parseProductAttributesJson } from '../product/productAttributes';
 import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../form/formDefinitionHelpers';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
@@ -35,9 +37,17 @@ function inferVatPercent(row: Record<string, unknown>): number {
 }
 
 async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
-  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(calculations)');
-  if (!columns.some((column) => column.name === 'vat_percent')) {
+  const calculationColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(calculations)');
+  if (!calculationColumns.some((column) => column.name === 'vat_percent')) {
     await db.execAsync('ALTER TABLE calculations ADD COLUMN vat_percent REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'form_snapshot')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN form_snapshot TEXT');
+  }
+
+  const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
+  if (!productColumns.some((column) => column.name === 'attributes')) {
+    await db.execAsync('ALTER TABLE products ADD COLUMN attributes TEXT');
   }
 }
 
@@ -155,6 +165,7 @@ function productFromRow(row: Record<string, unknown>): Product {
     unit: row.unit as string,
     unitPriceVat0: row.unit_price_vat0 as number,
     description: (row.description as string | null) ?? undefined,
+    attributes: parseProductAttributesJson(row.attributes as string | null | undefined),
     createdAt: new Date(row.created_at as number),
   };
 }
@@ -182,8 +193,18 @@ function calculationFromRow(
     totalPriceVat: row.total_price_vat as number,
     workDurationDays: row.work_duration_days as number,
     createdAt: new Date(row.created_at as number),
+    formSnapshot: parseFormSnapshot(row.form_snapshot),
     lines,
   };
+}
+
+function parseFormSnapshot(raw: unknown): FormSnapshot | undefined {
+  if (typeof raw !== 'string' || !raw.trim()) return undefined;
+  try {
+    return JSON.parse(raw) as FormSnapshot;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function getSettings(): Promise<AppSettings> {
@@ -254,13 +275,14 @@ export async function getProduct(id: string): Promise<Product | null> {
 export async function upsertProduct(product: Product): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    `INSERT OR REPLACE INTO products (id, name, unit, unit_price_vat0, description, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO products (id, name, unit, unit_price_vat0, description, attributes, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     product.id,
     product.name,
     product.unit,
     product.unitPriceVat0,
     product.description ?? null,
+    product.attributes ? JSON.stringify(product.attributes) : null,
     product.createdAt.getTime(),
   );
 }
@@ -326,8 +348,8 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
         id, project_name, customer, group_duration_h, crew_size, hourly_rate,
         margin_percent, commission_percent, contract_price_vat0, materials_vat0,
         margin_eur, commission_eur, total_price_vat0, vat_percent, vat_amount, total_price_vat,
-        work_duration_days, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        work_duration_days, created_at, form_snapshot
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       record.id,
       record.projectName,
       record.customer ?? null,
@@ -346,6 +368,7 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.totalPriceVat,
       record.workDurationDays,
       record.createdAt.getTime(),
+      record.formSnapshot ? JSON.stringify(record.formSnapshot) : null,
     );
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', record.id);
     for (const line of record.lines) {
@@ -407,14 +430,14 @@ export async function getFormDefinition(): Promise<FormDefinition> {
     'form_definition',
   );
   if (!row) {
-    const defaults = createDefaultFormDefinition();
+    const defaults = normalizeFormDefinition(createDefaultFormDefinition());
     await saveFormDefinition(defaults);
     return defaults;
   }
   try {
     return normalizeFormDefinition(JSON.parse(row.value));
   } catch {
-    const defaults = createDefaultFormDefinition();
+    const defaults = normalizeFormDefinition(createDefaultFormDefinition());
     await saveFormDefinition(defaults);
     return defaults;
   }
