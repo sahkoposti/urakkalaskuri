@@ -1,27 +1,40 @@
 import { router, Stack, type Href } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { AppCard, ScreenLoading, SectionTitle } from '@/src/components/common';
+import { AppCard, OutlinedButton, ScreenLoading, SectionTitle } from '@/src/components/common';
+import {
+  addField,
+  createFieldDraft,
+  fieldsForPage,
+} from '@/src/core/form/formEditor';
+import { FIELD_TYPE_LABELS } from '@/src/core/form/types';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
-import { useApp } from '@/src/context/AppContext';
+import { createId } from '@/src/core/utils/id';
+import { db, useApp } from '@/src/context/AppContext';
 import { AppColors } from '@/src/theme/colors';
 
-function fieldsByPage(form: FormDefinition): { pageTitle: string; fields: FormField[] }[] {
+function fieldsByPage(form: FormDefinition): { pageId: string; pageTitle: string; fields: FormField[] }[] {
   const sortedPages = [...form.pages].sort((a, b) => a.sortOrder - b.sortOrder);
   return sortedPages.map((page) => ({
+    pageId: page.id,
     pageTitle: page.title,
-    fields: form.fields
-      .filter((field) => field.pageId === page.id && field.type !== 'section')
-      .sort((a, b) => a.sortOrder - b.sortOrder),
+    fields: fieldsForPage(form, page.id).filter((field) => field.type !== 'section'),
   }));
 }
 
 export default function FormFieldsScreen() {
-  const { ready, formDefinition, formDebug } = useApp();
+  const { ready, formDefinition, formDebug, refreshFormSettings } = useApp();
 
   if (!ready) return <ScreenLoading />;
 
   const groups = fieldsByPage(formDefinition);
+
+  async function handleAdd(pageId: string) {
+    const draft = createFieldDraft(createId(), formDefinition, pageId);
+    await db.saveFormDefinition(addField(formDefinition, draft));
+    await refreshFormSettings();
+    router.push(`/settings/calculation/fields/${draft.id}` as Href);
+  }
 
   return (
     <>
@@ -34,8 +47,13 @@ export default function FormFieldsScreen() {
           </Text>
         ) : null}
         {groups.map((group) => (
-          <View key={group.pageTitle} style={styles.group}>
-            <Text style={styles.groupTitle}>{group.pageTitle}</Text>
+          <View key={group.pageId} style={styles.group}>
+            <Text
+              style={styles.groupTitle}
+              onPress={() => router.push(`/settings/calculation/pages/${group.pageId}` as Href)}
+            >
+              {group.pageTitle}
+            </Text>
             {group.fields.length === 0 ? (
               <Text style={styles.empty}>Ei kenttiä</Text>
             ) : (
@@ -47,7 +65,7 @@ export default function FormFieldsScreen() {
                 >
                   <Text style={styles.fieldLabel}>{field.label}</Text>
                   <Text style={styles.fieldMeta}>
-                    {field.key} · {field.type}
+                    {field.key} · {FIELD_TYPE_LABELS[field.type]}
                     {field.type === 'computed' ? ' · kaava' : ''}
                   </Text>
                   {formDebug.enabled && field.debugExampleValue ? (
@@ -56,6 +74,7 @@ export default function FormFieldsScreen() {
                 </AppCard>
               ))
             )}
+            <OutlinedButton title="Lisää kenttä" onPress={() => void handleAdd(group.pageId)} />
           </View>
         ))}
       </ScrollView>

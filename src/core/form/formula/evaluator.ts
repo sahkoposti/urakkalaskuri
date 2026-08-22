@@ -10,7 +10,34 @@ type Token =
   | { type: 'ident'; value: string }
   | { type: 'op'; value: '+' | '-' | '*' | '/' }
   | { type: 'lparen' }
-  | { type: 'rparen' };
+  | { type: 'rparen' }
+  | { type: 'comma' };
+
+const FUNCTIONS: Record<string, (args: number[]) => number> = {
+  min: (args) => {
+    if (args.length === 0) {
+      throw new FormulaEvaluationError('min() tarvitsee vähintään yhden argumentin');
+    }
+    return Math.min(...args);
+  },
+  max: (args) => {
+    if (args.length === 0) {
+      throw new FormulaEvaluationError('max() tarvitsee vähintään yhden argumentin');
+    }
+    return Math.max(...args);
+  },
+  round: (args) => {
+    if (args.length === 1) {
+      return Math.round(args[0]!);
+    }
+    if (args.length === 2) {
+      const digits = args[1]!;
+      const factor = 10 ** digits;
+      return Math.round(args[0]! * factor) / factor;
+    }
+    throw new FormulaEvaluationError('round() ottaa 1–2 argumenttia');
+  },
+};
 
 function tokenize(expression: string): Token[] {
   const tokens: Token[] = [];
@@ -30,15 +57,20 @@ function tokenize(expression: string): Token[] {
       i += 1;
       continue;
     }
+    if (char === ',' || char === ';') {
+      tokens.push({ type: 'comma' });
+      i += 1;
+      continue;
+    }
     if ('+-*/'.includes(char)) {
       tokens.push({ type: 'op', value: char as '+' | '-' | '*' | '/' });
       i += 1;
       continue;
     }
 
-    if (/[0-9.,]/.test(char)) {
+    if (/[0-9.]/.test(char)) {
       let raw = '';
-      while (i < input.length && /[0-9.,]/.test(input[i])) {
+      while (i < input.length && /[0-9.]/.test(input[i]!)) {
         raw += input[i];
         i += 1;
       }
@@ -52,7 +84,7 @@ function tokenize(expression: string): Token[] {
 
     if (/[a-zA-Z0-9_äöåÄÖÅ.]/.test(char)) {
       let raw = '';
-      while (i < input.length && /[a-zA-Z0-9_äöåÄÖÅ.]/.test(input[i])) {
+      while (i < input.length && /[a-zA-Z0-9_äöåÄÖÅ.]/.test(input[i]!)) {
         raw += input[i];
         i += 1;
       }
@@ -116,6 +148,31 @@ function parseUnary(tokens: Token[], context: Record<string, number>, pos: numbe
   return parsePrimary(tokens, context, pos);
 }
 
+function parseArgList(
+  tokens: Token[],
+  context: Record<string, number>,
+  pos: number,
+): [number[], number] {
+  if (tokens[pos]?.type === 'rparen') {
+    return [[], pos + 1];
+  }
+
+  const args: number[] = [];
+  let index = pos;
+  while (true) {
+    const [value, next] = parseExpression(tokens, context, index);
+    args.push(value);
+    if (tokens[next]?.type === 'comma') {
+      index = next + 1;
+      continue;
+    }
+    if (tokens[next]?.type === 'rparen') {
+      return [args, next + 1];
+    }
+    throw new FormulaEvaluationError('Puuttuva sulkeva sulku tai pilkku');
+  }
+}
+
 function parsePrimary(tokens: Token[], context: Record<string, number>, pos: number): [number, number] {
   const token = tokens[pos];
   if (!token) {
@@ -127,6 +184,14 @@ function parsePrimary(tokens: Token[], context: Record<string, number>, pos: num
   }
 
   if (token.type === 'ident') {
+    if (tokens[pos + 1]?.type === 'lparen') {
+      const fn = FUNCTIONS[token.value];
+      if (!fn) {
+        throw new FormulaEvaluationError(`Tuntematon funktio: ${token.value}`);
+      }
+      const [args, index] = parseArgList(tokens, context, pos + 2);
+      return [fn(args), index];
+    }
     return [resolveIdentifier(token.value, context), pos + 1];
   }
 
@@ -142,7 +207,7 @@ function parsePrimary(tokens: Token[], context: Record<string, number>, pos: num
 }
 
 export function substituteFormula(formula: string, context: Record<string, number>): string {
-  return formula.replace(/[a-zA-Z0-9_äöåÄÖÅ.]+/g, (ident) => {
+  return formula.replace(/[a-zA-Z_äöåÄÖÅ][a-zA-Z0-9_äöåÄÖÅ.]*/g, (ident) => {
     if (ident in context) {
       return String(context[ident]);
     }

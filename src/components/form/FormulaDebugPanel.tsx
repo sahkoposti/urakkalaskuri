@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { FormDefinition } from '@/src/core/form/types';
 import { runDebugPipeline } from '@/src/core/form/pipeline';
+import type { AppSettings, Product } from '@/src/core/models/types';
 import { formatDecimal } from '@/src/core/utils/formatters';
 import { AppColors } from '@/src/theme/colors';
 
@@ -10,12 +11,22 @@ type FormulaDebugPanelProps = {
   form: FormDefinition;
   focusFieldKey: string;
   formula?: string;
+  products?: Product[];
+  settings?: AppSettings;
+  showIntermediateSteps?: boolean;
 };
 
-export function FormulaDebugPanel({ form, focusFieldKey, formula }: FormulaDebugPanelProps) {
+export function FormulaDebugPanel({
+  form,
+  focusFieldKey,
+  formula,
+  products,
+  settings,
+  showIntermediateSteps = true,
+}: FormulaDebugPanelProps) {
   const trace = useMemo(
-    () => runDebugPipeline(form, focusFieldKey),
-    [form, focusFieldKey],
+    () => runDebugPipeline(form, { focusFieldKey, products, settings }),
+    [form, focusFieldKey, products, settings],
   );
 
   const focusedStep = trace.steps.find((step) => step.fieldKey === focusFieldKey);
@@ -56,15 +67,19 @@ export function FormulaDebugPanel({ form, focusFieldKey, formula }: FormulaDebug
         </View>
       ) : null}
 
-      <Text style={[styles.label, styles.spaced]}>Välivaiheet</Text>
-      {trace.steps.map((step) => (
-        <View key={step.fieldKey} style={styles.stepRow}>
-          <Text style={styles.stepLabel}>{step.label}</Text>
-          <Text style={styles.stepValue}>
-            {step.error ? '–' : formatDecimal(step.result)}
-          </Text>
-        </View>
-      ))}
+      {showIntermediateSteps ? (
+        <>
+          <Text style={[styles.label, styles.spaced]}>Välivaiheet</Text>
+          {trace.steps.map((step, index) => (
+            <View key={`${step.fieldKey}-${index}`} style={styles.stepRow}>
+              <Text style={styles.stepLabel}>{step.label}</Text>
+              <Text style={styles.stepValue}>
+                {step.error ? '–' : formatDecimal(step.result)}
+              </Text>
+            </View>
+          ))}
+        </>
+      ) : null}
     </View>
   );
 }
@@ -72,6 +87,7 @@ export function FormulaDebugPanel({ form, focusFieldKey, formula }: FormulaDebug
 const styles = StyleSheet.create({
   wrap: {
     marginTop: 16,
+    marginBottom: 16,
     padding: 14,
     borderWidth: 1,
     borderColor: AppColors.accent,

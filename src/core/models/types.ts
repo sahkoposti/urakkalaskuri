@@ -50,12 +50,21 @@ export const defaultSettings: AppSettings = {
   theme: { ...defaultThemeSettings },
 };
 
+export interface ProductAttributes {
+  consumption?: number;
+  purchasePrice?: number;
+  salePrice?: number;
+  workFactor?: number;
+  materialFactor?: number;
+}
+
 export interface Product {
   id: string;
   name: string;
   unit: string;
   unitPriceVat0: number;
   description?: string;
+  attributes?: ProductAttributes;
   createdAt: Date;
 }
 

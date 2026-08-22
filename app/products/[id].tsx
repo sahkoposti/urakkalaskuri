@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 
 import { AppInput, PrimaryButton, ScreenLoading, ScreenMessage } from '@/src/components/common';
+import { ProductAttributeFields, type ProductAttributeForm } from '@/src/components/ProductAttributeFields';
+import { buildProductAttributes, numberToInput } from '@/src/core/form/productAttributes';
 import type { Product } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
@@ -18,6 +20,13 @@ export default function EditProductScreen() {
   const [unit, setUnit] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [attributes, setAttributes] = useState<ProductAttributeForm>({
+    consumption: '',
+    purchasePrice: '',
+    salePrice: '',
+    workFactor: '',
+    materialFactor: '',
+  });
 
   useEffect(() => {
     let active = true;
@@ -30,6 +39,13 @@ export default function EditProductScreen() {
         setUnit(loaded.unit);
         setPrice(String(loaded.unitPriceVat0));
         setDescription(loaded.description ?? '');
+        setAttributes({
+          consumption: numberToInput(loaded.attributes?.consumption),
+          purchasePrice: numberToInput(loaded.attributes?.purchasePrice),
+          salePrice: numberToInput(loaded.attributes?.salePrice),
+          workFactor: numberToInput(loaded.attributes?.workFactor),
+          materialFactor: numberToInput(loaded.attributes?.materialFactor),
+        });
       }
       setLoading(false);
     })();
@@ -62,6 +78,7 @@ export default function EditProductScreen() {
       unit: unit.trim(),
       unitPriceVat0: parsedPrice,
       description: description.trim() || undefined,
+      attributes: buildProductAttributes(attributes),
     });
     await refreshProducts();
     router.back();
@@ -82,6 +99,10 @@ export default function EditProductScreen() {
         value={description}
         onChangeText={setDescription}
         multiline
+      />
+      <ProductAttributeFields
+        values={attributes}
+        onChange={(patch) => setAttributes((current) => ({ ...current, ...patch }))}
       />
       <PrimaryButton title="Tallenna" onPress={handleSave} />
     </ScrollView>

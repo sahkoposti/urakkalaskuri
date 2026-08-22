@@ -6,6 +6,7 @@ import type {
   CalculationRecord,
   PersistedWizardDraft,
   Product,
+  ProductAttributes,
   ThemeSettings,
   WizardStepId,
 } from '../models/types';
@@ -34,9 +35,14 @@ function inferVatPercent(row: Record<string, unknown>): number {
 }
 
 async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
-  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(calculations)');
-  if (!columns.some((column) => column.name === 'vat_percent')) {
+  const calculationColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(calculations)');
+  if (!calculationColumns.some((column) => column.name === 'vat_percent')) {
     await db.execAsync('ALTER TABLE calculations ADD COLUMN vat_percent REAL');
+  }
+
+  const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
+  if (!productColumns.some((column) => column.name === 'attributes')) {
+    await db.execAsync('ALTER TABLE products ADD COLUMN attributes TEXT');
   }
 }
 
@@ -50,6 +56,7 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
       unit TEXT NOT NULL,
       unit_price_vat0 REAL NOT NULL,
       description TEXT,
+      attributes TEXT,
       created_at INTEGER NOT NULL
     );
     CREATE TABLE IF NOT EXISTS calculations (
@@ -147,6 +154,33 @@ function parseThemeSettings(map: Record<string, string>): ThemeSettings {
   };
 }
 
+function parseProductAttributes(raw: unknown): ProductAttributes | undefined {
+  if (!raw || typeof raw !== 'string') return undefined;
+  try {
+    const parsed = JSON.parse(raw) as ProductAttributes;
+    const cleaned: ProductAttributes = {};
+    if (Number.isFinite(parsed.consumption)) cleaned.consumption = parsed.consumption;
+    if (Number.isFinite(parsed.purchasePrice)) cleaned.purchasePrice = parsed.purchasePrice;
+    if (Number.isFinite(parsed.salePrice)) cleaned.salePrice = parsed.salePrice;
+    if (Number.isFinite(parsed.workFactor)) cleaned.workFactor = parsed.workFactor;
+    if (Number.isFinite(parsed.materialFactor)) cleaned.materialFactor = parsed.materialFactor;
+    return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function serializeProductAttributes(attributes?: ProductAttributes): string | null {
+  if (!attributes) return null;
+  const cleaned: ProductAttributes = {};
+  if (Number.isFinite(attributes.consumption)) cleaned.consumption = attributes.consumption;
+  if (Number.isFinite(attributes.purchasePrice)) cleaned.purchasePrice = attributes.purchasePrice;
+  if (Number.isFinite(attributes.salePrice)) cleaned.salePrice = attributes.salePrice;
+  if (Number.isFinite(attributes.workFactor)) cleaned.workFactor = attributes.workFactor;
+  if (Number.isFinite(attributes.materialFactor)) cleaned.materialFactor = attributes.materialFactor;
+  return Object.keys(cleaned).length > 0 ? JSON.stringify(cleaned) : null;
+}
+
 function productFromRow(row: Record<string, unknown>): Product {
   return {
     id: row.id as string,
@@ -154,6 +188,7 @@ function productFromRow(row: Record<string, unknown>): Product {
     unit: row.unit as string,
     unitPriceVat0: row.unit_price_vat0 as number,
     description: (row.description as string | null) ?? undefined,
+    attributes: parseProductAttributes(row.attributes),
     createdAt: new Date(row.created_at as number),
   };
 }
@@ -253,13 +288,14 @@ export async function getProduct(id: string): Promise<Product | null> {
 export async function upsertProduct(product: Product): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    `INSERT OR REPLACE INTO products (id, name, unit, unit_price_vat0, description, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO products (id, name, unit, unit_price_vat0, description, attributes, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     product.id,
     product.name,
     product.unit,
     product.unitPriceVat0,
     product.description ?? null,
+    serializeProductAttributes(product.attributes),
     product.createdAt.getTime(),
   );
 }
