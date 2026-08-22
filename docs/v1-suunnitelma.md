@@ -1,6 +1,6 @@
 # Urakkalaskuri – Versio 1 suunnitelma
 
-> **Tila:** Odottaa vahvistusta  
+> **Tila:** Toteutuksessa (MVP aloitettu)  
 > **Brändi:** ColoRajaton / [colorajaton.fi](https://colorajaton.fi)  
 > **Alusta:** Android (APK)  
 > **Tallennus:** Paikallinen (SQLite), offline  

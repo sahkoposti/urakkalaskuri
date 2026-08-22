@@ -11,6 +11,24 @@ ColoRajatonin urakkalaskuri – Flutter/Android-sovellus tarjoushintojen laskent
 - Asetukset (ALV, kate 35 %, palkkio 7 %, tuntihinta 30 €/h)
 - ColoRajaton-brändi (colorajaton.fi)
 
+## GitHub-repositorio
+
+Projekti on valmis pushattavaksi GitHubiin. **Kerran kirjauduttuasi** GitHub CLI:hin:
+
+```powershell
+gh auth login
+gh repo create urakkalaskuri --public --source=. --remote=origin --push
+```
+
+Jos repo on jo olemassa omalla tililläsi:
+
+```powershell
+git remote add origin https://github.com/KAYTTAJA/urakkalaskuri.git
+git push -u origin main
+```
+
+Tämän jälkeen voit jatkaa projektia **Cursor Cloud Agentissa** kloonaamalla saman GitHub-repon.
+
 ## Kehitysympäristö
 
 ### Paikallinen kehitys
