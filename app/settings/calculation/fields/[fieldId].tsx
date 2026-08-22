@@ -29,7 +29,7 @@ import {
 import { sanitizeKeyInput } from '@/src/core/form/formKeyUtils';
 import { isProductField } from '@/src/core/form/productFieldUtils';
 import { parseNumber } from '@/src/core/utils/formatters';
-import { isSystemField, restoreSystemField } from '@/src/core/form/systemFields';
+import { isSystemField, isSystemFieldHiddenFromUi, restoreSystemField } from '@/src/core/form/systemFields';
 import type { FieldType, FormField } from '@/src/core/form/types';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
@@ -94,6 +94,10 @@ export default function FormFieldEditorScreen() {
 
   async function persistSettings(): Promise<boolean> {
     if (!field) return false;
+    if (isSystemFieldHiddenFromUi(field)) {
+      showAlert('Virhe', 'Tätä järjestelmäkenttää ei voi muokata.');
+      return false;
+    }
 
     if (!field.label.trim()) {
       showAlert('Virhe', 'Näyttönimi on pakollinen.');
@@ -128,11 +132,16 @@ export default function FormFieldEditorScreen() {
         return false;
       }
     }
-    const incompleteMaterial = field.effects?.find(
-      (effect) => effect.type === 'add_material' && (!effect.productRef || !effect.quantityRef),
+    const incompleteEffect = field.effects?.find(
+      (effect) =>
+        (effect.type === 'add_material_fixed' ||
+          effect.type === 'multiply_materials' ||
+          effect.type === 'add_duration' ||
+          effect.type === 'multiply_duration') &&
+        (effect.value === undefined || !Number.isFinite(effect.value)),
     );
-    if (incompleteMaterial) {
-      showAlert('Virhe', 'Materiaalirivillä on oltava tuotekenttä ja määräkenttä.');
+    if (incompleteEffect) {
+      showAlert('Virhe', 'Vaikutuksella on oltava numeerinen arvo.');
       return false;
     }
 
@@ -159,6 +168,9 @@ export default function FormFieldEditorScreen() {
 
   if (!ready) return <ScreenLoading />;
   if (!field) return <ScreenMessage message="Kenttää ei löytynyt." />;
+  if (isSystemFieldHiddenFromUi(field)) {
+    return <ScreenMessage message="Tätä järjestelmäkenttää ei voi muokata. Se on käytössä vain laskennassa." />;
+  }
 
   const editingField = field;
   const isSystem = isSystemField(editingField);
@@ -296,8 +308,6 @@ export default function FormFieldEditorScreen() {
             compact
           />
         ) : null}
-
-        {isComputed ? <ProductFormulaHints form={previewForm} /> : null}
 
         {!isSystem && field.type !== 'section' ? (
           <FieldEffectsEditor

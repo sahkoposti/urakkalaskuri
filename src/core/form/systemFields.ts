@@ -11,6 +11,17 @@ export type SystemFieldKey =
   | 'alv_maara'
   | 'kokonaishinta';
 
+/**
+ * Järjestelmäkentät jotka säilyvät datamallissa ja laskennassa,
+ * mutta eivät näy asetuksissa / wizardissa eivätkä ole muokattavissa.
+ * Match by systemKey (myyntihinta = kokonaishinta_alv0).
+ */
+export const UI_HIDDEN_SYSTEM_FIELD_KEYS: ReadonlySet<SystemFieldKey> = new Set([
+  'kokonaishinta_alv0',
+  'myyntikate_eur',
+  'myyntipalkkio_eur',
+]);
+
 const baseSystemField = (
   id: string,
   systemKey: SystemFieldKey,
@@ -122,6 +133,13 @@ export function createSystemFields(): FormField[] {
 
 export function isSystemField(field: FormField): boolean {
   return field.systemKey !== undefined;
+}
+
+export function isSystemFieldHiddenFromUi(field: Pick<FormField, 'systemKey'>): boolean {
+  return (
+    field.systemKey !== undefined &&
+    UI_HIDDEN_SYSTEM_FIELD_KEYS.has(field.systemKey as SystemFieldKey)
+  );
 }
 
 export function getDefaultSystemField(systemKey: SystemFieldKey): FormField | undefined {

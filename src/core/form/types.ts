@@ -3,7 +3,6 @@ export type FieldType =
   | 'text'
   | 'select'
   | 'boolean'
-  | 'product_quantity'
   | 'product_select'
   | 'computed'
   | 'section';
@@ -17,12 +16,15 @@ export interface SelectOption {
 export interface FieldEffect {
   type:
     | 'set_variable'
-    | 'add_material'
+    | 'add_material' // legacy, ohitetaan
     | 'multiply_duration'
     | 'add_duration'
     | 'multiply_materials'
     | 'add_material_fixed';
   productRef?: string;
+  /** Kiinteä arvo vaikutukselle: € (materiaalilisä), h (kestolisä) tai kerroin. */
+  value?: number;
+  /** @deprecated Käytä value-kenttää. Luetaan vielä laskennassa vanhoista lomakkeista. */
   quantityRef?: string;
 }
 

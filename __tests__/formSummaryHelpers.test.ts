@@ -41,10 +41,21 @@ describe('buildFormSnapshot', () => {
     expect(
       snapshot.fields.find((field) => field.key === 'laskenta_seinapinta_ala_m2')?.value,
     ).toContain('117');
+    expect(snapshot.fields.find((field) => field.key === 'laudoitustyyppi')?.value).toBe('Paneeli');
   });
 });
 
 describe('formatFieldSummaryValue', () => {
+  test('formats select as option label', () => {
+    const form = defaultForm();
+    const field = form.fields.find((item) => item.key === 'laudoitustyyppi')!;
+
+    expect(
+      formatFieldSummaryValue(field, { laudoitustyyppi: '1.15' }, { laudoitustyyppi: 1.15 }),
+    ).toBe('Paneeli');
+    expect(formatFieldSummaryValue(field, {}, {})).toBe('–');
+  });
+
   test('formats boolean as Kyllä/Ei', () => {
     const form = defaultForm();
     form.fields.push({

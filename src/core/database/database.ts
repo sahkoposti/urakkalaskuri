@@ -20,9 +20,17 @@ import { normalizeWizardStepOrder } from '../wizard/wizardSteps';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
+/** Nollaa välimuistin (esim. hot reload / kuollut native-kahva Androidilla). */
+export function resetDatabaseConnection(): void {
+  dbPromise = null;
+}
+
 async function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (!dbPromise) {
-    dbPromise = openDatabase();
+    dbPromise = openDatabase().catch((error) => {
+      dbPromise = null;
+      throw error;
+    });
   }
   return dbPromise;
 }
@@ -52,7 +60,10 @@ async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
 }
 
 async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
-  const db = await SQLite.openDatabaseAsync('urakkalaskuri.db');
+  // useNewConnection: Android/Expo Go voi muuten palauttaa kuolleen shared-kahvan (NPE prepareAsync).
+  const db = await SQLite.openDatabaseAsync('urakkalaskuri.db', {
+    useNewConnection: true,
+  });
   await db.execAsync(`
     PRAGMA foreign_keys = ON;
     CREATE TABLE IF NOT EXISTS products (

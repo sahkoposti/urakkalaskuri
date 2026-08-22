@@ -11,6 +11,7 @@ import {
   sortedPages,
 } from '@/src/core/form/formDefinitionHelpers';
 import { slugifyKey } from '@/src/core/form/formKeyUtils';
+import { isSystemFieldHiddenFromUi } from '@/src/core/form/systemFields';
 
 export { slugifyKey, sanitizeKeyInput } from '@/src/core/form/formKeyUtils';
 
@@ -28,7 +29,7 @@ export {
   sortedUserFields,
   unknownFormulaIdentifiers,
 } from '@/src/core/form/formDefinitionHelpers';
-export { isSystemField, restoreSystemField } from '@/src/core/form/systemFields';
+export { isSystemField, isSystemFieldHiddenFromUi, restoreSystemField } from '@/src/core/form/systemFields';
 
 export const EDITABLE_FIELD_TYPES: FieldType[] = [
   'number',
@@ -36,7 +37,6 @@ export const EDITABLE_FIELD_TYPES: FieldType[] = [
   'select',
   'boolean',
   'product_select',
-  'product_quantity',
   'computed',
   'section',
 ];
@@ -44,11 +44,10 @@ export const EDITABLE_FIELD_TYPES: FieldType[] = [
 export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   number: 'Numero',
   text: 'Teksti',
-  select: 'Valinta',
+  select: 'Valintalista',
   boolean: 'Kyllä/Ei',
-  product_quantity: 'Tuote + määrä',
   product_select: 'Tuotelista',
-  computed: 'Laskettu',
+  computed: 'Laskenta',
   section: 'Otsikko',
 };
 
@@ -191,6 +190,8 @@ export function addField(form: FormDefinition, type: FieldType): FormDefinition 
 }
 
 export function updateField(form: FormDefinition, updated: FormField): FormDefinition {
+  const existing = getFieldById(form, updated.id);
+  if (existing && isSystemFieldHiddenFromUi(existing)) return form;
   return {
     ...form,
     fields: form.fields.map((field) => (field.id === updated.id ? updated : field)),
@@ -234,7 +235,8 @@ export function removeField(form: FormDefinition, fieldId: string): FormDefiniti
 }
 
 export function addFieldToPage(form: FormDefinition, pageId: string, fieldId: string): FormDefinition {
-  if (!getFieldById(form, fieldId)) return form;
+  const field = getFieldById(form, fieldId);
+  if (!field || isSystemFieldHiddenFromUi(field)) return form;
   const withoutElsewhere = {
     ...form,
     pages: form.pages.map((page) => ({

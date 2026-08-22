@@ -1,7 +1,6 @@
 import { fieldsForPage } from '@/src/core/form/formDefinitionHelpers';
 import {
   findProductById,
-  getFieldProductQuantity,
   getSelectedProductId,
   isProductField,
 } from '@/src/core/form/productFieldUtils';
@@ -61,12 +60,6 @@ export function validateFormPageWithValues(
       }
       if (productId && !findProductById(products, productId)) {
         return `${field.label}: valittu tuote ei ole enää saatavilla.`;
-      }
-      if (field.type === 'product_quantity' && field.required) {
-        const quantity = getFieldProductQuantity(fieldValues, field.key);
-        if (quantity === null) {
-          return `${field.label}: anna kelvollinen määrä.`;
-        }
       }
     }
   }

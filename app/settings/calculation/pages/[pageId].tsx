@@ -57,7 +57,7 @@ export default function PageFieldsSettingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.help}>
           Valitse mitkä kentät näytetään tällä sivulla. Jokainen kenttä voi olla vain yhdellä
-          sivulla kerrallaan. Laskettu kenttä näytetään lomakkeella muokattavana arvona.
+          sivulla kerrallaan. Laskenta-kenttä näytetään lomakkeella muokattavana arvona.
         </Text>
 
         <Text style={styles.sectionTitle}>Sivulla ({assigned.length})</Text>
@@ -113,7 +113,7 @@ export default function PageFieldsSettingsScreen() {
               onPress={() => setDraft((current) => addFieldToPage(current, page.id, field.id))}
             >
               <Text style={styles.fieldLabel}>{field.label}</Text>
-              <Text style={styles.fieldMeta}>{FIELD_TYPE_LABELS[field.type]} · {field.key}</Text>
+              <Text style={styles.fieldMeta}>{FIELD_TYPE_LABELS[field.type]}</Text>
             </AppCard>
           ))
         )}

@@ -103,84 +103,7 @@ describe('runFormCalculation', () => {
     expect(result.totalPriceVat).toBeCloseTo(4568.97, 2);
   });
 
-  test('includes product_quantity lines in materials', () => {
-    const form = defaultForm();
-    form.fields.push({
-      id: 'field_paint_qty',
-      key: 'maali_rivi',
-      label: 'Maali',
-      type: 'product_quantity',
-      required: false,
-      showOnSummary: true,
-    });
-
-    const { result, materialLines } = runFormCalculation({
-      form,
-      fieldValues: {
-        kiintea_seinapinta_ala_m2: '120',
-        laudoitustyyppi: '1.15',
-        tyoryhma_kesto_pv: '5',
-        maali_rivi: 'paint-1',
-        maali_rivi__qty: '5',
-      },
-      materialLines: [],
-      products: [paintProduct],
-      settings: defaultSettings,
-    });
-
-    expect(materialLines).toHaveLength(1);
-    expect(result.materialsVat0).toBeCloseTo(60, 2);
-  });
-
-  test('applies add_material effect from computed quantity', () => {
-    const form = defaultForm();
-    form.fields.push(
-      {
-        id: 'field_paint',
-        key: 'kautettavamaali',
-        label: 'Maali',
-        type: 'product_select',
-        required: false,
-        showOnSummary: false,
-      },
-      {
-        id: 'field_paint_amount',
-        key: 'materiaali_maara',
-        label: 'Maaramäärä',
-        type: 'computed',
-        required: false,
-        showOnSummary: true,
-        unit: 'l',
-        formula: 'laskenta_seinapinta_ala_m2 / kautettavamaali.consumption',
-        effects: [
-          {
-            type: 'add_material',
-            productRef: 'kautettavamaali',
-            quantityRef: 'materiaali_maara',
-          },
-        ],
-      },
-    );
-
-    const { result, materialLines } = runFormCalculation({
-      form,
-      fieldValues: {
-        kiintea_seinapinta_ala_m2: '120',
-        aukkovahennykset: '18',
-        laudoitustyyppi: '1.15',
-        tyoryhma_kesto_pv: '5',
-        kautettavamaali: 'paint-1',
-      },
-      materialLines: [],
-      products: [paintProduct],
-      settings: defaultSettings,
-    });
-
-    expect(materialLines).toHaveLength(1);
-    expect(result.materialsVat0).toBeCloseTo(175.95, 2);
-  });
-
-  test('finnish product aliases calculate material price', () => {
+  test('finnish product aliases compute paint price in context', () => {
     const form = defaultForm();
     form.fields.push(
       {
@@ -201,7 +124,6 @@ describe('runFormCalculation', () => {
         unit: '€',
         formula:
           'laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta',
-        effects: [{ type: 'add_material_fixed', quantityRef: 'maali_hinta' }],
       },
     );
 
@@ -220,7 +142,35 @@ describe('runFormCalculation', () => {
     });
 
     expect(context.maali_hinta).toBeCloseTo(175.95, 2);
-    expect(result.materialsVat0).toBeCloseTo(175.95, 2);
+    expect(result.materialsVat0).toBe(0);
+  });
+
+  test('literal material effect adds fixed euros at end of calculation', () => {
+    const form = defaultForm();
+    form.fields.push({
+      id: 'field_extra_material',
+      key: 'lisamaalaus',
+      label: 'Lisämaalaus',
+      type: 'boolean',
+      required: false,
+      showOnSummary: false,
+      effects: [{ type: 'add_material_fixed', value: 50 }],
+    });
+
+    const { result } = runFormCalculation({
+      form,
+      fieldValues: {
+        kiintea_seinapinta_ala_m2: '120',
+        aukkovahennykset: '18',
+        laudoitustyyppi: '1.15',
+        tyoryhma_kesto_pv: '5',
+      },
+      materialLines: [],
+      products: [],
+      settings: defaultSettings,
+    });
+
+    expect(result.materialsVat0).toBeCloseTo(50, 2);
   });
 
   test('duration system formula can be computed from measurements', () => {

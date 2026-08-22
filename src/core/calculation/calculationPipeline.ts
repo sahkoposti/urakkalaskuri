@@ -1,8 +1,8 @@
 import {
+  applyDurationEffects,
   applyFieldEffects,
-  collectProductQuantityLines,
+  applyMaterialEffects,
   materialLinesTotal,
-  mergeMaterialLines,
 } from '@/src/core/form/fieldEffects';
 import {
   evaluateFormContext,
@@ -182,17 +182,20 @@ export interface ResolveFormContextOutput {
 }
 
 /**
- * Field-efektit + kaksi kierrosta kaavaputkea.
- * Käytössä sekä wizardin loppulaskennassa että live-esikatselussa.
+ * Field-efektit sovelletaan vasta laskennan lopussa:
+ * 1) kaavat perusmateriaaleilla
+ * 2) kerää lisä-/kerroinvaikutukset
+ * 3) päivitä materiaalit ja kesto
+ * 4) laske järjestelmäkaavat uudelleen lopullisilla arvoilla
  */
 export function resolveFormContextWithEffects(
   input: ResolveFormContextInput,
 ): ResolveFormContextOutput {
   const strict = input.strict ?? true;
-  const formProductLines = collectProductQuantityLines(input.form, input.fieldValues, input.products);
-  const baseMaterialLines = mergeMaterialLines(input.materialLines, formProductLines);
-  const baseMaterialsVat0 = materialLinesTotal(baseMaterialLines);
+  const materialLines = [...input.materialLines];
+  const baseMaterialsVat0 = materialLinesTotal(materialLines);
 
+  // 1) Kaavat ensin (perusmateriaalit ja kesto)
   const draftContext = runProductionPipeline(
     input.form,
     input.fieldValues,
@@ -202,11 +205,26 @@ export function resolveFormContextWithEffects(
     { strictSystemFields: strict },
   );
 
+  // 2) Kerää loppuvaikutukset
   const effects = applyFieldEffects(input.form, draftContext, input.fieldValues, input.products);
-  const allMaterialLines = mergeMaterialLines(baseMaterialLines, effects.materialLines);
-  const materialsVat0 =
-    materialLinesTotal(allMaterialLines) * effects.materialsMultiplier + effects.materialsFixedAdd;
 
+  // 3) Materiaalit ja kesto vasta lopussa
+  const materialsVat0 = applyMaterialEffects(baseMaterialsVat0, effects);
+
+  const baseHours = resolveGroupDurationHours(
+    draftContext,
+    input.fieldValues,
+    input.settings,
+    input.legacyDuration,
+    1,
+    0,
+    strict,
+  );
+
+  const groupDurationHours =
+    baseHours === null ? null : applyDurationEffects(baseHours, effects);
+
+  // 4) Lopullinen kaavalaskenta lopullisilla materiaaleilla (+ kestopäivitys)
   const context = runProductionPipeline(
     input.form,
     input.fieldValues,
@@ -214,16 +232,6 @@ export function resolveFormContextWithEffects(
     input.settings,
     input.products,
     { strictSystemFields: strict },
-  );
-
-  const groupDurationHours = resolveGroupDurationHours(
-    context,
-    input.fieldValues,
-    input.settings,
-    input.legacyDuration,
-    effects.durationMultiplier,
-    effects.durationAddHours,
-    strict,
   );
 
   if (groupDurationHours !== null) {
@@ -245,7 +253,7 @@ export function resolveFormContextWithEffects(
     }
   }
 
-  return { context, materialLines: allMaterialLines, groupDurationHours };
+  return { context, materialLines, groupDurationHours };
 }
 
 /** Live-esikatselu: sama efektiputki kuin loppulaskennassa, soft errors. */

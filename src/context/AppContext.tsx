@@ -91,14 +91,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    (async () => {
+
+    async function loadAll() {
       await refreshSettings();
       await refreshProducts();
       await refreshCalculations();
       await refreshWizardDraft();
       await refreshFormSettings();
-      if (active) setReady(true);
+    }
+
+    (async () => {
+      try {
+        await loadAll();
+        if (active) setReady(true);
+      } catch (error) {
+        console.warn('Tietokannan avaus epäonnistui, yritetään uudelleen', error);
+        db.resetDatabaseConnection();
+        try {
+          await loadAll();
+          if (active) setReady(true);
+        } catch (retryError) {
+          console.error('Tietokannan avaus epäonnistui uudelleen', retryError);
+        }
+      }
     })();
+
     return () => {
       active = false;
     };

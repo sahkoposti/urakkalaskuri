@@ -15,10 +15,13 @@ import {
   removePage,
   slugifyKey,
   sanitizeKeyInput,
+  sortedGlobalFields,
+  sortedSystemFields,
   uniqueFieldKey,
   unknownFormulaIdentifiers,
+  updateField,
 } from '../src/core/form/formMutations';
-import { isSystemField, restoreSystemField } from '../src/core/form/systemFields';
+import { isSystemField, isSystemFieldHiddenFromUi, restoreSystemField } from '../src/core/form/systemFields';
 
 describe('formMutations', () => {
   test('slugifyKey converts finnish labels', () => {
@@ -146,6 +149,48 @@ describe('formMutations', () => {
     const systemField = form.fields.find((field) => isSystemField(field))!;
     const next = removeField(form, systemField.id);
     expect(next.fields.some((field) => field.id === systemField.id)).toBe(true);
+  });
+
+  test('UI-hidden system fields stay in form but are excluded from settings lists', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const hiddenKeys = ['kokonaishinta_alv0', 'myyntikate_eur', 'myyntipalkkio_eur'] as const;
+
+    for (const systemKey of hiddenKeys) {
+      expect(form.fields.some((field) => field.systemKey === systemKey)).toBe(true);
+    }
+
+    expect(sortedGlobalFields(form).some((field) => isSystemFieldHiddenFromUi(field))).toBe(false);
+    expect(sortedSystemFields(form).some((field) => isSystemFieldHiddenFromUi(field))).toBe(false);
+    expect(fieldsAvailableForPage(form, form.pages[0].id).some((field) => isSystemFieldHiddenFromUi(field))).toBe(
+      false,
+    );
+
+    const pageWithHidden = {
+      ...form,
+      pages: form.pages.map((page, index) =>
+        index === 0
+          ? {
+              ...page,
+              fieldIds: [
+                ...(page.fieldIds ?? []),
+                ...hiddenKeys.map(
+                  (systemKey) => form.fields.find((field) => field.systemKey === systemKey)!.id,
+                ),
+              ],
+            }
+          : page,
+      ),
+    };
+    expect(fieldsForPage(pageWithHidden, pageWithHidden.pages[0].id).some((field) => isSystemFieldHiddenFromUi(field))).toBe(
+      false,
+    );
+
+    const margin = form.fields.find((field) => field.systemKey === 'myyntikate_eur')!;
+    const updated = updateField(form, { ...margin, label: 'Hacked' });
+    expect(updated.fields.find((field) => field.id === margin.id)?.label).toBe(margin.label);
+
+    const added = addFieldToPage(form, form.pages[0].id, margin.id);
+    expect(added.pages[0].fieldIds?.includes(margin.id)).toBe(false);
   });
 
   test('restoreSystemField resets label and formula to defaults', () => {

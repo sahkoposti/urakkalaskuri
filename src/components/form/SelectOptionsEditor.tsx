@@ -43,7 +43,7 @@ export function SelectOptionsEditor({ fieldKey, options, onChange }: SelectOptio
         <Text style={styles.empty}>Ei valintoja. Lisää vähintään yksi.</Text>
       ) : (
         options.map((option, index) => (
-          <View key={`${option.label}-${index}`} style={styles.optionCard}>
+          <View key={index} style={styles.optionCard}>
             <View style={styles.optionHeader}>
               <Text style={styles.optionIndex}>{index + 1}.</Text>
               <View style={styles.optionActions}>

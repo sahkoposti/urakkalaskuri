@@ -1,13 +1,12 @@
 import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
 import {
   findProductById,
-  getFieldProductQuantity,
   getSelectedProductId,
 } from '@/src/core/form/productFieldUtils';
 import { isSystemField } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { FormSnapshot, FormSnapshotField, Product } from '@/src/core/models/types';
-import { formatDecimal } from '@/src/core/utils/formatters';
+import { formatCurrency, formatDecimal } from '@/src/core/utils/formatters';
 
 export function formatFieldSummaryValue(
   field: FormField,
@@ -20,16 +19,18 @@ export function formatFieldSummaryValue(
     return product?.name ?? '–';
   }
 
-  if (field.type === 'product_quantity') {
-    const product = findProductById(products, getSelectedProductId(fieldValues, field.key));
-    const quantity = getFieldProductQuantity(fieldValues, field.key);
-    if (!product || quantity === null) return '–';
-    return `${product.name} × ${formatDecimal(quantity)} ${product.unit}`;
+  if (field.type === 'select') {
+    const raw = fieldValues[field.key];
+    if (!raw) return '–';
+    return field.options?.find((option) => option.value === raw)?.label ?? raw;
   }
 
-  if (field.type === 'computed' || field.type === 'number' || field.type === 'select') {
+  if (field.type === 'computed' || field.type === 'number') {
     const num = context[field.key];
     if (num !== undefined && Number.isFinite(num)) {
+      if (field.unit === '€') {
+        return formatCurrency(num);
+      }
       return `${formatDecimal(num)}${field.unit ? ` ${field.unit}` : ''}`;
     }
   }

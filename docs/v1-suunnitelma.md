@@ -24,11 +24,11 @@ Sovelluksen visuaalinen tyyli noudattaa [colorajaton.fi](https://colorajaton.fi)
 |-----|--------|-----|
 | **Etusivu** | Navigaatio: Uusi laskenta, Historia, Tuotteet, Asetukset | Kyllä |
 | **Tuotteet** | Tuotteiden hallinta (nimi, yksikkö, yksikköhinta alv0) | Kyllä |
-| **Laskenta (wizard)** | Vaiheittainen syöttö + tuoterivit, kesken jääneen tallennus | Kyllä |
+| **Laskenta (wizard)** | Dynaaminen lomakepohja (`FormDefinition.pages`) + tuoterivit historiasta/luonnoksesta | Kyllä |
 | **Yhteenveto** | Lasketut tulokset + tallennus | Kyllä |
 | **Historia** | Aiempien laskelmien lista ja avaus | Kyllä |
 | **Asetukset** | Yleinen, Lomakeasetukset (v1.1), Teema | Kyllä |
-| Custom-muuttujat / kaavaeditori | Käyttäjän määrittelemät kentät ja vaikutukset | Ei (v1.1+, paikka valmiina) |
+| Custom-muuttujat / kaavaeditori | Käyttäjän määrittelemät kentät ja vaikutukset | v1.1 (Lomakeasetukset) |
 | Teeman soveltaminen koko UI:hin | Tallennetut värit/taustakuva käyttöön | Ei (v1.1+) |
 | PDF-vienti / pilvisynkka | | Ei |
 
@@ -90,15 +90,21 @@ Etusivu
     └── Teema (logo, värit, taustakuva, himmeys)
 ```
 
-### 4.1 Wizard-vaiheet (oletusjärjestys)
+### 4.1 Wizard-sivut (dynaaminen lomakepohja)
 
-| ID | Vaihe | Syöte | Pakollinen |
-|----|-------|-------|------------|
-| `customer` | Asiakas | nimi, puh, sähköposti, osoite, lisätiedot | Nimi kyllä |
-| `duration` | Työryhmän arvioitu kesto | päivää (desimaali ok) | Kyllä |
-| `materials` | Materiaalit – tuoterivit | tuote + määrä | Ei |
+Wizard ei ole enää kiinteä 3-vaiheinen malli (asiakas → kesto → materiaalit). Sivut, otsikot ja kentät tulevat **`FormDefinition.pages`** -määrittelystä (Lomakeasetukset → Sivut).
 
-**Huom.** Työryhmän koko, tuntihinta, myyntikate (%) ja myyntipalkkio (%) tulevat **Yleinen**-asetuksista, eivät wizard-vaiheina. Kesto muunnetaan tunneiksi: `päivät × työpäivän pituus`.
+Oletuspohja **Peruslaskenta** (`defaultFormDefinition.ts`) sisältää tyyppillisesti:
+
+| Sivu | Sisältö |
+|------|---------|
+| Asiakas (`system: customer`) | nimi, yhteystiedot, asiakastyyppi |
+| Käyttäjän sivut | esim. Pinta-alat (numero-, valinta- ja laskentakentät) |
+| Kesto | järjestelmäkenttä `tyoryhma_kesto_pv` |
+
+Materiaalikustannukset tulevat **järjestelmäkaavoista** (`materiaalit_alv0` ← `materiaalirivit_yhteensa` + kenttävaikutukset), ei erillisestä kiinteästä materiaalisivusta. Vanhat tuoterivit säilyvät historiassa ja luonnoksissa; uudessa laskennassa materiaalit voidaan lisätä esim. `add_material_fixed` -vaikutuksella tai lasketulla kaavalla.
+
+**Huom.** Työryhmän koko, tuntihinta, myyntikate (%) ja myyntipalkkio (%) tulevat **Yleinen**-asetuksista. Kesto muunnetaan tunneiksi kaavalla: `tyoryhma_kesto_pv × asetukset.tyopaivan_pituus`.
 
 **Kesken jäänyt laskenta:** poistuessa kysytään tallennusta. Luonnos näkyy yläpalkin punaisessa bannerissa „Jatka laskentaa →”. Uusi laskenta poistaa luonnoksen vahvistuksella.
 
@@ -116,7 +122,7 @@ Etusivu
 
 #### Laskenta → Järjestys *(poistettu v1.1:ssä)*
 
-Wizard-vaiheiden järjestys hallitaan **Lomakeasetukset → Sivut** -näkymässä (`form_definition.pages`). Vanha `wizard_step_order` säilyy v1-wizardin yhteensopivuuden vuoksi, kunnes dynaaminen lomake korvaa kovakoodatun wizardin.
+Wizard-vaiheiden järjestys hallitaan **Lomakeasetukset → Sivut** -näkymässä (`form_definition.pages`). Vanha `wizard_step_order` säilyy tietokannassa legacy-yhteensopivuuden vuoksi; wizard käyttää `form_definition.pages`.
 
 #### Lomakeasetukset (v1.1)
 
@@ -137,42 +143,59 @@ Kuvan valinta galleriasta ja teeman soveltaminen koko sovellukseen: v1.1+.
 
 ## 5. Tuotteet
 
-Tuotteen kentät: nimi, yksikkö, yksikköhinta (alv0), kuvaus (valinnainen). CRUD + materiaalirivit laskennassa.
+Tuotteen kentät: nimi, yksikkö, yksikköhinta (alv0), kuvaus (valinnainen). Valinnaiset **laskenta-attribuutit** (`Product.attributes`): menekki, työkerroin (ei materiaalikerrointa). CRUD + **Kopioi tuote** (`duplicateProduct`).
+
+Kaavoissa tuotekentän attribuutit: `{key}.menekki`, `{key}.yksikkohinta`, `{key}.tyokerroin` (legacy-alias `consumption`, `unit_price`, `work_factor` toimii).
+
+Materiaalirivit laskennassa:
 
 ```
 rivisumma_alv0 = määrä × yksikköhinta_alv0
+materiaalit_alv0 = materiaalirivit_yhteensa (+ kenttävaikutukset laskennan lopussa)
 ```
 
 ---
 
 ## 6. Laskentakaavat
 
+Hinnat lasketaan **järjestelmäkenttien kaavoilla** (`systemFields.ts`), ei erillisellä `calculationEngine`-moduulilla. Tuotantopolku: `src/core/calculation/calculationPipeline.ts`.
+
+| Funktio | Rooli |
+|---------|-------|
+| `runFormCalculation` | Wizardin/yhteenvedon pääsisäänkäynti |
+| `resolveFormContextWithEffects` | Kaavat → efektit → järjestelmäkaavat uudelleen |
+| `runProductionPipeline` | Syötteet + tuotteet + lomakekaavat → konteksti |
+| `buildResultFromFormulaContext` | Konteksti → `CalculationResult` |
+
 ### 6.1 Muuttujat
 
-| Symboli | Merkitys | Lähde |
-|---------|----------|-------|
-| `t` | Työryhmän kesto (h) | wizard: päivät × työpäivän pituus |
-| `n` | Työryhmän koko | asetukset |
-| `h` | Tuntihinta (alv0) | asetukset |
-| `U` | Urakkahinta (alv0) | `t × n × h` |
-| `M` | Materiaalit (alv0) | tuoterivit |
-| `k`, `p` | Kate ja palkkio (%) | Yleinen-asetukset |
-| `P` | Kokonaishinta (alv0) | `(U + M) / (1 - k - p)` |
-| `a` | ALV (%) | asetukset |
-| `d` | Työpäivän pituus (h) | asetukset |
+| Symboli / avain | Merkitys | Lähde |
+|-----------------|----------|-------|
+| `tyoryhma_kesto_pv`, `tyoryhma_kesto_h` | Työryhmän kesto | lomake / järjestelmäkaava |
+| `asetukset.tyoryhman_koko` | Työryhmän koko | Yleinen-asetukset |
+| `asetukset.tuntihinta` | Tuntihinta (alv0) | Yleinen-asetukset |
+| `urakka_hinta_alv0` | Urakkahinta (alv0) | `tyoryhma_kesto_h × asetukset.tyoryhman_koko × asetukset.tuntihinta` |
+| `materiaalirivit_yhteensa` | Tuoterivit (alv0) | wizard-luonnos / historia |
+| `materiaalit_alv0` | Materiaalit yhteensä | `materiaalirivit_yhteensa` + efektit |
+| `asetukset.myyntikate_prosentti`, `asetukset.myyntipalkkio_prosentti` | Kate ja palkkio (%) | Yleinen-asetukset |
+| `kokonaishinta` | Kokonaishinta (alv) | järjestelmäkaava |
+| `asetukset.alv_prosentti` | ALV (%) | Yleinen-asetukset |
+| `asetukset.tyopaivan_pituus` | Työpäivän pituus (h) | Yleinen-asetukset |
 
-**Rajoite:** k + p < 100 %.
+Legacy-alias `settings.*` toimii rinnakkain. **Rajoite:** kate + palkkio < 100 %.
 
 ### 6.2 Laskentajärjestys
 
 ```
-1. M  ← tuoterivit
-2. U = t × n × h
-3. P = (U + M) / (1 - k - p)
-4. myyntikate_€, myyntipalkkio_€, ALV, työkesto_pv
+1. Syötteet + product_select → konteksti (tuoteattribuutit)
+2. Computed-kentät (topologinen järjestys)
+3. Kenttävaikutukset kerätään (add_material_fixed, multiply_materials, add_duration, multiply_duration)
+4. Materiaalit ja kesto päivitetään efektien jälkeen
+5. Järjestelmäkaavat uudelleen lopullisilla arvoilla
+6. buildResultFromFormulaContext → tulos
 ```
 
-Toteutus: `src/core/calculation/calculationEngine.ts` → `runCalculation()`.
+**Huom.** `add_material` on legacy-tyyppi; migraatio ohittaa sen. Hinnat näytetään `formatCurrency`-funktiolla (2 desimaalia).
 
 ---
 
@@ -182,13 +205,14 @@ Toteutus: `src/core/calculation/calculationEngine.ts` → `runCalculation()`.
 
 ```
 app/                    # Expo Router -näytöt
-  settings/             # Asetukset (hub + aliosiot)
+  settings/calculation/ # Lomakeasetukset
   wizard/
   products/
   history/
 src/
   core/
-    calculation/
+    calculation/        # calculationPipeline.ts
+    form/               # FormDefinition, kaavat, efektit
     database/
     models/
     wizard/
@@ -208,30 +232,31 @@ docs/
 | Avain | Kuvaus |
 |-------|--------|
 | `vat_percent`, `default_margin_percent`, … | Yleiset (ks. 4.2) |
-| `wizard_step_order` | JSON: `WizardStepId[]` |
+| `wizard_step_order` | JSON: `WizardStepId[]` (legacy) |
+| `form_definition` | Aktiivinen lomakepohja (JSON) |
 | `theme_accent_color`, `theme_primary_color`, … | Teema |
 | `theme_background_image_uri`, `theme_background_opacity` | Taustakuva |
 
 **wizard_drafts:** yksi rivi (`id = current`), JSON-payload kesken jääneelle laskennalle.
 
-### 7.3 WizardStepId
+### 7.3 WizardStepId (legacy)
 
 ```typescript
 type WizardStepId = 'customer' | 'duration' | 'materials';
 ```
 
-Järjestys: `settings.wizardStepOrder` (normalisoidaan `normalizeWizardStepOrder()`). v1.1:ssä lomakepohjan sivujärjestys korvaa tämän, kun dynaaminen wizard on valmis.
+Vanha `settings.wizardStepOrder` säilyy tietokannassa. **Wizard käyttää nyt `form_definition.pages`**, ei kiinteää step-järjestystä.
 
-### 7.4 Modulaarisuus (v1.1+)
+### 7.4 Modulaarisuus (v1.1)
 
 ```
-[Syötteet + tuoterivit]
+[Syötteet + tuoterivit (historia/luonnos)]
         ↓
 [Lomakepohjan kentät + kaavat]  ← Lomakeasetukset
         ↓
-[runCalculation / runPipeline]
+[resolveFormContextWithEffects / runFormCalculation]
         ↓
-[Tulos]
+[CalculationResult + form_snapshot]
 ```
 
 Katso: [v1.1-suunnitelma.md](./v1.1-suunnitelma.md)
@@ -240,19 +265,21 @@ Katso: [v1.1-suunnitelma.md](./v1.1-suunnitelma.md)
 
 ## 8. Hyväksymiskriteerit
 
-### Toteutettu (MVP)
+### Toteutettu (MVP + v1.1-ydin)
 - [x] ColoRajaton-teema, logo, IBM Plex Sans
-- [x] Tuotteiden CRUD
-- [x] Wizard 3 vaihetta (asiakas, kesto, materiaalit), validointi, päivät → tunnit
-- [x] Laskentakaavat + yksikkötestit
-- [x] Yhteenveto + erittely + tallennus
-- [x] Historia
-- [x] Asetukset: Yleinen, Lomakeasetukset (v1.1), Teema (tallennus)
+- [x] Tuotteiden CRUD + Kopioi tuote
+- [x] Dynaaminen wizard (`FormDefinition`), validointi, kesto kaavoilla
+- [x] Laskentaputki (`calculationPipeline`) + yksikkötestit
+- [x] Yhteenveto + erittely + tallennus (`form_snapshot`)
+- [x] Historia + muokkaus
+- [x] Asetukset: Yleinen, Lomakeasetukset, Teema (tallennus)
 - [x] Kesken jääneen laskennan tallennus ja jatko
 - [x] Expo Go (SDK 54)
+- [x] Hinnat: `formatCurrency` (2 desimaalia)
 
-### Avoinna / v1.1
-- [ ] Custom-muuttujat ja kaavat
+### Avoinna / v1.1 loppu
+- [ ] Lomakeasetukset: Esikatselu, Oletusarvot, Ulkoverhous-pohja
+- [ ] Lomakepohjan versionvaroitus muokkauksessa
 - [ ] Teeman soveltaminen koko UI:hin
 - [ ] Logon ja taustakuvan valinta galleriasta
 - [ ] APK (EAS Build) + Play Store
@@ -275,7 +302,7 @@ Katso: [v1.1-suunnitelma.md](./v1.1-suunnitelma.md)
 
 ## 10. Rajattu pois v1:stä (v1.1+)
 
-- Custom-kentät, muuttujat ja kaavaeditori (UI-valmius asetuksissa)
+- Custom-kentät, muuttujat ja kaavaeditori (toteutettu Lomakeasetuksissa v1.1:ssä)
 - Dynaaminen teema kaikissa näkymissä
 - Logon/taustakuvan upload
 - Tuoteryhmät, PDF, pilvi, iOS

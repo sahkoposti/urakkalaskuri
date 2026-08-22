@@ -1,14 +1,8 @@
-import {
-  findProductById,
-  getFieldProductQuantity,
-  getSelectedProductId,
-} from '@/src/core/form/productFieldUtils';
 import { pipelineFieldOrder } from '@/src/core/form/formDefinitionHelpers';
-import type { FormDefinition, FormField } from '@/src/core/form/types';
+import type { FieldEffect, FormDefinition, FormField } from '@/src/core/form/types';
 import type { Product, WizardLineDraft } from '@/src/core/models/types';
 
 export interface FieldEffectsResult {
-  materialLines: WizardLineDraft[];
   materialsFixedAdd: number;
   durationMultiplier: number;
   durationAddHours: number;
@@ -17,7 +11,6 @@ export interface FieldEffectsResult {
 
 function emptyEffectsResult(): FieldEffectsResult {
   return {
-    materialLines: [],
     materialsFixedAdd: 0,
     durationMultiplier: 1,
     durationAddHours: 0,
@@ -25,67 +18,49 @@ function emptyEffectsResult(): FieldEffectsResult {
   };
 }
 
-function resolveQuantity(
+/** Lukee vaikutuksen numeerisen arvon; vanha quantityRef toimii vielä taaksepäin yhteensopivuutena. */
+function resolveEffectValue(
+  effect: FieldEffect,
   context: Record<string, number>,
-  quantityRef: string | undefined,
-  field: FormField,
 ): number | null {
-  const key = quantityRef ?? field.key;
-  const value = context[key];
-  if (value === undefined || !Number.isFinite(value)) return null;
-  return value;
-}
-
-function resolveProduct(
-  form: FormDefinition,
-  fieldValues: Record<string, string>,
-  products: Product[],
-  productRef: string | undefined,
-): Product | null {
-  if (!productRef) return null;
-  const productField = form.fields.find((item) => item.key === productRef);
-  if (!productField) return null;
-  return findProductById(products, getSelectedProductId(fieldValues, productField.key));
+  if (effect.value !== undefined && Number.isFinite(effect.value)) {
+    return effect.value;
+  }
+  if (effect.quantityRef) {
+    const legacy = context[effect.quantityRef];
+    if (legacy !== undefined && Number.isFinite(legacy)) return legacy;
+  }
+  return null;
 }
 
 function applyEffect(
-  form: FormDefinition,
-  field: FormField,
-  effect: NonNullable<FormField['effects']>[number],
+  effect: FieldEffect,
   context: Record<string, number>,
-  fieldValues: Record<string, string>,
-  products: Product[],
   result: FieldEffectsResult,
 ): void {
   switch (effect.type) {
-    case 'add_material': {
-      const quantity = resolveQuantity(context, effect.quantityRef, field);
-      if (quantity === null || quantity <= 0) return;
-      const product = resolveProduct(form, fieldValues, products, effect.productRef);
-      if (!product) return;
-      result.materialLines.push({ product, quantity });
+    case 'add_material':
       return;
-    }
     case 'add_material_fixed': {
-      const amount = resolveQuantity(context, effect.quantityRef, field);
+      const amount = resolveEffectValue(effect, context);
       if (amount === null) return;
       result.materialsFixedAdd += amount;
       return;
     }
     case 'multiply_duration': {
-      const factor = resolveQuantity(context, effect.quantityRef, field);
+      const factor = resolveEffectValue(effect, context);
       if (factor === null || factor <= 0) return;
       result.durationMultiplier *= factor;
       return;
     }
     case 'add_duration': {
-      const hours = resolveQuantity(context, effect.quantityRef, field);
+      const hours = resolveEffectValue(effect, context);
       if (hours === null) return;
       result.durationAddHours += hours;
       return;
     }
     case 'multiply_materials': {
-      const factor = resolveQuantity(context, effect.quantityRef, field);
+      const factor = resolveEffectValue(effect, context);
       if (factor === null || factor <= 0) return;
       result.materialsMultiplier *= factor;
       return;
@@ -95,40 +70,23 @@ function applyEffect(
   }
 }
 
+/** Kerää lisä-/kerroinvaikutukset; sovelletaan vasta laskennan lopussa. */
 export function applyFieldEffects(
   form: FormDefinition,
   context: Record<string, number>,
-  fieldValues: Record<string, string>,
-  products: Product[],
+  _fieldValues: Record<string, string> = {},
+  _products: Product[] = [],
 ): FieldEffectsResult {
   const result = emptyEffectsResult();
 
   for (const field of pipelineFieldOrder(form)) {
     if (!field.effects?.length) continue;
     for (const effect of field.effects) {
-      applyEffect(form, field, effect, context, fieldValues, products, result);
+      applyEffect(effect, context, result);
     }
   }
 
   return result;
-}
-
-export function collectProductQuantityLines(
-  form: FormDefinition,
-  fieldValues: Record<string, string>,
-  products: Product[],
-): WizardLineDraft[] {
-  const lines: WizardLineDraft[] = [];
-
-  for (const field of pipelineFieldOrder(form)) {
-    if (field.type !== 'product_quantity') continue;
-    const product = findProductById(products, getSelectedProductId(fieldValues, field.key));
-    const quantity = getFieldProductQuantity(fieldValues, field.key);
-    if (!product || quantity === null) continue;
-    lines.push({ product, quantity });
-  }
-
-  return lines;
 }
 
 export function mergeMaterialLines(...groups: WizardLineDraft[][]): WizardLineDraft[] {
@@ -137,4 +95,17 @@ export function mergeMaterialLines(...groups: WizardLineDraft[][]): WizardLineDr
 
 export function materialLinesTotal(lines: WizardLineDraft[]): number {
   return lines.reduce((sum, line) => sum + line.quantity * line.product.unitPriceVat0, 0);
+}
+
+/** Materiaalit laskennan lopussa: rivit × kerroin + kiinteät lisät. */
+export function applyMaterialEffects(
+  baseMaterialsVat0: number,
+  effects: FieldEffectsResult,
+): number {
+  return baseMaterialsVat0 * effects.materialsMultiplier + effects.materialsFixedAdd;
+}
+
+/** Kesto laskennan lopussa: tunnit × kerroin + lisätunnit. */
+export function applyDurationEffects(baseHours: number, effects: FieldEffectsResult): number {
+  return baseHours * effects.durationMultiplier + effects.durationAddHours;
 }

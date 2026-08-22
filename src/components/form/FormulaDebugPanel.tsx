@@ -4,8 +4,16 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { FormDefinition } from '@/src/core/form/types';
 import { runDebugPipeline } from '@/src/core/form/pipeline';
 import type { AppSettings, Product } from '@/src/core/models/types';
-import { formatDecimal } from '@/src/core/utils/formatters';
+import { formatCurrency, formatDecimal } from '@/src/core/utils/formatters';
 import { AppColors } from '@/src/theme/colors';
+
+function formatDebugValue(form: FormDefinition, fieldKey: string, value: number): string {
+  const field = form.fields.find((item) => item.key === fieldKey);
+  if (field?.unit === '€') {
+    return formatCurrency(value);
+  }
+  return formatDecimal(value);
+}
 
 type FormulaDebugPanelProps = {
   form: FormDefinition;
@@ -38,7 +46,7 @@ export function FormulaDebugPanel({
       <Text style={styles.title}>Live-laskenta (debug)</Text>
       <Text style={styles.help}>
         Syötekentät käyttävät debug-esimerkkiarvoja. Järjestelmäkaavat käyttävät myös Yleinen-asetuksia
-        (tuntihinta, kate, ALV…) ja oletusmateriaaleja ({formatDecimal(materialsVat0)} € alv0).
+        (tuntihinta, kate, ALV…) ja oletusmateriaaleja ({formatCurrency(materialsVat0)} alv0).
       </Text>
 
       {trace.errors.length > 0 ? (
@@ -64,7 +72,9 @@ export function FormulaDebugPanel({
           {focusedStep?.error ? (
             <Text style={styles.errorText}>{focusedStep.error}</Text>
           ) : focusedStep && !Number.isNaN(focusedStep.result) ? (
-            <Text style={styles.result}>Tulos: {formatDecimal(focusedStep.result)}</Text>
+            <Text style={styles.result}>
+              Tulos: {formatDebugValue(form, focusedStep.fieldKey, focusedStep.result)}
+            </Text>
           ) : null}
         </View>
       ) : null}
@@ -79,7 +89,7 @@ export function FormulaDebugPanel({
               <View key={step.fieldKey} style={styles.stepRow}>
                 <Text style={styles.stepLabel}>{step.label}</Text>
                 <Text style={styles.stepValue}>
-                  {step.error ? '–' : formatDecimal(step.result)}
+                  {step.error ? '–' : formatDebugValue(form, step.fieldKey, step.result)}
                 </Text>
               </View>
             ))

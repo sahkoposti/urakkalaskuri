@@ -21,7 +21,6 @@ export default function NewProductScreen() {
   const [description, setDescription] = useState('');
   const [consumption, setConsumption] = useState('');
   const [workFactor, setWorkFactor] = useState('');
-  const [materialFactor, setMaterialFactor] = useState('');
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
@@ -49,7 +48,7 @@ export default function NewProductScreen() {
         unit: unit.trim(),
         unitPriceVat0: parsedPrice,
         description: description.trim() || undefined,
-        attributes: buildProductAttributes(consumption, workFactor, materialFactor),
+        attributes: buildProductAttributes(consumption, workFactor),
         createdAt: new Date(),
       });
       await refreshProducts();
@@ -83,10 +82,8 @@ export default function NewProductScreen() {
         <ProductAttributeFields
           consumption={consumption}
           workFactor={workFactor}
-          materialFactor={materialFactor}
           onConsumptionChange={setConsumption}
           onWorkFactorChange={setWorkFactor}
-          onMaterialFactorChange={setMaterialFactor}
         />
         <PrimaryButton title="Tallenna" onPress={handleSave} disabled={saving} />
       </ScrollView>

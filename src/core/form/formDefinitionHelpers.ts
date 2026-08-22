@@ -3,6 +3,7 @@ import { computedFieldDependencies } from '@/src/core/form/formula/formulaDepend
 import { slugifyKey } from '@/src/core/form/formKeyUtils';
 import {
   createSystemFields,
+  isSystemFieldHiddenFromUi,
   LEGACY_KEY_MAP,
   mergeSystemFields,
   migrateFormulaKeys,
@@ -134,10 +135,17 @@ function normalizeFieldKeys(fields: FormField[]): FormField[] {
   return fields.map((field) => {
     const mapped = LEGACY_KEY_MAP[field.key];
     const key = mapped ?? (/^[a-z0-9_]+$/.test(field.key) ? field.key : slugifyKey(field.key));
+    const rawType = String(field.type);
+    const type = (rawType === 'product_quantity' ? 'product_select' : field.type) as FormField['type'];
+    const effects = field.effects
+      ?.filter((effect) => effect.type !== 'add_material')
+      .map((effect) => ({ ...effect }));
     return {
       ...field,
       key,
+      type,
       formula: field.formula ? migrateFormulaKeys(field.formula) : field.formula,
+      effects: effects && effects.length > 0 ? effects : undefined,
     };
   });
 }
@@ -219,7 +227,9 @@ export function getFieldById(form: FormDefinition, fieldId: string): FormField |
 }
 
 export function sortedGlobalFields(form: FormDefinition): FormField[] {
-  return [...form.fields].sort((a, b) => a.label.localeCompare(b.label, 'fi'));
+  return [...form.fields]
+    .filter((field) => !isSystemFieldHiddenFromUi(field))
+    .sort((a, b) => a.label.localeCompare(b.label, 'fi'));
 }
 
 export function sortedUserFields(form: FormDefinition): FormField[] {
@@ -245,7 +255,8 @@ export function fieldsForPage(form: FormDefinition, pageId: string): FormField[]
   if (!page) return [];
   return (page.fieldIds ?? [])
     .map((fieldId) => getFieldById(form, fieldId))
-    .filter((field): field is FormField => field !== undefined);
+    .filter((field): field is FormField => field !== undefined)
+    .filter((field) => !isSystemFieldHiddenFromUi(field));
 }
 
 /** Kentät joita voi lisätä tälle sivulle (ei vielä millään sivulla). */

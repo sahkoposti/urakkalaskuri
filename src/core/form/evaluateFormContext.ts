@@ -8,7 +8,6 @@ import { missingComputedDependencies } from '@/src/core/form/formula/formulaDepe
 import { exportProductToContext } from '@/src/core/form/productContext';
 import {
   findProductById,
-  getFieldProductQuantity,
   getSelectedProductId,
   isProductField,
 } from '@/src/core/form/productFieldUtils';
@@ -94,13 +93,6 @@ function exportProductField(
 ): void {
   const product = findProductById(products, getSelectedProductId(fieldValues, field.key));
   if (!product) return;
-
-  if (field.type === 'product_quantity') {
-    const quantity = getFieldProductQuantity(fieldValues, field.key);
-    exportProductToContext(field.key, product, context, quantity !== null ? { quantity } : undefined);
-    return;
-  }
-
   exportProductToContext(field.key, product, context);
 }
 

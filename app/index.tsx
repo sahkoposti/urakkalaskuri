@@ -45,6 +45,7 @@ export default function HomeScreen() {
           title="Uusi laskenta"
           subtitle="Aloita laskenta"
           onPress={handleNewCalculation}
+          accent
         />
         <NavCard
           title="Historia"
@@ -91,17 +92,25 @@ type NavCardProps = {
   title: string;
   subtitle: string;
   onPress: () => void;
+  accent?: boolean;
 };
 
-function NavCard({ title, subtitle, onPress }: NavCardProps) {
+function NavCard({ title, subtitle, onPress, accent = false }: NavCardProps) {
   return (
-    <AppCard onPress={onPress} style={styles.navCard}>
+    <AppCard
+      onPress={onPress}
+      style={[styles.navCard, accent && styles.navCardAccent]}
+    >
       <View style={styles.navRow}>
         <View style={styles.navText}>
-          <Text style={styles.navTitle}>{title}</Text>
-          <Text style={styles.navSubtitle}>{subtitle}</Text>
+          <Text style={[styles.navTitle, accent && styles.navTitleAccent]}>
+            {title}
+          </Text>
+          <Text style={[styles.navSubtitle, accent && styles.navSubtitleAccent]}>
+            {subtitle}
+          </Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
+        <Text style={[styles.chevron, accent && styles.chevronAccent]}>›</Text>
       </View>
     </AppCard>
   );
@@ -120,6 +129,10 @@ const styles = StyleSheet.create({
   navCard: {
     marginBottom: 12,
   },
+  navCardAccent: {
+    backgroundColor: AppColors.accent,
+    borderColor: AppColors.accent,
+  },
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -132,14 +145,23 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexSans_700Bold',
     color: AppColors.primary,
   },
+  navTitleAccent: {
+    color: AppColors.secondary,
+  },
   navSubtitle: {
     marginTop: 4,
     color: AppColors.text,
     fontFamily: 'IBMPlexSans_400Regular',
   },
+  navSubtitleAccent: {
+    color: AppColors.secondary,
+  },
   chevron: {
     fontSize: 28,
     color: AppColors.text,
     lineHeight: 28,
+  },
+  chevronAccent: {
+    color: AppColors.secondary,
   },
 });

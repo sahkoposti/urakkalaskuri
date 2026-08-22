@@ -6,9 +6,8 @@ import {
   findProductById,
   getSelectedProductId,
   isProductField,
-  productQuantityValueKey,
 } from '@/src/core/form/productFieldUtils';
-import { isSystemField } from '@/src/core/form/systemFields';
+import { isSystemField, isSystemFieldHiddenFromUi } from '@/src/core/form/systemFields';
 import type { FormField } from '@/src/core/form/types';
 import type { Product } from '@/src/core/models/types';
 import { formatCurrency, formatDecimal } from '@/src/core/utils/formatters';
@@ -32,6 +31,8 @@ export function WizardFieldList({
   return (
     <View style={styles.wrap}>
       {fields.map((field) => {
+        if (isSystemFieldHiddenFromUi(field)) return null;
+
         if (field.type === 'section') {
           return <SectionTitle key={field.id} title={field.label} />;
         }
@@ -41,24 +42,29 @@ export function WizardFieldList({
           const canOverride = field.allowManualOverride !== false;
           if (canOverride) {
             const label = `${field.label}${field.unit ? ` (${field.unit})` : ''}`;
+            const computedText =
+              computed !== undefined && Number.isFinite(computed)
+                ? field.unit === '€'
+                  ? formatCurrency(computed)
+                  : formatDecimal(computed)
+                : '';
             return (
               <AppInput
                 key={field.id}
                 label={label}
-                value={
-                  fieldValues[field.key] ??
-                  (computed !== undefined && Number.isFinite(computed) ? formatDecimal(computed) : '')
-                }
+                value={fieldValues[field.key] ?? computedText}
                 onChangeText={(value) => onChange(field.key, value)}
                 keyboardType="decimal-pad"
-                placeholder={computed !== undefined && Number.isFinite(computed) ? formatDecimal(computed) : 'Esim. 5'}
+                placeholder={computedText || 'Esim. 5'}
               />
             );
           }
 
           const display =
             computed !== undefined && Number.isFinite(computed)
-              ? `${formatDecimal(computed)}${field.unit ? ` ${field.unit}` : ''}`
+              ? field.unit === '€'
+                ? formatCurrency(computed)
+                : `${formatDecimal(computed)}${field.unit ? ` ${field.unit}` : ''}`
               : '–';
           return (
             <View key={field.id} style={styles.readOnlyField}>
@@ -72,7 +78,6 @@ export function WizardFieldList({
 
         if (isProductField(field)) {
           const selectedId = getSelectedProductId(fieldValues, field.key) ?? '';
-          const quantityKey = productQuantityValueKey(field.key);
           const selectedProduct = findProductById(products, selectedId);
 
           return (
@@ -110,15 +115,6 @@ export function WizardFieldList({
                     : ''}
                 </Text>
               ) : null}
-              {field.type === 'product_quantity' ? (
-                <AppInput
-                  label={`Määrä${selectedProduct ? ` (${selectedProduct.unit})` : ''}`}
-                  value={fieldValues[quantityKey] ?? ''}
-                  onChangeText={(value) => onChange(quantityKey, value)}
-                  keyboardType="decimal-pad"
-                  placeholder="Esim. 5"
-                />
-              ) : null}
             </View>
           );
         }
@@ -153,6 +149,7 @@ export function WizardFieldList({
               <Switch
                 value={checked}
                 onValueChange={(value) => onChange(field.key, value ? 'true' : 'false')}
+                trackColor={{ true: AppColors.accent, false: AppColors.border }}
               />
             </View>
           );

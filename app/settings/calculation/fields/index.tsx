@@ -1,65 +1,102 @@
 import { router, Stack, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { AppCard, OutlinedButton, ScreenLoading, SectionTitle } from '@/src/components/common';
+import { AppCard, OutlinedButton, ScreenLoading } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { formatDebugExampleDisplay } from '@/src/core/form/debugExampleHelpers';
+import { assignedFieldIds } from '@/src/core/form/formDefinitionHelpers';
 import {
   FIELD_TYPE_LABELS,
+  fieldsForPage,
   removeField,
-  sortedSystemFields,
-  sortedUserFields,
+  sortedGlobalFields,
+  sortedPages,
 } from '@/src/core/form/formMutations';
 import type { FormField } from '@/src/core/form/types';
+import type { Product } from '@/src/core/models/types';
 import { db, useApp } from '@/src/context/AppContext';
 import { AppColors } from '@/src/theme/colors';
 
 function FieldCard({
   field,
   formDebugEnabled,
+  products,
   deletable,
   onPress,
   onDelete,
 }: {
   field: FormField;
   formDebugEnabled: boolean;
+  products: Product[];
   deletable: boolean;
   onPress: () => void;
   onDelete?: () => void;
 }) {
   return (
     <AppCard key={field.id} style={styles.card} onPress={onPress}>
-      <Text style={styles.fieldLabel}>{field.label}</Text>
-      <Text style={styles.fieldMeta}>
-        {field.key} · {FIELD_TYPE_LABELS[field.type]}
-        {field.type === 'select' && field.options ? ` · ${field.options.length} valintaa` : ''}
-        {field.type === 'computed' ? (field.systemKey ? ' · järjestelmäkaava' : ' · kaava') : ''}
-      </Text>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardMain}>
+          <Text style={styles.fieldLabel}>{field.label}</Text>
+          <Text style={styles.fieldMeta}>
+            {field.key} · {FIELD_TYPE_LABELS[field.type]}
+            {field.type === 'select' && field.options ? ` · ${field.options.length} valintaa` : ''}
+            {field.type === 'computed' ? (field.systemKey ? ' · järjestelmäkaava' : ' · kaava') : ''}
+          </Text>
+        </View>
+        {deletable && onDelete ? (
+          <Pressable onPress={onDelete}>
+            <Text style={styles.deleteText}>Poista</Text>
+          </Pressable>
+        ) : null}
+      </View>
       {field.type === 'computed' && field.formula ? (
         <Text style={styles.formula} numberOfLines={2}>
           {field.formula}
         </Text>
       ) : null}
       {formDebugEnabled && field.debugExampleValue ? (
-        <Text style={styles.example}>Esimerkki: {field.debugExampleValue}</Text>
-      ) : null}
-      {deletable && onDelete ? (
-        <Pressable onPress={onDelete} style={styles.deleteWrap}>
-          <Text style={styles.deleteText}>Poista</Text>
-        </Pressable>
+        <Text style={styles.example}>
+          Esimerkki: {formatDebugExampleDisplay(field, products)}
+        </Text>
       ) : null}
     </AppCard>
   );
 }
 
+function FieldCards({
+  fields,
+  formDebugEnabled,
+  products,
+  onDelete,
+}: {
+  fields: FormField[];
+  formDebugEnabled: boolean;
+  products: Product[];
+  onDelete: (field: FormField) => void;
+}) {
+  return fields.map((field) => (
+    <FieldCard
+      key={field.id}
+      field={field}
+      formDebugEnabled={formDebugEnabled}
+      products={products}
+      deletable={!field.systemKey}
+      onPress={() => router.push(`/settings/calculation/fields/${field.id}` as Href)}
+      onDelete={() => onDelete(field)}
+    />
+  ));
+}
+
 export default function FormFieldsScreen() {
-  const { ready, formDefinition, formDebug, refreshFormSettings } = useApp();
+  const { ready, formDefinition, formDebug, products, refreshFormSettings } = useApp();
   const [deleteTarget, setDeleteTarget] = useState<FormField | null>(null);
 
   if (!ready) return <ScreenLoading />;
 
-  const userFields = sortedUserFields(formDefinition);
-  const systemFields = sortedSystemFields(formDefinition);
+  const pages = sortedPages(formDefinition);
+  const assigned = assignedFieldIds(formDefinition);
+  const unassignedFields = sortedGlobalFields(formDefinition).filter((field) => !assigned.has(field.id));
 
   async function confirmDeleteField() {
     if (!deleteTarget) return;
@@ -73,11 +110,9 @@ export default function FormFieldsScreen() {
     <>
       <Stack.Screen options={{ title: 'Kentät' }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <SectionTitle title="Omat kentät" />
         <Text style={styles.help}>
-          Kentät ovat globaaleja. Tuotelista noutaa vaihtoehdot tuoterekisteristä; kaavoissa
-          käytetään valitun tuotteen hintaa ja menekkiä. Valitse mitkä näytetään kussakin sivussa
-          kohdasta Lomakeasetukset → Sivut.
+          Kentät ovat globaaleja. Kohdista ne sivuille kohdasta Lomakeasetukset → Sivut. Järjestelmäkentät
+          (kesto, hinnat, ALV) näkyvät omalla sivullaan.
         </Text>
         {formDebug.enabled ? (
           <Text style={styles.debugHint}>
@@ -90,40 +125,38 @@ export default function FormFieldsScreen() {
           onPress={() => router.push('/settings/calculation/fields/new' as Href)}
         />
 
-        {userFields.length === 0 ? (
-          <Text style={styles.empty}>Ei omia kenttiä</Text>
-        ) : (
-          userFields.map((field) => (
-            <FieldCard
-              key={field.id}
-              field={field}
-              formDebugEnabled={formDebug.enabled}
-              deletable
-              onPress={() => router.push(`/settings/calculation/fields/${field.id}` as Href)}
-              onDelete={() => setDeleteTarget(field)}
-            />
-          ))
-        )}
+        {pages.map((page) => {
+          const pageFields = fieldsForPage(formDefinition, page.id);
+          return (
+            <View key={page.id} style={styles.pageSection}>
+              <Text style={styles.pageSectionTitle}>{page.title}</Text>
+              {pageFields.length === 0 ? (
+                <Text style={styles.empty}>Ei kenttiä tällä sivulla</Text>
+              ) : (
+                <FieldCards
+                  fields={pageFields}
+                  formDebugEnabled={formDebug.enabled}
+                  products={products}
+                  onDelete={setDeleteTarget}
+                />
+              )}
+            </View>
+          );
+        })}
 
-        <SectionTitle title="Järjestelmäkentät" />
-        <Text style={styles.help}>
-          Laskennan tulokset (kesto, hinnat, ALV). Nämä kaavat ajavat wizardin hintaa. Voit muokata
-          näyttönimeä ja kaavaa; oletusarvot saa palautettua editorissa.
-        </Text>
-
-        {systemFields.length === 0 ? (
-          <Text style={styles.empty}>Ei järjestelmäkenttiä</Text>
-        ) : (
-          systemFields.map((field) => (
-            <FieldCard
-              key={field.id}
-              field={field}
+        <View style={styles.pageSection}>
+          <Text style={styles.pageSectionTitle}>Ilman sivukohdistusta</Text>
+          {unassignedFields.length === 0 ? (
+            <Text style={styles.empty}>Kaikki kentät on kohdistettu jollekin sivulle</Text>
+          ) : (
+            <FieldCards
+              fields={unassignedFields}
               formDebugEnabled={formDebug.enabled}
-              deletable={false}
-              onPress={() => router.push(`/settings/calculation/fields/${field.id}` as Href)}
+              products={products}
+              onDelete={setDeleteTarget}
             />
-          ))
-        )}
+          )}
+        </View>
       </ScrollView>
 
       <ConfirmDialog
@@ -169,9 +202,26 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexSans_400Regular',
     color: AppColors.text,
   },
+  pageSection: {
+    gap: 6,
+  },
+  pageSectionTitle: {
+    marginTop: 8,
+    fontFamily: 'IBMPlexSans_700Bold',
+    color: AppColors.primary,
+    fontSize: 16,
+  },
   card: {
     marginBottom: 0,
-    padding: 12,
+    padding: 10,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardMain: {
+    flex: 1,
   },
   fieldLabel: {
     fontFamily: 'IBMPlexSans_600SemiBold',
@@ -196,10 +246,6 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexSans_500Medium',
     color: AppColors.accent,
     fontSize: 13,
-  },
-  deleteWrap: {
-    marginTop: 8,
-    alignItems: 'flex-end',
   },
   deleteText: {
     color: AppColors.accent,

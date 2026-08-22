@@ -4,18 +4,21 @@ ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen 
 
 ## Ominaisuudet (v1)
 
-- Wizard-pohjainen laskenta vaiheittain
-- Tuotteet (materiaalit, yksikköhinta alv0)
-- Laskentakaavat: urakka = kesto × työryhmä × tuntihinta, kokonaishinta = urakka + materiaalit + kate + palkkio
-- Historia (paikallinen SQLite)
+- Dynaaminen wizard lomakepohjan (`FormDefinition`) sivuilla – ei kiinteää 3-vaiheista mallia
+- Tuotteet (nimi, yksikkö, yksikköhinta alv0; valinnaiset attribuutit menekki, työkerroin)
+- Laskenta järjestelmäkaavoilla: `calculationPipeline` (`runFormCalculation` → `resolveFormContextWithEffects` → `runProductionPipeline` → `buildResultFromFormulaContext`)
+- Historia (paikallinen SQLite) + `form_snapshot` tallennetuissa laskelmissa
 - Asetukset (ALV, kate 35 %, palkkio 7 %, tuntihinta 30 €/h)
+- Hinnat näytetään `formatCurrency`-funktiolla (tasan 2 desimaalia)
 - ColoRajaton-brändi (colorajaton.fi)
 
-## v1.1 (kesken)
+## v1.1 (Phase B pääosin valmis)
 
-- **Lomakeasetukset:** globaalit kentät (näyttönimi + muuttuja), sivujen kenttävalinta (yksi kenttä / sivu), valintalistojen kertoimet, lasketut kentät, kaavavalidointi, kentän kopiointi, debug-laskenta
-- **Järjestelmäkentät:** kesto, hinnat, ALV – v1-kaavoilla, palautettavissa oletukseen
-- Katso [docs/v1.1-suunnitelma.md](docs/v1.1-suunnitelma.md) (Phase A valmis, Phase B kesken)
+- **Lomakeasetukset:** sivut, globaalit kentät, kenttävaikutusten editori, valintalistat, lasketut kentät (`Laskenta`), tuotelista (`product_select`), kaavavalidointi, kentän kopiointi, debug-laskenta
+- **Järjestelmäkentät:** kesto, hinnat, ALV – suomenkielisillä kaavoilla (`asetukset.*`), palautettavissa oletukseen
+- **Tuotteet:** „Kopioi tuote”, kaavamuuttujat `menekki`, `yksikkohinta`, `tyokerroin`
+- **Puuttuu vielä:** Lomakeasetukset → Esikatselu, Oletusarvot, Ulkoverhous-pohja, lomakepohjan versionvaroitus muokkauksessa
+- Katso [docs/v1.1-suunnitelma.md](docs/v1.1-suunnitelma.md)
 
 ## Kehitysympäristö
 
@@ -62,7 +65,9 @@ Build tapahtuu pilvessä – paikallista Android SDK:ta ei tarvita.
 ```
 app/              # Expo Router -näytöt
 src/
-  core/           # Laskenta, tietokanta, mallit
+  core/
+    calculation/  # calculationPipeline.ts (tuotantolaskenta)
+    form/         # Lomakepohja, kaavat, efektit, debug-putki
   components/     # UI-komponentit
   context/        # Sovelluksen tila
   theme/          # ColoRajaton-värit
@@ -77,4 +82,4 @@ https://github.com/sahkoposti/urakkalaskuri
 ## Suunnitelma
 
 - [v1](docs/v1-suunnitelma.md)
-- [v1.1 – modulaarinen lomake](docs/v1.1-suunnitelma.md) *(Phase A valmis, Phase B kesken)*
+- [v1.1 – modulaarinen lomake](docs/v1.1-suunnitelma.md) *(Phase B pääosin valmis)*

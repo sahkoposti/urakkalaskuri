@@ -2,13 +2,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 
-import { AppInput, PrimaryButton, ScreenLoading, ScreenMessage } from '@/src/components/common';
+import { AppInput, OutlinedButton, PrimaryButton, ScreenLoading, ScreenMessage } from '@/src/components/common';
 import {
   attributeFieldValues,
   buildProductAttributes,
   ProductAttributeFields,
 } from '@/src/components/product/ProductAttributeFields';
 import type { Product } from '@/src/core/models/types';
+import { duplicateProduct } from '@/src/core/product/productMutations';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
@@ -25,7 +26,6 @@ export default function EditProductScreen() {
   const [description, setDescription] = useState('');
   const [consumption, setConsumption] = useState('');
   const [workFactor, setWorkFactor] = useState('');
-  const [materialFactor, setMaterialFactor] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -41,7 +41,6 @@ export default function EditProductScreen() {
         const attrs = attributeFieldValues(loaded.attributes);
         setConsumption(attrs.consumption);
         setWorkFactor(attrs.workFactor);
-        setMaterialFactor(attrs.materialFactor);
       }
       setLoading(false);
     })();
@@ -74,10 +73,17 @@ export default function EditProductScreen() {
       unit: unit.trim(),
       unitPriceVat0: parsedPrice,
       description: description.trim() || undefined,
-      attributes: buildProductAttributes(consumption, workFactor, materialFactor),
+      attributes: buildProductAttributes(consumption, workFactor),
     });
     await refreshProducts();
     router.back();
+  }
+
+  async function handleDuplicate() {
+    const copy = duplicateProduct(product!);
+    await db.upsertProduct(copy);
+    await refreshProducts();
+    router.replace(`/products/${copy.id}`);
   }
 
   return (
@@ -99,12 +105,11 @@ export default function EditProductScreen() {
       <ProductAttributeFields
         consumption={consumption}
         workFactor={workFactor}
-        materialFactor={materialFactor}
         onConsumptionChange={setConsumption}
         onWorkFactorChange={setWorkFactor}
-        onMaterialFactorChange={setMaterialFactor}
       />
       <PrimaryButton title="Tallenna" onPress={handleSave} />
+      <OutlinedButton title="Kopioi tuote" onPress={() => void handleDuplicate()} />
     </ScrollView>
   );
 }
