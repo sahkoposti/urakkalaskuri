@@ -2,18 +2,20 @@ import { Picker } from '@react-native-picker/picker';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AppInput, SectionTitle } from '@/src/components/common';
+import { filterVisibleFields } from '@/src/core/form/fieldVisibility';
 import {
   findProductById,
   getSelectedProductId,
   isProductField,
 } from '@/src/core/form/productFieldUtils';
 import { isSystemField, isSystemFieldHiddenFromUi } from '@/src/core/form/systemFields';
-import type { FormField } from '@/src/core/form/types';
+import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { Product } from '@/src/core/models/types';
 import { formatCurrency, formatDecimal } from '@/src/core/utils/formatters';
 import { AppColors } from '@/src/theme/colors';
 
 type WizardFieldListProps = {
+  form: FormDefinition;
   fields: FormField[];
   fieldValues: Record<string, string>;
   computedValues: Record<string, number>;
@@ -22,15 +24,18 @@ type WizardFieldListProps = {
 };
 
 export function WizardFieldList({
+  form,
   fields,
   fieldValues,
   computedValues,
   products,
   onChange,
 }: WizardFieldListProps) {
+  const visibleFields = filterVisibleFields(fields, fieldValues, form);
+
   return (
     <View style={styles.wrap}>
-      {fields.map((field) => {
+      {visibleFields.map((field) => {
         if (isSystemFieldHiddenFromUi(field)) return null;
 
         if (field.type === 'section') {

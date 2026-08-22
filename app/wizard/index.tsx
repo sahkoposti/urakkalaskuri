@@ -461,6 +461,7 @@ export default function WizardScreen() {
             )}
             {currentPage && !currentPage.system ? (
               <WizardFieldList
+                form={formDefinition}
                 fields={pageFields}
                 fieldValues={fieldValues}
                 computedValues={computedValues}

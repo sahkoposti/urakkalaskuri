@@ -28,6 +28,22 @@ export interface FieldEffect {
   quantityRef?: string;
 }
 
+/** Näkyvyysehto: näytä kenttä jos toisen kentän arvo täyttää vertailun. */
+export type FieldVisibilityOperator = 'eq' | 'neq';
+
+export interface FieldVisibilityCondition {
+  /** Riippuvan kentän muuttuja (key), esim. raystaan_aluset */
+  fieldKey: string;
+  /** Vertailuoperaattori (oletus eq) */
+  operator?: FieldVisibilityOperator;
+  /**
+   * Odotettu raaka-arvo:
+   * - boolean: "true" | "false"
+   * - select: option.value (esim. "1.15")
+   */
+  value: string;
+}
+
 export interface FormField {
   id: string;
   key: string;
@@ -41,6 +57,8 @@ export interface FormField {
   options?: SelectOption[];
   formula?: string;
   effects?: FieldEffect[];
+  /** Näytä kenttä vain kun ehto täyttyy; puuttuu = aina näkyvissä */
+  showWhen?: FieldVisibilityCondition;
   helpText?: string;
   /** Debug-tilassa käytettävä esimerkkiarvo (merkkijonona, parsitaan tyypin mukaan) */
   debugExampleValue?: string;

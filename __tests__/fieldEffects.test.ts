@@ -119,20 +119,32 @@ describe('fieldEffects', () => {
     expect(applyMaterialEffects(0, result)).toBe(50);
   });
 
-  test('ignores add_material legacy type', () => {
+  test('ignores effects when field is hidden by showWhen', () => {
     const form = minimalForm([
       {
+        id: 'f_gate',
+        key: 'kaytossa',
+        label: 'Käytössä',
+        type: 'boolean',
+        required: false,
+        showOnSummary: false,
+      },
+      {
         id: 'f1',
-        key: 'vanha',
-        label: 'Vanha',
+        key: 'lisamateriaali',
+        label: 'Lisämateriaali',
         type: 'number',
         required: false,
         showOnSummary: false,
-        effects: [{ type: 'add_material', quantityRef: 'vanha' }],
+        showWhen: { fieldKey: 'kaytossa', value: 'true' },
+        effects: [{ type: 'add_material_fixed', value: 15 }],
       },
     ]);
 
-    const result = applyFieldEffects(form, { vanha: 999 });
-    expect(applyMaterialEffects(100, result)).toBe(100);
+    const hidden = applyFieldEffects(form, {}, { kaytossa: 'false' });
+    expect(applyMaterialEffects(100, hidden)).toBe(100);
+
+    const shown = applyFieldEffects(form, {}, { kaytossa: 'true' });
+    expect(applyMaterialEffects(100, shown)).toBe(115);
   });
 });

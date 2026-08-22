@@ -1,4 +1,5 @@
 import { fieldsForPage } from '@/src/core/form/formDefinitionHelpers';
+import { isFieldVisible } from '@/src/core/form/fieldVisibility';
 import {
   findProductById,
   getSelectedProductId,
@@ -35,6 +36,9 @@ export function validateFormPageWithValues(
   }
   for (const field of fieldsForPage(form, page.id)) {
     if (field.type === 'section' || field.type === 'computed' || isSystemField(field)) {
+      continue;
+    }
+    if (!isFieldVisible(field, fieldValues, form)) {
       continue;
     }
 

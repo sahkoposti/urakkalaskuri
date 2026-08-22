@@ -71,4 +71,34 @@ describe('formatFieldSummaryValue', () => {
     expect(formatFieldSummaryValue(field, { test_bool: 'true' }, {})).toBe('Kyllä');
     expect(formatFieldSummaryValue(field, { test_bool: 'false' }, {})).toBe('Ei');
   });
+
+  test('summaryDisplayFields omits fields hidden by showWhen', () => {
+    const form = defaultForm();
+    form.fields.push(
+      {
+        id: 'field_bool',
+        key: 'raystaat',
+        label: 'Räystäät',
+        type: 'boolean',
+        required: false,
+        showOnSummary: true,
+      },
+      {
+        id: 'field_metrit',
+        key: 'raystasmetrit',
+        label: 'Räystäsmetrit',
+        type: 'number',
+        required: false,
+        showOnSummary: true,
+        showWhen: { fieldKey: 'raystaat', value: 'true' },
+      },
+    );
+    form.pages[0].fieldIds.push('field_bool', 'field_metrit');
+
+    const hidden = summaryDisplayFields(form, { raystaat: 'false' }).map((f) => f.key);
+    expect(hidden).not.toContain('raystasmetrit');
+
+    const shown = summaryDisplayFields(form, { raystaat: 'true' }).map((f) => f.key);
+    expect(shown).toContain('raystasmetrit');
+  });
 });

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { FieldEffectsEditor } from '@/src/components/form/FieldEffectsEditor';
+import { FieldVisibilityEditor } from '@/src/components/form/FieldVisibilityEditor';
 import { FormulaDebugPanel } from '@/src/components/form/FormulaDebugPanel';
 import { ProductFormulaHints } from '@/src/components/form/ProductFormulaHints';
 import { SelectOptionsEditor } from '@/src/components/form/SelectOptionsEditor';
@@ -314,6 +315,23 @@ export default function FormFieldEditorScreen() {
             form={previewForm}
             field={field}
             onChange={(effects) => updateFieldState({ effects: effects.length ? effects : undefined })}
+          />
+        ) : null}
+
+        {!isSystem && field.type !== 'section' ? (
+          <FieldVisibilityEditor
+            form={previewForm}
+            field={field}
+            onChange={(showWhen) => {
+              setField((current) => {
+                if (!current) return current;
+                if (!showWhen) {
+                  const { showWhen: _removed, ...rest } = current;
+                  return rest;
+                }
+                return { ...current, showWhen };
+              });
+            }}
           />
         ) : null}
 

@@ -1,4 +1,5 @@
 import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
+import { isFieldVisible } from '@/src/core/form/fieldVisibility';
 import {
   findProductById,
   getSelectedProductId,
@@ -47,13 +48,17 @@ export function formatFieldSummaryValue(
   return '–';
 }
 
-export function summaryDisplayFields(form: FormDefinition): FormField[] {
+export function summaryDisplayFields(
+  form: FormDefinition,
+  fieldValues: Record<string, string> = {},
+): FormField[] {
   const seen = new Set<string>();
   const fields: FormField[] = [];
 
   for (const page of sortedPages(form)) {
     for (const field of fieldsForPage(form, page.id)) {
       if (field.type === 'section' || isSystemField(field) || !field.showOnSummary) continue;
+      if (!isFieldVisible(field, fieldValues, form)) continue;
       if (seen.has(field.id)) continue;
       seen.add(field.id);
       fields.push(field);
@@ -74,6 +79,7 @@ export function buildFormSnapshot(
   for (const page of sortedPages(form)) {
     for (const field of fieldsForPage(form, page.id)) {
       if (field.type === 'section' || isSystemField(field) || !field.showOnSummary) continue;
+      if (!isFieldVisible(field, fieldValues, form)) continue;
       fields.push({
         key: field.key,
         label: field.label,

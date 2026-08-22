@@ -1,5 +1,9 @@
 import { pipelineFieldOrder } from '@/src/core/form/formDefinitionHelpers';
 import {
+  fieldValuesForVisibility,
+  isFieldVisible,
+} from '@/src/core/form/fieldVisibility';
+import {
   evaluateFormula,
   FormulaEvaluationError,
   substituteFormula,
@@ -122,9 +126,11 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
   };
   const steps: FormContextStep[] = [];
   const errors: string[] = [];
+  const visibilityValues = fieldValuesForVisibility(form, fieldValues, useDebugExamples);
 
   for (const field of pipelineFieldOrder(form)) {
     if (field.type === 'section') continue;
+    if (!isFieldVisible(field, visibilityValues, form)) continue;
 
     if (isProductField(field)) {
       if (useDebugExamples) {

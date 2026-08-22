@@ -1,5 +1,6 @@
 import { pipelineFieldOrder } from '@/src/core/form/formDefinitionHelpers';
-import type { FieldEffect, FormDefinition, FormField } from '@/src/core/form/types';
+import { isFieldVisible } from '@/src/core/form/fieldVisibility';
+import type { FieldEffect, FormDefinition } from '@/src/core/form/types';
 import type { Product, WizardLineDraft } from '@/src/core/models/types';
 
 export interface FieldEffectsResult {
@@ -74,13 +75,14 @@ function applyEffect(
 export function applyFieldEffects(
   form: FormDefinition,
   context: Record<string, number>,
-  _fieldValues: Record<string, string> = {},
+  fieldValues: Record<string, string> = {},
   _products: Product[] = [],
 ): FieldEffectsResult {
   const result = emptyEffectsResult();
 
   for (const field of pipelineFieldOrder(form)) {
     if (!field.effects?.length) continue;
+    if (!isFieldVisible(field, fieldValues, form)) continue;
     for (const effect of field.effects) {
       applyEffect(effect, context, result);
     }

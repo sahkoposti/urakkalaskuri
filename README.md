@@ -20,6 +20,12 @@ ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen 
 - **Puuttuu vielä:** Lomakeasetukset → Esikatselu, Oletusarvot, Ulkoverhous-pohja, lomakepohjan versionvaroitus muokkauksessa
 - Katso [docs/v1.1-suunnitelma.md](docs/v1.1-suunnitelma.md)
 
+## v1.2 (aloitettu)
+
+- **Ehdollinen kenttänäkyvyys:** kentälle `showWhen` (riippuu Kyllä/Ei- tai valintalistakentästä)
+- Wizard / validointi / laskenta / yhteenveto ohittavat piilotetut kentät
+- Katso [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md)
+
 ## Kehitysympäristö
 
 ### Vaatimukset
@@ -71,7 +77,7 @@ src/
   components/     # UI-komponentit
   context/        # Sovelluksen tila
   theme/          # ColoRajaton-värit
-docs/             # Suunnitelmat (v1, v1.1) ja brändi
+docs/             # Suunnitelmat (v1, v1.1, v1.2) ja brändi
 __tests__/        # Yksikkötestit
 ```
 
@@ -83,3 +89,4 @@ https://github.com/sahkoposti/urakkalaskuri
 
 - [v1](docs/v1-suunnitelma.md)
 - [v1.1 – modulaarinen lomake](docs/v1.1-suunnitelma.md) *(Phase B pääosin valmis)*
+- [v1.2 – ehdollinen näkyvyys ym.](docs/v1.2-suunnitelma.md) *(aloitettu)*
