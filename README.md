@@ -11,6 +11,11 @@ ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen 
 - Asetukset (ALV, kate 35 %, palkkio 7 %, tuntihinta 30 €/h)
 - ColoRajaton-brändi (colorajaton.fi)
 
+## v1.1 (kesken)
+
+- **Lomakeasetukset:** sivut, kentät, valintalistojen kertoimet (export → kaavat), debug-laskenta
+- Katso [docs/v1.1-suunnitelma.md](docs/v1.1-suunnitelma.md)
+
 ## Kehitysympäristö
 
 ### Vaatimukset
@@ -70,4 +75,5 @@ https://github.com/sahkoposti/urakkalaskuri
 
 ## Suunnitelma
 
-Katso [docs/v1-suunnitelma.md](docs/v1-suunnitelma.md).
+- [v1](docs/v1-suunnitelma.md)
+- [v1.1 – modulaarinen lomake](docs/v1.1-suunnitelma.md) *(kesken)*

@@ -69,9 +69,11 @@ export default function RootLayout() {
             <Stack.Screen name="settings/index" options={{ title: 'Asetukset' }} />
             <Stack.Screen name="settings/general" options={{ title: 'Yleinen' }} />
             <Stack.Screen name="settings/calculation/index" options={{ title: 'Lomakeasetukset' }} />
-            <Stack.Screen name="settings/calculation/order" options={{ title: 'Järjestys' }} />
+            <Stack.Screen name="settings/calculation/pages" options={{ title: 'Sivut' }} />
+            <Stack.Screen name="settings/calculation/pages/[pageId]" options={{ title: 'Sivun kentät' }} />
             <Stack.Screen name="settings/calculation/debug" options={{ title: 'Debug' }} />
             <Stack.Screen name="settings/calculation/fields/index" options={{ title: 'Kentät' }} />
+            <Stack.Screen name="settings/calculation/fields/new" options={{ title: 'Uusi kenttä' }} />
             <Stack.Screen name="settings/calculation/fields/[fieldId]" options={{ title: 'Kenttä' }} />
             <Stack.Screen name="settings/theme" options={{ title: 'Teema' }} />
           </Stack>

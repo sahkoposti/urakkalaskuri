@@ -141,6 +141,11 @@ function parsePrimary(tokens: Token[], context: Record<string, number>, pos: num
   throw new FormulaEvaluationError('Virheellinen lauseke');
 }
 
+export function extractFormulaIdentifiers(formula: string): string[] {
+  const matches = formula.match(/[a-zA-Z_äöåÄÖÅ][a-zA-Z0-9_äöåÄÖÅ.]*/g) ?? [];
+  return [...new Set(matches)];
+}
+
 export function substituteFormula(formula: string, context: Record<string, number>): string {
   return formula.replace(/[a-zA-Z0-9_äöåÄÖÅ.]+/g, (ident) => {
     if (ident in context) {

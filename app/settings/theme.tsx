@@ -1,5 +1,5 @@
 import { router, Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppInput, BrandLogo, PrimaryButton, ScreenLoading } from '@/src/components/common';
@@ -7,6 +7,7 @@ import { defaultThemeSettings } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
+import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import { AppColors } from '@/src/theme/colors';
 
 export default function ThemeSettingsScreen() {
@@ -28,13 +29,30 @@ export default function ThemeSettingsScreen() {
     setBackgroundOpacity(String(settings.theme.backgroundOpacity));
   }, [settings.theme]);
 
-  if (!ready) return <ScreenLoading />;
+  const isDirty = useMemo(
+    () =>
+      accentColor !== settings.theme.accentColor ||
+      primaryColor !== settings.theme.primaryColor ||
+      textColor !== settings.theme.textColor ||
+      surfaceColor !== settings.theme.surfaceColor ||
+      backgroundImageUri !== settings.theme.backgroundImageUri ||
+      backgroundOpacity !== String(settings.theme.backgroundOpacity),
+    [
+      accentColor,
+      primaryColor,
+      textColor,
+      surfaceColor,
+      backgroundImageUri,
+      backgroundOpacity,
+      settings.theme,
+    ],
+  );
 
-  async function handleSave() {
+  async function persistSettings(): Promise<boolean> {
     const opacity = parseNumber(backgroundOpacity);
     if (opacity === null || opacity < 0 || opacity > 100) {
       showAlert('Virhe', 'Taustakuvan himmeys on oltava välillä 0–100.');
-      return;
+      return false;
     }
 
     await db.saveSettings({
@@ -49,9 +67,21 @@ export default function ThemeSettingsScreen() {
       },
     });
     await refreshSettings();
-    showAlert('Tallennettu', 'Teema-asetukset tallennettu', [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    return true;
+  }
+
+  const { allowExit, exitDialog } = useUnsavedChangesGuard({
+    isDirty,
+    onSave: persistSettings,
+  });
+
+  if (!ready) return <ScreenLoading />;
+
+  async function handleSave() {
+    const saved = await persistSettings();
+    if (!saved) return;
+    allowExit();
+    router.back();
   }
 
   return (
@@ -92,6 +122,7 @@ export default function ThemeSettingsScreen() {
 
         <PrimaryButton title="Tallenna" onPress={handleSave} />
       </ScrollView>
+      {exitDialog}
     </>
   );
 }

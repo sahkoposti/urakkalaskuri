@@ -33,13 +33,13 @@ export interface FieldEffect {
 
 export interface FormField {
   id: string;
-  pageId: string;
   key: string;
   label: string;
   type: FieldType;
-  sortOrder: number;
   required: boolean;
   showOnSummary: boolean;
+  /** Laskettu kenttä lomakkeella: näytetään muokattavana arvona (oletus true) */
+  allowManualOverride?: boolean;
   unit?: string;
   options?: SelectOption[];
   formula?: string;
@@ -54,6 +54,8 @@ export interface FormPage {
   title: string;
   sortOrder: number;
   system?: 'customer' | 'materials';
+  /** Tällä sivulla näytettävät globaalit kentät järjestyksessä */
+  fieldIds: string[];
 }
 
 export interface FormDefinition {

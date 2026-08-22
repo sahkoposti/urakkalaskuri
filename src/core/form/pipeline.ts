@@ -1,6 +1,7 @@
 import type { FormDefinition, FormField, SelectOption } from '@/src/core/form/types';
 import {
   evaluateFormula,
+  extractFormulaIdentifiers,
   FormulaEvaluationError,
   substituteFormula,
 } from '@/src/core/form/formula/evaluator';
@@ -24,14 +25,7 @@ export interface DebugTrace {
   errors: string[];
 }
 
-function sortedFields(form: FormDefinition): FormField[] {
-  const pageOrder = new Map(form.pages.sort((a, b) => a.sortOrder - b.sortOrder).map((p, i) => [p.id, i]));
-  return [...form.fields].sort((a, b) => {
-    const pageDiff = (pageOrder.get(a.pageId) ?? 0) - (pageOrder.get(b.pageId) ?? 0);
-    if (pageDiff !== 0) return pageDiff;
-    return a.sortOrder - b.sortOrder;
-  });
-}
+import { pipelineFieldOrder } from '@/src/core/form/formDefinitionHelpers';
 
 function applySelectExports(option: SelectOption | undefined, context: Record<string, number>): void {
   if (!option) return;
@@ -72,6 +66,59 @@ function exportNumericContext(field: FormField, value: number | string | boolean
   }
 }
 
+function findFieldByKey(form: FormDefinition, key: string): FormField | undefined {
+  return form.fields.find((field) => field.key === key);
+}
+
+function findFieldProvidingVariable(form: FormDefinition, varName: string): FormField | undefined {
+  const byKey = findFieldByKey(form, varName);
+  if (byKey) return byKey;
+
+  return form.fields.find(
+    (field) =>
+      field.type === 'select' && field.options?.some((option) => option.exportKey === varName),
+  );
+}
+
+/** Kentät, jotka vaikuttavat focus-kentän laskentaan (suoraan tai välillisesti). */
+export function collectRelevantFieldKeys(form: FormDefinition, focusFieldKey: string): Set<string> {
+  const relevant = new Set<string>();
+
+  function visit(fieldKey: string): void {
+    if (relevant.has(fieldKey)) return;
+    relevant.add(fieldKey);
+
+    const field = findFieldByKey(form, fieldKey);
+    if (!field?.formula || field.type !== 'computed') return;
+
+    for (const ident of extractFormulaIdentifiers(field.formula)) {
+      const provider = findFieldProvidingVariable(form, ident);
+      if (provider) visit(provider.key);
+    }
+  }
+
+  visit(focusFieldKey);
+  return relevant;
+}
+
+function filterTraceForFocus(
+  form: FormDefinition,
+  focusFieldKey: string,
+  steps: DebugStep[],
+  errors: string[],
+): { steps: DebugStep[]; errors: string[] } {
+  const relevant = collectRelevantFieldKeys(form, focusFieldKey);
+
+  const filteredSteps = steps.filter((step) => relevant.has(step.fieldKey));
+  const filteredErrors = errors.filter((error) => {
+    const field = form.fields.find((item) => error.startsWith(`${item.label}:`));
+    if (!field) return true;
+    return relevant.has(field.key);
+  });
+
+  return { steps: filteredSteps, errors: filteredErrors };
+}
+
 export function runDebugPipeline(
   form: FormDefinition,
   focusFieldKey?: string,
@@ -80,7 +127,7 @@ export function runDebugPipeline(
   const steps: DebugStep[] = [];
   const errors: string[] = [];
 
-  for (const field of sortedFields(form)) {
+  for (const field of pipelineFieldOrder(form)) {
     if (field.type === 'section') continue;
 
     if (field.type === 'computed') {
@@ -151,10 +198,8 @@ export function runDebugPipeline(
   }
 
   if (focusFieldKey) {
-    const focused = steps.find((step) => step.fieldKey === focusFieldKey);
-    if (focused && !Number.isNaN(focused.result)) {
-      return { context, steps, errors };
-    }
+    const filtered = filterTraceForFocus(form, focusFieldKey, steps, errors);
+    return { context, steps: filtered.steps, errors: filtered.errors };
   }
 
   return { context, steps, errors };

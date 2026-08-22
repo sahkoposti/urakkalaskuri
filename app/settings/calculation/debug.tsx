@@ -1,10 +1,11 @@
 import { router, Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AppCard, PrimaryButton, ScreenLoading } from '@/src/components/common';
 import type { FormDebugSettings } from '@/src/core/form/types';
 import { db, useApp } from '@/src/context/AppContext';
+import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import { AppColors } from '@/src/theme/colors';
 
 export default function FormDebugSettingsScreen() {
@@ -15,11 +16,30 @@ export default function FormDebugSettingsScreen() {
     setDebug(formDebug);
   }, [formDebug]);
 
+  const isDirty = useMemo(
+    () =>
+      debug.enabled !== formDebug.enabled ||
+      debug.showIntermediateSteps !== formDebug.showIntermediateSteps,
+    [debug, formDebug],
+  );
+
+  async function persistSettings(): Promise<boolean> {
+    await db.saveFormDebugSettings(debug);
+    await refreshFormSettings();
+    return true;
+  }
+
+  const { allowExit, exitDialog } = useUnsavedChangesGuard({
+    isDirty,
+    onSave: persistSettings,
+  });
+
   if (!ready) return <ScreenLoading />;
 
   async function handleSave() {
-    await db.saveFormDebugSettings(debug);
-    await refreshFormSettings();
+    const saved = await persistSettings();
+    if (!saved) return;
+    allowExit();
     router.back();
   }
 
@@ -62,6 +82,7 @@ export default function FormDebugSettingsScreen() {
 
         <PrimaryButton title="Tallenna" onPress={handleSave} />
       </ScrollView>
+      {exitDialog}
     </>
   );
 }

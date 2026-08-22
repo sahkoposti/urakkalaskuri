@@ -2,21 +2,12 @@ import type { FormDefinition } from '@/src/core/form/types';
 
 /** v1 wizard + esimerkkikentät modulaarisen laskennan debuggausta varten */
 export function createDefaultFormDefinition(): FormDefinition {
-  const pages = [
-    { id: 'page_customer', title: 'Asiakas', sortOrder: 0, system: 'customer' as const },
-    { id: 'page_surfaces', title: 'Pinta-alat', sortOrder: 1 },
-    { id: 'page_duration', title: 'Työryhmän arvioitu kesto (pv)', sortOrder: 2 },
-    { id: 'page_materials', title: 'Materiaalit', sortOrder: 3, system: 'materials' as const },
-  ];
-
   const fields = [
     {
       id: 'field_kiinteä_seinäpinta',
-      pageId: 'page_surfaces',
       key: 'kiinteä_seinäpinta_ala_m2',
       label: 'Kiinteä seinäpinta-ala',
       type: 'number' as const,
-      sortOrder: 0,
       required: true,
       showOnSummary: true,
       unit: 'm²',
@@ -24,11 +15,9 @@ export function createDefaultFormDefinition(): FormDefinition {
     },
     {
       id: 'field_aukkovähennykset',
-      pageId: 'page_surfaces',
       key: 'aukkovähennykset',
       label: 'Aukkovähennykset',
       type: 'number' as const,
-      sortOrder: 1,
       required: false,
       showOnSummary: true,
       unit: 'm²',
@@ -36,11 +25,9 @@ export function createDefaultFormDefinition(): FormDefinition {
     },
     {
       id: 'field_laudoitustyyppi',
-      pageId: 'page_surfaces',
       key: 'laudoitustyyppi',
       label: 'Laudoitustyyppi',
       type: 'select' as const,
-      sortOrder: 2,
       required: true,
       showOnSummary: true,
       debugExampleValue: 'paneeli',
@@ -53,23 +40,20 @@ export function createDefaultFormDefinition(): FormDefinition {
     },
     {
       id: 'field_laskenta_seinäpinta',
-      pageId: 'page_surfaces',
       key: 'laskenta_seinäpinta_ala_m2',
       label: 'Seinäpinta-ala (laskettu)',
       type: 'computed' as const,
-      sortOrder: 3,
       required: false,
       showOnSummary: true,
+      allowManualOverride: true,
       unit: 'm²',
       formula: '(kiinteä_seinäpinta_ala_m2 - aukkovähennykset) * laudoituskerroin',
     },
     {
       id: 'field_duration',
-      pageId: 'page_duration',
       key: 'työryhmän_kesto_pv',
       label: 'Kesto',
       type: 'number' as const,
-      sortOrder: 0,
       required: true,
       showOnSummary: true,
       unit: 'pv',
@@ -77,10 +61,44 @@ export function createDefaultFormDefinition(): FormDefinition {
     },
   ];
 
+  const pages = [
+    {
+      id: 'page_customer',
+      title: 'Asiakas',
+      sortOrder: 0,
+      system: 'customer' as const,
+      fieldIds: [] as string[],
+    },
+    {
+      id: 'page_surfaces',
+      title: 'Pinta-alat',
+      sortOrder: 1,
+      fieldIds: [
+        'field_kiinteä_seinäpinta',
+        'field_aukkovähennykset',
+        'field_laudoitustyyppi',
+        'field_laskenta_seinäpinta',
+      ],
+    },
+    {
+      id: 'page_duration',
+      title: 'Työryhmän arvioitu kesto (pv)',
+      sortOrder: 2,
+      fieldIds: ['field_duration'],
+    },
+    {
+      id: 'page_materials',
+      title: 'Materiaalit',
+      sortOrder: 3,
+      system: 'materials' as const,
+      fieldIds: [] as string[],
+    },
+  ];
+
   return {
     id: 'default',
     name: 'Peruslaskenta',
-    version: 1,
+    version: 2,
     pages,
     fields,
     updatedAt: Date.now(),

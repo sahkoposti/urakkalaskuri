@@ -83,9 +83,10 @@ Etusivu
 ├── Tuotteet → Tuotelista → Lisää/Muokkaa tuote
 └── Asetukset
     ├── Yleinen
-    ├── Laskenta
-    │   ├── Järjestys (wizard-vaiheiden järjestys)
-    │   └── Muuttujat (tulossa v1.1)
+    ├── Lomakeasetukset (v1.1, korvaa Laskenta)
+    │   ├── Sivut (lomakepohjan sivut ja järjestys)
+    │   ├── Kentät (kentät, valintalistat, kaavat)
+    │   └── Debug (live-laskenta)
     └── Teema (logo, värit, taustakuva, himmeys)
 ```
 
@@ -115,12 +116,14 @@ Etusivu
 | Oletustyöryhmän koko (hlö) | 2 |
 | Työpäivän pituus (h) | 8 |
 
-#### Laskenta → Järjestys
-Wizard-vaiheiden järjestys (↑/↓). Tallennetaan `wizard_step_order` (JSON).
+#### Laskenta → Järjestys *(poistettu v1.1:ssä)*
 
-#### Laskenta → Muuttujat (v1.1)
-Paikka omille kentille, muuttujille ja kaavoille. UI placeholder „Tulossa v1.1”.  
-**→ Katso:** [v1.1-suunnitelma.md](./v1.1-suunnitelma.md) (modulaarinen lomake, Lomakeasetukset)
+Wizard-vaiheiden järjestys hallitaan **Lomakeasetukset → Sivut** -näkymässä (`form_definition.pages`). Vanha `wizard_step_order` säilyy v1-wizardin yhteensopivuuden vuoksi, kunnes dynaaminen lomake korvaa kovakoodatun wizardin.
+
+#### Lomakeasetukset (v1.1)
+
+Modulaarinen lomake: sivut, kentät, valintalistojen kertoimet, kaavat.  
+**→ Katso:** [v1.1-suunnitelma.md](./v1.1-suunnitelma.md)
 
 #### Teema
 | Kenttä | Kuvaus | v1 |

@@ -10,9 +10,15 @@ type FormulaDebugPanelProps = {
   form: FormDefinition;
   focusFieldKey: string;
   formula?: string;
+  showIntermediateSteps?: boolean;
 };
 
-export function FormulaDebugPanel({ form, focusFieldKey, formula }: FormulaDebugPanelProps) {
+export function FormulaDebugPanel({
+  form,
+  focusFieldKey,
+  formula,
+  showIntermediateSteps = true,
+}: FormulaDebugPanelProps) {
   const trace = useMemo(
     () => runDebugPipeline(form, focusFieldKey),
     [form, focusFieldKey],
@@ -56,15 +62,23 @@ export function FormulaDebugPanel({ form, focusFieldKey, formula }: FormulaDebug
         </View>
       ) : null}
 
-      <Text style={[styles.label, styles.spaced]}>Välivaiheet</Text>
-      {trace.steps.map((step) => (
-        <View key={step.fieldKey} style={styles.stepRow}>
-          <Text style={styles.stepLabel}>{step.label}</Text>
-          <Text style={styles.stepValue}>
-            {step.error ? '–' : formatDecimal(step.result)}
-          </Text>
-        </View>
-      ))}
+      {showIntermediateSteps ? (
+        <>
+          <Text style={[styles.label, styles.spaced]}>Välivaiheet</Text>
+          {trace.steps.length === 0 ? (
+            <Text style={styles.help}>Ei välivaiheita tälle kaavalle.</Text>
+          ) : (
+            trace.steps.map((step) => (
+              <View key={step.fieldKey} style={styles.stepRow}>
+                <Text style={styles.stepLabel}>{step.label}</Text>
+                <Text style={styles.stepValue}>
+                  {step.error ? '–' : formatDecimal(step.result)}
+                </Text>
+              </View>
+            ))
+          )}
+        </>
+      ) : null}
     </View>
   );
 }

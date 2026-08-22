@@ -11,14 +11,14 @@ export default function CalculationSettingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <SectionTitle title="Lomakeasetukset" />
         <SettingsNavCard
-          title="Kentät"
-          subtitle="Lomakekentät, kaavat ja debug-esimerkit"
-          onPress={() => router.push('/settings/calculation/fields' as Href)}
+          title="Sivut"
+          subtitle="Sivut, järjestys ja kenttien valinta lomakkeelle"
+          onPress={() => router.push('/settings/calculation/pages' as Href)}
         />
         <SettingsNavCard
-          title="Järjestys"
-          subtitle="Laskennan vaiheiden järjestys (v1)"
-          onPress={() => router.push('/settings/calculation/order')}
+          title="Kentät"
+          subtitle="Lisää kenttiä, valintalistoja ja kaavoja"
+          onPress={() => router.push('/settings/calculation/fields' as Href)}
         />
         <SettingsNavCard
           title="Debug"

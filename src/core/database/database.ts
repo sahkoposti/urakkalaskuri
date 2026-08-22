@@ -11,6 +11,7 @@ import type {
 } from '../models/types';
 import { defaultSettings, defaultThemeSettings } from '../models/types';
 import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
+import { normalizeFormDefinition } from '../form/formDefinitionHelpers';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
 import { defaultFormDebugSettings } from '../form/types';
 import { normalizeWizardStepOrder } from '../wizard/wizardSteps';
@@ -411,7 +412,7 @@ export async function getFormDefinition(): Promise<FormDefinition> {
     return defaults;
   }
   try {
-    return JSON.parse(row.value) as FormDefinition;
+    return normalizeFormDefinition(JSON.parse(row.value));
   } catch {
     const defaults = createDefaultFormDefinition();
     await saveFormDefinition(defaults);

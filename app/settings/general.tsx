@@ -1,11 +1,12 @@
 import { router, Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { AppInput, PrimaryButton, ScreenLoading } from '@/src/components/common';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
+import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 
 export default function GeneralSettingsScreen() {
   const { ready, settings, refreshSettings } = useApp();
@@ -26,9 +27,26 @@ export default function GeneralSettingsScreen() {
     setWorkdayHours(String(settings.workdayHours));
   }, [settings]);
 
-  if (!ready) return <ScreenLoading />;
+  const isDirty = useMemo(
+    () =>
+      vatPercent !== String(settings.vatPercent) ||
+      defaultMarginPercent !== String(settings.defaultMarginPercent) ||
+      defaultCommissionPercent !== String(settings.defaultCommissionPercent) ||
+      defaultHourlyRate !== String(settings.defaultHourlyRate) ||
+      defaultCrewSize !== String(settings.defaultCrewSize) ||
+      workdayHours !== String(settings.workdayHours),
+    [
+      vatPercent,
+      defaultMarginPercent,
+      defaultCommissionPercent,
+      defaultHourlyRate,
+      defaultCrewSize,
+      workdayHours,
+      settings,
+    ],
+  );
 
-  async function handleSave() {
+  async function persistSettings(): Promise<boolean> {
     const parsed = {
       vatPercent: parseNumber(vatPercent),
       defaultMarginPercent: parseNumber(defaultMarginPercent),
@@ -43,7 +61,7 @@ export default function GeneralSettingsScreen() {
       (parsed.defaultCrewSize ?? 0) <= 0
     ) {
       showAlert('Virhe', 'Anna kelvolliset arvot kaikille kentille.');
-      return;
+      return false;
     }
 
     await db.saveSettings({
@@ -56,9 +74,21 @@ export default function GeneralSettingsScreen() {
       workdayHours: parsed.workdayHours!,
     });
     await refreshSettings();
-    showAlert('Tallennettu', 'Yleiset asetukset tallennettu', [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    return true;
+  }
+
+  const { allowExit, exitDialog } = useUnsavedChangesGuard({
+    isDirty,
+    onSave: persistSettings,
+  });
+
+  if (!ready) return <ScreenLoading />;
+
+  async function handleSave() {
+    const saved = await persistSettings();
+    if (!saved) return;
+    allowExit();
+    router.back();
   }
 
   return (
@@ -103,6 +133,7 @@ export default function GeneralSettingsScreen() {
         />
         <PrimaryButton title="Tallenna" onPress={handleSave} />
       </ScrollView>
+      {exitDialog}
     </>
   );
 }
