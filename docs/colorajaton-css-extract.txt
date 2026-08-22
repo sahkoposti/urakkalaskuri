@@ -1,0 +1,162 @@
+﻿=== colorajaton.fi CSS Extract ===
+Source: agent-tools/3f5c2fa1-1ba4-4180-aa7c-18f659c52522.txt
+Extracted: 2026-08-22
+
+PRIMARY BRAND RED (Elementor accent)
+------------------------------------
+--e-global-color-accent: #C90000
+
+All --e-global-color-* variables
+----------------------------------
+--e-global-color-primary:   #000000  (black)
+--e-global-color-secondary: #FFFFFF  (white)
+--e-global-color-text:      #3C3C3C  (dark gray)
+--e-global-color-accent:    #C90000  (brand red)
+--e-global-color-5cfd6fd:   #FFFFFF  (white, custom token)
+
+IBM Plex Sans references
+------------------------
+Typography CSS variables (font-family):
+  --e-global-typography-0975c9e-font-family:"IBM Plex Sans"
+  --e-global-typography-09af642-font-family:"IBM Plex Sans"
+  --e-global-typography-16c7d01-font-family:"IBM Plex Sans"
+  --e-global-typography-668e343-font-family:"IBM Plex Sans"
+  --e-global-typography-67037cd-font-family:"IBM Plex Sans"
+  --e-global-typography-792dcb8-font-family:"IBM Plex Sans"
+  --e-global-typography-90c69fe-font-family:"IBM Plex Sans"
+  --e-global-typography-abd2c43-font-family:"IBM Plex Sans"
+  --e-global-typography-b45c805-font-family:"IBM Plex Sans"
+  --e-global-typography-d55be60-font-family:"IBM Plex Sans"
+  --e-global-typography-d9782fd-font-family:"IBM Plex Sans"
+  --e-global-typography-text-font-family:"IBM Plex Sans"
+
+Direct font-family declarations:
+  font-family: "IBM Plex Sans", Sans-serif
+  font-family: 'IBM Plex Sans'
+
+Total occurrences of "IBM Plex Sans" in file: 104
+
+Button backgrounds (.elementor-button)
+----------------------------------------
+Default Elementor kit (generic):
+  .elementor-button { background-color: #69727d; color: #fff; border-radius: 3px; }
+
+Site / theme usage (var-based):
+  background-color: var(--e-global-color-accent)     => #C90000 (filled red CTA)
+  background-color: var(--e-global-color-secondary)  => #FFFFFF (white button)
+  background-color: #fff0                             => transparent (outline-style buttons)
+
+Examples from page-specific CSS:
+  elementor-105 .elementor-element.elementor-element-778a852 .elementor-button{background-color:var(--e-global-color-accent);font-family:var(--e-global-typography-09af642-font-family),Sans-serif;font-size:var(--e-global-typography-09af642-font-size);font-weight:var(--e-global-typography-09af642-font-weight);fill:var(--e-global-color-secondary);color:var(--e-global-color-secondary);border-style:none;border-radius:5px 5px 5px 5px;padding:16px 32px 16px 32px}
+  elementor-105 .elementor-element.elementor-element-778a852 .elementor-button{font-size:var(--e-global-typography-09af642-font-size)}
+  elementor-2 .elementor-element.elementor-element-a5e2184 .elementor-button{background-color:var(--e-global-color-accent);font-family:var(--e-global-typography-09af642-font-family),Sans-serif;font-size:var(--e-global-typography-09af642-font-size);font-weight:var(--e-global-typography-09af642-font-weight);fill:var(--e-global-color-secondary);color:var(--e-global-color-secondary);border-radius:5px 5px 5px 5px;padding:16px 32px 16px 32px}
+  elementor-2 .elementor-element.elementor-element-a5e2184 .elementor-button{font-size:var(--e-global-typography-09af642-font-size)}
+  elementor-292 .elementor-element.elementor-element-f9706a6 .elementor-button{background-color:var(--e-global-color-accent);font-family:"IBM Plex Sans",Sans-serif;font-size:1rem;font-weight:600;fill:var(--e-global-color-secondary);color:var(--e-global-color-secondary);border-radius:5px 5px 5px 5px;padding:16px 32px 16px 32px}
+  elementor-292 .elementor-element.elementor-element-f9706a6 .elementor-button{font-size:15px;padding:5px 010px 5px 10px}
+  elementor-80 .elementor-element.elementor-element-60b63e9 .elementor-button{background-color:var(--e-global-color-accent);font-family:var(--e-global-typography-09af642-font-family),Sans-serif;font-size:var(--e-global-typography-09af642-font-size);font-weight:var(--e-global-typography-09af642-font-weight);fill:var(--e-global-color-secondary);color:var(--e-global-color-secondary);border-radius:5px 5px 5px 5px;padding:16px 32px 16px 32px}
+  elementor-80 .elementor-element.elementor-element-60b63e9 .elementor-button{font-size:var(--e-global-typography-09af642-font-size)}
+  elementor-80 .elementor-element.elementor-element-bc54825 .elementor-button{background-color:var(--e-global-color-accent);font-family:var(--e-global-typography-09af642-font-family),Sans-serif;font-size:var(--e-global-typography-09af642-font-size);font-weight:var(--e-global-typography-09af642-font-weight);fill:var(--e-global-color-secondary);color:var(--e-global-color-secondary);border-radius:5px 5px 5px 5px;padding:16px 32px 16px 32px}
+  elementor-80 .elementor-element.elementor-element-bc54825 .elementor-button{font-size:var(--e-global-typography-09af642-font-size)}
+  elementor-80 .elementor-element.elementor-element-ebc56c4 .elementor-button{background-color:var(--e-global-color-accent);font-family:var(--e-global-typography-09af642-font-family),Sans-serif;font-size:var(--e-global-typography-09af642-font-size);font-weight:var(--e-global-typography-09af642-font-weight);fill:var(--e-global-color-secondary);color:var(--e-global-color-secondary);border-radius:5px 5px 5px 5px;padding:16px 32px 16px 32px}
+  elementor-80 .elementor-element.elementor-element-ebc56c4 .elementor-button{font-size:var(--e-global-typography-09af642-font-size)}
+  elementor-91 .elementor-element.elementor-element-641f942 .elementor-button{background-color:#fff0;font-family:var(--e-global-typography-09af642-font-family),Sans-serif;font-size:var(--e-global-typography-09af642-font-size);font-weight:var(--e-global-typography-09af642-font-weight);fill:var(--e-global-color-accent);color:var(--e-global-color-accent);border-style:solid;border-width:1px 1px 1px 1px;border-color:var(--e-global-color-accent);border-radius:5px 5px 5px 5px;padding:16px 32px 16px 32px}
+  elementor-91 .elementor-element.elementor-element-641f942 .elementor-button{font-size:var(--e-global-typography-09af642-font-size)}
+
+State variants (Elementor defaults in bundle):
+  .elementor-button-info    background-color: #5bc0de
+  .elementor-button-success background-color: #5cb85c
+  .elementor-button-warning background-color: #f0ad4e
+  .elementor-button-danger  background-color: #d9534f
+
+Outline button pattern (site):
+  border: 1px solid var(--e-global-color-accent); background #fff0; color accent (#C90000)
+
+Most common hex colors (count  name)
+------------------------------------
+  28	#fff
+  25	#fff0
+  9	#000
+  9	#69727d
+  6	#3f444b
+  5	#333
+  5	#33373d
+  5	#d9534f
+  4	#1f2124
+  4	#c36
+  4	#000000
+  3	#ccc
+  3	#e1e8ed
+  3	#ffffff
+  3	#f0ad4e
+  3	#5cb85c
+  2	#88909b
+  2	#55595c
+  2	#5bc0de
+  2	#f9fafa
+  2	#00000000
+  2	#eee
+  2	#666
+  2	#0077b5
+  1	#f80
+
+Brand / red-related hex (site-relevant, excluding generic #fff):
+  #c90000  (1)  — PRIMARY BRAND RED (= accent variable)
+  #c36     (4)  — legacy Elementor default red (buttons in base CSS)
+  #d9534f  (5)  — danger button default
+  #cf2e2e  (1)  — WP preset vivid-red
+  #cd201f  (1)  — social/icon red
+  #bd081c  (1)
+  #dd2430  (1)
+  #ec1c40  (1)
+  #af0606  (1)
+
+Border radius (buttons & cards)
+-------------------------------
+Buttons (.elementor-button):
+  default: 3px
+  size-xs: 2px
+  size-md: 4px
+  size-lg: 5px
+  size-xl: 6px
+  site CTAs: 5px 5px 5px 5px (common on colorajaton buttons)
+  pill-style: 50px 50px 50px 50px (one section button)
+
+Cards / posts:
+  .elementor-post__card { border-radius: 3px; }
+  .elementor-post__thumbnail { border-radius: 15px 15px 15px 15px; } (blog listing)
+  .elementor-widget-reviews .swiper-slide { border-radius: 5px; }
+  testimonials slide/image: 16px
+  .elementor-post__badge { border-radius: 999px; }
+  .elementor-testimonial__image img { border-radius: 999px; }
+
+Other: 0, 10px, 10%, 50%, var(--border-radius) on .e-con
+
+Box shadow (cards & related)
+----------------------------
+  .elementor-card-shadow-yes .elementor-post__card:
+    box-shadow: 0 0 10px 0 rgb(0 0 0 / .15);
+  .elementor-card-shadow-yes .elementor-post__card:hover:
+    box-shadow: 0 0 30px 0 rgb(0 0 0 / .15);
+  (also seen) box-shadow: 0 0 20px 0 rgb(0 0 0 / .15);
+  .elementor-widget-reviews .swiper-slide: border 1px #e1e8ed (no shadow on card rule)
+  inset shadows (forms/UI): inset 0 0 0 1px rgb(0 0 0 / .1); inset 0 -1px 0 rgb(0 0 0 / .102);
+  none / none!important (reset rules)
+
+
+Site-specific .elementor-button rules (exact from CSS)
+-------------------------------------------------------
+Filled primary CTA:
+  background-color: var(--e-global-color-accent);  /* #C90000 */
+  color/fill: var(--e-global-color-secondary);    /* #FFFFFF */
+  border-radius: 5px;
+  padding: 16px 32px;
+
+Outline secondary:
+  background-color: #fff0;
+  color/fill: var(--e-global-color-accent);       /* #C90000 */
+  border: 1px solid var(--e-global-color-accent);
+  border-radius: 5px;
+  padding: 16px 32px;
+
+One variant uses font-family: "IBM Plex Sans", Sans-serif; font-size: 1rem; font-weight: 600;
+Others use var(--e-global-typography-09af642-*) tokens (also IBM Plex Sans).
