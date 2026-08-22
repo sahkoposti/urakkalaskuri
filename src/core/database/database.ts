@@ -10,6 +10,9 @@ import type {
   WizardStepId,
 } from '../models/types';
 import { defaultSettings, defaultThemeSettings } from '../models/types';
+import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
+import type { FormDebugSettings, FormDefinition } from '../form/types';
+import { defaultFormDebugSettings } from '../form/types';
 import { normalizeWizardStepOrder } from '../wizard/wizardSteps';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -394,4 +397,56 @@ export async function saveWizardDraft(draft: PersistedWizardDraft): Promise<void
 export async function clearWizardDraft(): Promise<void> {
   const db = await getDb();
   await db.runAsync('DELETE FROM wizard_drafts WHERE id = ?', WIZARD_DRAFT_ID);
+}
+
+export async function getFormDefinition(): Promise<FormDefinition> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    'form_definition',
+  );
+  if (!row) {
+    const defaults = createDefaultFormDefinition();
+    await saveFormDefinition(defaults);
+    return defaults;
+  }
+  try {
+    return JSON.parse(row.value) as FormDefinition;
+  } catch {
+    const defaults = createDefaultFormDefinition();
+    await saveFormDefinition(defaults);
+    return defaults;
+  }
+}
+
+export async function saveFormDefinition(form: FormDefinition): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    'form_definition',
+    JSON.stringify({ ...form, updatedAt: Date.now() }),
+  );
+}
+
+export async function getFormDebugSettings(): Promise<FormDebugSettings> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    'form_debug',
+  );
+  if (!row) return { ...defaultFormDebugSettings };
+  try {
+    return { ...defaultFormDebugSettings, ...(JSON.parse(row.value) as FormDebugSettings) };
+  } catch {
+    return { ...defaultFormDebugSettings };
+  }
+}
+
+export async function saveFormDebugSettings(debug: FormDebugSettings): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    'form_debug',
+    JSON.stringify(debug),
+  );
 }

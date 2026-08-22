@@ -68,9 +68,11 @@ export default function RootLayout() {
             <Stack.Screen name="history/[id]" options={{ title: 'Laskelman tiedot' }} />
             <Stack.Screen name="settings/index" options={{ title: 'Asetukset' }} />
             <Stack.Screen name="settings/general" options={{ title: 'Yleinen' }} />
-            <Stack.Screen name="settings/calculation/index" options={{ title: 'Laskenta' }} />
+            <Stack.Screen name="settings/calculation/index" options={{ title: 'Lomakeasetukset' }} />
             <Stack.Screen name="settings/calculation/order" options={{ title: 'Järjestys' }} />
-            <Stack.Screen name="settings/calculation/variables" options={{ title: 'Muuttujat' }} />
+            <Stack.Screen name="settings/calculation/debug" options={{ title: 'Debug' }} />
+            <Stack.Screen name="settings/calculation/fields/index" options={{ title: 'Kentät' }} />
+            <Stack.Screen name="settings/calculation/fields/[fieldId]" options={{ title: 'Kenttä' }} />
             <Stack.Screen name="settings/theme" options={{ title: 'Teema' }} />
           </Stack>
           <DraftResumeBanner />

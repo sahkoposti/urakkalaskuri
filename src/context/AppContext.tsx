@@ -18,6 +18,9 @@ import type {
   WizardDraft,
 } from '@/src/core/models/types';
 import { defaultSettings } from '@/src/core/models/types';
+import type { FormDebugSettings, FormDefinition } from '@/src/core/form/types';
+import { createDefaultFormDefinition } from '@/src/core/form/defaultFormDefinition';
+import { defaultFormDebugSettings } from '@/src/core/form/types';
 
 type WizardSession = {
   draft: WizardDraft;
@@ -34,10 +37,13 @@ type AppContextValue = {
   calculations: CalculationRecord[];
   wizardSession: WizardSession | null;
   wizardDraft: PersistedWizardDraft | null;
+  formDefinition: FormDefinition;
+  formDebug: FormDebugSettings;
   refreshSettings: () => Promise<void>;
   refreshProducts: () => Promise<void>;
   refreshCalculations: () => Promise<void>;
   refreshWizardDraft: () => Promise<void>;
+  refreshFormSettings: () => Promise<void>;
   setWizardSession: (session: WizardSession | null) => void;
 };
 
@@ -50,6 +56,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [calculations, setCalculations] = useState<CalculationRecord[]>([]);
   const [wizardSession, setWizardSession] = useState<WizardSession | null>(null);
   const [wizardDraft, setWizardDraft] = useState<PersistedWizardDraft | null>(null);
+  const [formDefinition, setFormDefinition] = useState<FormDefinition>(createDefaultFormDefinition());
+  const [formDebug, setFormDebug] = useState<FormDebugSettings>(defaultFormDebugSettings);
+
+  const refreshFormSettings = useCallback(async () => {
+    setFormDefinition(await db.getFormDefinition());
+    setFormDebug(await db.getFormDebugSettings());
+  }, []);
 
   const refreshSettings = useCallback(async () => {
     setSettings(await db.getSettings());
@@ -74,12 +87,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await refreshProducts();
       await refreshCalculations();
       await refreshWizardDraft();
+      await refreshFormSettings();
       if (active) setReady(true);
     })();
     return () => {
       active = false;
     };
-  }, [refreshCalculations, refreshProducts, refreshSettings, refreshWizardDraft]);
+  }, [refreshCalculations, refreshFormSettings, refreshProducts, refreshSettings, refreshWizardDraft]);
 
   const value = useMemo(
     () => ({
@@ -89,10 +103,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       calculations,
       wizardSession,
       wizardDraft,
+      formDefinition,
+      formDebug,
       refreshSettings,
       refreshProducts,
       refreshCalculations,
       refreshWizardDraft,
+      refreshFormSettings,
       setWizardSession,
     }),
     [
@@ -102,10 +119,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       calculations,
       wizardSession,
       wizardDraft,
+      formDefinition,
+      formDebug,
       refreshSettings,
       refreshProducts,
       refreshCalculations,
       refreshWizardDraft,
+      refreshFormSettings,
     ],
   );
 

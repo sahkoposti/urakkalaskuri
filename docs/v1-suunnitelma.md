@@ -119,7 +119,8 @@ Etusivu
 Wizard-vaiheiden järjestys (↑/↓). Tallennetaan `wizard_step_order` (JSON).
 
 #### Laskenta → Muuttujat (v1.1)
-Paikka omille kentille, muuttujille ja kaavoille. UI placeholder „Tulossa v1.1”.
+Paikka omille kentille, muuttujille ja kaavoille. UI placeholder „Tulossa v1.1”.  
+**→ Katso:** [v1.1-suunnitelma.md](./v1.1-suunnitelma.md) (modulaarinen lomake, Lomakeasetukset)
 
 #### Teema
 | Kenttä | Kuvaus | v1 |
