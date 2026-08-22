@@ -1,0 +1,24 @@
+---
+description: Git commit message standards – no AI co-author trailers
+alwaysApply: true
+---
+
+# Git commits
+
+When creating git commits in this project:
+
+- **Never** add `Co-authored-by:` trailers (Cursor, Copilot, or any AI/tool).
+- **Never** add similar attribution lines such as `Signed-off-by: Cursor` or `Assisted-by: ...`.
+- Commit messages contain only the human-readable summary and body – nothing that credits AI as co-author.
+
+```text
+# ❌ BAD
+feat: add wizard
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+# ✅ GOOD
+feat: add wizard
+```
+
+If a hook or tool tries to append co-author lines automatically, remove them before committing.
