@@ -1,6 +1,7 @@
 import type { FormField } from '@/src/core/form/types';
 
 export type SystemFieldKey =
+  | 'tyoryhma_kesto_pv'
   | 'tyoryhma_kesto_h'
   | 'urakka_hinta_alv0'
   | 'materiaalit_alv0'
@@ -17,6 +18,7 @@ const baseSystemField = (
   label: string,
   formula: string,
   unit?: string,
+  extras: Partial<FormField> = {},
 ): FormField => ({
   id,
   systemKey,
@@ -28,6 +30,7 @@ const baseSystemField = (
   allowManualOverride: false,
   unit,
   formula,
+  ...extras,
 });
 
 /**
@@ -36,6 +39,20 @@ const baseSystemField = (
  */
 export function createSystemFields(): FormField[] {
   return [
+    baseSystemField(
+      'field_system_tyoryhma_kesto_pv',
+      'tyoryhma_kesto_pv',
+      'tyoryhma_kesto_pv',
+      'Työryhmän kesto (pv)',
+      '',
+      'pv',
+      {
+        allowManualOverride: true,
+        debugExampleValue: '5',
+        helpText:
+          'Laske päivät mitoista (esim. laskenta_seinapinta_ala_m2 / 25) tai jätä kaava tyhjäksi ja syötä päivät lomakkeella.',
+      },
+    ),
     baseSystemField(
       'field_system_tyoryhma_kesto_h',
       'tyoryhma_kesto_h',
@@ -121,19 +138,25 @@ export function restoreSystemField(field: FormField): FormField {
 
 export function mergeSystemFields(fields: FormField[]): FormField[] {
   const systemDefaults = createSystemFields();
-  const userFields = fields.filter((field) => !isSystemField(field));
+  const reservedKeys = new Set(systemDefaults.map((field) => field.key));
+  const userFields = fields.filter((field) => !isSystemField(field) && !reservedKeys.has(field.key));
   const existingSystem = fields.filter(isSystemField);
+  const promoted = fields.filter((field) => !isSystemField(field) && reservedKeys.has(field.key));
   const mergedSystem = systemDefaults.map((template) => {
-    const current = existingSystem.find((f) => f.systemKey === template.systemKey);
+    const current =
+      existingSystem.find((field) => field.systemKey === template.systemKey) ??
+      promoted.find((field) => field.key === template.key);
     if (!current) return template;
     return {
       ...template,
-      id: current.id,
-      label: current.label,
+      id: current.systemKey ? current.id : template.id,
+      label: current.label || template.label,
       formula: migrateFormulaKeys(current.formula ?? template.formula ?? ''),
       showOnSummary: current.showOnSummary,
-      helpText: current.helpText,
+      helpText: current.helpText ?? template.helpText,
       unit: current.unit ?? template.unit,
+      allowManualOverride: current.allowManualOverride ?? template.allowManualOverride,
+      debugExampleValue: current.debugExampleValue ?? template.debugExampleValue,
     };
   });
   return [...userFields, ...mergedSystem];

@@ -349,4 +349,44 @@ describe('formMutations', () => {
     const tyoryhma = normalized.fields.find((field) => field.systemKey === 'tyoryhma_kesto_h');
     expect(tyoryhma?.formula).toContain('asetukset.tyopaivan_pituus');
   });
+
+  test('tyoryhma_kesto_pv is a system field', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const duration = form.fields.find((field) => field.systemKey === 'tyoryhma_kesto_pv');
+    expect(duration).toBeDefined();
+    expect(duration?.type).toBe('computed');
+    expect(duration?.allowManualOverride).toBe(true);
+    expect(form.fields.filter((field) => field.key === 'tyoryhma_kesto_pv')).toHaveLength(1);
+    const page = form.pages.find((item) => item.title.includes('kesto'));
+    expect(page?.fieldIds).toContain(duration?.id);
+  });
+
+  test('normalizeFormDefinition promotes legacy duration user field', () => {
+    const legacy = {
+      ...createDefaultFormDefinition(),
+      pages: createDefaultFormDefinition().pages.map((page) =>
+        page.title.includes('kesto') ? { ...page, fieldIds: ['field_duration'] } : page,
+      ),
+      fields: [
+        ...createDefaultFormDefinition().fields,
+        {
+          id: 'field_duration',
+          key: 'tyoryhma_kesto_pv',
+          label: 'Työryhmän kesto',
+          type: 'number' as const,
+          required: true,
+          showOnSummary: true,
+          unit: 'pv',
+          debugExampleValue: '5',
+        },
+      ],
+    };
+    const normalized = normalizeFormDefinition(legacy);
+    expect(normalized.fields.filter((field) => field.key === 'tyoryhma_kesto_pv')).toHaveLength(1);
+    const duration = normalized.fields.find((field) => field.systemKey === 'tyoryhma_kesto_pv');
+    expect(duration?.debugExampleValue).toBe('5');
+    const page = normalized.pages.find((item) => item.title.includes('kesto'));
+    expect(page?.fieldIds).toContain(duration?.id);
+    expect(page?.fieldIds).not.toContain('field_duration');
+  });
 });

@@ -49,16 +49,6 @@ export function createDefaultFormDefinition(): FormDefinition {
       unit: 'm²',
       formula: '(kiintea_seinapinta_ala_m2 - aukkovahennykset) * laudoitustyyppi',
     },
-    {
-      id: 'field_duration',
-      key: 'tyoryhma_kesto_pv',
-      label: 'Työryhmän kesto',
-      type: 'number' as const,
-      required: true,
-      showOnSummary: true,
-      unit: 'pv',
-      debugExampleValue: '5',
-    },
   ];
 
   const pages = [
@@ -84,14 +74,14 @@ export function createDefaultFormDefinition(): FormDefinition {
       id: 'page_duration',
       title: 'Työryhmän arvioitu kesto (pv)',
       sortOrder: 2,
-      fieldIds: ['field_duration'],
+      fieldIds: ['field_system_tyoryhma_kesto_pv'],
     },
   ];
 
   return {
     id: 'default',
     name: 'Peruslaskenta',
-    version: 4,
+    version: 5,
     pages,
     fields: userFields,
     updatedAt: Date.now(),

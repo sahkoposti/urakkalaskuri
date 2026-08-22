@@ -32,14 +32,30 @@ export function WizardFieldList({
   return (
     <View style={styles.wrap}>
       {fields.map((field) => {
-        if (isSystemField(field)) return null;
-
         if (field.type === 'section') {
           return <SectionTitle key={field.id} title={field.label} />;
         }
 
         if (field.type === 'computed') {
           const computed = computedValues[field.key];
+          const canOverride = field.allowManualOverride !== false;
+          if (canOverride) {
+            const label = `${field.label}${field.unit ? ` (${field.unit})` : ''}`;
+            return (
+              <AppInput
+                key={field.id}
+                label={label}
+                value={
+                  fieldValues[field.key] ??
+                  (computed !== undefined && Number.isFinite(computed) ? formatDecimal(computed) : '')
+                }
+                onChangeText={(value) => onChange(field.key, value)}
+                keyboardType="decimal-pad"
+                placeholder={computed !== undefined && Number.isFinite(computed) ? formatDecimal(computed) : 'Esim. 5'}
+              />
+            );
+          }
+
           const display =
             computed !== undefined && Number.isFinite(computed)
               ? `${formatDecimal(computed)}${field.unit ? ` ${field.unit}` : ''}`
@@ -51,6 +67,8 @@ export function WizardFieldList({
             </View>
           );
         }
+
+        if (isSystemField(field)) return null;
 
         if (isProductField(field)) {
           const selectedId = getSelectedProductId(fieldValues, field.key) ?? '';

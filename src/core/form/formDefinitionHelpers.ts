@@ -2,6 +2,7 @@ import { extractFormulaIdentifiers } from '@/src/core/form/formula/evaluator';
 import { computedFieldDependencies } from '@/src/core/form/formula/formulaDependencies';
 import { slugifyKey } from '@/src/core/form/formKeyUtils';
 import {
+  createSystemFields,
   LEGACY_KEY_MAP,
   mergeSystemFields,
   migrateFormulaKeys,
@@ -153,6 +154,26 @@ function dedupePageFieldAssignments(pages: FormPage[]): FormPage[] {
   }));
 }
 
+/** Vanha käyttäjäkenttä tyoryhma_kesto_pv → järjestelmäkentän id sivulla. */
+function remapPromotedSystemFieldIds(pages: FormPage[], rawFields: FormField[]): FormPage[] {
+  const reservedKeys = new Set(createSystemFields().map((field) => field.key));
+  const keyToSystemId = new Map(createSystemFields().map((field) => [field.key, field.id]));
+  const oldIdToSystemId = new Map<string, string>();
+
+  for (const field of rawFields) {
+    if (field.systemKey || !reservedKeys.has(field.key)) continue;
+    const systemId = keyToSystemId.get(field.key);
+    if (systemId) oldIdToSystemId.set(field.id, systemId);
+  }
+
+  if (oldIdToSystemId.size === 0) return pages;
+
+  return pages.map((page) => ({
+    ...page,
+    fieldIds: (page.fieldIds ?? []).map((fieldId) => oldIdToSystemId.get(fieldId) ?? fieldId),
+  }));
+}
+
 /** Vanha kovakoodattu Materiaalit-sivu muuttuu tavalliseksi sivuksi. */
 function migrateMaterialsSystemPages(pages: FormPage[]): FormPage[] {
   return pages.map((page) => {
@@ -166,17 +187,22 @@ export function normalizeFormDefinition(raw: unknown): FormDefinition {
   const form = (raw ?? {}) as Partial<FormDefinition>;
   const legacyFields = (form.fields ?? []) as LegacyFormField[];
 
-  const pages = migrateMaterialsSystemPages(
-    dedupePageFieldAssignments(
-      isLegacyForm(form)
-        ? migrateLegacyPages(form)
-        : (form.pages ?? []).map((page) => ({ ...page, fieldIds: [...(page.fieldIds ?? [])] })),
+  const normalizedUserFields = normalizeFieldKeys(
+    migrateSelectFields(stripLegacyFieldProps(legacyFields)),
+  );
+
+  const pages = dedupePageFieldAssignments(
+    remapPromotedSystemFieldIds(
+      migrateMaterialsSystemPages(
+        isLegacyForm(form)
+          ? migrateLegacyPages(form)
+          : (form.pages ?? []).map((page) => ({ ...page, fieldIds: [...(page.fieldIds ?? [])] })),
+      ),
+      normalizedUserFields,
     ),
   );
 
-  const fields = mergeSystemFields(
-    normalizeFieldKeys(migrateSelectFields(stripLegacyFieldProps(legacyFields))),
-  );
+  const fields = mergeSystemFields(normalizedUserFields);
 
   return {
     id: form.id ?? 'default',

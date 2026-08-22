@@ -117,7 +117,7 @@ export default function FormFieldEditorScreen() {
         return false;
       }
     }
-    if (field.type === 'computed' && !field.formula?.trim()) {
+    if (field.type === 'computed' && !field.formula?.trim() && field.allowManualOverride === false) {
       showAlert('Virhe', 'Lasketulla kentällä on oltava kaava.');
       return false;
     }
@@ -297,7 +297,7 @@ export default function FormFieldEditorScreen() {
           />
         ) : null}
 
-        {isComputed && !isSystem ? <ProductFormulaHints form={previewForm} /> : null}
+        {isComputed ? <ProductFormulaHints form={previewForm} /> : null}
 
         {!isSystem && field.type !== 'section' ? (
           <FieldEffectsEditor
@@ -311,7 +311,7 @@ export default function FormFieldEditorScreen() {
           <OutlinedButton title="Palauta oletusarvot" onPress={handleRestoreSystemDefaults} />
         ) : null}
 
-        {isComputed && !isSystem ? (
+        {isComputed ? (
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>Muokattavissa lomakkeella (esitäytetty laskennalla)</Text>
             <Switch

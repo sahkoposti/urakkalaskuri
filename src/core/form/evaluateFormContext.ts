@@ -151,9 +151,38 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
     }
 
     if (field.type === 'computed') {
-      if (!field.formula) {
+      const overrideRaw = useDebugExamples ? field.debugExampleValue : fieldValues[field.key];
+      const override =
+        field.allowManualOverride !== false ? parseNumber(overrideRaw?.trim() ?? '') : null;
+
+      if (!field.formula?.trim()) {
+        if (override !== null) {
+          context[field.key] = override;
+          if (collectTrace) {
+            steps.push({
+              fieldKey: field.key,
+              label: field.label,
+              source: 'input',
+              result: override,
+            });
+          }
+          continue;
+        }
         if (collectTrace) {
           errors.push(`${field.label}: kaava puuttuu`);
+        }
+        continue;
+      }
+
+      if (override !== null && !useDebugExamples) {
+        context[field.key] = override;
+        if (collectTrace) {
+          steps.push({
+            fieldKey: field.key,
+            label: field.label,
+            source: 'input',
+            result: override,
+          });
         }
         continue;
       }

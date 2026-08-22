@@ -223,6 +223,31 @@ describe('runFormCalculation', () => {
     expect(result.materialsVat0).toBeCloseTo(175.95, 2);
   });
 
+  test('duration system formula can be computed from measurements', () => {
+    const form = defaultForm();
+    form.fields = form.fields.map((field) =>
+      field.systemKey === 'tyoryhma_kesto_pv'
+        ? { ...field, formula: 'laskenta_seinapinta_ala_m2 / 23.46', allowManualOverride: false }
+        : field,
+    );
+
+    const { result, context } = runFormCalculation({
+      form,
+      fieldValues: {
+        kiintea_seinapinta_ala_m2: '120',
+        aukkovahennykset: '18',
+        laudoitustyyppi: '1.15',
+      },
+      materialLines: [],
+      products: [],
+      settings: defaultSettings,
+    });
+
+    expect(context.tyoryhma_kesto_pv).toBeCloseTo(5, 2);
+    expect(result.workDurationDays).toBeCloseTo(5, 2);
+    expect(result.contractPriceVat0).toBeCloseTo(2400, 2);
+  });
+
   test('requires duration when missing', () => {
     const form = defaultForm();
     expect(() =>
