@@ -1,7 +1,8 @@
-import { Picker } from '@react-native-picker/picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+
+import { AppPicker } from '@/src/components/AppPicker';
 
 import { FieldEffectsEditor } from '@/src/components/form/FieldEffectsEditor';
 import { FieldVisibilityEditor } from '@/src/components/form/FieldVisibilityEditor';
@@ -241,22 +242,15 @@ export default function FormFieldEditorScreen() {
         ) : null}
 
         {!isSystem ? (
-          <View style={styles.pickerWrap}>
-            <Text style={styles.pickerLabel}>Kenttätyyppi</Text>
-            <Picker
-              selectedValue={field.type}
-              onValueChange={(value) => handleTypeChange(value as FieldType)}
-              style={styles.pickerControl}
-            >
-              {EDITABLE_FIELD_TYPES.map((fieldType) => (
-                <Picker.Item
-                  key={fieldType}
-                  label={FIELD_TYPE_LABELS[fieldType]}
-                  value={fieldType}
-                />
-              ))}
-            </Picker>
-          </View>
+          <AppPicker
+            label="Kenttätyyppi"
+            selectedValue={field.type}
+            onValueChange={(value) => handleTypeChange(value as FieldType)}
+            items={EDITABLE_FIELD_TYPES.map((fieldType) => ({
+              value: fieldType,
+              label: FIELD_TYPE_LABELS[fieldType],
+            }))}
+          />
         ) : (
           <Text style={styles.metaLine}>Tyyppi: {FIELD_TYPE_LABELS[field.type]} (järjestelmä)</Text>
         )}
@@ -372,45 +366,39 @@ export default function FormFieldEditorScreen() {
 
         {isInputField && formDebug.enabled ? (
           field.type === 'select' ? (
-            <View style={styles.pickerWrap}>
-              <Text style={styles.pickerLabel}>Debug-esimerkki (valinta)</Text>
-              <Picker
-                selectedValue={field.debugExampleValue ?? ''}
-                onValueChange={(value) => updateFieldState({ debugExampleValue: value })}
-                style={styles.pickerControl}
-              >
-                <Picker.Item label="Valitse..." value="" />
-                {field.options?.map((option) => (
-                  <Picker.Item key={option.value} label={option.label} value={option.value} />
-                ))}
-              </Picker>
-            </View>
+            <AppPicker
+              label="Debug-esimerkki (valinta)"
+              selectedValue={field.debugExampleValue ?? ''}
+              onValueChange={(value) => updateFieldState({ debugExampleValue: value })}
+              placeholder="Valitse..."
+              allowEmpty
+              items={(field.options ?? []).map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+            />
           ) : isProductField(field) ? (
-            <View style={styles.pickerWrap}>
-              <Text style={styles.pickerLabel}>Debug-esimerkki (tuote)</Text>
-              <Picker
-                selectedValue={field.debugExampleValue ?? ''}
-                onValueChange={(value) => updateFieldState({ debugExampleValue: value })}
-                style={styles.pickerControl}
-              >
-                <Picker.Item label="Valitse tuote..." value="" />
-                {products.map((product) => (
-                  <Picker.Item key={product.id} label={product.name} value={product.id} />
-                ))}
-              </Picker>
-            </View>
+            <AppPicker
+              label="Debug-esimerkki (tuote)"
+              selectedValue={field.debugExampleValue ?? ''}
+              onValueChange={(value) => updateFieldState({ debugExampleValue: value })}
+              placeholder="Valitse tuote..."
+              allowEmpty
+              items={products.map((product) => ({
+                value: product.id,
+                label: product.name,
+              }))}
+            />
           ) : field.type === 'boolean' ? (
-            <View style={styles.pickerWrap}>
-              <Text style={styles.pickerLabel}>Debug-esimerkki</Text>
-              <Picker
-                selectedValue={field.debugExampleValue ?? 'false'}
-                onValueChange={(value) => updateFieldState({ debugExampleValue: value })}
-                style={styles.pickerControl}
-              >
-                <Picker.Item label="Ei" value="false" />
-                <Picker.Item label="Kyllä" value="true" />
-              </Picker>
-            </View>
+            <AppPicker
+              label="Debug-esimerkki"
+              selectedValue={field.debugExampleValue ?? 'false'}
+              onValueChange={(value) => updateFieldState({ debugExampleValue: value })}
+              items={[
+                { label: 'Ei', value: 'false' },
+                { label: 'Kyllä', value: 'true' },
+              ]}
+            />
           ) : (
             <AppInput
               label="Debug-esimerkkiarvo"
@@ -544,25 +532,6 @@ const styles = StyleSheet.create({
     opacity: 0.75,
     fontSize: 13,
     lineHeight: 18,
-  },
-  pickerWrap: {
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  pickerLabel: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 2,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.text,
-    fontSize: 14,
-  },
-  pickerControl: {
-    marginTop: -4,
   },
   switchRow: {
     flexDirection: 'row',

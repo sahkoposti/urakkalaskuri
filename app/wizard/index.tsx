@@ -1,4 +1,3 @@
-import { Picker } from '@react-native-picker/picker';
 import { router, Stack, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -12,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { AppPicker } from '@/src/components/AppPicker';
 import {
   AppInput,
   OutlinedButton,
@@ -607,16 +607,15 @@ function CustomerStep({
         multiline
         placeholder="Valinnainen"
       />
-      <Text style={styles.inputLabel}>Asiakastyyppi</Text>
-      <View style={styles.pickerWrap}>
-        <Picker
-          selectedValue={customerType}
-          onValueChange={(value) => onCustomerTypeChange(value as CustomerType)}
-        >
-          <Picker.Item label="Yksityisasiakas" value="private" />
-          <Picker.Item label="Yritysasiakas" value="business" />
-        </Picker>
-      </View>
+      <AppPicker
+        label="Asiakastyyppi"
+        selectedValue={customerType}
+        onValueChange={(value) => onCustomerTypeChange(value as CustomerType)}
+        items={[
+          { label: 'Yksityisasiakas', value: 'private' },
+          { label: 'Yritysasiakas', value: 'business' },
+        ]}
+      />
       {customerType === 'business' ? (
         <View style={styles.toggleRow}>
           <Text style={styles.toggleLabel}>Käänteinen arvonlisävero</Text>
@@ -711,19 +710,6 @@ const styles = StyleSheet.create({
   },
   stepContent: {
     marginTop: 16,
-  },
-  inputLabel: {
-    marginBottom: 6,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.text,
-  },
-  pickerWrap: {
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    backgroundColor: AppColors.secondary,
-    marginBottom: 12,
-    overflow: 'hidden',
   },
   toggleRow: {
     marginBottom: 12,
