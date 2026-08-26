@@ -41,10 +41,11 @@ export interface FieldVisibilityCondition {
   /** Vertailuoperaattori (oletus eq) */
   operator?: FieldVisibilityOperator;
   /**
-   * Odotettu raaka-arvo:
+   * Odotettu raaka-arvo merkkijonona:
    * - boolean: "true" | "false"
    * - select: option.value (esim. "1.15")
    * - number: desimaali merkkijonona (esim. "10" tai "10,5")
+   * Tuodussa JSON:ssa boolean/number hyväksytään ja muunnetaan merkkijonoksi.
    */
   value: string;
 }

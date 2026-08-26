@@ -152,4 +152,41 @@ describe('evaluateFormContext hidden number fields', () => {
 
     expect(context.lisavalinta).toBeUndefined();
   });
+
+  test('boolean showWhen value true does not crash preview', () => {
+    const toggle = field({
+      id: 'f_toggle',
+      key: 'julkisivupinnat_valinta',
+      label: 'Julkisivu',
+      type: 'boolean',
+    });
+    const area = field({
+      id: 'f_area',
+      key: 'kiintea_seinapinta_ala_m2',
+      label: 'Pinta',
+      type: 'number',
+      showWhen: {
+        fieldKey: 'julkisivupinnat_valinta',
+        operator: 'eq',
+        value: true as unknown as string,
+      },
+    });
+    const form: FormDefinition = {
+      id: 'crash',
+      name: 'Crash',
+      version: 1,
+      updatedAt: 0,
+      pages: [{ id: 'p1', title: 'Sivu', sortOrder: 0, fieldIds: [toggle.id, area.id] }],
+      fields: [toggle, area],
+    };
+
+    expect(() =>
+      evaluateFormContext({
+        form,
+        settings: defaultSettings,
+        materialsTotal: 0,
+        fieldValues: {},
+      }),
+    ).not.toThrow();
+  });
 });

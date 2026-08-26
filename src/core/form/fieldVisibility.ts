@@ -38,6 +38,15 @@ export function isNumericVisibilityOperator(
   return operator === 'gt' || operator === 'lt' || operator === 'gte' || operator === 'lte';
 }
 
+/** JSON-tuonti voi antaa true/1; kaava ja .trim() vaativat merkkijonon. */
+export function normalizeVisibilityConditionValue(value: unknown): string {
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'string') return value;
+  if (value == null) return '';
+  return String(value);
+}
+
 /** Boolean ilman arvoa tulkitaan Epäksi; muut tyypit käyttävät trimattua merkkijonoa. */
 export function comparableFieldValue(
   field: FormField | undefined,
@@ -91,7 +100,7 @@ function conditionMatches(
   source: FormField | undefined,
 ): boolean {
   const operator: FieldVisibilityOperator = condition.operator ?? 'eq';
-  const expected = condition.value;
+  const expected = normalizeVisibilityConditionValue(condition.value);
 
   if (source?.type === 'number' && !NUMERIC_OPERATORS.has(operator)) {
     return false;
@@ -194,14 +203,14 @@ export function visibilityConditionSummary(
   const dep = form.fields.find((field) => field.key === condition.fieldKey);
   const label = dep?.label ?? condition.fieldKey;
   const op = visibilityOperatorSymbol(condition.operator);
-  let valueLabel = condition.value;
+  const expected = normalizeVisibilityConditionValue(condition.value);
+  let valueLabel = expected;
   if (dep?.type === 'boolean') {
-    valueLabel = condition.value === 'true' ? 'Kyllä' : 'Ei';
+    valueLabel = expected === 'true' ? 'Kyllä' : 'Ei';
   } else if (dep?.type === 'select') {
-    valueLabel =
-      dep.options?.find((option) => option.value === condition.value)?.label ?? condition.value;
+    valueLabel = dep.options?.find((option) => option.value === expected)?.label ?? expected;
   } else if (dep?.type === 'number') {
-    valueLabel = condition.value.trim() || '–';
+    valueLabel = expected.trim() || '–';
   }
   return `${label} ${op} ${valueLabel}`;
 }

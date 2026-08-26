@@ -17,6 +17,39 @@ describe('formDefinitionIo', () => {
     expect(imported.fields.some((field) => field.key === 'tyoryhma_kesto_pv')).toBe(true);
   });
 
+  test('coerces boolean and numeric showWhen values to strings', () => {
+    const imported = parseImportedFormDefinition(
+      JSON.stringify({
+        id: 'imported',
+        name: 'Tuonti',
+        version: 1,
+        pages: [{ id: 'p1', title: 'Sivu', sortOrder: 0, fieldIds: ['f1', 'f2'] }],
+        fields: [
+          {
+            id: 'f1',
+            key: 'kaytossa',
+            label: 'Käytössä',
+            type: 'boolean',
+            required: false,
+            showOnSummary: true,
+          },
+          {
+            id: 'f2',
+            key: 'maara',
+            label: 'Määrä',
+            type: 'number',
+            required: false,
+            showOnSummary: true,
+            showWhen: { fieldKey: 'kaytossa', operator: 'eq', value: true },
+          },
+        ],
+        updatedAt: 1,
+      }),
+    );
+
+    expect(imported.fields.find((field) => field.id === 'f2')?.showWhen?.value).toBe('true');
+  });
+
   test('rejects invalid payload', () => {
     expect(() => parseImportedFormDefinition('')).toThrow(FormDefinitionImportError);
     expect(() => parseImportedFormDefinition('{')).toThrow(FormDefinitionImportError);
