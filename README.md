@@ -17,15 +17,17 @@ ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen 
 - **Lomakeasetukset:** sivut, globaalit kentät, kenttävaikutusten editori, valintalistat, lasketut kentät (`Laskenta`), tuotelista (`product_select`), kaavavalidointi, kentän kopiointi, debug-laskenta
 - **Järjestelmäkentät:** kesto, hinnat, ALV – suomenkielisillä kaavoilla (`asetukset.*`), palautettavissa oletukseen
 - **Tuotteet:** „Kopioi tuote”, kaavamuuttujat `menekki`, `yksikkohinta`, `tyokerroin`
-- **Puuttuu vielä:** Lomakeasetukset → Esikatselu, Oletusarvot, Ulkoverhous-pohja, lomakepohjan versionvaroitus muokkauksessa
+- **Puuttuu vielä:** Lomakeasetukset → Esikatselu, Oletusarvot, Ulkoverhous-pohja
 - Katso [docs/v1.1-suunnitelma.md](docs/v1.1-suunnitelma.md)
 
 ## v1.2 (käynnissä)
 
-- **Ehdollinen kenttänäkyvyys:** `showWhen` (boolean/select, `eq`/`neq`)
+- **Ehdollinen kenttänäkyvyys:** `showWhen` (boolean/select/number, `eq`/`neq`/`gt`/…)
 - **Kaavafunktiot:** `min`, `max`, `round`, `if` + vertailuoperaattorit
-- **Lomakepohja:** JSON-tuonti/vienti + oletuslomakkeen palautus
-- **Muokkaus:** tallennetun laskelman `fieldValues` palautuu wizardiin
+- **Lomakepohja:** JSON-tuonti/vienti (kiinteä tuontikenttä) + oletuslomakkeen palautus
+- **Muokkaus:** tallennetun laskelman `fieldValues` palautuu wizardiin; versionvaroitus
+- **Kentät:** sijoitus sivulle luonnissa (myös Asiakas); uusi/kopio tallentuu vasta Tallenna
+- **Laskentakenttä:** muokattava numero lomakkeella, live-päivitys kun kaavan syötteet muuttuvat
 - Katso [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md)
 
 ## Kehitysympäristö
@@ -67,6 +69,8 @@ eas build --platform android --profile preview
 ```
 
 Build tapahtuu pilvessä – paikallista Android SDK:ta ei tarvita.
+
+APK: käytä profiilia **preview**. **production** tekee AAB:n Play Storeen. GitHubin uusin `main` on lähde, kun build käynnistetään Expo-sivustolta (**Build from GitHub**).
 
 ## Projektirakenne
 

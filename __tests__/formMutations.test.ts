@@ -4,10 +4,12 @@ import {
   addField,
   addFieldToPage,
   addPage,
+  buildDuplicatedField,
   duplicateField,
   EDITABLE_FIELD_TYPES,
   fieldsAvailableForPage,
   fieldsForPage,
+  insertField,
   isSystemPage,
   moveFieldOnPage,
   movePage,
@@ -119,21 +121,37 @@ describe('formMutations', () => {
     expect(created.type).toBe('number');
   });
 
-  test('addField ignores customer system page', () => {
+  test('addField can assign to the customer page', () => {
     const form = createDefaultFormDefinition();
     const customer = form.pages.find((page) => page.system === 'customer')!;
     const next = addField(form, 'number', customer.id);
     const created = next.fields.at(-1)!;
     expect((next.pages.find((page) => page.id === customer.id)?.fieldIds ?? []).includes(created.id)).toBe(
-      false,
+      true,
     );
+    expect(fieldsForPage(next, customer.id).at(-1)?.id).toBe(created.id);
   });
 
-  test('pagesAssignableForNewField excludes customer page', () => {
+  test('pagesAssignableForNewField includes customer page', () => {
     const form = createDefaultFormDefinition();
     const pages = pagesAssignableForNewField(form);
-    expect(pages.some((page) => page.system === 'customer')).toBe(false);
+    expect(pages.some((page) => page.system === 'customer')).toBe(true);
     expect(pages.some((page) => page.title === 'Pinta-alat')).toBe(true);
+  });
+
+  test('insertField adds a prepared field without persisting side effects', () => {
+    const form = createDefaultFormDefinition();
+    const field = {
+      id: 'field_draft_1',
+      key: 'luonnos',
+      label: 'Luonnos',
+      type: 'text' as const,
+      required: false,
+      showOnSummary: false,
+    };
+    const next = insertField(form, field);
+    expect(next.fields.some((item) => item.id === 'field_draft_1')).toBe(true);
+    expect(form.fields.some((item) => item.id === 'field_draft_1')).toBe(false);
   });
 
   test('uniqueFieldKey avoids collisions', () => {
@@ -351,6 +369,16 @@ describe('formMutations', () => {
     expect(copy.id).not.toBe(source.id);
     expect(copy.key).not.toBe(source.key);
     expect(copy.label).toContain('kopio');
+  });
+
+  test('buildDuplicatedField does not insert into the form', () => {
+    const form = createDefaultFormDefinition();
+    const source = form.fields[0];
+    const copy = buildDuplicatedField(form, source.id);
+    expect(copy).not.toBeNull();
+    expect(copy?.id).not.toBe(source.id);
+    expect(form.fields).toHaveLength(createDefaultFormDefinition().fields.length);
+    expect(form.fields.some((field) => field.id === copy?.id)).toBe(false);
   });
 
   test('duplicateField skips system fields', () => {

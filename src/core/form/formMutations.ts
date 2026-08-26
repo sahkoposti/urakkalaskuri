@@ -180,22 +180,40 @@ export function movePage(form: FormDefinition, pageId: string, direction: -1 | 1
   };
 }
 
-/** Sivut, joille uuden kentän voi sijoittaa (ei asiakas-järjestelmäsivua). */
+/** Sivut, joille uuden kentän voi sijoittaa (myös Asiakas). */
 export function pagesAssignableForNewField(form: FormDefinition): FormPage[] {
-  return sortedPages(form).filter((page) => !isSystemPage(page));
+  return sortedPages(form);
+}
+
+export function insertField(form: FormDefinition, field: FormField, pageId?: string): FormDefinition {
+  const existing = getFieldById(form, field.id);
+  const next: FormDefinition = existing
+    ? updateField(form, field)
+    : {
+        ...form,
+        fields: [...form.fields, field],
+        updatedAt: Date.now(),
+      };
+  if (!pageId) return next;
+  const page = next.pages.find((item) => item.id === pageId);
+  if (!page) return next;
+  return addFieldToPage(next, pageId, field.id);
 }
 
 export function addField(form: FormDefinition, type: FieldType, pageId?: string): FormDefinition {
-  const field = createField(type, form);
-  const next: FormDefinition = {
-    ...form,
-    fields: [...form.fields, field],
-    updatedAt: Date.now(),
+  return insertField(form, createField(type, form), pageId);
+}
+
+export function buildDuplicatedField(form: FormDefinition, fieldId: string): FormField | null {
+  const source = getFieldById(form, fieldId);
+  if (!source || source.systemKey) return null;
+  return {
+    ...source,
+    id: generateId('field'),
+    label: `${source.label} (kopio)`,
+    key: uniqueFieldKey(form, `${source.key}_kopio`),
+    options: source.options?.map((option) => ({ ...option })),
   };
-  if (!pageId) return next;
-  const page = next.pages.find((item) => item.id === pageId);
-  if (!page || isSystemPage(page)) return next;
-  return addFieldToPage(next, pageId, field.id);
 }
 
 export function updateField(form: FormDefinition, updated: FormField): FormDefinition {
@@ -209,24 +227,9 @@ export function updateField(form: FormDefinition, updated: FormField): FormDefin
 }
 
 export function duplicateField(form: FormDefinition, fieldId: string): FormDefinition {
-  const source = getFieldById(form, fieldId);
-  if (!source || source.systemKey) return form;
-
-  const label = `${source.label} (kopio)`;
-  const key = uniqueFieldKey(form, `${source.key}_kopio`);
-  const copy: FormField = {
-    ...source,
-    id: generateId('field'),
-    label,
-    key,
-    options: source.options?.map((option) => ({ ...option })),
-  };
-
-  return {
-    ...form,
-    fields: [...form.fields, copy],
-    updatedAt: Date.now(),
-  };
+  const copy = buildDuplicatedField(form, fieldId);
+  if (!copy) return form;
+  return insertField(form, copy);
 }
 
 export function removeField(form: FormDefinition, fieldId: string): FormDefinition {
