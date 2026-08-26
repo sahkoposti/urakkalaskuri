@@ -180,13 +180,22 @@ export function movePage(form: FormDefinition, pageId: string, direction: -1 | 1
   };
 }
 
-export function addField(form: FormDefinition, type: FieldType): FormDefinition {
+/** Sivut, joille uuden kentän voi sijoittaa (ei asiakas-järjestelmäsivua). */
+export function pagesAssignableForNewField(form: FormDefinition): FormPage[] {
+  return sortedPages(form).filter((page) => !isSystemPage(page));
+}
+
+export function addField(form: FormDefinition, type: FieldType, pageId?: string): FormDefinition {
   const field = createField(type, form);
-  return {
+  const next: FormDefinition = {
     ...form,
     fields: [...form.fields, field],
     updatedAt: Date.now(),
   };
+  if (!pageId) return next;
+  const page = next.pages.find((item) => item.id === pageId);
+  if (!page || isSystemPage(page)) return next;
+  return addFieldToPage(next, pageId, field.id);
 }
 
 export function updateField(form: FormDefinition, updated: FormField): FormDefinition {

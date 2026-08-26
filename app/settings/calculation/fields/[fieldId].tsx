@@ -349,7 +349,8 @@ export default function FormFieldEditorScreen() {
         {isComputed ? (
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>
-              Muokattavissa lomakkeella (manuaalinen arvo ohittaa kaavan kunnes tyhjennetään)
+              Muokattavissa lomakkeella. Manuaalinen arvo säilyy, kunnes kaavan syötteitä muutetaan
+              tai kenttä tyhjennetään.
             </Text>
             <Switch
               value={field.allowManualOverride !== false}
