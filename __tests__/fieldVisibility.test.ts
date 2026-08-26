@@ -68,6 +68,57 @@ function sampleForm(): FormDefinition {
 }
 
 describe('fieldVisibility', () => {
+  test('boolean JSON true/false values do not crash and match kytkin', () => {
+    const form = sampleForm();
+    const metrit = form.fields.find((f) => f.key === 'raystasmetrit')!;
+    metrit.showWhen = {
+      fieldKey: 'raystaan_aluset_ja_otsalaudat',
+      operator: 'eq',
+      value: true as unknown as string,
+    };
+
+    expect(() => isFieldVisible(metrit, { raystaan_aluset_ja_otsalaudat: 'true' }, form)).not.toThrow();
+    expect(isFieldVisible(metrit, { raystaan_aluset_ja_otsalaudat: 'true' }, form)).toBe(true);
+    expect(isFieldVisible(metrit, { raystaan_aluset_ja_otsalaudat: 'false' }, form)).toBe(false);
+    expect(isFieldVisible(metrit, {}, form)).toBe(false);
+
+    metrit.showWhen = {
+      fieldKey: 'raystaan_aluset_ja_otsalaudat',
+      operator: 'eq',
+      value: false as unknown as string,
+    };
+    expect(isFieldVisible(metrit, {}, form)).toBe(true);
+    expect(isFieldVisible(metrit, { raystaan_aluset_ja_otsalaudat: 'true' }, form)).toBe(false);
+  });
+
+  test('numeric JSON 1 in showWhen does not crash', () => {
+    const form = sampleForm();
+    const field = baseField({
+      id: 'f_count',
+      key: 'ikkunat_lkm',
+      label: 'Ikkunat',
+      type: 'number',
+      showWhen: {
+        fieldKey: 'pinta_ala',
+        operator: 'eq',
+        value: 1 as unknown as string,
+      },
+    });
+    form.fields.push(
+      baseField({
+        id: 'f_pinta',
+        key: 'pinta_ala',
+        label: 'Pinta-ala',
+        type: 'number',
+      }),
+      field,
+    );
+
+    expect(() => isFieldVisible(field, { pinta_ala: '1' }, form)).not.toThrow();
+    expect(isFieldVisible(field, { pinta_ala: '1' }, form)).toBe(true);
+    expect(isFieldVisible(field, { pinta_ala: '2' }, form)).toBe(false);
+  });
+
   test('boolean true shows dependent field', () => {
     const form = sampleForm();
     const metrit = form.fields.find((f) => f.key === 'raystasmetrit')!;

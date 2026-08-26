@@ -1,3 +1,4 @@
+import { normalizeVisibilityConditionValue } from '@/src/core/form/fieldVisibility';
 import {
   extractFormulaIdentifiers,
   FORMULA_FUNCTIONS,
@@ -147,12 +148,19 @@ function normalizeFieldKeys(fields: FormField[]): FormField[] {
     const effects = field.effects
       ?.filter((effect) => effect.type !== 'add_material')
       .map((effect) => ({ ...effect }));
+    const showWhen = field.showWhen?.fieldKey
+      ? {
+          ...field.showWhen,
+          value: normalizeVisibilityConditionValue(field.showWhen.value),
+        }
+      : field.showWhen;
     return {
       ...field,
       key,
       type,
       formula: field.formula ? migrateFormulaKeys(field.formula) : field.formula,
       effects: effects && effects.length > 0 ? effects : undefined,
+      showWhen,
     };
   });
 }
