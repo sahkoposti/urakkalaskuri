@@ -249,4 +249,28 @@ describe('fieldVisibility', () => {
     });
     expect(missing).toContain('Räystäsmetrit');
   });
+
+  test('customer page still requires name and validates extra fields', () => {
+    const extra = baseField({
+      id: 'f_extra',
+      key: 'tyomaa',
+      label: 'Työmaa',
+      type: 'text',
+      required: true,
+    });
+    const form = sampleForm();
+    form.fields.push(extra);
+    const customerPage = {
+      id: 'page_customer',
+      title: 'Asiakas',
+      sortOrder: 0,
+      system: 'customer' as const,
+      fieldIds: ['f_extra'],
+    };
+    form.pages.unshift(customerPage);
+
+    expect(validateFormPageWithValues(form, customerPage, {}, '')).toBe('Anna asiakkaan nimi.');
+    expect(validateFormPageWithValues(form, customerPage, {}, 'Matti')).toContain('Työmaa');
+    expect(validateFormPageWithValues(form, customerPage, { tyomaa: 'Talo' }, 'Matti')).toBeNull();
+  });
 });

@@ -497,7 +497,7 @@ export default function WizardScreen() {
                 onNotesChange={setCustomerNotes}
               />
             )}
-            {currentPage && !currentPage.system ? (
+            {currentPage ? (
               <WizardFieldList
                 form={formDefinition}
                 fields={pageFields}

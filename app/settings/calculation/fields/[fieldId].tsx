@@ -1,5 +1,5 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
@@ -18,11 +18,14 @@ import {
 } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import {
+  buildDuplicatedField,
+  createField,
   createSelectOption,
-  duplicateField,
   EDITABLE_FIELD_TYPES,
   FIELD_TYPE_LABELS,
+  generateId,
   getFieldById,
+  insertField,
   pagesUsingField,
   removeField,
   unknownFormulaIdentifiers,
@@ -38,6 +41,11 @@ import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import { AppColors } from '@/src/theme/colors';
+
+function firstParam(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? '';
+  return value ?? '';
+}
 
 function fieldsEqual(a: FormField, b: FormField): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -70,28 +78,69 @@ function applyFieldTypeChange(current: FormField, type: FieldType): FormField {
 }
 
 export default function FormFieldEditorScreen() {
-  const { fieldId } = useLocalSearchParams<{ fieldId: string }>();
+  const params = useLocalSearchParams<{
+    fieldId: string;
+    draft?: string;
+    type?: string;
+    pageId?: string;
+    duplicateFrom?: string;
+  }>();
+  const fieldId = firstParam(params.fieldId);
+  const isDraftParam = firstParam(params.draft) === '1';
+  const createType = firstParam(params.type) as FieldType | '';
+  const assignPageId = firstParam(params.pageId);
+  const duplicateFrom = firstParam(params.duplicateFrom);
   const { ready, formDefinition, formDebug, settings, products, refreshFormSettings } = useApp();
   const { showAlert } = useThemedAlert();
   const [field, setField] = useState<FormField | null>(null);
   const [savedField, setSavedField] = useState<FormField | null>(null);
   const [draftForm, setDraftForm] = useState(formDefinition);
   const [deleteVisible, setDeleteVisible] = useState(false);
+  const draftInitRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!ready) return;
+    if (isDraftParam) {
+      if (draftInitRef.current === fieldId) return;
+      draftInitRef.current = fieldId;
+
+      let created: FormField | null = null;
+      if (duplicateFrom) {
+        const copy = buildDuplicatedField(formDefinition, duplicateFrom);
+        created = copy ? { ...copy, id: fieldId } : null;
+      } else if (EDITABLE_FIELD_TYPES.includes(createType as FieldType)) {
+        created = { ...createField(createType as FieldType, formDefinition), id: fieldId };
+      }
+
+      if (!created) {
+        setField(null);
+        setSavedField(null);
+        setDraftForm(formDefinition);
+        return;
+      }
+
+      setField(created);
+      setSavedField(null);
+      setDraftForm(insertField(formDefinition, created, assignPageId || undefined));
+      return;
+    }
+
+    draftInitRef.current = null;
     const existing = getFieldById(formDefinition, fieldId);
     setField(existing ?? null);
     setSavedField(existing ?? null);
     setDraftForm(formDefinition);
-  }, [formDefinition, fieldId]);
+  }, [ready, formDefinition, fieldId, isDraftParam, createType, assignPageId, duplicateFrom]);
 
   const previewForm = useMemo(() => {
     if (!field) return draftForm;
-    return updateField(draftForm, field);
+    return getFieldById(draftForm, field.id) ? updateField(draftForm, field) : insertField(draftForm, field);
   }, [draftForm, field]);
 
+  const isUnsavedDraft = field !== null && savedField === null;
   const isDirty = useMemo(() => {
-    if (!field || !savedField) return false;
+    if (!field) return false;
+    if (!savedField) return true;
     return !fieldsEqual(field, savedField);
   }, [field, savedField]);
 
@@ -129,7 +178,7 @@ export default function FormFieldEditorScreen() {
       return false;
     }
     if (field.type === 'computed' && field.formula?.trim()) {
-      const unknown = unknownFormulaIdentifiers(formDefinition, field.formula);
+      const unknown = unknownFormulaIdentifiers(previewForm, field.formula);
       if (unknown.length > 0) {
         showAlert('Virhe', `Tuntemattomat muuttujat kaavassa: ${unknown.join(', ')}`);
         return false;
@@ -156,7 +205,9 @@ export default function FormFieldEditorScreen() {
       return false;
     }
 
-    const nextForm = updateField(draftForm, field);
+    const nextForm = getFieldById(draftForm, field.id)
+      ? updateField(draftForm, field)
+      : insertField(draftForm, field, assignPageId || undefined);
     await db.saveFormDefinition(nextForm);
     await refreshFormSettings();
     setSavedField(field);
@@ -191,13 +242,12 @@ export default function FormFieldEditorScreen() {
   }
 
   async function handleDuplicate() {
-    const next = duplicateField(formDefinition, editingField.id);
-    const created = next.fields.at(-1);
-    if (!created) return;
-    await db.saveFormDefinition(next);
-    await refreshFormSettings();
+    if (isUnsavedDraft) return;
+    const copyId = generateId('field');
     allowExit();
-    router.replace(`/settings/calculation/fields/${created.id}`);
+    router.replace(
+      `/settings/calculation/fields/${copyId}?draft=1&duplicateFrom=${editingField.id}` as Href,
+    );
   }
 
   async function handleDelete() {
@@ -220,17 +270,21 @@ export default function FormFieldEditorScreen() {
   const isInputField = editingField.type !== 'computed' && editingField.type !== 'section';
   const isComputed = editingField.type === 'computed';
   const isNumberLike = editingField.type === 'number' || editingField.type === 'computed';
-  const usedOnPages = pagesUsingField(formDefinition, editingField.id);
+  const usedOnPages = pagesUsingField(previewForm, editingField.id);
 
   return (
     <>
       <Stack.Screen options={{ title: editingField.label }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.help}>
-          Kenttä on globaali. Lisää se sivuille kohdasta Lomakeasetukset → Sivut → Valitse kentät.
+          {isUnsavedDraft
+            ? 'Kenttää ei ole vielä tallennettu. Poistuminen ilman tallennusta peruu luonnin.'
+            : 'Kenttä on globaali. Lisää se sivuille kohdasta Lomakeasetukset → Sivut → Valitse kentät.'}
           {usedOnPages.length > 0
             ? ` Näkyy sivuilla: ${usedOnPages.map((page) => page.title).join(', ')}.`
-            : ' Ei vielä millään sivulla.'}
+            : isUnsavedDraft
+              ? ''
+              : ' Ei vielä millään sivulla.'}
         </Text>
 
         {isSystem ? (
@@ -451,10 +505,10 @@ export default function FormFieldEditorScreen() {
         ) : null}
 
         <PrimaryButton title="Tallenna" onPress={handleSave} />
-        {!isSystem ? (
+        {!isSystem && !isUnsavedDraft ? (
           <OutlinedButton title="Kopioi kenttä" onPress={() => void handleDuplicate()} />
         ) : null}
-        {!isSystem ? (
+        {!isSystem && !isUnsavedDraft ? (
           <OutlinedButton title="Poista kenttä" onPress={() => setDeleteVisible(true)} />
         ) : null}
       </ScrollView>

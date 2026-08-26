@@ -28,11 +28,8 @@ export function validateFormPageWithValues(
   customerName = '',
   products: Product[] = [],
 ): string | null {
-  if (page.system === 'customer') {
-    if (!customerName.trim()) {
-      return 'Anna asiakkaan nimi.';
-    }
-    return null;
+  if (page.system === 'customer' && !customerName.trim()) {
+    return 'Anna asiakkaan nimi.';
   }
   for (const field of fieldsForPage(form, page.id)) {
     if (field.type === 'section' || field.type === 'computed' || isSystemField(field)) {
