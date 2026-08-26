@@ -130,7 +130,14 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
 
   for (const field of pipelineFieldOrder(form)) {
     if (field.type === 'section') continue;
-    if (!isFieldVisible(field, visibilityValues, form)) continue;
+    if (!isFieldVisible(field, visibilityValues, form)) {
+      // Piilotettu numero on kaavoissa 0, jotta esim. kolmannen sävyn menekki
+      // ei kaada if(... > 2, kolmas_savy_menekki, 0) -laskentaa.
+      if (field.type === 'number') {
+        context[field.key] = 0;
+      }
+      continue;
+    }
 
     if (isProductField(field)) {
       if (useDebugExamples) {
