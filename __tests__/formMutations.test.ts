@@ -11,6 +11,7 @@ import {
   isSystemPage,
   moveFieldOnPage,
   movePage,
+  pagesAssignableForNewField,
   removeField,
   removePage,
   slugifyKey,
@@ -96,6 +97,43 @@ describe('formMutations', () => {
     expect(created?.type).toBe('select');
     expect(created?.options?.length).toBe(1);
     expect(created?.options?.[0].value).toBe('1');
+  });
+
+  test('addField without page keeps field off all pages', () => {
+    const form = createDefaultFormDefinition();
+    const next = addField(form, 'number');
+    const created = next.fields.at(-1)!;
+    expect(next.pages.every((page) => !(page.fieldIds ?? []).includes(created.id))).toBe(true);
+  });
+
+  test('addField with pageId appends field to the end of that page', () => {
+    const form = createDefaultFormDefinition();
+    const page = form.pages.find((item) => item.title === 'Pinta-alat')!;
+    const previous = fieldsForPage(form, page.id);
+    const next = addField(form, 'number', page.id);
+    const assigned = fieldsForPage(next, page.id);
+    const created = next.fields.at(-1)!;
+
+    expect(assigned).toHaveLength(previous.length + 1);
+    expect(assigned.at(-1)?.id).toBe(created.id);
+    expect(created.type).toBe('number');
+  });
+
+  test('addField ignores customer system page', () => {
+    const form = createDefaultFormDefinition();
+    const customer = form.pages.find((page) => page.system === 'customer')!;
+    const next = addField(form, 'number', customer.id);
+    const created = next.fields.at(-1)!;
+    expect((next.pages.find((page) => page.id === customer.id)?.fieldIds ?? []).includes(created.id)).toBe(
+      false,
+    );
+  });
+
+  test('pagesAssignableForNewField excludes customer page', () => {
+    const form = createDefaultFormDefinition();
+    const pages = pagesAssignableForNewField(form);
+    expect(pages.some((page) => page.system === 'customer')).toBe(false);
+    expect(pages.some((page) => page.title === 'Pinta-alat')).toBe(true);
   });
 
   test('uniqueFieldKey avoids collisions', () => {

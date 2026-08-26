@@ -46,11 +46,7 @@ export function WizardFieldList({
           const computed = computedValues[field.key];
           const canOverride = field.allowManualOverride !== false;
           const computedText =
-            computed !== undefined && Number.isFinite(computed)
-              ? field.unit === '€'
-                ? formatCurrency(computed)
-                : formatDecimal(computed)
-              : '';
+            computed !== undefined && Number.isFinite(computed) ? formatDecimal(computed) : '';
           const overrideRaw = fieldValues[field.key];
           const isOverridden = overrideRaw !== undefined && overrideRaw.trim() !== '';
 
@@ -67,16 +63,17 @@ export function WizardFieldList({
                 />
                 {isOverridden ? (
                   <Text style={styles.overrideHint}>
-                    Manuaalinen arvo – tyhjennä kenttä palauttaaksesi kaavan
+                    Manuaalinen arvo – tyhjennä kenttä tai muuta kaavan syötteitä palauttaaksesi
+                    laskennan
                   </Text>
                 ) : null}
               </View>
             );
           }
 
-          const display = computedText
+          const display = computed !== undefined && Number.isFinite(computed)
             ? field.unit === '€'
-              ? computedText
+              ? formatCurrency(computed)
               : `${computedText}${field.unit ? ` ${field.unit}` : ''}`
             : '–';
           return (

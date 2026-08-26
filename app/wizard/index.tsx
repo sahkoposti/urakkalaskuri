@@ -25,6 +25,7 @@ import {
   previewFormContext,
   runFormCalculation,
 } from '@/src/core/calculation/calculationPipeline';
+import { applyFieldValueChange } from '@/src/core/form/applyFieldValueChange';
 import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
 import {
   formVersionMismatchMessage,
@@ -504,15 +505,7 @@ export default function WizardScreen() {
                 computedValues={computedValues}
                 products={products}
                 onChange={(key, value) =>
-                  setFieldValues((current) => {
-                    if (!value.trim()) {
-                      if (!(key in current)) return current;
-                      const next = { ...current };
-                      delete next[key];
-                      return next;
-                    }
-                    return { ...current, [key]: value };
-                  })
+                  setFieldValues((current) => applyFieldValueChange(formDefinition, current, key, value))
                 }
               />
             ) : null}

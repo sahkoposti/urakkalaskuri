@@ -363,7 +363,7 @@ describe('runFormCalculation', () => {
     expect(preview.materiaalit).toBeCloseTo(context.materiaalit, 2);
   });
 
-  test('manual override on computed field persists over live recalculation', () => {
+  test('manual override in fieldValues wins until the override key is removed', () => {
     const form = defaultForm();
     const baseValues = {
       kiintea_seinapinta_ala_m2: '120',
@@ -383,19 +383,6 @@ describe('runFormCalculation', () => {
       defaultSettings,
     );
     expect(overridden.laskenta_seinapinta_ala_m2).toBe(200);
-
-    const afterInputChange = previewFormContext(
-      form,
-      {
-        ...baseValues,
-        kiintea_seinapinta_ala_m2: '200',
-        laskenta_seinapinta_ala_m2: '200',
-      },
-      [],
-      [],
-      defaultSettings,
-    );
-    expect(afterInputChange.laskenta_seinapinta_ala_m2).toBe(200);
 
     const cleared = previewFormContext(
       form,
