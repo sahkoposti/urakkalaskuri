@@ -1,7 +1,17 @@
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { OutlinedButton, SectionTitle } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
@@ -95,29 +105,40 @@ export default function CalculationSettingsScreen() {
         animationType="fade"
         onRequestClose={() => setImportVisible(false)}
       >
-        <View style={styles.modalBackdrop}>
-          <Pressable style={styles.modalDismiss} onPress={() => setImportVisible(false)} />
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Tuo lomakepohja</Text>
-            <Text style={styles.modalHelp}>
-              Liitä aiemmin viety FormDefinition-JSON. Nykyinen lomakepohja korvataan.
-            </Text>
-            <TextInput
-              style={styles.importInput}
-              value={importText}
-              onChangeText={setImportText}
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder='{"name":"…","pages":[],"fields":[]}'
-              placeholderTextColor={AppColors.border}
-            />
-            <View style={styles.modalActions}>
-              <OutlinedButton title="Peruuta" onPress={() => setImportVisible(false)} />
-              <OutlinedButton title="Tuo" onPress={() => void handleImport()} />
+        <KeyboardAvoidingView
+          style={styles.modalAvoid}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalBackdrop}>
+            <Pressable style={styles.modalDismiss} onPress={() => setImportVisible(false)} />
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Tuo lomakepohja</Text>
+              <Text style={styles.modalHelp}>
+                Liitä aiemmin viety FormDefinition-JSON. Nykyinen lomakepohja korvataan.
+              </Text>
+              <View style={styles.importInputWrap}>
+                <TextInput
+                  style={styles.importInput}
+                  value={importText}
+                  onChangeText={setImportText}
+                  multiline
+                  scrollEnabled
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder='{"name":"…","pages":[],"fields":[]}'
+                  placeholderTextColor={AppColors.border}
+                />
+              </View>
+              {importText.trim() ? (
+                <Text style={styles.importMeta}>JSON liitetty ({importText.length} merkkiä)</Text>
+              ) : null}
+              <View style={styles.modalActions}>
+                <OutlinedButton title="Peruuta" onPress={() => setImportVisible(false)} />
+                <OutlinedButton title="Tuo" onPress={() => void handleImport()} />
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <ConfirmDialog
@@ -140,6 +161,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 10,
   },
+  modalAvoid: {
+    flex: 1,
+  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -155,6 +179,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 10,
     maxHeight: '80%',
+    flexShrink: 1,
   },
   modalTitle: {
     fontFamily: 'IBMPlexSans_700Bold',
@@ -167,19 +192,31 @@ const styles = StyleSheet.create({
     color: AppColors.text,
     lineHeight: 20,
   },
-  importInput: {
-    minHeight: 160,
+  importInputWrap: {
+    height: 120,
     borderWidth: 1,
     borderColor: AppColors.border,
     borderRadius: 5,
+    backgroundColor: AppColors.surface,
+    overflow: 'hidden',
+  },
+  importInput: {
+    flex: 1,
+    height: 120,
     padding: 10,
     fontFamily: 'IBMPlexSans_400Regular',
     fontSize: 13,
     color: AppColors.text,
     textAlignVertical: 'top',
-    backgroundColor: AppColors.surface,
+  },
+  importMeta: {
+    fontFamily: 'IBMPlexSans_400Regular',
+    fontSize: 12,
+    color: AppColors.text,
+    opacity: 0.75,
   },
   modalActions: {
     gap: 8,
+    flexShrink: 0,
   },
 });
