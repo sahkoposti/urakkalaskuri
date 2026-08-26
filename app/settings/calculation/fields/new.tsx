@@ -1,8 +1,8 @@
-import { Picker } from '@react-native-picker/picker';
-import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
+import { router, Stack, type Href } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 
+import { AppPicker } from '@/src/components/AppPicker';
 import { PrimaryButton, ScreenLoading } from '@/src/components/common';
 import {
   addField,
@@ -43,18 +43,15 @@ export default function NewFormFieldScreen() {
           sivulle kohdasta Lomakeasetukset → Sivut.
         </Text>
 
-        <View style={styles.pickerWrap}>
-          <Text style={styles.label}>Kenttätyyppi</Text>
-          <Picker selectedValue={type} onValueChange={(value) => setType(value as FieldType)}>
-            {EDITABLE_FIELD_TYPES.map((fieldType) => (
-              <Picker.Item
-                key={fieldType}
-                label={FIELD_TYPE_LABELS[fieldType]}
-                value={fieldType}
-              />
-            ))}
-          </Picker>
-        </View>
+        <AppPicker
+          label="Kenttätyyppi"
+          selectedValue={type}
+          onValueChange={(value) => setType(value as FieldType)}
+          items={EDITABLE_FIELD_TYPES.map((fieldType) => ({
+            value: fieldType,
+            label: FIELD_TYPE_LABELS[fieldType],
+          }))}
+        />
 
         <PrimaryButton title={saving ? 'Luodaan…' : 'Luo kenttä'} onPress={handleCreate} disabled={saving} />
       </ScrollView>
@@ -73,18 +70,5 @@ const styles = StyleSheet.create({
     color: AppColors.text,
     lineHeight: 20,
     marginBottom: 4,
-  },
-  pickerWrap: {
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    marginBottom: 8,
-  },
-  label: {
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.text,
   },
 });

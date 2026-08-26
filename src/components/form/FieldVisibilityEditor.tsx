@@ -1,6 +1,6 @@
-import { Picker } from '@react-native-picker/picker';
 import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
+import { AppPicker } from '@/src/components/AppPicker';
 import {
   isNumericVisibilityOperator,
   isVisibilitySourceField,
@@ -123,42 +123,37 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
 
       {enabled && condition ? (
         <>
-          <View style={styles.pickerWrap}>
-            <Text style={styles.pickerLabel}>Riippuu kentästä</Text>
-            <Picker
-              selectedValue={condition.fieldKey}
-              onValueChange={(value) => handleSourceChange(value)}
-            >
-              {sources.map((item) => (
-                <Picker.Item key={item.id} label={item.label} value={item.key} />
-              ))}
-            </Picker>
-          </View>
+          <AppPicker
+            label="Riippuu kentästä"
+            selectedValue={condition.fieldKey}
+            onValueChange={(value) => handleSourceChange(value)}
+            items={sources.map((item) => ({
+              value: item.key,
+              label: item.label,
+            }))}
+          />
 
-          <View style={styles.pickerWrap}>
-            <Text style={styles.pickerLabel}>Vertailu</Text>
-            <Picker
-              selectedValue={coerceOperator(selectedSource, condition.operator)}
-              onValueChange={(value) =>
-                patch({ operator: value as FieldVisibilityOperator })
-              }
-            >
-              {allowedOperators.map((op) => (
-                <Picker.Item key={op} label={OPERATOR_LABELS[op]} value={op} />
-              ))}
-            </Picker>
-          </View>
+          <AppPicker
+            label="Vertailu"
+            selectedValue={coerceOperator(selectedSource, condition.operator)}
+            onValueChange={(value) => patch({ operator: value as FieldVisibilityOperator })}
+            items={allowedOperators.map((op) => ({
+              value: op,
+              label: OPERATOR_LABELS[op],
+            }))}
+          />
 
-          <View style={styles.pickerWrap}>
-            <Text style={styles.pickerLabel}>Arvo</Text>
+          <View style={styles.valueWrap}>
+            <Text style={styles.valueLabel}>Arvo</Text>
             {selectedSource?.type === 'boolean' ? (
-              <Picker
+              <AppPicker
                 selectedValue={condition.value === 'true' ? 'true' : 'false'}
                 onValueChange={(value) => patch({ value })}
-              >
-                <Picker.Item label="Kyllä" value="true" />
-                <Picker.Item label="Ei" value="false" />
-              </Picker>
+                items={[
+                  { label: 'Kyllä', value: 'true' },
+                  { label: 'Ei', value: 'false' },
+                ]}
+              />
             ) : selectedSource?.type === 'number' ? (
               <View style={styles.numberInputWrap}>
                 <TextInput
@@ -173,18 +168,14 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
                 />
               </View>
             ) : (
-              <Picker
+              <AppPicker
                 selectedValue={condition.value}
                 onValueChange={(value) => patch({ value })}
-              >
-                {(selectedSource?.options ?? []).map((option) => (
-                  <Picker.Item
-                    key={option.value}
-                    label={option.label}
-                    value={option.value}
-                  />
-                ))}
-              </Picker>
+                items={(selectedSource?.options ?? []).map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                }))}
+              />
             )}
           </View>
 
@@ -228,17 +219,10 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexSans_500Medium',
     color: AppColors.text,
   },
-  pickerWrap: {
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    overflow: 'hidden',
+  valueWrap: {
+    gap: 4,
   },
-  pickerLabel: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 2,
+  valueLabel: {
     fontFamily: 'IBMPlexSans_600SemiBold',
     color: AppColors.text,
     fontSize: 14,

@@ -1,6 +1,6 @@
-import { Picker } from '@react-native-picker/picker';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
+import { AppPicker } from '@/src/components/AppPicker';
 import { AppInput, SectionTitle } from '@/src/components/common';
 import { filterVisibleFields } from '@/src/core/form/fieldVisibility';
 import {
@@ -102,21 +102,16 @@ export function WizardFieldList({
               {products.length === 0 ? (
                 <Text style={styles.hint}>Ei tuotteita tuoterekisterissä.</Text>
               ) : (
-                <View style={styles.pickerWrap}>
-                  <Picker
-                    selectedValue={selectedId}
-                    onValueChange={(value) => onChange(field.key, value)}
-                  >
-                    <Picker.Item label="Valitse tuote..." value="" />
-                    {products.map((product) => (
-                      <Picker.Item
-                        key={product.id}
-                        label={`${product.name} (${formatCurrency(product.unitPriceVat0)}/${product.unit})`}
-                        value={product.id}
-                      />
-                    ))}
-                  </Picker>
-                </View>
+                <AppPicker
+                  selectedValue={selectedId}
+                  onValueChange={(value) => onChange(field.key, value)}
+                  placeholder="Valitse tuote..."
+                  allowEmpty
+                  items={products.map((product) => ({
+                    value: product.id,
+                    label: `${product.name} (${formatCurrency(product.unitPriceVat0)}/${product.unit})`,
+                  }))}
+                />
               )}
               {selectedProduct ? (
                 <Text style={styles.productMeta}>
@@ -139,17 +134,16 @@ export function WizardFieldList({
                 {field.label}
                 {field.required ? ' *' : ''}
               </Text>
-              <View style={styles.pickerWrap}>
-                <Picker
-                  selectedValue={fieldValues[field.key] ?? ''}
-                  onValueChange={(value) => onChange(field.key, value)}
-                >
-                  <Picker.Item label="Valitse..." value="" />
-                  {field.options?.map((option) => (
-                    <Picker.Item key={option.value} label={option.label} value={option.value} />
-                  ))}
-                </Picker>
-              </View>
+              <AppPicker
+                selectedValue={fieldValues[field.key] ?? ''}
+                onValueChange={(value) => onChange(field.key, value)}
+                placeholder="Valitse..."
+                allowEmpty
+                items={(field.options ?? []).map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                }))}
+              />
             </View>
           );
         }
@@ -215,14 +209,6 @@ const styles = StyleSheet.create({
     fontFamily: 'IBMPlexSans_400Regular',
     fontSize: 13,
     lineHeight: 18,
-  },
-  pickerWrap: {
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    backgroundColor: AppColors.secondary,
-    marginBottom: 12,
-    overflow: 'hidden',
   },
   switchRow: {
     flexDirection: 'row',

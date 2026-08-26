@@ -1,6 +1,6 @@
-import { Picker } from '@react-native-picker/picker';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { AppPicker } from '@/src/components/AppPicker';
 import { AppInput } from '@/src/components/common';
 import type { FieldEffect, FormDefinition, FormField } from '@/src/core/form/types';
 import { parseNumber } from '@/src/core/utils/formatters';
@@ -154,18 +154,16 @@ export function FieldEffectsEditor({ field, onChange }: FieldEffectsEditorProps)
         })
       )}
 
-      <View style={styles.pickerWrap}>
-        <Text style={styles.pickerLabel}>Lisää vaikutus</Text>
-        <Picker
-          selectedValue=""
-          onValueChange={(value) => value && addEffect(value as FieldEffect['type'])}
-        >
-          <Picker.Item label="Valitse…" value="" />
-          {EFFECT_TYPES.map((item) => (
-            <Picker.Item key={item.type} label={item.label} value={item.type} />
-          ))}
-        </Picker>
-      </View>
+      <AppPicker
+        label="Lisää vaikutus"
+        selectedValue=""
+        placeholder="Valitse…"
+        onValueChange={(value) => value && addEffect(value as FieldEffect['type'])}
+        items={EFFECT_TYPES.map((item) => ({
+          value: item.type,
+          label: item.label,
+        }))}
+      />
     </View>
   );
 }
@@ -233,21 +231,5 @@ const styles = StyleSheet.create({
     color: AppColors.text,
     fontSize: 13,
     marginBottom: 4,
-  },
-  pickerWrap: {
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    overflow: 'hidden',
-    marginBottom: 4,
-  },
-  pickerLabel: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 2,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.text,
-    fontSize: 14,
   },
 });
