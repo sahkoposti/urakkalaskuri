@@ -22,6 +22,17 @@ export function isVisibilitySourceField(field: FormField): boolean {
   return VISIBILITY_SOURCE_TYPES.has(field.type);
 }
 
+/** Onko lomakkeella showWhen-ehto, joka lukee lasketun kentän arvoa. */
+export function formHasComputedShowWhen(form: FormDefinition): boolean {
+  const computedKeys = new Set(
+    form.fields.filter((field) => field.type === 'computed').map((field) => field.key),
+  );
+  if (computedKeys.size === 0) return false;
+  return form.fields.some(
+    (field) => Boolean(field.showWhen?.fieldKey) && computedKeys.has(field.showWhen!.fieldKey),
+  );
+}
+
 /** Operaattorit jotka sopivat riippuvan kentän tyypille. */
 export function operatorsForVisibilitySource(
   source: FormField | undefined,

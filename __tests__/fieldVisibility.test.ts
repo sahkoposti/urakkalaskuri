@@ -1,6 +1,7 @@
 import {
   comparableFieldValue,
   filterVisibleFields,
+  formHasComputedShowWhen,
   isFieldVisible,
   omitHiddenFieldValues,
   visibilityConditionSummary,
@@ -301,6 +302,8 @@ describe('fieldVisibility', () => {
       (item) => item.key,
     );
     expect(visible).toContain('ikkunat_lkm');
+    expect(formHasComputedShowWhen(form)).toBe(true);
+    expect(formHasComputedShowWhen(sampleForm())).toBe(false);
   });
 
   test('visibilityConditionSummary for numeric gt', () => {

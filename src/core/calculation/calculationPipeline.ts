@@ -2,6 +2,7 @@ import {
   applyDurationEffects,
   applyFieldEffects,
   applyMaterialEffects,
+  formHasFieldEffects,
   materialLinesTotal,
 } from '@/src/core/form/fieldEffects';
 import {
@@ -256,7 +257,7 @@ export function resolveFormContextWithEffects(
   return { context, materialLines, groupDurationHours };
 }
 
-/** Live-esikatselu: sama efektiputki kuin loppulaskennassa, soft errors. */
+/** Live-esikatselu: sama tulos kuin finish, ilman turhaa toista kaavakierrosta. */
 export function previewFormContext(
   form: FormDefinition,
   fieldValues: Record<string, string>,
@@ -266,6 +267,16 @@ export function previewFormContext(
   legacyDuration?: string,
 ): Record<string, number> {
   try {
+    if (!formHasFieldEffects(form)) {
+      return evaluateFormContext({
+        form,
+        settings,
+        materialsTotal: materialLinesTotal(materialLines),
+        fieldValues,
+        products,
+        strictSystemFields: false,
+      }).context;
+    }
     return resolveFormContextWithEffects({
       form,
       fieldValues,

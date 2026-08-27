@@ -345,6 +345,20 @@ describe('runFormCalculation', () => {
     expect(form.fields.some((field) => field.key === 'materiaalit_alv0')).toBe(false);
   });
 
+  test('previewFormContext stays correct without field effects', () => {
+    const form = defaultForm();
+    const fieldValues = {
+      kiintea_seinapinta_ala_m2: '120',
+      aukkovahennykset: '18',
+      laudoitustyyppi: '1.15',
+      tyoryhma_kesto_pv: '5',
+    };
+    const preview = previewFormContext(form, fieldValues, [], [], defaultSettings);
+    const full = runProductionPipeline(form, fieldValues, 0, defaultSettings);
+    expect(preview.laskenta_seinapinta_ala_m2).toBeCloseTo(full.laskenta_seinapinta_ala_m2, 5);
+    expect(preview.kokonaishinta).toBeCloseTo(full.kokonaishinta, 5);
+  });
+
   test('previewFormContext matches finish path for system totals', () => {
     const form = defaultForm();
     const fieldValues = { tyoryhma_kesto_pv: '5' };

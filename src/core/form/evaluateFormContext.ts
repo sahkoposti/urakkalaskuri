@@ -1,6 +1,7 @@
 import { pipelineFieldOrder } from '@/src/core/form/formDefinitionHelpers';
 import {
   fieldValuesForVisibility,
+  formHasComputedShowWhen,
   isFieldVisible,
 } from '@/src/core/form/fieldVisibility';
 import {
@@ -134,9 +135,11 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
   const steps: FormContextStep[] = [];
   const errors: string[] = [];
   const visibilityValues = fieldValuesForVisibility(form, fieldValues, useDebugExamples);
+  const orderedFields = pipelineFieldOrder(form);
+  const needsComputedVisibilityPass = formHasComputedShowWhen(form);
 
   const processPass = (visibilityContext: Record<string, number> | undefined, recordTrace: boolean) => {
-    for (const field of pipelineFieldOrder(form)) {
+    for (const field of orderedFields) {
       if (field.type === 'section') continue;
       if (!isFieldVisible(field, visibilityValues, form, new Set(), visibilityContext)) {
         context[field.key] = 0;
@@ -312,8 +315,12 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
     }
   };
 
-  processPass(undefined, false);
-  processPass(context, collectTrace);
+  if (needsComputedVisibilityPass) {
+    processPass(undefined, false);
+    processPass(context, collectTrace);
+  } else {
+    processPass(undefined, collectTrace);
+  }
 
   return { context, steps, errors };
 }

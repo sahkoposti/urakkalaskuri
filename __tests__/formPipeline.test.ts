@@ -32,6 +32,11 @@ describe('evaluateFormula', () => {
     expect(evaluateFormula('sqrt(0.25)', {})).toBeCloseTo(0.5, 5);
   });
 
+  test('evaluates the same formula twice from the token cache', () => {
+    expect(evaluateFormula('sqrt(9) + min(1, 2)', {})).toBe(4);
+    expect(evaluateFormula('sqrt(9) + min(1, 2)', {})).toBe(4);
+  });
+
   test('missing identifiers and division by zero are 0', () => {
     expect(evaluateFormula('julkisivupinnat_valinta * 120', {})).toBe(0);
     expect(evaluateFormula('pinta / kaytettava_maali.menekki', { pinta: 100 })).toBe(0);
