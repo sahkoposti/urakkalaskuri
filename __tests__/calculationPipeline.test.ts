@@ -19,7 +19,7 @@ const paintProduct: Product = {
   name: 'Maali',
   unit: 'l',
   unitPriceVat0: 12,
-  attributes: { consumption: 8 },
+  attributes: { consumption: 8, work_factor: 1 },
   createdAt: new Date(),
 };
 
@@ -78,6 +78,77 @@ describe('runProductionPipeline', () => {
     expect(context['kautettavamaali.yksikkohinta']).toBe(12);
     expect(context['kautettavamaali.consumption']).toBe(8);
     expect(context['kautettavamaali.menekki']).toBe(8);
+    expect(context['kautettavamaali.tyokerroin']).toBe(1);
+    expect(context['kautettavamaali.work_factor']).toBe(1);
+  });
+
+  test('work_factor 1 is not overwritten by leftover tyokerroin 1.25', () => {
+    const form = defaultForm();
+    form.fields.push({
+      id: 'field_paint',
+      key: 'kaytettava_maali',
+      label: 'Maali',
+      type: 'product_select',
+      required: false,
+      showOnSummary: true,
+    });
+    form.fields.push({
+      id: 'field_hours',
+      key: 'maalaus_h',
+      label: 'Maalaus',
+      type: 'computed',
+      required: false,
+      showOnSummary: true,
+      formula: '10 * kaytettava_maali.tyokerroin',
+    });
+
+    const context = runProductionPipeline(
+      form,
+      { kaytettava_maali: 'paint-1', tyoryhma_kesto_pv: '5' },
+      0,
+      defaultSettings,
+      [
+        {
+          ...paintProduct,
+          attributes: { consumption: 8, work_factor: 1, tyokerroin: 1.25 },
+        },
+      ],
+    );
+
+    expect(context['kaytettava_maali.tyokerroin']).toBe(1);
+    expect(context.maalaus_h).toBe(10);
+  });
+
+  test('selected product without work_factor uses tyokerroin 1', () => {
+    const form = defaultForm();
+    form.fields.push({
+      id: 'field_paint',
+      key: 'kaytettava_maali',
+      label: 'Maali',
+      type: 'product_select',
+      required: false,
+      showOnSummary: true,
+    });
+    form.fields.push({
+      id: 'field_hours',
+      key: 'maalaus_h',
+      label: 'Maalaus',
+      type: 'computed',
+      required: false,
+      showOnSummary: true,
+      formula: '10 * kaytettava_maali.tyokerroin',
+    });
+
+    const context = runProductionPipeline(
+      form,
+      { kaytettava_maali: 'paint-1', tyoryhma_kesto_pv: '5' },
+      0,
+      defaultSettings,
+      [{ ...paintProduct, attributes: { consumption: 8 } }],
+    );
+
+    expect(context['kaytettava_maali.tyokerroin']).toBe(1);
+    expect(context.maalaus_h).toBe(10);
   });
 });
 

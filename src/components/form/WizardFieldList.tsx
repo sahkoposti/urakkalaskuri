@@ -11,6 +11,7 @@ import {
 import { isSystemField } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { Product } from '@/src/core/models/types';
+import { productConsumption, productWorkFactor } from '@/src/core/product/productAttributes';
 import { formatCurrency, formatDecimal } from '@/src/core/utils/formatters';
 import { AppColors } from '@/src/theme/colors';
 
@@ -87,6 +88,12 @@ export function WizardFieldList({
         if (isProductField(field)) {
           const selectedId = getSelectedProductId(fieldValues, field.key) ?? '';
           const selectedProduct = findProductById(products, selectedId);
+          const consumption = selectedProduct
+            ? productConsumption(selectedProduct.attributes)
+            : undefined;
+          const workFactor = selectedProduct
+            ? productWorkFactor(selectedProduct.attributes)
+            : undefined;
 
           return (
             <View key={field.id}>
@@ -113,9 +120,8 @@ export function WizardFieldList({
                   {selectedProduct.name}
                   {' · '}
                   {formatCurrency(selectedProduct.unitPriceVat0)}/{selectedProduct.unit}
-                  {selectedProduct.attributes?.consumption !== undefined
-                    ? ` · menekki ${formatDecimal(selectedProduct.attributes.consumption)}`
-                    : ''}
+                  {consumption !== undefined ? ` · menekki ${formatDecimal(consumption)}` : ''}
+                  {` · työkerroin ${formatDecimal(workFactor ?? 1)}`}
                 </Text>
               ) : null}
             </View>
