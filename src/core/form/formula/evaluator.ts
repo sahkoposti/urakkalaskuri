@@ -19,7 +19,23 @@ type Token =
   | { type: 'lparen' }
   | { type: 'rparen' };
 
-function tokenize(expression: string): Token[] {
+const TOKEN_CACHE_LIMIT = 400;
+const tokenCache = new Map<string, Token[]>();
+const identifierCache = new Map<string, string[]>();
+
+function cacheGet<T>(cache: Map<string, T>, key: string, limit: number, build: () => T): T {
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const value = build();
+  if (cache.size >= limit) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
+  }
+  cache.set(key, value);
+  return value;
+}
+
+function tokenizeUncached(expression: string): Token[] {
   const tokens: Token[] = [];
   let i = 0;
   const input = expression.replace(/\s+/g, '');
@@ -108,6 +124,10 @@ function tokenize(expression: string): Token[] {
   }
 
   return tokens;
+}
+
+function tokenize(expression: string): Token[] {
+  return cacheGet(tokenCache, expression, TOKEN_CACHE_LIMIT, () => tokenizeUncached(expression));
 }
 
 function resolveIdentifier(name: string, context: Record<string, number>): number {
@@ -305,8 +325,10 @@ function parsePrimary(tokens: Token[], context: Record<string, number>, pos: num
 }
 
 export function extractFormulaIdentifiers(formula: string): string[] {
-  const matches = formula.match(/[a-zA-Z_äöåÄÖÅ][a-zA-Z0-9_äöåÄÖÅ.]*/g) ?? [];
-  return [...new Set(matches)].filter((ident) => !FORMULA_FUNCTIONS.has(ident));
+  return cacheGet(identifierCache, formula, TOKEN_CACHE_LIMIT, () => {
+    const matches = formula.match(/[a-zA-Z_äöåÄÖÅ][a-zA-Z0-9_äöåÄÖÅ.]*/g) ?? [];
+    return [...new Set(matches)].filter((ident) => !FORMULA_FUNCTIONS.has(ident));
+  });
 }
 
 /** Debug-sijoitus: enintään 2 desimaalia (ei vaikuta laskentaan). */

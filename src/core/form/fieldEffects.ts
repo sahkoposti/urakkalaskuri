@@ -19,6 +19,10 @@ function emptyEffectsResult(): FieldEffectsResult {
   };
 }
 
+export function formHasFieldEffects(form: FormDefinition): boolean {
+  return form.fields.some((field) => Boolean(field.effects?.length));
+}
+
 /**
  * Lukee vaikutuksen numeerisen arvon.
  * Järjestys: litteraali value → quantityRef → kentän oma kontekstiavain (fallbackKey).
@@ -88,6 +92,7 @@ export function applyFieldEffects(
   _products: Product[] = [],
 ): FieldEffectsResult {
   const result = emptyEffectsResult();
+  if (!formHasFieldEffects(form)) return result;
 
   for (const field of pipelineFieldOrder(form)) {
     if (!field.effects?.length) continue;

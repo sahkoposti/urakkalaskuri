@@ -43,6 +43,7 @@ import {
 import { validateFormPageWithValues } from '@/src/core/wizard/wizardPageHelpers';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
+import { useLiveFormContext } from '@/src/hooks/useLiveFormContext';
 import { AppColors } from '@/src/theme/colors';
 
 export default function WizardScreen() {
@@ -197,11 +198,14 @@ export default function WizardScreen() {
     () => (currentPage ? fieldsForPage(formDefinition, currentPage.id) : []),
     [currentPage, formDefinition],
   );
-  const computedValues = useMemo(
-    () =>
-      previewFormContext(formDefinition, fieldValues, draft.lines, products, settings, duration),
-    [formDefinition, fieldValues, draft.lines, products, settings, duration],
-  );
+  const computedValues = useLiveFormContext({
+    form: formDefinition,
+    fieldValues,
+    materialLines: draft.lines,
+    products,
+    settings,
+    legacyDuration: duration,
+  });
   const title = useMemo(
     () => `Laskenta (${step + 1}/${stepCount})`,
     [step, stepCount],
@@ -356,7 +360,7 @@ export default function WizardScreen() {
       fieldValues,
       customerName,
       products,
-      computedValues,
+      previewFormContext(formDefinition, fieldValues, draft.lines, products, settings, duration),
     );
     if (error) {
       showError(error);

@@ -27,7 +27,7 @@ ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen 
 - **Lomakepohja:** JSON-tuonti/vienti (kiinteä tuontikenttä) + oletuslomakkeen palautus
 - **Muokkaus:** tallennetun laskelman `fieldValues` palautuu wizardiin; versionvaroitus
 - **Kentät:** sijoitus sivulle luonnissa (myös Asiakas); uusi/kopio tallentuu vasta Tallenna
-- **Laskentakenttä:** muokattava numero lomakkeella, live-päivitys kun kaavan syötteet muuttuvat
+- **Laskentakenttä:** muokattava numero lomakkeella; livelaskenta ei blokkaa näppäimistöä (lyhyt debounce)
 - Katso [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md)
 
 ## Kehitysympäristö
