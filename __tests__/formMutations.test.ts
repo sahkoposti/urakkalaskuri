@@ -207,7 +207,7 @@ describe('formMutations', () => {
     expect(next.fields.some((field) => field.id === systemField.id)).toBe(true);
   });
 
-  test('UI-hidden system fields stay in form but are excluded from settings lists', () => {
+  test('UI-hidden system fields stay out of settings lists but show when assigned to a page', () => {
     const form = normalizeFormDefinition(createDefaultFormDefinition());
     const hiddenKeys = [
       'kokonaishinta_alv0',
@@ -226,6 +226,7 @@ describe('formMutations', () => {
       false,
     );
 
+    // JSON-tuonti voi sijoittaa nämä sivulle; wizard näyttää sivulle merkityt kentät.
     const pageWithHidden = {
       ...form,
       pages: form.pages.map((page, index) =>
@@ -243,7 +244,7 @@ describe('formMutations', () => {
       ),
     };
     expect(fieldsForPage(pageWithHidden, pageWithHidden.pages[0].id).some((field) => isSystemFieldHiddenFromUi(field))).toBe(
-      false,
+      true,
     );
 
     const margin = form.fields.find((field) => field.systemKey === 'myyntikate_eur')!;
