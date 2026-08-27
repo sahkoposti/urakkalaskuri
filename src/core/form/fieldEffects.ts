@@ -91,7 +91,7 @@ export function applyFieldEffects(
 
   for (const field of pipelineFieldOrder(form)) {
     if (!field.effects?.length) continue;
-    if (!isFieldVisible(field, fieldValues, form)) continue;
+    if (!isFieldVisible(field, fieldValues, form, new Set(), context)) continue;
     for (const effect of field.effects) {
       applyEffect(effect, context, result, field.key);
     }

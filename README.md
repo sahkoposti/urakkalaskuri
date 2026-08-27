@@ -22,8 +22,8 @@ ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen 
 
 ## v1.2 (käynnissä)
 
-- **Ehdollinen kenttänäkyvyys:** `showWhen` (boolean/select/number, `eq`/`neq`/`gt`/…). Piilotettu numerokenttä on kaavoissa `0`. JSON-tuonnin `true`/`1` kelpaa `showWhen.value`:ssa.
-- **Kaavafunktiot:** `min`, `max`, `round`, `if` + vertailuoperaattorit
+- **Ehdollinen kenttänäkyvyys:** `showWhen` (boolean/select/number/computed, `eq`/`neq`/`gt`/…). Piilotettu kenttä on kaavoissa `0`. JSON-tuonnin `true`/`1` kelpaa `showWhen.value`:ssa. Valintalistan `defaultValue` näkyy wizardissa ja menee kaavaan, jos käyttäjä ei ole valinnut.
+- **Kaavafunktiot:** `min`, `max`, `round`, `if`, `sqrt` + vertailuoperaattorit. Puuttuva muuttuja ja jako nollalla ovat `0` (live-laskenta ei heitä).
 - **Lomakepohja:** JSON-tuonti/vienti (kiinteä tuontikenttä) + oletuslomakkeen palautus
 - **Muokkaus:** tallennetun laskelman `fieldValues` palautuu wizardiin; versionvaroitus
 - **Kentät:** sijoitus sivulle luonnissa (myös Asiakas); uusi/kopio tallentuu vasta Tallenna

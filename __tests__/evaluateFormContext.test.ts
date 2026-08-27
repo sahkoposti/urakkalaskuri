@@ -126,7 +126,7 @@ describe('evaluateFormContext hidden number fields', () => {
     expect(context.maalit_yhteensa_litraa).toBe(10);
   });
 
-  test('hidden select is still omitted from context', () => {
+  test('hidden select is 0 in context', () => {
     const extra = field({
       id: 'field_extra',
       key: 'lisavalinta',
@@ -150,7 +150,7 @@ describe('evaluateFormContext hidden number fields', () => {
       },
     });
 
-    expect(context.lisavalinta).toBeUndefined();
+    expect(context.lisavalinta).toBe(0);
   });
 
   test('boolean showWhen value true does not crash preview', () => {
@@ -188,5 +188,157 @@ describe('evaluateFormContext hidden number fields', () => {
         fieldValues: {},
       }),
     ).not.toThrow();
+  });
+});
+
+describe('evaluateFormContext live defaults', () => {
+  test('empty boolean is 0 so formulas do not throw', () => {
+    const toggle = field({
+      id: 'f_toggle',
+      key: 'julkisivupinnat_valinta',
+      label: 'Julkisivu',
+      type: 'boolean',
+    });
+    const area = field({
+      id: 'f_area',
+      key: 'laskenta',
+      label: 'Laskenta',
+      type: 'computed',
+      formula: 'julkisivupinnat_valinta * 120',
+    });
+    const form: FormDefinition = {
+      id: 'live',
+      name: 'Live',
+      version: 1,
+      updatedAt: 0,
+      pages: [{ id: 'p1', title: 'Sivu', sortOrder: 0, fieldIds: [toggle.id, area.id] }],
+      fields: [toggle, area],
+    };
+
+    const { context, errors } = evaluateFormContext({
+      form,
+      settings: defaultSettings,
+      materialsTotal: 0,
+      fieldValues: {},
+      collectTrace: true,
+    });
+
+    expect(errors).toHaveLength(0);
+    expect(context.julkisivupinnat_valinta).toBe(0);
+    expect(context.laskenta).toBe(0);
+  });
+
+  test('select defaultValue is used when the user has not chosen yet', () => {
+    const terrain = field({
+      id: 'f_terrain',
+      key: 'maaston_vaikeusaste',
+      label: 'Maasto',
+      type: 'select',
+      defaultValue: '1.1',
+      options: [
+        { label: 'Tasainen', value: '1' },
+        { label: 'Rinne', value: '1.1' },
+      ],
+    });
+    const hours = field({
+      id: 'f_hours',
+      key: 'tyo_h',
+      label: 'Työ',
+      type: 'computed',
+      formula: '10 * maaston_vaikeusaste',
+    });
+    const form: FormDefinition = {
+      id: 'defaults',
+      name: 'Defaults',
+      version: 1,
+      updatedAt: 0,
+      pages: [{ id: 'p1', title: 'Sivu', sortOrder: 0, fieldIds: [terrain.id, hours.id] }],
+      fields: [terrain, hours],
+    };
+
+    const { context } = evaluateFormContext({
+      form,
+      settings: defaultSettings,
+      materialsTotal: 0,
+      fieldValues: {},
+    });
+
+    expect(context.maaston_vaikeusaste).toBeCloseTo(1.1);
+    expect(context.tyo_h).toBeCloseTo(11);
+  });
+
+  test('computed showWhen reveals number fields on the second pass', () => {
+    const facade = field({
+      id: 'f_facade',
+      key: 'julkisivupinnat_valinta',
+      label: 'Julkisivu',
+      type: 'boolean',
+    });
+    const trim = field({
+      id: 'f_trim',
+      key: 'pieluslaudat_valinta',
+      label: 'Pieluslaudat',
+      type: 'boolean',
+    });
+    const needed = field({
+      id: 'f_needed',
+      key: 'ikkunat_ovet_tarvitaan',
+      label: 'Ikkuna- ja ovitiedot tarvitaan',
+      type: 'computed',
+      formula: 'max(julkisivupinnat_valinta, pieluslaudat_valinta)',
+    });
+    const windows = field({
+      id: 'f_windows',
+      key: 'ikkunat_lkm',
+      label: 'Ikkunat',
+      type: 'number',
+      required: true,
+      showWhen: { fieldKey: 'ikkunat_ovet_tarvitaan', operator: 'eq', value: '1' },
+    });
+    const openings = field({
+      id: 'f_openings',
+      key: 'aukkovahennykset',
+      label: 'Aukot',
+      type: 'computed',
+      formula: 'ikkunat_lkm * 1.5',
+    });
+    const form: FormDefinition = {
+      id: 'showwhen-computed',
+      name: 'ShowWhen',
+      version: 1,
+      updatedAt: 0,
+      pages: [
+        {
+          id: 'p1',
+          title: 'Sivu',
+          sortOrder: 0,
+          fieldIds: [facade.id, trim.id, needed.id, windows.id, openings.id],
+        },
+      ],
+      fields: [facade, trim, needed, windows, openings],
+    };
+
+    const hidden = evaluateFormContext({
+      form,
+      settings: defaultSettings,
+      materialsTotal: 0,
+      fieldValues: { ikkunat_lkm: '16' },
+    });
+    expect(hidden.context.ikkunat_ovet_tarvitaan).toBe(0);
+    expect(hidden.context.ikkunat_lkm).toBe(0);
+    expect(hidden.context.aukkovahennykset).toBe(0);
+
+    const shown = evaluateFormContext({
+      form,
+      settings: defaultSettings,
+      materialsTotal: 0,
+      fieldValues: {
+        julkisivupinnat_valinta: 'true',
+        ikkunat_lkm: '16',
+      },
+    });
+    expect(shown.context.ikkunat_ovet_tarvitaan).toBe(1);
+    expect(shown.context.ikkunat_lkm).toBe(16);
+    expect(shown.context.aukkovahennykset).toBeCloseTo(24);
   });
 });

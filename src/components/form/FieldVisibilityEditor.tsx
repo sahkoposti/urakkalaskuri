@@ -97,9 +97,9 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
     <View style={styles.wrap}>
       <Text style={styles.heading}>Näkyvyysehto</Text>
       <Text style={styles.help}>
-        Piilota kenttä wizardissa kunnes ehto täyttyy. Sopii Kyllä/Ei-, valintalista- ja
-        numerokentille (esim. näytä räystäsmetrit vain jos räystäät = Kyllä, tai lisärivi jos
-        pinta-ala {'>'} 100).
+        Piilota kenttä wizardissa kunnes ehto täyttyy. Sopii Kyllä/Ei-, valintalista-, numero- ja
+        laskentakentille (esim. näytä räystäsmetrit vain jos räystäät = Kyllä, ikkunamäärä jos
+        laskettu ehto = 1, tai lisärivi jos pinta-ala {'>'} 100).
       </Text>
 
       <View style={styles.switchRow}>
@@ -117,7 +117,7 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
 
       {sources.length === 0 ? (
         <Text style={styles.empty}>
-          Lisää ensin Kyllä/Ei-, valintalista- tai numerokenttä, johon ehto voi viitata.
+          Lisää ensin Kyllä/Ei-, valintalista-, numero- tai laskentakenttä, johon ehto voi viitata.
         </Text>
       ) : null}
 
@@ -154,7 +154,7 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
                   { label: 'Ei', value: 'false' },
                 ]}
               />
-            ) : selectedSource?.type === 'number' ? (
+            ) : selectedSource?.type === 'number' || selectedSource?.type === 'computed' ? (
               <View style={styles.numberInputWrap}>
                 <TextInput
                   style={styles.numberInput}

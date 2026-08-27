@@ -27,6 +27,7 @@ export function validateFormPageWithValues(
   fieldValues: Record<string, string>,
   customerName = '',
   products: Product[] = [],
+  numericContext?: Record<string, number>,
 ): string | null {
   if (page.system === 'customer' && !customerName.trim()) {
     return 'Anna asiakkaan nimi.';
@@ -35,11 +36,14 @@ export function validateFormPageWithValues(
     if (field.type === 'section' || field.type === 'computed' || isSystemField(field)) {
       continue;
     }
-    if (!isFieldVisible(field, fieldValues, form)) {
+    if (!isFieldVisible(field, fieldValues, form, new Set(), numericContext)) {
       continue;
     }
 
-    const raw = fieldValues[field.key]?.trim();
+    const raw =
+      fieldValues[field.key]?.trim() ||
+      (field.type === 'select' ? field.defaultValue?.trim() : undefined) ||
+      '';
     if (field.required && !raw) {
       return `${field.label}: kenttä on pakollinen.`;
     }

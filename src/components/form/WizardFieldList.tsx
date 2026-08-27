@@ -31,7 +31,7 @@ export function WizardFieldList({
   products,
   onChange,
 }: WizardFieldListProps) {
-  const visibleFields = filterVisibleFields(fields, fieldValues, form);
+  const visibleFields = filterVisibleFields(fields, fieldValues, form, computedValues);
 
   return (
     <View style={styles.wrap}>
@@ -132,7 +132,7 @@ export function WizardFieldList({
                 {field.required ? ' *' : ''}
               </Text>
               <AppPicker
-                selectedValue={fieldValues[field.key] ?? ''}
+                selectedValue={fieldValues[field.key] ?? field.defaultValue ?? ''}
                 onValueChange={(value) => onChange(field.key, value)}
                 placeholder="Valitse..."
                 allowEmpty

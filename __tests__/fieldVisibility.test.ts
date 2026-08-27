@@ -269,6 +269,40 @@ describe('fieldVisibility', () => {
     expect(isFieldVisible(field, { raystaan_aluset_ja_otsalaudat: 'true' }, form)).toBe(false);
   });
 
+  test('computed showWhen uses numeric context', () => {
+    const needed = baseField({
+      id: 'f_needed',
+      key: 'ikkunat_ovet_tarvitaan',
+      label: 'Ikkuna- ja ovitiedot tarvitaan',
+      type: 'computed',
+      formula: 'max(julkisivu, pielus)',
+    });
+    const windows = baseField({
+      id: 'f_windows',
+      key: 'ikkunat_lkm',
+      label: 'Ikkunat',
+      type: 'number',
+      showWhen: { fieldKey: 'ikkunat_ovet_tarvitaan', operator: 'eq', value: '1' },
+    });
+    const form: FormDefinition = {
+      id: 'computed-vis',
+      name: 'Computed vis',
+      version: 1,
+      updatedAt: 0,
+      pages: [{ id: 'p1', title: 'Sivu', sortOrder: 0, fieldIds: [needed.id, windows.id] }],
+      fields: [needed, windows],
+    };
+
+    expect(isFieldVisible(windows, {}, form)).toBe(false);
+    expect(isFieldVisible(windows, {}, form, new Set(), { ikkunat_ovet_tarvitaan: 0 })).toBe(false);
+    expect(isFieldVisible(windows, {}, form, new Set(), { ikkunat_ovet_tarvitaan: 1 })).toBe(true);
+
+    const visible = filterVisibleFields(form.fields, {}, form, { ikkunat_ovet_tarvitaan: 1 }).map(
+      (item) => item.key,
+    );
+    expect(visible).toContain('ikkunat_lkm');
+  });
+
   test('visibilityConditionSummary for numeric gt', () => {
     const form = sampleForm();
     form.fields.push(
@@ -323,5 +357,15 @@ describe('fieldVisibility', () => {
     expect(validateFormPageWithValues(form, customerPage, {}, '')).toBe('Anna asiakkaan nimi.');
     expect(validateFormPageWithValues(form, customerPage, {}, 'Matti')).toContain('Työmaa');
     expect(validateFormPageWithValues(form, customerPage, { tyomaa: 'Talo' }, 'Matti')).toBeNull();
+  });
+
+  test('required select with defaultValue is valid before the user chooses', () => {
+    const form = sampleForm();
+    const laudoitus = form.fields.find((item) => item.key === 'laudoitustyyppi')!;
+    laudoitus.required = true;
+    laudoitus.defaultValue = '1.15';
+    const page = form.pages[0];
+
+    expect(validateFormPageWithValues(form, page, {})).toBeNull();
   });
 });

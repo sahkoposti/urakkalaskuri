@@ -356,6 +356,7 @@ export default function WizardScreen() {
       fieldValues,
       customerName,
       products,
+      computedValues,
     );
     if (error) {
       showError(error);
