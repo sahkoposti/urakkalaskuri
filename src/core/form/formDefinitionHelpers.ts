@@ -286,8 +286,7 @@ export function fieldsForPage(form: FormDefinition, pageId: string): FormField[]
   if (!page) return [];
   return (page.fieldIds ?? [])
     .map((fieldId) => getFieldById(form, fieldId))
-    .filter((field): field is FormField => field !== undefined)
-    .filter((field) => !isSystemFieldHiddenFromUi(field));
+    .filter((field): field is FormField => field !== undefined);
 }
 
 /** Kentät joita voi lisätä tälle sivulle (ei vielä millään sivulla). */

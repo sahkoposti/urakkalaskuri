@@ -22,12 +22,23 @@ describe('evaluateFormula', () => {
     ).toBe(102);
   });
 
-  test('supports min max round and if with comparisons', () => {
+  test('supports min max round if sqrt and comparisons', () => {
     expect(evaluateFormula('min(10, 3, 7)', {})).toBe(3);
     expect(evaluateFormula('max(10, 3)', {})).toBe(10);
     expect(evaluateFormula('round(1.234, 2)', {})).toBeCloseTo(1.23, 5);
     expect(evaluateFormula('if(pinta_ala > 100, 1.1, 1)', { pinta_ala: 120 })).toBeCloseTo(1.1, 5);
     expect(evaluateFormula('if(kaytossa, 15, 0)', { kaytossa: 0 })).toBe(0);
+    expect(evaluateFormula('sqrt(9)', {})).toBe(3);
+    expect(evaluateFormula('sqrt(0.25)', {})).toBeCloseTo(0.5, 5);
+  });
+
+  test('missing identifiers and division by zero are 0', () => {
+    expect(evaluateFormula('julkisivupinnat_valinta * 120', {})).toBe(0);
+    expect(evaluateFormula('pinta / kaytettava_maali.menekki', { pinta: 100 })).toBe(0);
+  });
+
+  test('sqrt rejects a negative argument', () => {
+    expect(() => evaluateFormula('sqrt(-1)', {})).toThrow('sqrt() ei salli negatiivista lukua');
   });
 });
 

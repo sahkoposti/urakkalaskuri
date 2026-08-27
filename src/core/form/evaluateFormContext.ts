@@ -106,7 +106,7 @@ function findFieldByKey(form: FormDefinition, key: string): FormField | undefine
 
 /**
  * Yhteinen kaavakontekstin laskenta wizardille ja debugille.
- * Yksi silmukka: syötteet → tuotteet → computed (järjestelmäkaavat mukaan lukien).
+ * Syötteet → tuotteet → computed. Toinen kierros huomioi computed-showWhen-ehdot.
  */
 export function evaluateFormContext(options: EvaluateFormContextOptions): EvaluateFormContextResult {
   const {
@@ -124,46 +124,68 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
     [MATERIALS_CONTEXT_KEY]: materialsTotal,
     ...buildSettingsFormulaContext(settings),
   };
+  // Syötekentät alkavat nollasta, jotta tyhjä kytkin/numero ei kaada live-kaavaa.
+  // Computed-kenttiä ei siemennetä, jotta debug voi edelleen raportoida puuttuvat riippuvuudet.
+  for (const field of form.fields) {
+    if (field.type === 'section' || field.type === 'text' || field.type === 'computed') continue;
+    context[field.key] = 0;
+  }
+
   const steps: FormContextStep[] = [];
   const errors: string[] = [];
   const visibilityValues = fieldValuesForVisibility(form, fieldValues, useDebugExamples);
 
-  for (const field of pipelineFieldOrder(form)) {
-    if (field.type === 'section') continue;
-    if (!isFieldVisible(field, visibilityValues, form)) {
-      // Piilotettu numero on kaavoissa 0, jotta esim. kolmannen sävyn menekki
-      // ei kaada if(... > 2, kolmas_savy_menekki, 0) -laskentaa.
-      if (field.type === 'number') {
+  const processPass = (visibilityContext: Record<string, number> | undefined, recordTrace: boolean) => {
+    for (const field of pipelineFieldOrder(form)) {
+      if (field.type === 'section') continue;
+      if (!isFieldVisible(field, visibilityValues, form, new Set(), visibilityContext)) {
         context[field.key] = 0;
+        continue;
       }
-      continue;
-    }
 
-    if (isProductField(field)) {
-      if (useDebugExamples) {
-        const product = findProductById(products, field.debugExampleValue?.trim());
-        if (!product) {
-          if (collectTrace && field.required) {
-            errors.push(`${field.label}: debug-esimerkkiarvo puuttuu`);
+      if (isProductField(field)) {
+        if (useDebugExamples) {
+          const product = findProductById(products, field.debugExampleValue?.trim());
+          if (!product) {
+            if (recordTrace && field.required) {
+              errors.push(`${field.label}: debug-esimerkkiarvo puuttuu`);
+            }
+            continue;
+          }
+          exportProductToContext(field.key, product, context);
+          continue;
+        }
+        exportProductField(field, fieldValues, products, context);
+        continue;
+      }
+
+      if (field.type === 'computed') {
+        const overrideRaw = useDebugExamples ? field.debugExampleValue : fieldValues[field.key];
+        const override =
+          field.allowManualOverride !== false ? parseNumber(overrideRaw?.trim() ?? '') : null;
+
+        if (!field.formula?.trim()) {
+          if (override !== null) {
+            context[field.key] = override;
+            if (recordTrace) {
+              steps.push({
+                fieldKey: field.key,
+                label: field.label,
+                source: 'input',
+                result: override,
+              });
+            }
+            continue;
+          }
+          if (recordTrace) {
+            errors.push(`${field.label}: kaava puuttuu`);
           }
           continue;
         }
-        exportProductToContext(field.key, product, context);
-        continue;
-      }
-      exportProductField(field, fieldValues, products, context);
-      continue;
-    }
 
-    if (field.type === 'computed') {
-      const overrideRaw = useDebugExamples ? field.debugExampleValue : fieldValues[field.key];
-      const override =
-        field.allowManualOverride !== false ? parseNumber(overrideRaw?.trim() ?? '') : null;
-
-      if (!field.formula?.trim()) {
-        if (override !== null) {
+        if (override !== null && !useDebugExamples) {
           context[field.key] = override;
-          if (collectTrace) {
+          if (recordTrace) {
             steps.push({
               fieldKey: field.key,
               label: field.label,
@@ -173,136 +195,125 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
           }
           continue;
         }
-        if (collectTrace) {
-          errors.push(`${field.label}: kaava puuttuu`);
+
+        if (recordTrace) {
+          const missingDeps = missingComputedDependencies(form, field, context);
+          if (missingDeps.length > 0) {
+            const depLabels = missingDeps
+              .map((dep) => findFieldByKey(form, dep)?.label ?? dep)
+              .join(', ');
+            const message = `Odottaa laskettuja kenttiä: ${depLabels}`;
+            errors.push(`${field.label}: ${message}`);
+            steps.push({
+              fieldKey: field.key,
+              label: field.label,
+              source: 'computed',
+              formula: field.formula,
+              result: Number.NaN,
+              error: message,
+            });
+            continue;
+          }
+        }
+
+        try {
+          const substituted = recordTrace ? substituteFormula(field.formula, context) : undefined;
+          const result = evaluateFormula(field.formula, context);
+          context[field.key] = result;
+          if (recordTrace) {
+            steps.push({
+              fieldKey: field.key,
+              label: field.label,
+              source: 'computed',
+              formula: field.formula,
+              substituted,
+              result,
+            });
+          }
+        } catch (error) {
+          const message =
+            error instanceof FormulaEvaluationError
+              ? error.message
+              : error instanceof Error
+                ? error.message
+                : 'Kaavavirhe';
+
+          if (strictSystemFields && isSystemField(field)) {
+            throw new FormulaEvaluationError(`${field.label}: ${message}`);
+          }
+
+          if (recordTrace) {
+            errors.push(`${field.label}: ${message}`);
+            steps.push({
+              fieldKey: field.key,
+              label: field.label,
+              source: 'computed',
+              formula: field.formula,
+              result: Number.NaN,
+              error: message,
+            });
+          }
         }
         continue;
       }
 
-      if (override !== null && !useDebugExamples) {
-        context[field.key] = override;
-        if (collectTrace) {
-          steps.push({
-            fieldKey: field.key,
-            label: field.label,
-            source: 'input',
-            result: override,
-          });
+      if (isSystemField(field)) continue;
+
+      const rawFromValues = useDebugExamples ? field.debugExampleValue : fieldValues[field.key];
+      const raw =
+        rawFromValues?.trim() ||
+        (!useDebugExamples && field.type === 'select' ? field.defaultValue : undefined);
+      const parsed = parseFieldRaw(field, raw);
+      if (parsed === null) {
+        if (recordTrace && useDebugExamples && field.required) {
+          errors.push(`${field.label}: debug-esimerkkiarvo puuttuu`);
         }
         continue;
       }
 
-      if (collectTrace) {
-        const missingDeps = missingComputedDependencies(form, field, context);
-        if (missingDeps.length > 0) {
-          const depLabels = missingDeps
-            .map((dep) => findFieldByKey(form, dep)?.label ?? dep)
-            .join(', ');
-          const message = `Odottaa laskettuja kenttiä: ${depLabels}`;
-          errors.push(`${field.label}: ${message}`);
-          steps.push({
-            fieldKey: field.key,
-            label: field.label,
-            source: 'computed',
-            formula: field.formula,
-            result: Number.NaN,
-            error: message,
-          });
+      if (field.type === 'select') {
+        const option = field.options?.find((item) => item.value === parsed);
+        if (!option) {
+          if (recordTrace) {
+            errors.push(`${field.label}: tuntematon valinta "${parsed}"`);
+          }
           continue;
         }
-      }
-
-      try {
-        const substituted = collectTrace ? substituteFormula(field.formula, context) : undefined;
-        const result = evaluateFormula(field.formula, context);
-        context[field.key] = result;
-        if (collectTrace) {
+        const numericValue = parseNumber(option.value);
+        if (numericValue === null) {
+          if (recordTrace) {
+            errors.push(`${field.label}: valinnan arvo "${option.value}" ei ole numero`);
+          }
+          continue;
+        }
+        context[field.key] = numericValue;
+        if (recordTrace) {
           steps.push({
             fieldKey: field.key,
             label: field.label,
-            source: 'computed',
-            formula: field.formula,
-            substituted,
-            result,
+            source: 'select',
+            result: numericValue,
           });
         }
-      } catch (error) {
-        const message =
-          error instanceof FormulaEvaluationError
-            ? error.message
-            : error instanceof Error
-              ? error.message
-              : 'Kaavavirhe';
+        continue;
+      }
 
-        if (strictSystemFields && isSystemField(field)) {
-          throw new FormulaEvaluationError(`${field.label}: ${message}`);
-        }
-
-        if (collectTrace) {
-          errors.push(`${field.label}: ${message}`);
+      if (typeof parsed === 'number' || typeof parsed === 'boolean') {
+        exportNumericContext(field, parsed, context);
+        if (recordTrace && typeof context[field.key] === 'number') {
           steps.push({
             fieldKey: field.key,
             label: field.label,
-            source: 'computed',
-            formula: field.formula,
-            result: Number.NaN,
-            error: message,
+            source: field.type === 'boolean' ? 'select' : 'input',
+            result: context[field.key]!,
           });
         }
       }
-      continue;
     }
+  };
 
-    if (isSystemField(field)) continue;
-
-    const raw = useDebugExamples ? field.debugExampleValue : fieldValues[field.key];
-    const parsed = parseFieldRaw(field, raw);
-    if (parsed === null) {
-      if (collectTrace && useDebugExamples && field.required) {
-        errors.push(`${field.label}: debug-esimerkkiarvo puuttuu`);
-      }
-      continue;
-    }
-
-    if (field.type === 'select') {
-      const option = field.options?.find((item) => item.value === parsed);
-      if (!option) {
-        if (collectTrace) {
-          errors.push(`${field.label}: tuntematon valinta "${parsed}"`);
-        }
-        continue;
-      }
-      const numericValue = parseNumber(option.value);
-      if (numericValue === null) {
-        if (collectTrace) {
-          errors.push(`${field.label}: valinnan arvo "${option.value}" ei ole numero`);
-        }
-        continue;
-      }
-      context[field.key] = numericValue;
-      if (collectTrace) {
-        steps.push({
-          fieldKey: field.key,
-          label: field.label,
-          source: 'select',
-          result: numericValue,
-        });
-      }
-      continue;
-    }
-
-    if (typeof parsed === 'number') {
-      exportNumericContext(field, parsed, context);
-      if (collectTrace) {
-        steps.push({
-          fieldKey: field.key,
-          label: field.label,
-          source: 'input',
-          result: parsed,
-        });
-      }
-    }
-  }
+  processPass(undefined, false);
+  processPass(context, collectTrace);
 
   return { context, steps, errors };
 }

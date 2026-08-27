@@ -44,7 +44,7 @@ export function FormSummarySection({ form, fieldValues, context, products = [], 
 
   if (!form || !fieldValues || !context) return null;
 
-  const fields = summaryDisplayFields(form, fieldValues);
+  const fields = summaryDisplayFields(form, fieldValues, context);
   if (fields.length === 0) return null;
 
   const fieldById = new Map(fields.map((field) => [field.id, field]));

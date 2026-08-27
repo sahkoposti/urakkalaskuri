@@ -360,7 +360,8 @@ export default function FormFieldEditorScreen() {
             />
             <Text style={styles.formulaHint}>
               Automaattinen muuttuja: {MATERIALS_CONTEXT_KEY} (materiaalit alv0, oletus 0). Funktiot:
-              min(), max(), round(), if(). Vertailut: {'>'} {'<'} {'>='} {'<='} == !=
+              min(), max(), round(), if(), sqrt(). Vertailut: {'>'} {'<'} {'>='} {'<='} == !=.
+              Puuttuva muuttuja on 0.
             </Text>
           </>
         ) : null}

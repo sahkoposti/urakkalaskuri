@@ -6,7 +6,7 @@ export class FormulaEvaluationError extends Error {
 }
 
 /** Sisäänrakennetut kaavafunktiot (eivät ole lomakemuuttujia). */
-export const FORMULA_FUNCTIONS = new Set(['min', 'max', 'round', 'if']);
+export const FORMULA_FUNCTIONS = new Set(['min', 'max', 'round', 'if', 'sqrt']);
 
 type CompareOp = '>' | '<' | '>=' | '<=' | '==' | '!=';
 
@@ -114,7 +114,9 @@ function resolveIdentifier(name: string, context: Record<string, number>): numbe
   if (name in context) {
     return context[name]!;
   }
-  throw new FormulaEvaluationError(`Tuntematon muuttuja: ${name}`);
+  // Puuttuva syöte (kytkin pois, tuote valitsematta, piilotettu kenttä) on 0,
+  // jotta live-laskenta ei heitä poikkeusta joka näppäimellä.
+  return 0;
 }
 
 function applyCompare(op: CompareOp, left: number, right: number): number {
@@ -166,6 +168,16 @@ function callFormulaFunction(name: string, args: number[]): number {
       }
       return args[0]! !== 0 ? args[1]! : args[2]!;
     }
+    case 'sqrt': {
+      if (args.length !== 1) {
+        throw new FormulaEvaluationError('sqrt() ottaa yhden argumentin');
+      }
+      const value = args[0]!;
+      if (value < 0) {
+        throw new FormulaEvaluationError('sqrt() ei salli negatiivista lukua');
+      }
+      return Math.sqrt(value);
+    }
     default:
       throw new FormulaEvaluationError(`Tuntematon funktio: ${name}`);
   }
@@ -214,9 +226,11 @@ function parseMulDiv(tokens: Token[], context: Record<string, number>, pos: numb
     if (op !== '*' && op !== '/') break;
     const [right, nextIndex] = parseUnary(tokens, context, index + 1);
     if (op === '/' && right === 0) {
-      throw new FormulaEvaluationError('Jako nollalla');
+      // Tuote valitsematta tai tyhjä menekki: 0, jotta live-laskenta ei heitä joka näppäimellä.
+      left = 0;
+    } else {
+      left = op === '*' ? left * right : left / right;
     }
-    left = op === '*' ? left * right : left / right;
     index = nextIndex;
   }
 

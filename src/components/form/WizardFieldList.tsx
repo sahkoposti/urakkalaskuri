@@ -8,7 +8,7 @@ import {
   getSelectedProductId,
   isProductField,
 } from '@/src/core/form/productFieldUtils';
-import { isSystemField, isSystemFieldHiddenFromUi } from '@/src/core/form/systemFields';
+import { isSystemField } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { Product } from '@/src/core/models/types';
 import { formatCurrency, formatDecimal } from '@/src/core/utils/formatters';
@@ -31,13 +31,11 @@ export function WizardFieldList({
   products,
   onChange,
 }: WizardFieldListProps) {
-  const visibleFields = filterVisibleFields(fields, fieldValues, form);
+  const visibleFields = filterVisibleFields(fields, fieldValues, form, computedValues);
 
   return (
     <View style={styles.wrap}>
       {visibleFields.map((field) => {
-        if (isSystemFieldHiddenFromUi(field)) return null;
-
         if (field.type === 'section') {
           return <SectionTitle key={field.id} title={field.label} />;
         }
@@ -132,7 +130,7 @@ export function WizardFieldList({
                 {field.required ? ' *' : ''}
               </Text>
               <AppPicker
-                selectedValue={fieldValues[field.key] ?? ''}
+                selectedValue={fieldValues[field.key] ?? field.defaultValue ?? ''}
                 onValueChange={(value) => onChange(field.key, value)}
                 placeholder="Valitse..."
                 allowEmpty

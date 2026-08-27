@@ -6,7 +6,7 @@ import type {
 } from '@/src/core/form/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 
-const VISIBILITY_SOURCE_TYPES = new Set(['boolean', 'select', 'number']);
+const VISIBILITY_SOURCE_TYPES = new Set(['boolean', 'select', 'number', 'computed']);
 
 const EQUALITY_OPERATORS = new Set<FieldVisibilityOperator>(['eq', 'neq']);
 const NUMERIC_OPERATORS = new Set<FieldVisibilityOperator>([
@@ -26,7 +26,7 @@ export function isVisibilitySourceField(field: FormField): boolean {
 export function operatorsForVisibilitySource(
   source: FormField | undefined,
 ): FieldVisibilityOperator[] {
-  if (source?.type === 'number') {
+  if (source?.type === 'number' || source?.type === 'computed') {
     return ['eq', 'neq', 'gt', 'lt', 'gte', 'lte'];
   }
   return ['eq', 'neq'];
@@ -56,7 +56,15 @@ export function comparableFieldValue(
     const trimmed = raw?.trim().toLowerCase() ?? '';
     return trimmed === 'true' || trimmed === '1' || trimmed === 'kyllä' ? 'true' : 'false';
   }
-  return (raw ?? '').trim();
+  const trimmed = (raw ?? '').trim();
+  if (!trimmed && field?.type === 'select' && field.defaultValue?.trim()) {
+    return field.defaultValue.trim();
+  }
+  return trimmed;
+}
+
+function isNumericVisibilitySource(source: FormField | undefined): boolean {
+  return source?.type === 'number' || source?.type === 'computed';
 }
 
 function compareEquality(
@@ -64,7 +72,7 @@ function compareEquality(
   expected: string,
   source: FormField | undefined,
 ): boolean {
-  if (source?.type === 'number') {
+  if (isNumericVisibilitySource(source)) {
     const left = parseNumber(actual);
     const right = parseNumber(expected);
     if (left !== null && right !== null) return left === right;
@@ -102,10 +110,10 @@ function conditionMatches(
   const operator: FieldVisibilityOperator = condition.operator ?? 'eq';
   const expected = normalizeVisibilityConditionValue(condition.value);
 
-  if (source?.type === 'number' && !NUMERIC_OPERATORS.has(operator)) {
+  if (isNumericVisibilitySource(source) && !NUMERIC_OPERATORS.has(operator)) {
     return false;
   }
-  if (source?.type !== 'number' && isNumericVisibilityOperator(operator)) {
+  if (!isNumericVisibilitySource(source) && isNumericVisibilityOperator(operator)) {
     return false;
   }
 
@@ -126,6 +134,7 @@ export function isFieldVisible(
   fieldValues: Record<string, string>,
   form: FormDefinition,
   visiting: Set<string> = new Set(),
+  numericContext?: Record<string, number>,
 ): boolean {
   const condition = field.showWhen;
   if (!condition?.fieldKey) return true;
@@ -134,11 +143,17 @@ export function isFieldVisible(
   visiting.add(field.key);
 
   const dependency = form.fields.find((item) => item.key === condition.fieldKey);
-  if (dependency && !isFieldVisible(dependency, fieldValues, form, visiting)) {
+  if (dependency && !isFieldVisible(dependency, fieldValues, form, visiting, numericContext)) {
     return false;
   }
 
-  const actual = comparableFieldValue(dependency, fieldValues[condition.fieldKey]);
+  const fromContext =
+    dependency?.type === 'computed' &&
+    numericContext &&
+    Object.prototype.hasOwnProperty.call(numericContext, dependency.key)
+      ? String(numericContext[dependency.key])
+      : undefined;
+  const actual = fromContext ?? comparableFieldValue(dependency, fieldValues[condition.fieldKey]);
   return conditionMatches(condition, actual, dependency);
 }
 
@@ -146,19 +161,21 @@ export function filterVisibleFields(
   fields: FormField[],
   fieldValues: Record<string, string>,
   form: FormDefinition,
+  numericContext?: Record<string, number>,
 ): FormField[] {
-  return fields.filter((field) => isFieldVisible(field, fieldValues, form));
+  return fields.filter((field) => isFieldVisible(field, fieldValues, form, new Set(), numericContext));
 }
 
 /** Poistaa piilotettujen kenttien arvot (laskenta / yhteenveto). */
 export function omitHiddenFieldValues(
   form: FormDefinition,
   fieldValues: Record<string, string>,
+  numericContext?: Record<string, number>,
 ): Record<string, string> {
   const next: Record<string, string> = {};
   for (const [key, value] of Object.entries(fieldValues)) {
     const field = form.fields.find((item) => item.key === key);
-    if (!field || isFieldVisible(field, fieldValues, form)) {
+    if (!field || isFieldVisible(field, fieldValues, form, new Set(), numericContext)) {
       next[key] = value;
     }
   }
@@ -209,7 +226,7 @@ export function visibilityConditionSummary(
     valueLabel = expected === 'true' ? 'Kyllä' : 'Ei';
   } else if (dep?.type === 'select') {
     valueLabel = dep.options?.find((option) => option.value === expected)?.label ?? expected;
-  } else if (dep?.type === 'number') {
+  } else if (dep?.type === 'number' || dep?.type === 'computed') {
     valueLabel = expected.trim() || '–';
   }
   return `${label} ${op} ${valueLabel}`;

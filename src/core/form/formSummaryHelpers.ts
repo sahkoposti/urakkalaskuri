@@ -21,7 +21,7 @@ export function formatFieldSummaryValue(
   }
 
   if (field.type === 'select') {
-    const raw = fieldValues[field.key];
+    const raw = fieldValues[field.key]?.trim() || field.defaultValue?.trim();
     if (!raw) return '–';
     return field.options?.find((option) => option.value === raw)?.label ?? raw;
   }
@@ -51,6 +51,7 @@ export function formatFieldSummaryValue(
 export function summaryDisplayFields(
   form: FormDefinition,
   fieldValues: Record<string, string> = {},
+  numericContext?: Record<string, number>,
 ): FormField[] {
   const seen = new Set<string>();
   const fields: FormField[] = [];
@@ -58,7 +59,7 @@ export function summaryDisplayFields(
   for (const page of sortedPages(form)) {
     for (const field of fieldsForPage(form, page.id)) {
       if (field.type === 'section' || isSystemField(field) || !field.showOnSummary) continue;
-      if (!isFieldVisible(field, fieldValues, form)) continue;
+      if (!isFieldVisible(field, fieldValues, form, new Set(), numericContext)) continue;
       if (seen.has(field.id)) continue;
       seen.add(field.id);
       fields.push(field);
@@ -79,7 +80,7 @@ export function buildFormSnapshot(
   for (const page of sortedPages(form)) {
     for (const field of fieldsForPage(form, page.id)) {
       if (field.type === 'section' || isSystemField(field) || !field.showOnSummary) continue;
-      if (!isFieldVisible(field, fieldValues, form)) continue;
+      if (!isFieldVisible(field, fieldValues, form, new Set(), context)) continue;
       fields.push({
         key: field.key,
         label: field.label,

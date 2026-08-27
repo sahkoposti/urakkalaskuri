@@ -30,8 +30,8 @@ export interface FieldEffect {
 
 /**
  * Näkyvyysehto: näytä kenttä jos toisen kentän arvo täyttää vertailun.
- * eq/neq: boolean, select, number
- * gt/lt/gte/lte: number (numeerinen vertailu)
+ * eq/neq: boolean, select, number, computed
+ * gt/lt/gte/lte: number ja computed (numeerinen vertailu)
  */
 export type FieldVisibilityOperator = 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte';
 
@@ -44,7 +44,7 @@ export interface FieldVisibilityCondition {
    * Odotettu raaka-arvo merkkijonona:
    * - boolean: "true" | "false"
    * - select: option.value (esim. "1.15")
-   * - number: desimaali merkkijonona (esim. "10" tai "10,5")
+   * - number / computed: desimaali merkkijonona (esim. "10" tai "10,5")
    * Tuodussa JSON:ssa boolean/number hyväksytään ja muunnetaan merkkijonoksi.
    */
   value: string;
@@ -66,6 +66,8 @@ export interface FormField {
   /** Näytä kenttä vain kun ehto täyttyy; puuttuu = aina näkyvissä */
   showWhen?: FieldVisibilityCondition;
   helpText?: string;
+  /** Wizardissa käytettävä oletus, jos käyttäjä ei ole vielä valinnut (select). */
+  defaultValue?: string;
   /** Debug-tilassa käytettävä esimerkkiarvo (merkkijonona, parsitaan tyypin mukaan) */
   debugExampleValue?: string;
   /** Järjestelmäkenttä (hinta, kesto…) – kaavaa ei voi poistaa */
