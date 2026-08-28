@@ -1,6 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export type ConfirmDialogButton = {
   title: string;
@@ -17,6 +18,7 @@ type ConfirmDialogProps = {
 };
 
 export function ConfirmDialog({ visible, title, message, buttons, onClose }: ConfirmDialogProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
@@ -59,86 +61,88 @@ export function ConfirmDialog({ visible, title, message, buttons, onClose }: Con
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  backdropPressable: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  dialog: {
-    width: '100%',
-    maxWidth: 340,
-    backgroundColor: AppColors.secondary,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontFamily: 'IBMPlexSans_700Bold',
-    color: AppColors.primary,
-  },
-  underline: {
-    marginTop: 8,
-    marginBottom: 12,
-    width: 40,
-    height: 3,
-    backgroundColor: AppColors.accent,
-  },
-  message: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    marginBottom: 20,
-  },
-  buttons: {
-    gap: 10,
-  },
-  buttonBase: {
-    borderRadius: 5,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  buttonPrimary: {
-    backgroundColor: AppColors.accent,
-  },
-  buttonOutlined: {
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.accent,
-  },
-  buttonDestructive: {
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.accent,
-  },
-  buttonPressed: {
-    opacity: 0.9,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-  },
-  buttonTextPrimary: {
-    color: AppColors.secondary,
-  },
-  buttonTextOutlined: {
-    color: AppColors.accent,
-  },
-  buttonTextDestructive: {
-    color: AppColors.accent,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.45)',
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+      padding: 24,
+    },
+    backdropPressable: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    dialog: {
+      width: '100%' as const,
+      maxWidth: 340,
+      backgroundColor: colors.secondary,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 20,
+      shadowColor: '#000',
+      shadowOpacity: 0.15,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 8,
+    },
+    title: {
+      fontSize: 20,
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.primary,
+    },
+    underline: {
+      marginTop: 8,
+      marginBottom: 12,
+      width: 40,
+      height: 3,
+      backgroundColor: colors.accent,
+    },
+    message: {
+      fontSize: 15,
+      lineHeight: 22,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      marginBottom: 20,
+    },
+    buttons: {
+      gap: 10,
+    },
+    buttonBase: {
+      borderRadius: 5,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      alignItems: 'center' as const,
+    },
+    buttonPrimary: {
+      backgroundColor: colors.accent,
+    },
+    buttonOutlined: {
+      backgroundColor: colors.secondary,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    buttonDestructive: {
+      backgroundColor: colors.secondary,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    buttonPressed: {
+      opacity: 0.9,
+    },
+    buttonText: {
+      fontSize: 16,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+    },
+    buttonTextPrimary: {
+      color: colors.secondary,
+    },
+    buttonTextOutlined: {
+      color: colors.accent,
+    },
+    buttonTextDestructive: {
+      color: colors.accent,
+    },
+  };
+}

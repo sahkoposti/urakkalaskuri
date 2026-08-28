@@ -5,19 +5,8 @@ export interface AppSettings {
   defaultHourlyRate: number;
   defaultCrewSize: number;
   workdayHours: number;
-  wizardStepOrder: WizardStepId[];
   theme: ThemeSettings;
 }
-
-export type WizardStepId = 'customer' | 'duration' | 'materials';
-
-export const DEFAULT_WIZARD_STEP_ORDER: WizardStepId[] = ['customer', 'duration', 'materials'];
-
-export const WIZARD_STEP_META: Record<WizardStepId, { title: string }> = {
-  customer: { title: 'Asiakas' },
-  duration: { title: 'Työryhmän arvioitu kesto (pv)' },
-  materials: { title: 'Materiaalit' },
-};
 
 export type CustomerType = 'private' | 'business';
 
@@ -46,7 +35,6 @@ export const defaultSettings: AppSettings = {
   defaultHourlyRate: 30,
   defaultCrewSize: 2,
   workdayHours: 8,
-  wizardStepOrder: [...DEFAULT_WIZARD_STEP_ORDER],
   theme: { ...defaultThemeSettings },
 };
 

@@ -1,6 +1,6 @@
 import { router, Stack, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AppInput, OutlinedButton, PrimaryButton, ScreenLoading } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
@@ -18,9 +18,11 @@ import type { FormDefinition, FormPage } from '@/src/core/form/types';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function FormPagesSettingsScreen() {
+  const styles = useThemedStyles(createStyles);
   const { ready, formDefinition, refreshFormSettings } = useApp();
   const { showAlert } = useThemedAlert();
   const [draft, setDraft] = useState<FormDefinition>(formDefinition);
@@ -154,82 +156,84 @@ export default function FormPagesSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-    gap: 12,
-  },
-  helpText: {
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-    marginBottom: 4,
-    lineHeight: 20,
-  },
-  row: {
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    padding: 12,
-    gap: 8,
-  },
-  rowMain: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  index: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    color: AppColors.accent,
-    width: 24,
-    marginTop: 28,
-  },
-  rowFields: {
-    flex: 1,
-    gap: 8,
-  },
-  fieldCount: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 13,
-    marginTop: -4,
-    marginBottom: 4,
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingLeft: 32,
-  },
-  moveButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: AppColors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: AppColors.secondary,
-  },
-  moveButtonDisabled: {
-    opacity: 0.35,
-  },
-  moveButtonText: {
-    color: AppColors.accent,
-    fontSize: 18,
-    fontFamily: 'IBMPlexSans_700Bold',
-    lineHeight: 20,
-  },
-  deleteButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  deleteButtonText: {
-    color: AppColors.accent,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    fontSize: 14,
-  },
-  buttons: {
-    marginTop: 8,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+      gap: 12,
+    },
+    helpText: {
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_400Regular',
+      marginBottom: 4,
+      lineHeight: 20,
+    },
+    row: {
+      backgroundColor: colors.secondary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      padding: 12,
+      gap: 8,
+    },
+    rowMain: {
+      flexDirection: 'row' as const,
+      gap: 8,
+    },
+    index: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.accent,
+      width: 24,
+      marginTop: 28,
+    },
+    rowFields: {
+      flex: 1,
+      gap: 8,
+    },
+    fieldCount: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 13,
+      marginTop: -4,
+      marginBottom: 4,
+    },
+    actions: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 8,
+      paddingLeft: 32,
+    },
+    moveButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      backgroundColor: colors.secondary,
+    },
+    moveButtonDisabled: {
+      opacity: 0.35,
+    },
+    moveButtonText: {
+      color: colors.accent,
+      fontSize: 18,
+      fontFamily: 'IBMPlexSans_700Bold',
+      lineHeight: 20,
+    },
+    deleteButton: {
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+    },
+    deleteButtonText: {
+      color: colors.accent,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 14,
+    },
+    buttons: {
+      marginTop: 8,
+    },
+  };
+}

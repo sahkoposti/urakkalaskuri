@@ -2,7 +2,7 @@
 
 ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen laskentaan (Android).
 
-Nykyinen versio on **v1.2**. Suunnitelma: [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md).
+Nykyinen versio on **v1.2** (`app.json` / `package.json` 1.2.0). Suunnitelma: [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md).
 
 ## Ominaisuudet
 
@@ -15,6 +15,8 @@ Nykyinen versio on **v1.2**. Suunnitelma: [docs/v1.2-suunnitelma.md](docs/v1.2-s
 - Lomakepohjan JSON-tuonti/vienti + oletuslomakkeen palautus
 - Historia (paikallinen SQLite) + `form_snapshot`; muokkaus palauttaa `fieldValues`; versionvaroitus
 - Asetukset (ALV, kate 35 %, palkkio 7 %, tuntihinta 30 €/h)
+- **Teema:** korostus-, pää-, teksti- ja pintaväri sekä taustakuva (URI) vaikuttavat UI:hin
+- Kentän ohjeteksti näkyy wizardissa kentän alla
 - Hinnat `formatCurrency`-funktiolla (tasan 2 desimaalia)
 - ColoRajaton-brändi (colorajaton.fi)
 
@@ -75,8 +77,7 @@ src/
   theme/          # ColoRajaton-värit
 docs/
   v1.2-suunnitelma.md   # Nykyinen suunnitelma
-  archive/              # v1 ja v1.1 (ei päivitetä)
-  colorajaton-css-extract.txt
+  archive/              # v1, v1.1 ja brändi-CSS-kaappaus
 __tests__/        # Yksikkötestit
 ```
 

@@ -7,10 +7,11 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Animated, StyleSheet, Text } from 'react-native';
+import { Animated, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 const TOAST_DURATION_MS = 2000;
 
@@ -21,6 +22,7 @@ type SaveToastContextValue = {
 const SaveToastContext = createContext<SaveToastContextValue | null>(null);
 
 export function SaveToastProvider({ children }: { children: ReactNode }) {
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState('Tallennettu');
@@ -106,24 +108,26 @@ export function useSaveToast() {
   return context;
 }
 
-const styles = StyleSheet.create({
-  toast: {
-    position: 'absolute',
-    alignSelf: 'center',
-    zIndex: 300,
-    elevation: 300,
-    backgroundColor: AppColors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  toastText: {
-    color: AppColors.secondary,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    fontSize: 14,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    toast: {
+      position: 'absolute' as const,
+      alignSelf: 'center' as const,
+      zIndex: 300,
+      elevation: 300,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+    },
+    toastText: {
+      color: colors.secondary,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 14,
+    },
+  };
+}

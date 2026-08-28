@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
 import {
@@ -32,9 +32,11 @@ import {
 import { formatCurrency, formatDecimal, formatPercent } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function HistoryDetailScreen() {
+  const styles = useThemedStyles(createStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { showAlert } = useThemedAlert();
   const { formDefinition } = useApp();
@@ -276,57 +278,59 @@ export default function HistoryDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-    gap: 12,
-  },
-  versionWarning: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: AppColors.accent,
-    borderRadius: 5,
-    backgroundColor: AppColors.surface,
-    gap: 6,
-  },
-  versionWarningTitle: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    fontSize: 15,
-    color: AppColors.accent,
-  },
-  versionWarningText: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 13,
-    lineHeight: 20,
-    color: AppColors.text,
-  },
-  actions: {
-    marginTop: 8,
-  },
-  card: {
-    marginTop: 8,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: AppColors.border,
-    marginVertical: 8,
-  },
-  lineCard: {
-    marginBottom: 0,
-  },
-  lineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  lineText: {
-    flex: 1,
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-  },
-  linePrice: {
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.primary,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+      gap: 12,
+    },
+    versionWarning: {
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderRadius: 5,
+      backgroundColor: colors.surface,
+      gap: 6,
+    },
+    versionWarningTitle: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 15,
+      color: colors.accent,
+    },
+    versionWarningText: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      lineHeight: 20,
+      color: colors.text,
+    },
+    actions: {
+      marginTop: 8,
+    },
+    card: {
+      marginTop: 8,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: 8,
+    },
+    lineCard: {
+      marginBottom: 0,
+    },
+    lineRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 8,
+    },
+    lineText: {
+      flex: 1,
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_400Regular',
+    },
+    linePrice: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.primary,
+    },
+  };
+}

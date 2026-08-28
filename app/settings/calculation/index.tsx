@@ -26,9 +26,13 @@ import { normalizeFormDefinition } from '@/src/core/form/formDefinitionHelpers';
 import { db, useApp } from '@/src/context/AppContext';
 import { useSaveToast } from '@/src/context/SaveToastContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useAppColors } from '@/src/theme/ThemeContext';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function CalculationSettingsScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useAppColors();
   const { formDefinition, refreshFormSettings } = useApp();
   const { showAlert } = useThemedAlert();
   const { showSaved } = useSaveToast();
@@ -126,7 +130,7 @@ export default function CalculationSettingsScreen() {
                   autoCapitalize="none"
                   autoCorrect={false}
                   placeholder='{"name":"…","pages":[],"fields":[]}'
-                  placeholderTextColor={AppColors.border}
+                  placeholderTextColor={colors.border}
                 />
               </View>
               {importText.trim() ? (
@@ -155,68 +159,70 @@ export default function CalculationSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-    gap: 10,
-  },
-  modalAvoid: {
-    flex: 1,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalDismiss: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  modalCard: {
-    backgroundColor: AppColors.secondary,
-    borderRadius: 8,
-    padding: 16,
-    gap: 10,
-    maxHeight: '80%',
-    flexShrink: 1,
-  },
-  modalTitle: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    fontSize: 18,
-    color: AppColors.primary,
-  },
-  modalHelp: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 13,
-    color: AppColors.text,
-    lineHeight: 20,
-  },
-  importInputWrap: {
-    height: 120,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    backgroundColor: AppColors.surface,
-    overflow: 'hidden',
-  },
-  importInput: {
-    flex: 1,
-    height: 120,
-    padding: 10,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 13,
-    color: AppColors.text,
-    textAlignVertical: 'top',
-  },
-  importMeta: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 12,
-    color: AppColors.text,
-    opacity: 0.75,
-  },
-  modalActions: {
-    gap: 8,
-    flexShrink: 0,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+      gap: 10,
+    },
+    modalAvoid: {
+      flex: 1,
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center' as const,
+      padding: 20,
+    },
+    modalDismiss: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    modalCard: {
+      backgroundColor: colors.secondary,
+      borderRadius: 8,
+      padding: 16,
+      gap: 10,
+      maxHeight: '80%' as const,
+      flexShrink: 1,
+    },
+    modalTitle: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 18,
+      color: colors.primary,
+    },
+    modalHelp: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      color: colors.text,
+      lineHeight: 20,
+    },
+    importInputWrap: {
+      height: 120,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      backgroundColor: colors.surface,
+      overflow: 'hidden' as const,
+    },
+    importInput: {
+      flex: 1,
+      height: 120,
+      padding: 10,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      color: colors.text,
+      textAlignVertical: 'top' as const,
+    },
+    importMeta: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 12,
+      color: colors.text,
+      opacity: 0.75,
+    },
+    modalActions: {
+      gap: 8,
+      flexShrink: 0,
+    },
+  };
+}

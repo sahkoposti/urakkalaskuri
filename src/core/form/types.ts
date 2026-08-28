@@ -15,7 +15,6 @@ export interface SelectOption {
 
 export interface FieldEffect {
   type:
-    | 'set_variable'
     | 'add_material' // legacy, ohitetaan
     | 'multiply_duration'
     | 'add_duration'

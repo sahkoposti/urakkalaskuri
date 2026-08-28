@@ -8,7 +8,8 @@ import {
   View,
 } from 'react-native';
 
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 import { pickerDisplayLabel, type AppPickerItem } from '@/src/components/pickerDisplayLabel';
 
 export type { AppPickerItem };
@@ -32,6 +33,7 @@ export function AppPicker({
   placeholder = 'Valitse...',
   allowEmpty = false,
 }: AppPickerProps) {
+  const styles = useThemedStyles(createStyles);
   const [open, setOpen] = useState(false);
   const display = pickerDisplayLabel(items, selectedValue, placeholder);
   const hasSelection = items.some((item) => item.value === selectedValue);
@@ -102,90 +104,92 @@ export function AppPicker({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    marginBottom: 8,
-  },
-  label: {
-    marginBottom: 6,
-    paddingHorizontal: 0,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.text,
-    fontSize: 14,
-  },
-  closed: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    backgroundColor: AppColors.secondary,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  closedPressed: {
-    opacity: 0.85,
-  },
-  closedText: {
-    flex: 1,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 16,
-  },
-  placeholderText: {
-    color: '#999',
-  },
-  chevron: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.accent,
-    fontSize: 16,
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  backdropPressable: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  sheet: {
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '70%',
-    backgroundColor: AppColors.secondary,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    paddingVertical: 8,
-  },
-  sheetTitle: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    color: AppColors.primary,
-    fontSize: 16,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  list: {
-    flexGrow: 0,
-  },
-  option: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  optionPressed: {
-    backgroundColor: AppColors.surface,
-  },
-  optionText: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 16,
-  },
-  optionTextSelected: {
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.accent,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    wrap: {
+      marginBottom: 8,
+    },
+    label: {
+      marginBottom: 6,
+      paddingHorizontal: 0,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.text,
+      fontSize: 14,
+    },
+    closed: {
+      minHeight: 48,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      backgroundColor: colors.secondary,
+      paddingHorizontal: 12,
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 8,
+    },
+    closedPressed: {
+      opacity: 0.85,
+    },
+    closedText: {
+      flex: 1,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 16,
+    },
+    placeholderText: {
+      color: '#999',
+    },
+    chevron: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.accent,
+      fontSize: 16,
+    },
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.45)',
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+      padding: 24,
+    },
+    backdropPressable: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    sheet: {
+      width: '100%' as const,
+      maxWidth: 400,
+      maxHeight: '70%' as const,
+      backgroundColor: colors.secondary,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 8,
+    },
+    sheetTitle: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.primary,
+      fontSize: 16,
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 8,
+    },
+    list: {
+      flexGrow: 0,
+    },
+    option: {
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+    },
+    optionPressed: {
+      backgroundColor: colors.surface,
+    },
+    optionText: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 16,
+    },
+    optionTextSelected: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.accent,
+    },
+  };
+}

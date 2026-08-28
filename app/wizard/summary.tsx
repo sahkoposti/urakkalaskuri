@@ -1,5 +1,5 @@
 import { router, Stack } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
 import {
@@ -23,9 +23,11 @@ import {
 import { formatCurrency, formatDecimal, formatPercent } from '@/src/core/utils/formatters';
 import { createId } from '@/src/core/utils/id';
 import { db, useApp } from '@/src/context/AppContext';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function SummaryScreen() {
+  const styles = useThemedStyles(createStyles);
   const { wizardSession, formDefinition, products, refreshCalculations, refreshWizardDraft, setWizardSession } = useApp();
 
   if (!wizardSession) {
@@ -178,19 +180,20 @@ export default function SummaryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-    gap: 16,
-  },
-  card: {
-    marginTop: 8,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: AppColors.border,
-    marginVertical: 8,
-  },
-});
-
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+      gap: 16,
+    },
+    card: {
+      marginTop: 8,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: 8,
+    },
+  };
+}

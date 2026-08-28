@@ -1,7 +1,8 @@
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 import { AppInput, SectionTitle } from '@/src/components/common';
+import { visibleHelpText } from '@/src/core/form/fieldHelpText';
 import { filterVisibleFields } from '@/src/core/form/fieldVisibility';
 import {
   findProductById,
@@ -13,7 +14,9 @@ import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { Product } from '@/src/core/models/types';
 import { productConsumption, productWorkFactor } from '@/src/core/product/productAttributes';
 import { formatCurrency, formatDecimal } from '@/src/core/utils/formatters';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useAppColors } from '@/src/theme/ThemeContext';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 type WizardFieldListProps = {
   form: FormDefinition;
@@ -32,6 +35,8 @@ export function WizardFieldList({
   products,
   onChange,
 }: WizardFieldListProps) {
+  const styles = useThemedStyles(createStyles);
+  const colors = useAppColors();
   const visibleFields = filterVisibleFields(fields, fieldValues, form, computedValues);
 
   return (
@@ -40,6 +45,8 @@ export function WizardFieldList({
         if (field.type === 'section') {
           return <SectionTitle key={field.id} title={field.label} />;
         }
+
+        const help = visibleHelpText(field.helpText);
 
         if (field.type === 'computed') {
           const computed = computedValues[field.key];
@@ -66,6 +73,7 @@ export function WizardFieldList({
                     laskennan
                   </Text>
                 ) : null}
+                {help ? <Text style={styles.hint}>{help}</Text> : null}
               </View>
             );
           }
@@ -79,6 +87,7 @@ export function WizardFieldList({
             <View key={field.id} style={styles.readOnlyField}>
               <Text style={styles.inputLabel}>{field.label}</Text>
               <Text style={styles.readOnlyValue}>{display}</Text>
+              {help ? <Text style={styles.hint}>{help}</Text> : null}
             </View>
           );
         }
@@ -124,6 +133,7 @@ export function WizardFieldList({
                   {` · työkerroin ${formatDecimal(workFactor ?? 1)}`}
                 </Text>
               ) : null}
+              {help ? <Text style={styles.hint}>{help}</Text> : null}
             </View>
           );
         }
@@ -145,6 +155,7 @@ export function WizardFieldList({
                   label: option.label,
                 }))}
               />
+              {help ? <Text style={styles.hint}>{help}</Text> : null}
             </View>
           );
         }
@@ -152,82 +163,89 @@ export function WizardFieldList({
         if (field.type === 'boolean') {
           const checked = fieldValues[field.key] === 'true';
           return (
-            <View key={field.id} style={styles.switchRow}>
-              <Text style={styles.inputLabel}>{field.label}</Text>
-              <Switch
-                value={checked}
-                onValueChange={(value) => onChange(field.key, value ? 'true' : 'false')}
-                trackColor={{ true: AppColors.accent, false: AppColors.border }}
-              />
+            <View key={field.id}>
+              <View style={styles.switchRow}>
+                <Text style={styles.inputLabel}>{field.label}</Text>
+                <Switch
+                  value={checked}
+                  onValueChange={(value) => onChange(field.key, value ? 'true' : 'false')}
+                  trackColor={{ true: colors.accent, false: colors.border }}
+                />
+              </View>
+              {help ? <Text style={styles.hint}>{help}</Text> : null}
             </View>
           );
         }
 
         const label = `${field.label}${field.required ? ' *' : ''}${field.unit ? ` (${field.unit})` : ''}`;
         return (
-          <AppInput
-            key={field.id}
-            label={label}
-            value={fieldValues[field.key] ?? ''}
-            onChangeText={(value) => onChange(field.key, value)}
-            keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
-            placeholder={field.type === 'number' ? 'Esim. 120' : undefined}
-            multiline={field.type === 'text' && Boolean(field.helpText)}
-          />
+          <View key={field.id}>
+            <AppInput
+              label={label}
+              value={fieldValues[field.key] ?? ''}
+              onChangeText={(value) => onChange(field.key, value)}
+              keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
+              placeholder={field.type === 'number' ? 'Esim. 120' : undefined}
+              multiline={field.type === 'text'}
+            />
+            {help ? <Text style={styles.hint}>{help}</Text> : null}
+          </View>
         );
       })}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    gap: 4,
-  },
-  inputLabel: {
-    marginBottom: 6,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.text,
-  },
-  hint: {
-    marginBottom: 12,
-    color: AppColors.text,
-    opacity: 0.75,
-    fontFamily: 'IBMPlexSans_400Regular',
-  },
-  overrideHint: {
-    marginTop: -8,
-    marginBottom: 12,
-    color: AppColors.text,
-    opacity: 0.7,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 12,
-  },
-  productMeta: {
-    marginTop: -4,
-    marginBottom: 12,
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  readOnlyField: {
-    marginBottom: 12,
-  },
-  readOnlyValue: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    backgroundColor: AppColors.secondary,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    wrap: {
+      gap: 4,
+    },
+    inputLabel: {
+      marginBottom: 6,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.text,
+    },
+    hint: {
+      marginBottom: 12,
+      color: colors.text,
+      opacity: 0.75,
+      fontFamily: 'IBMPlexSans_400Regular',
+    },
+    overrideHint: {
+      marginTop: -8,
+      marginBottom: 12,
+      color: colors.text,
+      opacity: 0.7,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 12,
+    },
+    productMeta: {
+      marginTop: -4,
+      marginBottom: 12,
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    switchRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      marginBottom: 12,
+    },
+    readOnlyField: {
+      marginBottom: 12,
+    },
+    readOnlyValue: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      backgroundColor: colors.secondary,
+    },
+  };
+}

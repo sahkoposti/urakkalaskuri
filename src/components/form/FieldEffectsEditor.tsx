@@ -1,10 +1,12 @@
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 import { AppInput } from '@/src/components/common';
 import type { FieldEffect, FormDefinition, FormField } from '@/src/core/form/types';
 import { parseNumber } from '@/src/core/utils/formatters';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useAppColors } from '@/src/theme/ThemeContext';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 const EFFECT_TYPES: { type: FieldEffect['type']; label: string }[] = [
   { type: 'add_material_fixed', label: 'Lisää materiaaleihin' },
@@ -70,7 +72,11 @@ type FieldEffectsEditorProps = {
 };
 
 export function FieldEffectsEditor({ field, onChange }: FieldEffectsEditorProps) {
-  const effects = (field.effects ?? []).filter((effect) => effect.type !== 'add_material');
+  const styles = useThemedStyles(createStyles);
+  const colors = useAppColors();
+  const effects = (field.effects ?? []).filter(
+    (effect) => effect.type !== 'add_material' && (effect.type as string) !== 'set_variable',
+  );
 
   function updateEffect(index: number, patch: Partial<FieldEffect>) {
     onChange(effects.map((effect, i) => (i === index ? { ...effect, ...patch } : effect)));
@@ -124,7 +130,7 @@ export function FieldEffectsEditor({ field, onChange }: FieldEffectsEditorProps)
                   <Switch
                     value={fieldValueMode}
                     onValueChange={(value) => setUseFieldValue(index, value)}
-                    trackColor={{ true: AppColors.accent, false: AppColors.border }}
+                    trackColor={{ true: colors.accent, false: colors.border }}
                   />
                 </View>
               ) : null}
@@ -168,68 +174,70 @@ export function FieldEffectsEditor({ field, onChange }: FieldEffectsEditorProps)
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    marginTop: 8,
-    marginBottom: 12,
-    gap: 8,
-  },
-  heading: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    fontSize: 16,
-    color: AppColors.primary,
-  },
-  help: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  empty: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-  },
-  card: {
-    backgroundColor: AppColors.surface,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    padding: 8,
-    gap: 4,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  cardTitle: {
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.primary,
-    fontSize: 14,
-  },
-  removeText: {
-    color: AppColors.accent,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    fontSize: 13,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 4,
-  },
-  switchLabel: {
-    flex: 1,
-    fontFamily: 'IBMPlexSans_500Medium',
-    color: AppColors.text,
-    fontSize: 13,
-  },
-  fieldHint: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 13,
-    marginBottom: 4,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    wrap: {
+      marginTop: 8,
+      marginBottom: 12,
+      gap: 8,
+    },
+    heading: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 16,
+      color: colors.primary,
+    },
+    help: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    empty: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      padding: 8,
+      gap: 4,
+    },
+    cardHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      marginBottom: 4,
+    },
+    cardTitle: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.primary,
+      fontSize: 14,
+    },
+    removeText: {
+      color: colors.accent,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 13,
+    },
+    switchRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      gap: 12,
+      marginBottom: 4,
+    },
+    switchLabel: {
+      flex: 1,
+      fontFamily: 'IBMPlexSans_500Medium',
+      color: colors.text,
+      fontSize: 13,
+    },
+    fieldHint: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 13,
+      marginBottom: 4,
+    },
+  };
+}

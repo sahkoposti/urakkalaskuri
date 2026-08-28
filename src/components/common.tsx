@@ -2,16 +2,18 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
+  type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { SymbolView } from 'expo-symbols';
 
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useAppColors } from '@/src/theme/ThemeContext';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 type BrandLogoProps = {
   width?: number;
@@ -51,6 +53,7 @@ type SectionTitleProps = {
 };
 
 export function SectionTitle({ title, center = false }: SectionTitleProps) {
+  const styles = useThemedStyles(createCommonStyles);
   return (
     <View style={[styles.sectionTitleWrap, center && styles.centerAlign]}>
       <Text style={[styles.sectionTitle, center && styles.centerText]}>{title}</Text>
@@ -62,10 +65,11 @@ export function SectionTitle({ title, center = false }: SectionTitleProps) {
 type AppCardProps = {
   children: React.ReactNode;
   onPress?: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 export function AppCard({ children, onPress, style }: AppCardProps) {
+  const styles = useThemedStyles(createCommonStyles);
   if (onPress) {
     return (
       <Pressable
@@ -95,6 +99,9 @@ export function ResultRow({
   copyValue,
   onCopy,
 }: ResultRowProps) {
+  const styles = useThemedStyles(createCommonStyles);
+  const colors = useAppColors();
+
   async function handleCopy() {
     const text = copyValue ?? value;
     if (text === '–') return;
@@ -118,7 +125,7 @@ export function ResultRow({
             accessibilityLabel={`Kopioi ${label}`}
             hitSlop={8}
           >
-            <SymbolView name="doc.on.doc" size={14} tintColor={AppColors.accent} />
+            <SymbolView name="doc.on.doc" size={14} tintColor={colors.accent} />
           </Pressable>
         ) : null}
       </View>
@@ -168,6 +175,7 @@ type PressableButtonProps = {
 };
 
 function PressableButton({ title, onPress, disabled, variant }: PressableButtonProps) {
+  const styles = useThemedStyles(createCommonStyles);
   return (
     <Pressable
       onPress={onPress}
@@ -210,6 +218,7 @@ export function AppInput({
   placeholder,
   compact = false,
 }: AppInputProps) {
+  const styles = useThemedStyles(createCommonStyles);
   return (
     <View style={[styles.inputWrap, compact && styles.inputWrapCompact]}>
       <Text style={[styles.inputLabel, compact && styles.inputLabelCompact]}>{label}</Text>
@@ -232,14 +241,17 @@ export function AppInput({
 }
 
 export function ScreenLoading() {
+  const styles = useThemedStyles(createCommonStyles);
+  const colors = useAppColors();
   return (
     <View style={styles.loadingWrap}>
-      <ActivityIndicator size="large" color={AppColors.accent} />
+      <ActivityIndicator size="large" color={colors.accent} />
     </View>
   );
 }
 
 export function ScreenMessage({ message }: { message: string }) {
+  const styles = useThemedStyles(createCommonStyles);
   return (
     <View style={styles.loadingWrap}>
       <Text style={styles.messageText}>{message}</Text>
@@ -247,156 +259,158 @@ export function ScreenMessage({ message }: { message: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  sectionTitleWrap: {
-    marginBottom: 8,
-  },
-  centerAlign: {
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontFamily: 'IBMPlexSans_700Bold',
-    color: AppColors.primary,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  sectionUnderline: {
-    marginTop: 8,
-    width: 40,
-    height: 3,
-    backgroundColor: AppColors.accent,
-  },
-  card: {
-    backgroundColor: AppColors.secondary,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  cardPressed: {
-    opacity: 0.92,
-  },
-  resultRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingVertical: 6,
-  },
-  resultLabel: {
-    flex: 1.5,
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_500Medium',
-  },
-  resultHighlight: {
-    fontFamily: 'IBMPlexSans_700Bold',
-  },
-  resultValue: {
-    flexShrink: 1,
-    textAlign: 'right',
-    color: AppColors.primary,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-  },
-  resultValueWrap: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 6,
-  },
-  copyButton: {
-    padding: 2,
-  },
-  copyButtonPressed: {
-    opacity: 0.6,
-  },
-  resultValueHighlight: {
-    color: AppColors.accent,
-    fontFamily: 'IBMPlexSans_700Bold',
-  },
-  buttonBase: {
-    borderRadius: 5,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  primaryButton: {
-    backgroundColor: AppColors.accent,
-  },
-  outlinedButton: {
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.accent,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonPressed: {
-    opacity: 0.9,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-  },
-  primaryButtonText: {
-    color: AppColors.secondary,
-  },
-  outlinedButtonText: {
-    color: AppColors.accent,
-  },
-  inputWrap: {
-    marginBottom: 12,
-  },
-  inputWrapCompact: {
-    marginBottom: 8,
-  },
-  inputLabel: {
-    marginBottom: 6,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.text,
-  },
-  inputLabelCompact: {
-    marginBottom: 4,
-    fontSize: 14,
-  },
-  input: {
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.primary,
-  },
-  inputCompact: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 15,
-  },
-  inputMultiline: {
-    minHeight: 90,
-    textAlignVertical: 'top',
-  },
-  inputMultilineCompact: {
-    minHeight: 64,
-    paddingVertical: 8,
-  },
-  loadingWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  messageText: {
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-    textAlign: 'center',
-  },
-});
+function createCommonStyles(colors: AppColorPalette) {
+  return {
+    sectionTitleWrap: {
+      marginBottom: 8,
+    },
+    centerAlign: {
+      alignItems: 'center' as const,
+    },
+    sectionTitle: {
+      fontSize: 24,
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.primary,
+    },
+    centerText: {
+      textAlign: 'center' as const,
+    },
+    sectionUnderline: {
+      marginTop: 8,
+      width: 40,
+      height: 3,
+      backgroundColor: colors.accent,
+    },
+    card: {
+      backgroundColor: colors.secondary,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    cardPressed: {
+      opacity: 0.92,
+    },
+    resultRow: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between' as const,
+      gap: 12,
+      paddingVertical: 6,
+    },
+    resultLabel: {
+      flex: 1.5,
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_500Medium',
+    },
+    resultHighlight: {
+      fontFamily: 'IBMPlexSans_700Bold',
+    },
+    resultValue: {
+      flexShrink: 1,
+      textAlign: 'right' as const,
+      color: colors.primary,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+    },
+    resultValueWrap: {
+      flex: 1,
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'flex-end' as const,
+      gap: 6,
+    },
+    copyButton: {
+      padding: 2,
+    },
+    copyButtonPressed: {
+      opacity: 0.6,
+    },
+    resultValueHighlight: {
+      color: colors.accent,
+      fontFamily: 'IBMPlexSans_700Bold',
+    },
+    buttonBase: {
+      borderRadius: 5,
+      paddingHorizontal: 32,
+      paddingVertical: 16,
+      alignItems: 'center' as const,
+    },
+    primaryButton: {
+      backgroundColor: colors.accent,
+    },
+    outlinedButton: {
+      backgroundColor: colors.secondary,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    buttonDisabled: {
+      opacity: 0.5,
+    },
+    buttonPressed: {
+      opacity: 0.9,
+    },
+    buttonText: {
+      fontSize: 16,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+    },
+    primaryButtonText: {
+      color: colors.secondary,
+    },
+    outlinedButtonText: {
+      color: colors.accent,
+    },
+    inputWrap: {
+      marginBottom: 12,
+    },
+    inputWrapCompact: {
+      marginBottom: 8,
+    },
+    inputLabel: {
+      marginBottom: 6,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.text,
+    },
+    inputLabelCompact: {
+      marginBottom: 4,
+      fontSize: 14,
+    },
+    input: {
+      backgroundColor: colors.secondary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.primary,
+    },
+    inputCompact: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      fontSize: 15,
+    },
+    inputMultiline: {
+      minHeight: 90,
+      textAlignVertical: 'top' as const,
+    },
+    inputMultilineCompact: {
+      minHeight: 64,
+      paddingVertical: 8,
+    },
+    loadingWrap: {
+      flex: 1,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      padding: 24,
+    },
+    messageText: {
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_400Regular',
+      textAlign: 'center' as const,
+    },
+  };
+}

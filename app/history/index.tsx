@@ -1,14 +1,16 @@
 import { router } from 'expo-router';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Text, View } from 'react-native';
 
 import { AppCard, ScreenLoading, ScreenMessage } from '@/src/components/common';
 import { customerFromRecord } from '@/src/core/models/types';
 import { formatDisplayPrice } from '@/src/core/utils/priceDisplay';
 import { formatDate } from '@/src/core/utils/formatters';
 import { useApp } from '@/src/context/AppContext';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function HistoryScreen() {
+  const styles = useThemedStyles(createStyles);
   const { ready, calculations } = useApp();
 
   if (!ready) return <ScreenLoading />;
@@ -42,31 +44,33 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    padding: 16,
-  },
-  separator: {
-    height: 8,
-  },
-  title: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    fontSize: 16,
-    color: AppColors.primary,
-  },
-  subtitle: {
-    marginTop: 4,
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-  },
-  price: {
-    marginTop: 8,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.primary,
-  },
-  date: {
-    marginTop: 4,
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    list: {
+      padding: 16,
+    },
+    separator: {
+      height: 8,
+    },
+    title: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 16,
+      color: colors.primary,
+    },
+    subtitle: {
+      marginTop: 4,
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_400Regular',
+    },
+    price: {
+      marginTop: 8,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.primary,
+    },
+    date: {
+      marginTop: 4,
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_400Regular',
+    },
+  };
+}

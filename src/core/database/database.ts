@@ -8,7 +8,6 @@ import type {
   PersistedWizardDraft,
   Product,
   ThemeSettings,
-  WizardStepId,
 } from '../models/types';
 import { defaultSettings, defaultThemeSettings } from '../models/types';
 import { parseProductAttributesJson } from '../product/productAttributes';
@@ -17,7 +16,6 @@ import { normalizeFormDefinition } from '../form/formDefinitionHelpers';
 import { bumpFormVersion } from '../form/formVersion';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
 import { defaultFormDebugSettings } from '../form/types';
-import { normalizeWizardStepOrder } from '../wizard/wizardSteps';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -58,6 +56,8 @@ async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
   if (!productColumns.some((column) => column.name === 'attributes')) {
     await db.execAsync('ALTER TABLE products ADD COLUMN attributes TEXT');
   }
+
+  await db.runAsync('DELETE FROM settings WHERE key = ?', 'wizard_step_order');
 }
 
 async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -138,7 +138,6 @@ const defaultSettingRows: Record<string, string> = {
   default_hourly_rate: String(defaultSettings.defaultHourlyRate),
   default_crew_size: String(defaultSettings.defaultCrewSize),
   workday_hours: String(defaultSettings.workdayHours),
-  wizard_step_order: JSON.stringify(defaultSettings.wizardStepOrder),
   theme_accent_color: defaultSettings.theme.accentColor,
   theme_primary_color: defaultSettings.theme.primaryColor,
   theme_text_color: defaultSettings.theme.textColor,
@@ -146,16 +145,6 @@ const defaultSettingRows: Record<string, string> = {
   theme_background_image_uri: defaultSettings.theme.backgroundImageUri,
   theme_background_opacity: String(defaultSettings.theme.backgroundOpacity),
 };
-
-function parseWizardStepOrder(raw?: string): WizardStepId[] {
-  if (!raw) return [...defaultSettings.wizardStepOrder];
-  try {
-    const parsed = JSON.parse(raw) as WizardStepId[];
-    return normalizeWizardStepOrder(parsed);
-  } catch {
-    return [...defaultSettings.wizardStepOrder];
-  }
-}
 
 function parseThemeSettings(map: Record<string, string>): ThemeSettings {
   return {
@@ -236,7 +225,6 @@ export async function getSettings(): Promise<AppSettings> {
     ),
     defaultCrewSize: Number.parseInt(map.default_crew_size ?? String(defaultSettings.defaultCrewSize), 10),
     workdayHours: Number.parseFloat(map.workday_hours ?? String(defaultSettings.workdayHours)),
-    wizardStepOrder: parseWizardStepOrder(map.wizard_step_order),
     theme: parseThemeSettings(map),
   };
 }
@@ -250,7 +238,6 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
     default_hourly_rate: String(settings.defaultHourlyRate),
     default_crew_size: String(settings.defaultCrewSize),
     workday_hours: String(settings.workdayHours),
-    wizard_step_order: JSON.stringify(normalizeWizardStepOrder(settings.wizardStepOrder)),
     theme_accent_color: settings.theme.accentColor,
     theme_primary_color: settings.theme.primaryColor,
     theme_text_color: settings.theme.textColor,

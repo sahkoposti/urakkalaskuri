@@ -1,6 +1,6 @@
 import type { FormDefinition } from '@/src/core/form/types';
 
-/** v1 wizard + esimerkkikentät modulaarisen laskennan debuggausta varten */
+/** Oletuslomake (Peruslaskenta) – esimerkkikentät modulaarisen laskennan debuggausta varten */
 export function createDefaultFormDefinition(): FormDefinition {
   const userFields = [
     {

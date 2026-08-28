@@ -1,14 +1,18 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, Switch, Text, View } from 'react-native';
 
 import { AppCard, PrimaryButton, ScreenLoading } from '@/src/components/common';
 import type { FormDebugSettings } from '@/src/core/form/types';
 import { db, useApp } from '@/src/context/AppContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useAppColors } from '@/src/theme/ThemeContext';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function FormDebugSettingsScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useAppColors();
   const { ready, formDebug, refreshFormSettings } = useApp();
   const [debug, setDebug] = useState<FormDebugSettings>(formDebug);
 
@@ -59,7 +63,7 @@ export default function FormDebugSettingsScreen() {
             <Switch
               value={debug.enabled}
               onValueChange={(enabled) => setDebug((current) => ({ ...current, enabled }))}
-              trackColor={{ true: AppColors.accent, false: AppColors.border }}
+              trackColor={{ true: colors.accent, false: colors.border }}
             />
           </View>
         </AppCard>
@@ -75,7 +79,7 @@ export default function FormDebugSettingsScreen() {
               onValueChange={(showIntermediateSteps) =>
                 setDebug((current) => ({ ...current, showIntermediateSteps }))
               }
-              trackColor={{ true: AppColors.accent, false: AppColors.border }}
+              trackColor={{ true: colors.accent, false: colors.border }}
             />
           </View>
         </AppCard>
@@ -87,32 +91,34 @@ export default function FormDebugSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-    gap: 12,
-  },
-  card: {
-    marginTop: 0,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  rowText: {
-    flex: 1,
-  },
-  title: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    color: AppColors.primary,
-    fontSize: 16,
-    marginBottom: 6,
-  },
-  body: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    lineHeight: 20,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+      gap: 12,
+    },
+    card: {
+      marginTop: 0,
+    },
+    row: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 12,
+    },
+    rowText: {
+      flex: 1,
+    },
+    title: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.primary,
+      fontSize: 16,
+      marginBottom: 6,
+    },
+    body: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      lineHeight: 20,
+    },
+  };
+}

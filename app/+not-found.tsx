@@ -1,9 +1,11 @@
 import { Link, Stack } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function NotFoundScreen() {
+  const styles = useThemedStyles(createStyles);
   return (
     <>
       <Stack.Screen options={{ title: 'Sivua ei löydy' }} />
@@ -17,26 +19,28 @@ export default function NotFoundScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: AppColors.surface,
-  },
-  title: {
-    fontSize: 20,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.primary,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
-    fontSize: 16,
-    color: AppColors.accent,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    container: {
+      flex: 1,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      padding: 20,
+      backgroundColor: colors.surface,
+    },
+    title: {
+      fontSize: 20,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.primary,
+    },
+    link: {
+      marginTop: 15,
+      paddingVertical: 15,
+    },
+    linkText: {
+      fontSize: 16,
+      color: colors.accent,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+    },
+  };
+}

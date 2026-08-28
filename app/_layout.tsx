@@ -16,7 +16,7 @@ import { DraftResumeBanner } from '@/src/components/DraftResumeBanner';
 import { AppProvider } from '@/src/context/AppContext';
 import { ThemedAlertProvider } from '@/src/context/ThemedAlertContext';
 import { SaveToastProvider } from '@/src/context/SaveToastContext';
-import { AppColors } from '@/src/theme/colors';
+import { ThemeProvider, useAppColors } from '@/src/theme/ThemeContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,45 +45,56 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AppProvider>
-        <ThemedAlertProvider>
-          <SaveToastProvider>
-          <StatusBar style="dark" />
-          <View style={{ flex: 1 }}>
-          <Stack
-            screenOptions={{
-              headerStyle: { backgroundColor: AppColors.secondary },
-              headerTintColor: AppColors.primary,
-              headerTitleStyle: {
-                fontFamily: 'IBMPlexSans_600SemiBold',
-                color: AppColors.primary,
-              },
-              contentStyle: { backgroundColor: AppColors.surface },
-            }}
-          >
-            <Stack.Screen name="index" options={{ title: 'Urakkalaskuri' }} />
-            <Stack.Screen name="wizard/index" options={{ title: 'Laskenta' }} />
-            <Stack.Screen name="wizard/summary" options={{ title: 'Yhteenveto' }} />
-            <Stack.Screen name="products/index" options={{ title: 'Tuotteet' }} />
-            <Stack.Screen name="products/new" options={{ title: 'Lisää tuote' }} />
-            <Stack.Screen name="products/[id]" options={{ title: 'Muokkaa tuotetta' }} />
-            <Stack.Screen name="history/index" options={{ title: 'Historia' }} />
-            <Stack.Screen name="history/[id]" options={{ title: 'Laskelman tiedot' }} />
-            <Stack.Screen name="settings/index" options={{ title: 'Asetukset' }} />
-            <Stack.Screen name="settings/general" options={{ title: 'Yleinen' }} />
-            <Stack.Screen name="settings/calculation/index" options={{ title: 'Lomakeasetukset' }} />
-            <Stack.Screen name="settings/calculation/pages" options={{ title: 'Sivut' }} />
-            <Stack.Screen name="settings/calculation/pages/[pageId]" options={{ title: 'Sivun kentät' }} />
-            <Stack.Screen name="settings/calculation/debug" options={{ title: 'Debug' }} />
-            <Stack.Screen name="settings/calculation/fields/index" options={{ title: 'Kentät' }} />
-            <Stack.Screen name="settings/calculation/fields/new" options={{ title: 'Uusi kenttä' }} />
-            <Stack.Screen name="settings/calculation/fields/[fieldId]" options={{ title: 'Kenttä' }} />
-            <Stack.Screen name="settings/theme" options={{ title: 'Teema' }} />
-          </Stack>
-          <DraftResumeBanner />
-          </View>
-          </SaveToastProvider>
-        </ThemedAlertProvider>
+        <ThemeProvider>
+          <ThemedAlertProvider>
+            <SaveToastProvider>
+              <ThemedRoot />
+            </SaveToastProvider>
+          </ThemedAlertProvider>
+        </ThemeProvider>
       </AppProvider>
     </SafeAreaProvider>
+  );
+}
+
+function ThemedRoot() {
+  const colors = useAppColors();
+  return (
+    <>
+      <StatusBar style="dark" />
+      <View style={{ flex: 1 }}>
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: colors.secondary },
+            headerTintColor: colors.primary,
+            headerTitleStyle: {
+              fontFamily: 'IBMPlexSans_600SemiBold',
+              color: colors.primary,
+            },
+            contentStyle: { backgroundColor: colors.surface },
+          }}
+        >
+          <Stack.Screen name="index" options={{ title: 'Urakkalaskuri' }} />
+          <Stack.Screen name="wizard/index" options={{ title: 'Laskenta' }} />
+          <Stack.Screen name="wizard/summary" options={{ title: 'Yhteenveto' }} />
+          <Stack.Screen name="products/index" options={{ title: 'Tuotteet' }} />
+          <Stack.Screen name="products/new" options={{ title: 'Lisää tuote' }} />
+          <Stack.Screen name="products/[id]" options={{ title: 'Muokkaa tuotetta' }} />
+          <Stack.Screen name="history/index" options={{ title: 'Historia' }} />
+          <Stack.Screen name="history/[id]" options={{ title: 'Laskelman tiedot' }} />
+          <Stack.Screen name="settings/index" options={{ title: 'Asetukset' }} />
+          <Stack.Screen name="settings/general" options={{ title: 'Yleinen' }} />
+          <Stack.Screen name="settings/calculation/index" options={{ title: 'Lomakeasetukset' }} />
+          <Stack.Screen name="settings/calculation/pages" options={{ title: 'Sivut' }} />
+          <Stack.Screen name="settings/calculation/pages/[pageId]" options={{ title: 'Sivun kentät' }} />
+          <Stack.Screen name="settings/calculation/debug" options={{ title: 'Debug' }} />
+          <Stack.Screen name="settings/calculation/fields/index" options={{ title: 'Kentät' }} />
+          <Stack.Screen name="settings/calculation/fields/new" options={{ title: 'Uusi kenttä' }} />
+          <Stack.Screen name="settings/calculation/fields/[fieldId]" options={{ title: 'Kenttä' }} />
+          <Stack.Screen name="settings/theme" options={{ title: 'Teema' }} />
+        </Stack>
+        <DraftResumeBanner />
+      </View>
+    </>
   );
 }

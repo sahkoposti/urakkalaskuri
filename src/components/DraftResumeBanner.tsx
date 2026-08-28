@@ -1,14 +1,16 @@
 import { router, usePathname } from 'expo-router';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApp } from '@/src/context/AppContext';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 const HEADER_BODY_HEIGHT = 56;
 const BANNER_HEIGHT = 40;
 
 export function DraftResumeBanner() {
+  const styles = useThemedStyles(createStyles);
   const { wizardDraft } = useApp();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
@@ -34,24 +36,26 @@ export function DraftResumeBanner() {
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    elevation: 100,
-    backgroundColor: AppColors.accent,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bannerPressed: {
-    opacity: 0.92,
-  },
-  bannerText: {
-    color: AppColors.secondary,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    fontSize: 15,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    banner: {
+      position: 'absolute' as const,
+      left: 0,
+      right: 0,
+      zIndex: 100,
+      elevation: 100,
+      backgroundColor: colors.accent,
+      paddingHorizontal: 16,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    bannerPressed: {
+      opacity: 0.92,
+    },
+    bannerText: {
+      color: colors.secondary,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 15,
+    },
+  };
+}

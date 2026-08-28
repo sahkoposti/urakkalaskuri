@@ -1,4 +1,4 @@
-import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Switch, Text, TextInput, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 import {
@@ -13,7 +13,9 @@ import type {
   FormDefinition,
   FormField,
 } from '@/src/core/form/types';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useAppColors } from '@/src/theme/ThemeContext';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 type FieldVisibilityEditorProps = {
   form: FormDefinition;
@@ -46,6 +48,8 @@ function coerceOperator(
 }
 
 export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibilityEditorProps) {
+  const styles = useThemedStyles(createStyles);
+  const colors = useAppColors();
   const sources = form.fields.filter(
     (item) => item.id !== field.id && isVisibilitySourceField(item),
   );
@@ -111,7 +115,7 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
             else onChange(undefined);
           }}
           disabled={sources.length === 0}
-          trackColor={{ true: AppColors.accent, false: AppColors.border }}
+          trackColor={{ true: colors.accent, false: colors.border }}
         />
       </View>
 
@@ -186,65 +190,67 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    marginTop: 8,
-    marginBottom: 12,
-    gap: 8,
-  },
-  heading: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    fontSize: 16,
-    color: AppColors.primary,
-  },
-  help: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  empty: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 13,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  switchLabel: {
-    flex: 1,
-    fontFamily: 'IBMPlexSans_500Medium',
-    color: AppColors.text,
-  },
-  valueWrap: {
-    gap: 4,
-  },
-  valueLabel: {
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.text,
-    fontSize: 14,
-  },
-  numberInputWrap: {
-    paddingHorizontal: 12,
-    paddingBottom: 10,
-  },
-  numberInput: {
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 16,
-    color: AppColors.text,
-    backgroundColor: AppColors.surface,
-  },
-  summary: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.accent,
-    fontSize: 13,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    wrap: {
+      marginTop: 8,
+      marginBottom: 12,
+      gap: 8,
+    },
+    heading: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 16,
+      color: colors.primary,
+    },
+    help: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    empty: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 13,
+    },
+    switchRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      gap: 12,
+    },
+    switchLabel: {
+      flex: 1,
+      fontFamily: 'IBMPlexSans_500Medium',
+      color: colors.text,
+    },
+    valueWrap: {
+      gap: 4,
+    },
+    valueLabel: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.text,
+      fontSize: 14,
+    },
+    numberInputWrap: {
+      paddingHorizontal: 12,
+      paddingBottom: 10,
+    },
+    numberInput: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 16,
+      color: colors.text,
+      backgroundColor: colors.surface,
+    },
+    summary: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.accent,
+      fontSize: 13,
+    },
+  };
+}
