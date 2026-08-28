@@ -1,6 +1,8 @@
 # Urakkalaskuri – Versio 1 suunnitelma
 
-> **Tila:** MVP toteutettu, jatkokehitys käynnissä  
+> **Arkistoitu.** Nykyinen versio on **v1.2** — [docs/v1.2-suunnitelma.md](../v1.2-suunnitelma.md). Tätä tiedostoa ei päivitetä.
+
+> **Tila:** MVP toteutettu (historiallinen)  
 > **Brändi:** ColoRajaton / [colorajaton.fi](https://colorajaton.fi)  
 > **Alusta:** Android (Expo Go / APK)  
 > **Tallennus:** Paikallinen (SQLite), offline  
@@ -127,7 +129,7 @@ Wizard-vaiheiden järjestys hallitaan **Lomakeasetukset → Sivut** -näkymäss�
 #### Lomakeasetukset (v1.1)
 
 Modulaarinen lomake: sivut, kentät, valintalistojen kertoimet, kaavat.  
-**→ Katso:** [v1.1-suunnitelma.md](./v1.1-suunnitelma.md)
+**→ Katso:** [v1.1-suunnitelma.md](./v1.1-suunnitelma.md) *(arkisto)*
 
 #### Teema
 | Kenttä | Kuvaus | v1 |
@@ -258,7 +260,7 @@ Vanha `settings.wizardStepOrder` säilyy tietokannassa. **Wizard käyttää nyt 
 [CalculationResult + form_snapshot]
 ```
 
-Katso: [v1.1-suunnitelma.md](./v1.1-suunnitelma.md)
+Katso: [v1.1-suunnitelma.md](./v1.1-suunnitelma.md) *(arkisto)*
 
 ---
 
