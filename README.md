@@ -2,33 +2,23 @@
 
 ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen laskentaan (Android).
 
-## Ominaisuudet (v1)
+Nykyinen versio on **v1.2**. Suunnitelma: [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md).
 
-- Dynaaminen wizard lomakepohjan (`FormDefinition`) sivuilla – ei kiinteää 3-vaiheista mallia
-- Tuotteet (nimi, yksikkö, yksikköhinta alv0; valinnaiset attribuutit menekki, työkerroin)
-- Laskenta järjestelmäkaavoilla: `calculationPipeline` (`runFormCalculation` → `resolveFormContextWithEffects` → `runProductionPipeline` → `buildResultFromFormulaContext`)
-- Historia (paikallinen SQLite) + `form_snapshot` tallennetuissa laskelmissa
+## Ominaisuudet
+
+- Dynaaminen wizard lomakepohjan (`FormDefinition`) sivuilla
+- **Lomakeasetukset:** sivut, globaalit kentät, kenttävaikutukset, valintalistat, lasketut kentät (`Laskenta`), tuotelista (`product_select`), kaavavalidointi, kentän kopiointi, debug-laskenta
+- **Ehdollinen näkyvyys:** `showWhen` (`eq` / `neq` / `gt` / …). Piilotettu kenttä on kaavoissa `0`
+- **Kaavafunktiot:** `min`, `max`, `round`, `if`, `sqrt` + vertailut. Puuttuva muuttuja ja jako nollalla ovat `0`; tuotteen puuttuva työkerroin on `1`
+- Tuotteet (nimi, yksikkö, yksikköhinta alv0; valinnaiset attribuutit menekki, työkerroin). Editorin `work_factor` voittaa vanhan SQLite-avaimen `tyokerroin`
+- Laskenta: `calculationPipeline` (`runFormCalculation` → `resolveFormContextWithEffects` → `runProductionPipeline` → `buildResultFromFormulaContext`)
+- Lomakepohjan JSON-tuonti/vienti + oletuslomakkeen palautus
+- Historia (paikallinen SQLite) + `form_snapshot`; muokkaus palauttaa `fieldValues`; versionvaroitus
 - Asetukset (ALV, kate 35 %, palkkio 7 %, tuntihinta 30 €/h)
-- Hinnat näytetään `formatCurrency`-funktiolla (tasan 2 desimaalia)
+- Hinnat `formatCurrency`-funktiolla (tasan 2 desimaalia)
 - ColoRajaton-brändi (colorajaton.fi)
 
-## v1.1 (Phase B pääosin valmis)
-
-- **Lomakeasetukset:** sivut, globaalit kentät, kenttävaikutusten editori, valintalistat, lasketut kentät (`Laskenta`), tuotelista (`product_select`), kaavavalidointi, kentän kopiointi, debug-laskenta
-- **Järjestelmäkentät:** kesto, hinnat, ALV – suomenkielisillä kaavoilla (`asetukset.*`), palautettavissa oletukseen
-- **Tuotteet:** „Kopioi tuote”, kaavamuuttujat `menekki`, `yksikkohinta`, `tyokerroin`
-- **Puuttuu vielä:** Lomakeasetukset → Esikatselu, Oletusarvot, Ulkoverhous-pohja
-- Katso [docs/v1.1-suunnitelma.md](docs/v1.1-suunnitelma.md)
-
-## v1.2 (käynnissä)
-
-- **Ehdollinen kenttänäkyvyys:** `showWhen` (boolean/select/number/computed, `eq`/`neq`/`gt`/…). Piilotettu kenttä on kaavoissa `0`. JSON-tuonnin `true`/`1` kelpaa `showWhen.value`:ssa. Valintalistan `defaultValue` näkyy wizardissa ja menee kaavaan, jos käyttäjä ei ole valinnut.
-- **Kaavafunktiot:** `min`, `max`, `round`, `if`, `sqrt` + vertailuoperaattorit. Puuttuva muuttuja ja jako nollalla ovat `0` (live-laskenta ei heitä).
-- **Lomakepohja:** JSON-tuonti/vienti (kiinteä tuontikenttä) + oletuslomakkeen palautus
-- **Muokkaus:** tallennetun laskelman `fieldValues` palautuu wizardiin; versionvaroitus
-- **Kentät:** sijoitus sivulle luonnissa (myös Asiakas); uusi/kopio tallentuu vasta Tallenna
-- **Laskentakenttä:** muokattava numero lomakkeella; livelaskenta ei blokkaa näppäimistöä (lyhyt debounce)
-- Katso [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md)
+Myöhemmin (ei v1.2-estettä): Esikatselu, Oletusarvot, Ulkoverhous-pohja, PDF-vienti, useita lomakepohjia. Lista: [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md).
 
 ## Kehitysympäristö
 
@@ -42,7 +32,7 @@ Ei tarvita Visual Studioa eikä Android Studioa kehitykseen.
 ### Käynnistys
 
 ```powershell
-cd C:\Users\eemil\.cursor\projects\Urakkalaskuri
+cd <projektin-kansio>
 npm install
 npm start
 ```
@@ -83,7 +73,10 @@ src/
   components/     # UI-komponentit
   context/        # Sovelluksen tila
   theme/          # ColoRajaton-värit
-docs/             # Suunnitelmat (v1, v1.1, v1.2) ja brändi
+docs/
+  v1.2-suunnitelma.md   # Nykyinen suunnitelma
+  archive/              # v1 ja v1.1 (ei päivitetä)
+  colorajaton-css-extract.txt
 __tests__/        # Yksikkötestit
 ```
 
@@ -91,8 +84,7 @@ __tests__/        # Yksikkötestit
 
 https://github.com/sahkoposti/urakkalaskuri
 
-## Suunnitelma
+## Dokumentaatio
 
-- [v1](docs/v1-suunnitelma.md)
-- [v1.1 – modulaarinen lomake](docs/v1.1-suunnitelma.md) *(Phase B pääosin valmis)*
-- [v1.2 – ehdollinen näkyvyys ym.](docs/v1.2-suunnitelma.md) *(aloitettu)*
+- [v1.2 – nykyinen](docs/v1.2-suunnitelma.md)
+- [Arkisto: v1](docs/archive/v1-suunnitelma.md), [v1.1](docs/archive/v1.1-suunnitelma.md)
