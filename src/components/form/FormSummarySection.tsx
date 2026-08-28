@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { AppCard, ResultRow, SectionTitle } from '@/src/components/common';
 import { sortedPages } from '@/src/core/form/formDefinitionHelpers';
@@ -8,7 +8,8 @@ import {
 } from '@/src/core/form/formSummaryHelpers';
 import type { FormDefinition } from '@/src/core/form/types';
 import type { FormSnapshot, Product } from '@/src/core/models/types';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 type FormSummarySectionProps = {
   form?: FormDefinition;
@@ -19,6 +20,7 @@ type FormSummarySectionProps = {
 };
 
 export function FormSummarySection({ form, fieldValues, context, products = [], snapshot }: FormSummarySectionProps) {
+  const styles = useThemedStyles(createStyles);
   if (snapshot) {
     if (snapshot.fields.length === 0) return null;
 
@@ -77,15 +79,17 @@ export function FormSummarySection({ form, fieldValues, context, products = [], 
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    marginTop: 8,
-  },
-  pageTitle: {
-    marginTop: 8,
-    marginBottom: 4,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.accent,
-    fontSize: 13,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    card: {
+      marginTop: 8,
+    },
+    pageTitle: {
+      marginTop: 8,
+      marginBottom: 4,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.accent,
+      fontSize: 13,
+    },
+  };
+}

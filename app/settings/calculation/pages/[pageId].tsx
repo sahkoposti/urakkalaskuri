@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AppCard, OutlinedButton, PrimaryButton, ScreenLoading, ScreenMessage } from '@/src/components/common';
 import {
@@ -16,9 +16,11 @@ import {
 import type { FormDefinition } from '@/src/core/form/types';
 import { db, useApp } from '@/src/context/AppContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function PageFieldsSettingsScreen() {
+  const styles = useThemedStyles(createStyles);
   const { pageId } = useLocalSearchParams<{ pageId: string }>();
   const { ready, formDefinition, refreshFormSettings } = useApp();
   const [draft, setDraft] = useState<FormDefinition>(formDefinition);
@@ -130,79 +132,81 @@ export default function PageFieldsSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-    gap: 10,
-  },
-  help: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    marginTop: 8,
-    fontFamily: 'IBMPlexSans_700Bold',
-    color: AppColors.primary,
-    fontSize: 16,
-  },
-  empty: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-  },
-  row: {
-    gap: 6,
-  },
-  card: {
-    marginBottom: 0,
-  },
-  addCard: {
-    marginBottom: 0,
-  },
-  fieldLabel: {
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.primary,
-    fontSize: 15,
-  },
-  fieldMeta: {
-    marginTop: 4,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 13,
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingLeft: 4,
-    paddingBottom: 4,
-  },
-  moveButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: AppColors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moveButtonDisabled: {
-    opacity: 0.35,
-  },
-  moveButtonText: {
-    color: AppColors.accent,
-    fontFamily: 'IBMPlexSans_700Bold',
-    fontSize: 16,
-  },
-  removeButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  removeButtonText: {
-    color: AppColors.accent,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    fontSize: 13,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+      gap: 10,
+    },
+    help: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      lineHeight: 20,
+      marginBottom: 4,
+    },
+    sectionTitle: {
+      marginTop: 8,
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.primary,
+      fontSize: 16,
+    },
+    empty: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+    },
+    row: {
+      gap: 6,
+    },
+    card: {
+      marginBottom: 0,
+    },
+    addCard: {
+      marginBottom: 0,
+    },
+    fieldLabel: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.primary,
+      fontSize: 15,
+    },
+    fieldMeta: {
+      marginTop: 4,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 13,
+    },
+    actions: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 8,
+      paddingLeft: 4,
+      paddingBottom: 4,
+    },
+    moveButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    moveButtonDisabled: {
+      opacity: 0.35,
+    },
+    moveButtonText: {
+      color: colors.accent,
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 16,
+    },
+    removeButton: {
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+    },
+    removeButtonText: {
+      color: colors.accent,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 13,
+    },
+  };
+}

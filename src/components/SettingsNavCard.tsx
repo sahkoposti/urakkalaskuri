@@ -1,7 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { AppCard } from '@/src/components/common';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 type SettingsNavCardProps = {
   title: string;
@@ -10,6 +11,7 @@ type SettingsNavCardProps = {
 };
 
 export function SettingsNavCard({ title, subtitle, onPress }: SettingsNavCardProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <AppCard onPress={onPress} style={styles.card}>
       <View style={styles.row}>
@@ -23,30 +25,32 @@ export function SettingsNavCard({ title, subtitle, onPress }: SettingsNavCardPro
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  textWrap: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 17,
-    fontFamily: 'IBMPlexSans_700Bold',
-    color: AppColors.primary,
-  },
-  subtitle: {
-    marginTop: 4,
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-  },
-  chevron: {
-    fontSize: 28,
-    color: AppColors.text,
-    lineHeight: 28,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    card: {
+      marginBottom: 12,
+    },
+    row: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+    },
+    textWrap: {
+      flex: 1,
+    },
+    title: {
+      fontSize: 17,
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.primary,
+    },
+    subtitle: {
+      marginTop: 4,
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_400Regular',
+    },
+    chevron: {
+      fontSize: 28,
+      color: colors.text,
+      lineHeight: 28,
+    },
+  };
+}

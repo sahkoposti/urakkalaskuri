@@ -1,13 +1,15 @@
 import { router } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 
 import { AppCard, ScreenLoading, ScreenMessage } from '@/src/components/common';
 import { formatCurrency } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function ProductsScreen() {
+  const styles = useThemedStyles(createStyles);
   const { ready, products, refreshProducts } = useApp();
   const { showAlert } = useThemedAlert();
 
@@ -70,53 +72,55 @@ export default function ProductsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  list: {
-    padding: 16,
-    paddingBottom: 96,
-  },
-  separator: {
-    height: 8,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  textWrap: {
-    flex: 1,
-  },
-  name: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    color: AppColors.primary,
-  },
-  price: {
-    marginTop: 4,
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-  },
-  delete: {
-    color: AppColors.accent,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: AppColors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-  },
-  fabText: {
-    color: AppColors.secondary,
-    fontSize: 28,
-    lineHeight: 30,
-    fontFamily: 'IBMPlexSans_700Bold',
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    container: {
+      flex: 1,
+    },
+    list: {
+      padding: 16,
+      paddingBottom: 96,
+    },
+    separator: {
+      height: 8,
+    },
+    row: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+    },
+    textWrap: {
+      flex: 1,
+    },
+    name: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.primary,
+    },
+    price: {
+      marginTop: 4,
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_400Regular',
+    },
+    delete: {
+      color: colors.accent,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+    },
+    fab: {
+      position: 'absolute' as const,
+      right: 20,
+      bottom: 24,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.accent,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      elevation: 4,
+    },
+    fabText: {
+      color: colors.secondary,
+      fontSize: 28,
+      lineHeight: 30,
+      fontFamily: 'IBMPlexSans_700Bold',
+    },
+  };
+}

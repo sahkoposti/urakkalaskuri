@@ -1,14 +1,16 @@
 import { router, Stack, type Href } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { BrandLogo, SectionTitle } from '@/src/components/common';
 import { AppCard } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { db, useApp } from '@/src/context/AppContext';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function HomeScreen() {
+  const styles = useThemedStyles(createStyles);
   const { wizardDraft, refreshWizardDraft } = useApp();
   const [newCalcDialogVisible, setNewCalcDialogVisible] = useState(false);
 
@@ -96,6 +98,7 @@ type NavCardProps = {
 };
 
 function NavCard({ title, subtitle, onPress, accent = false }: NavCardProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <AppCard
       onPress={onPress}
@@ -116,52 +119,54 @@ function NavCard({ title, subtitle, onPress, accent = false }: NavCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  hero: {
-    alignItems: 'center',
-    marginBottom: 24,
-    gap: 8,
-  },
-  navCard: {
-    marginBottom: 12,
-  },
-  navCardAccent: {
-    backgroundColor: AppColors.accent,
-    borderColor: AppColors.accent,
-  },
-  navRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  navText: {
-    flex: 1,
-  },
-  navTitle: {
-    fontSize: 17,
-    fontFamily: 'IBMPlexSans_700Bold',
-    color: AppColors.primary,
-  },
-  navTitleAccent: {
-    color: AppColors.secondary,
-  },
-  navSubtitle: {
-    marginTop: 4,
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-  },
-  navSubtitleAccent: {
-    color: AppColors.secondary,
-  },
-  chevron: {
-    fontSize: 28,
-    color: AppColors.text,
-    lineHeight: 28,
-  },
-  chevronAccent: {
-    color: AppColors.secondary,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    hero: {
+      alignItems: 'center' as const,
+      marginBottom: 24,
+      gap: 8,
+    },
+    navCard: {
+      marginBottom: 12,
+    },
+    navCardAccent: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+    },
+    navRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+    },
+    navText: {
+      flex: 1,
+    },
+    navTitle: {
+      fontSize: 17,
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.primary,
+    },
+    navTitleAccent: {
+      color: colors.secondary,
+    },
+    navSubtitle: {
+      marginTop: 4,
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_400Regular',
+    },
+    navSubtitleAccent: {
+      color: colors.secondary,
+    },
+    chevron: {
+      fontSize: 28,
+      color: colors.text,
+      lineHeight: 28,
+    },
+    chevronAccent: {
+      color: colors.secondary,
+    },
+  };
+}

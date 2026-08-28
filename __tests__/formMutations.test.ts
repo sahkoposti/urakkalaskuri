@@ -361,6 +361,27 @@ describe('formMutations', () => {
     expect(legacy.fields.some((field) => field.key === 'kiintea_seinapinta_ala_m2')).toBe(true);
   });
 
+  test('normalizeFormDefinition drops unimplemented set_variable effects', () => {
+    const form = createDefaultFormDefinition();
+    const target = form.fields.find((field) => field.key === 'laskenta_seinapinta_ala_m2')!;
+    const normalized = normalizeFormDefinition({
+      ...form,
+      fields: form.fields.map((field) =>
+        field.id === target.id
+          ? {
+              ...field,
+              effects: [
+                { type: 'set_variable' as never, value: 1 },
+                { type: 'add_material_fixed', value: 15 },
+              ],
+            }
+          : field,
+      ),
+    });
+    const next = normalized.fields.find((field) => field.id === target.id);
+    expect(next?.effects).toEqual([{ type: 'add_material_fixed', value: 15 }]);
+  });
+
   test('duplicateField creates copy with new id and key', () => {
     const form = createDefaultFormDefinition();
     const source = form.fields[0];

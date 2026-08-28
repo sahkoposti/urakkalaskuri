@@ -146,7 +146,7 @@ function normalizeFieldKeys(fields: FormField[]): FormField[] {
     const rawType = String(field.type);
     const type = (rawType === 'product_quantity' ? 'product_select' : field.type) as FormField['type'];
     const effects = field.effects
-      ?.filter((effect) => effect.type !== 'add_material')
+      ?.filter((effect) => effect.type !== 'add_material' && (effect.type as string) !== 'set_variable')
       .map((effect) => ({ ...effect }));
     const showWhen = field.showWhen?.fieldKey
       ? {

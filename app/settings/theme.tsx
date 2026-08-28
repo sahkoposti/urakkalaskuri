@@ -1,6 +1,6 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { AppInput, BrandLogo, PrimaryButton, ScreenLoading } from '@/src/components/common';
 import { defaultThemeSettings } from '@/src/core/models/types';
@@ -8,9 +8,11 @@ import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function ThemeSettingsScreen() {
+  const styles = useThemedStyles(createStyles);
   const { ready, settings, refreshSettings } = useApp();
   const { showAlert } = useThemedAlert();
   const [accentColor, setAccentColor] = useState(defaultThemeSettings.accentColor);
@@ -127,33 +129,35 @@ export default function ThemeSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-    gap: 4,
-  },
-  sectionLabel: {
-    marginTop: 12,
-    marginBottom: 8,
-    fontFamily: 'IBMPlexSans_700Bold',
-    fontSize: 16,
-    color: AppColors.primary,
-  },
-  logoPreview: {
-    alignItems: 'center',
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    paddingVertical: 20,
-  },
-  note: {
-    marginTop: 4,
-    marginBottom: 8,
-    color: AppColors.text,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 13,
-    lineHeight: 20,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+      gap: 4,
+    },
+    sectionLabel: {
+      marginTop: 12,
+      marginBottom: 8,
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 16,
+      color: colors.primary,
+    },
+    logoPreview: {
+      alignItems: 'center' as const,
+      backgroundColor: colors.secondary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      paddingVertical: 20,
+    },
+    note: {
+      marginTop: 4,
+      marginBottom: 8,
+      color: colors.text,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      lineHeight: 20,
+    },
+  };
+}

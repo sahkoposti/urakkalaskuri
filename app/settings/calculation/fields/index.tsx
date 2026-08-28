@@ -1,6 +1,6 @@
 import { router, Stack, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AppCard, OutlinedButton, ScreenLoading } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
@@ -16,7 +16,8 @@ import {
 import type { FormField } from '@/src/core/form/types';
 import type { Product } from '@/src/core/models/types';
 import { db, useApp } from '@/src/context/AppContext';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 function FieldCard({
   field,
@@ -33,6 +34,7 @@ function FieldCard({
   onPress: () => void;
   onDelete?: () => void;
 }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <AppCard key={field.id} style={styles.card} onPress={onPress}>
       <View style={styles.cardHeader}>
@@ -89,6 +91,7 @@ function FieldCards({
 }
 
 export default function FormFieldsScreen() {
+  const styles = useThemedStyles(createStyles);
   const { ready, formDefinition, formDebug, products, refreshFormSettings } = useApp();
   const [deleteTarget, setDeleteTarget] = useState<FormField | null>(null);
 
@@ -183,73 +186,75 @@ export default function FormFieldsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-    gap: 8,
-  },
-  help: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    lineHeight: 20,
-  },
-  debugHint: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.accent,
-  },
-  empty: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-  },
-  pageSection: {
-    gap: 6,
-  },
-  pageSectionTitle: {
-    marginTop: 8,
-    fontFamily: 'IBMPlexSans_700Bold',
-    color: AppColors.primary,
-    fontSize: 16,
-  },
-  card: {
-    marginBottom: 0,
-    padding: 10,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  cardMain: {
-    flex: 1,
-  },
-  fieldLabel: {
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.primary,
-    fontSize: 15,
-  },
-  fieldMeta: {
-    marginTop: 2,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 13,
-  },
-  formula: {
-    marginTop: 4,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  example: {
-    marginTop: 4,
-    fontFamily: 'IBMPlexSans_500Medium',
-    color: AppColors.accent,
-    fontSize: 13,
-  },
-  deleteText: {
-    color: AppColors.accent,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    fontSize: 13,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+      gap: 8,
+    },
+    help: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      lineHeight: 20,
+    },
+    debugHint: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.accent,
+    },
+    empty: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+    },
+    pageSection: {
+      gap: 6,
+    },
+    pageSectionTitle: {
+      marginTop: 8,
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.primary,
+      fontSize: 16,
+    },
+    card: {
+      marginBottom: 0,
+      padding: 10,
+    },
+    cardHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 8,
+    },
+    cardMain: {
+      flex: 1,
+    },
+    fieldLabel: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.primary,
+      fontSize: 15,
+    },
+    fieldMeta: {
+      marginTop: 2,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 13,
+    },
+    formula: {
+      marginTop: 4,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 12,
+      lineHeight: 18,
+    },
+    example: {
+      marginTop: 4,
+      fontFamily: 'IBMPlexSans_500Medium',
+      color: colors.accent,
+      fontSize: 13,
+    },
+    deleteText: {
+      color: colors.accent,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 13,
+    },
+  };
+}

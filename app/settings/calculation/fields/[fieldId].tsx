@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, Switch, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 
@@ -40,7 +40,9 @@ import type { FieldType, FormField } from '@/src/core/form/types';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useAppColors } from '@/src/theme/ThemeContext';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 function firstParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? '';
@@ -78,6 +80,8 @@ function applyFieldTypeChange(current: FormField, type: FieldType): FormField {
 }
 
 export default function FormFieldEditorScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useAppColors();
   const params = useLocalSearchParams<{
     fieldId: string;
     draft?: string;
@@ -404,7 +408,7 @@ export default function FormFieldEditorScreen() {
             <Switch
               value={field.allowManualOverride !== false}
               onValueChange={(allowManualOverride) => updateFieldState({ allowManualOverride })}
-              trackColor={{ true: AppColors.accent, false: AppColors.border }}
+              trackColor={{ true: colors.accent, false: colors.border }}
             />
           </View>
         ) : null}
@@ -415,7 +419,7 @@ export default function FormFieldEditorScreen() {
             <Switch
               value={field.required}
               onValueChange={(required) => updateFieldState({ required })}
-              trackColor={{ true: AppColors.accent, false: AppColors.border }}
+              trackColor={{ true: colors.accent, false: colors.border }}
             />
           </View>
         ) : null}
@@ -473,7 +477,7 @@ export default function FormFieldEditorScreen() {
             <Switch
               value={field.showOnSummary}
               onValueChange={(showOnSummary) => updateFieldState({ showOnSummary })}
-              trackColor={{ true: AppColors.accent, false: AppColors.border }}
+              trackColor={{ true: colors.accent, false: colors.border }}
             />
           </View>
         ) : null}
@@ -535,76 +539,78 @@ export default function FormFieldEditorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-    gap: 4,
-  },
-  help: {
-    marginBottom: 8,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    lineHeight: 20,
-  },
-  systemBadge: {
-    marginBottom: 8,
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: AppColors.surface,
-    borderWidth: 1,
-    borderColor: AppColors.accent,
-    fontFamily: 'IBMPlexSans_500Medium',
-    color: AppColors.accent,
-    fontSize: 13,
-  },
-  metaLine: {
-    marginBottom: 8,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    fontSize: 13,
-  },
-  formulaReadonly: {
-    backgroundColor: AppColors.secondary,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 5,
-    marginBottom: 8,
-    paddingBottom: 8,
-  },
-  formulaText: {
-    paddingHorizontal: 12,
-    paddingBottom: 4,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    lineHeight: 18,
-    fontSize: 14,
-  },
-  formulaHint: {
-    marginTop: -4,
-    marginBottom: 10,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    opacity: 0.75,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 8,
-    gap: 12,
-  },
-  switchLabel: {
-    flex: 1,
-    fontFamily: 'IBMPlexSans_500Medium',
-    color: AppColors.text,
-  },
-  disabledHint: {
-    marginTop: 12,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    lineHeight: 20,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+      gap: 4,
+    },
+    help: {
+      marginBottom: 8,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      lineHeight: 20,
+    },
+    systemBadge: {
+      marginBottom: 8,
+      padding: 10,
+      borderRadius: 5,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      fontFamily: 'IBMPlexSans_500Medium',
+      color: colors.accent,
+      fontSize: 13,
+    },
+    metaLine: {
+      marginBottom: 8,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 13,
+    },
+    formulaReadonly: {
+      backgroundColor: colors.secondary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      marginBottom: 8,
+      paddingBottom: 8,
+    },
+    formulaText: {
+      paddingHorizontal: 12,
+      paddingBottom: 4,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      lineHeight: 18,
+      fontSize: 14,
+    },
+    formulaHint: {
+      marginTop: -4,
+      marginBottom: 10,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      opacity: 0.75,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    switchRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      marginVertical: 8,
+      gap: 12,
+    },
+    switchLabel: {
+      flex: 1,
+      fontFamily: 'IBMPlexSans_500Medium',
+      color: colors.text,
+    },
+    disabledHint: {
+      marginTop: 12,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      lineHeight: 20,
+    },
+  };
+}

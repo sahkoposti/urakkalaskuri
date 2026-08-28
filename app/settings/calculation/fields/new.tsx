@@ -1,6 +1,6 @@
 import { router, Stack, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 import { PrimaryButton, ScreenLoading } from '@/src/components/common';
@@ -12,11 +12,13 @@ import {
 } from '@/src/core/form/formMutations';
 import type { FieldType } from '@/src/core/form/types';
 import { useApp } from '@/src/context/AppContext';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 const NO_PAGE = '';
 
 export default function NewFormFieldScreen() {
+  const styles = useThemedStyles(createStyles);
   const { ready, formDefinition } = useApp();
   const [type, setType] = useState<FieldType>('number');
   const [targetPageId, setTargetPageId] = useState(NO_PAGE);
@@ -76,24 +78,26 @@ export default function NewFormFieldScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 32,
-    gap: 12,
-  },
-  help: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  hint: {
-    marginTop: -8,
-    fontFamily: 'IBMPlexSans_400Regular',
-    color: AppColors.text,
-    opacity: 0.75,
-    lineHeight: 18,
-    fontSize: 13,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 16,
+      paddingBottom: 32,
+      gap: 12,
+    },
+    help: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      lineHeight: 20,
+      marginBottom: 4,
+    },
+    hint: {
+      marginTop: -8,
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      opacity: 0.75,
+      lineHeight: 18,
+      fontSize: 13,
+    },
+  };
+}

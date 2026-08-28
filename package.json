@@ -1,7 +1,7 @@
 {
   "name": "urakkalaskuri",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "dependencies": {
     "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
     "@react-native-picker/picker": "2.11.1",

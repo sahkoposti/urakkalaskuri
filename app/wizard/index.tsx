@@ -6,19 +6,17 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import { AppPicker } from '@/src/components/AppPicker';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import {
-  AppInput,
   OutlinedButton,
   PrimaryButton,
   SectionTitle,
 } from '@/src/components/common';
-import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { CustomerStep } from '@/src/components/form/CustomerStep';
 import { WizardFieldList } from '@/src/components/form/WizardFieldList';
 import {
   CalculationValidationError,
@@ -44,9 +42,11 @@ import { validateFormPageWithValues } from '@/src/core/wizard/wizardPageHelpers'
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useLiveFormContext } from '@/src/hooks/useLiveFormContext';
-import { AppColors } from '@/src/theme/colors';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function WizardScreen() {
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
   const { editId } = useLocalSearchParams<{ editId?: string }>();
   const { settings, products, wizardDraft, wizardSession, formDefinition, setWizardSession, refreshWizardDraft } = useApp();
@@ -549,195 +549,66 @@ export default function WizardScreen() {
   );
 }
 
-type CustomerStepProps = {
-  name: string;
-  customerType: CustomerType;
-  reverseVat: boolean;
-  phone: string;
-  email: string;
-  address: string;
-  notes: string;
-  onNameChange: (value: string) => void;
-  onCustomerTypeChange: (value: CustomerType) => void;
-  onReverseVatChange: (value: boolean) => void;
-  onPhoneChange: (value: string) => void;
-  onEmailChange: (value: string) => void;
-  onAddressChange: (value: string) => void;
-  onNotesChange: (value: string) => void;
-};
-
-function CustomerStep({
-  name,
-  customerType,
-  reverseVat,
-  phone,
-  email,
-  address,
-  notes,
-  onNameChange,
-  onCustomerTypeChange,
-  onReverseVatChange,
-  onPhoneChange,
-  onEmailChange,
-  onAddressChange,
-  onNotesChange,
-}: CustomerStepProps) {
-  return (
-    <View>
-      <AppInput label="Nimi *" value={name} onChangeText={onNameChange} />
-      <AppInput
-        label="Puh."
-        value={phone}
-        onChangeText={onPhoneChange}
-        keyboardType="phone-pad"
-      />
-      <AppInput
-        label="Sähköposti"
-        value={email}
-        onChangeText={onEmailChange}
-        keyboardType="email-address"
-      />
-      <AppInput label="Osoite" value={address} onChangeText={onAddressChange} />
-      <AppInput
-        label="Lisätiedot"
-        value={notes}
-        onChangeText={onNotesChange}
-        multiline
-        placeholder="Valinnainen"
-      />
-      <AppPicker
-        label="Asiakastyyppi"
-        selectedValue={customerType}
-        onValueChange={(value) => onCustomerTypeChange(value as CustomerType)}
-        items={[
-          { label: 'Yksityisasiakas', value: 'private' },
-          { label: 'Yritysasiakas', value: 'business' },
-        ]}
-      />
-      {customerType === 'business' ? (
-        <View style={styles.toggleRow}>
-          <Text style={styles.toggleLabel}>Käänteinen arvonlisävero</Text>
-          <View style={styles.toggleActions}>
-            <Pressable
-              style={[
-                styles.toggleButton,
-                reverseVat && styles.toggleButtonActive,
-              ]}
-              onPress={() => onReverseVatChange(true)}
-            >
-              <Text style={[styles.toggleButtonText, reverseVat && styles.toggleButtonTextActive]}>
-                Kyllä
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.toggleButton,
-                !reverseVat && styles.toggleButtonActive,
-              ]}
-              onPress={() => onReverseVatChange(false)}
-            >
-              <Text
-                style={[styles.toggleButtonText, !reverseVat && styles.toggleButtonTextActive]}
-              >
-                Ei
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : null}
-    </View>
-  );
+function createStyles(colors: AppColorPalette) {
+  return {
+    container: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 32,
+    },
+    versionWarning: {
+      marginTop: 12,
+      marginBottom: 4,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderRadius: 5,
+      backgroundColor: colors.surface,
+      gap: 8,
+    },
+    versionWarningTitle: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 15,
+      color: colors.accent,
+    },
+    versionWarningText: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      lineHeight: 20,
+      color: colors.text,
+    },
+    versionWarningDismiss: {
+      alignSelf: 'flex-start' as const,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    versionWarningDismissPressed: {
+      opacity: 0.85,
+    },
+    versionWarningDismissText: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 13,
+      color: colors.accent,
+    },
+    actionBar: {
+      flexDirection: 'row' as const,
+      gap: 12,
+      marginTop: 20,
+      marginBottom: 8,
+    },
+    actionButton: {
+      flex: 1,
+    },
+    actionButtonFull: {
+      flex: 1,
+    },
+    stepContent: {
+      marginTop: 16,
+    },
+  };
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 32,
-  },
-  versionWarning: {
-    marginTop: 12,
-    marginBottom: 4,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: AppColors.accent,
-    borderRadius: 5,
-    backgroundColor: AppColors.surface,
-    gap: 8,
-  },
-  versionWarningTitle: {
-    fontFamily: 'IBMPlexSans_700Bold',
-    fontSize: 15,
-    color: AppColors.accent,
-  },
-  versionWarningText: {
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 13,
-    lineHeight: 20,
-    color: AppColors.text,
-  },
-  versionWarningDismiss: {
-    alignSelf: 'flex-start',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: AppColors.accent,
-  },
-  versionWarningDismissPressed: {
-    opacity: 0.85,
-  },
-  versionWarningDismissText: {
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    fontSize: 13,
-    color: AppColors.accent,
-  },
-  actionBar: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  actionButtonFull: {
-    flex: 1,
-  },
-  stepContent: {
-    marginTop: 16,
-  },
-  toggleRow: {
-    marginBottom: 12,
-  },
-  toggleLabel: {
-    marginBottom: 6,
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.text,
-  },
-  toggleActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  toggleButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: AppColors.accent,
-    borderRadius: 5,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: AppColors.secondary,
-  },
-  toggleButtonActive: {
-    backgroundColor: AppColors.accent,
-  },
-  toggleButtonText: {
-    fontFamily: 'IBMPlexSans_600SemiBold',
-    color: AppColors.accent,
-  },
-  toggleButtonTextActive: {
-    color: AppColors.secondary,
-  },
-});
