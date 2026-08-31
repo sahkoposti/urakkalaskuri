@@ -36,6 +36,7 @@ import {
 import { sanitizeKeyInput } from '@/src/core/form/formKeyUtils';
 import { MATERIALS_CONTEXT_KEY } from '@/src/core/form/systemFields';
 import { isProductField } from '@/src/core/form/productFieldUtils';
+import { isFieldEffectComplete } from '@/src/core/form/fieldEffects';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { isSystemField, isSystemFieldHiddenFromUi, restoreSystemField } from '@/src/core/form/systemFields';
 import type { FieldType, FormField } from '@/src/core/form/types';
@@ -188,14 +189,7 @@ export default function FormFieldEditorScreen() {
         return false;
       }
     }
-    const incompleteEffect = field.effects?.find(
-      (effect) =>
-        (effect.type === 'add_material_fixed' ||
-          effect.type === 'multiply_materials' ||
-          effect.type === 'add_duration' ||
-          effect.type === 'multiply_duration') &&
-        (effect.value === undefined || !Number.isFinite(effect.value)),
-    );
+    const incompleteEffect = field.effects?.find((effect) => !isFieldEffectComplete(effect, field));
     if (incompleteEffect) {
       showAlert('Virhe', 'Vaikutuksella on oltava numeerinen arvo.');
       return false;

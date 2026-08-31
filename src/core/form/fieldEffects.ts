@@ -1,6 +1,6 @@
 import { pipelineFieldOrder } from '@/src/core/form/formDefinitionHelpers';
 import { isFieldVisible } from '@/src/core/form/fieldVisibility';
-import type { FieldEffect, FormDefinition } from '@/src/core/form/types';
+import type { FieldEffect, FormDefinition, FormField } from '@/src/core/form/types';
 import type { Product, WizardLineDraft } from '@/src/core/models/types';
 
 export interface FieldEffectsResult {
@@ -21,6 +21,26 @@ function emptyEffectsResult(): FieldEffectsResult {
 
 export function formHasFieldEffects(form: FormDefinition): boolean {
   return form.fields.some((field) => Boolean(field.effects?.length));
+}
+
+/** add_material_fixed / add_duration voivat käyttää kentän omaa kaava-arvoa. */
+export function effectCanUseFieldValue(field: FormField, type: FieldEffect['type']): boolean {
+  if (type !== 'add_material_fixed' && type !== 'add_duration') return false;
+  return field.type === 'number' || field.type === 'computed' || field.type === 'select';
+}
+
+/** Vaikutus lukee kentän arvon; kiinteää lukua ei vaadita. */
+export function effectUsesFieldValue(effect: FieldEffect, field: FormField): boolean {
+  if (!effectCanUseFieldValue(field, effect.type)) return false;
+  if (effect.value !== undefined && Number.isFinite(effect.value)) return false;
+  return !effect.quantityRef || effect.quantityRef === field.key;
+}
+
+export function isFieldEffectComplete(effect: FieldEffect, field: FormField): boolean {
+  if (effect.type === 'add_material') return true;
+  if ((effect.type as string) === 'set_variable') return true;
+  if (effectUsesFieldValue(effect, field)) return true;
+  return effect.value !== undefined && Number.isFinite(effect.value);
 }
 
 /**

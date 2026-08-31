@@ -2,6 +2,7 @@ import {
   applyDurationEffects,
   applyFieldEffects,
   applyMaterialEffects,
+  isFieldEffectComplete,
 } from '@/src/core/form/fieldEffects';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 
@@ -163,5 +164,36 @@ describe('fieldEffects', () => {
 
     const shown = applyFieldEffects(form, {}, { kaytossa: 'true' });
     expect(applyMaterialEffects(100, shown)).toBe(115);
+  });
+
+  test('isFieldEffectComplete allows add_material_fixed without literal when using field value', () => {
+    const field: FormField = {
+      id: 'f1',
+      key: 'maali_hinta',
+      label: 'Maalihinta',
+      type: 'computed',
+      required: false,
+      showOnSummary: true,
+      effects: [{ type: 'add_material_fixed' }],
+    };
+    expect(isFieldEffectComplete({ type: 'add_material_fixed' }, field)).toBe(true);
+    expect(isFieldEffectComplete({ type: 'add_material_fixed', quantityRef: 'maali_hinta' }, field)).toBe(
+      true,
+    );
+    expect(isFieldEffectComplete({ type: 'add_material_fixed', value: 15 }, field)).toBe(true);
+  });
+
+  test('isFieldEffectComplete still requires a number for multiply effects', () => {
+    const field: FormField = {
+      id: 'f1',
+      key: 'kerroin',
+      label: 'Kerroin',
+      type: 'number',
+      required: false,
+      showOnSummary: false,
+    };
+    expect(isFieldEffectComplete({ type: 'multiply_materials' }, field)).toBe(false);
+    expect(isFieldEffectComplete({ type: 'multiply_duration', value: 1.1 }, field)).toBe(true);
+    expect(isFieldEffectComplete({ type: 'add_duration' }, field)).toBe(true);
   });
 });
