@@ -65,7 +65,7 @@ export interface FormField {
   /** Näytä kenttä vain kun ehto täyttyy; puuttuu = aina näkyvissä */
   showWhen?: FieldVisibilityCondition;
   helpText?: string;
-  /** Wizardissa käytettävä oletus, jos käyttäjä ei ole vielä valinnut (select). */
+  /** Wizardin oletusarvo (numero/teksti/valinta/tuote/boolean). Tyhjä = ei oletusta. */
   defaultValue?: string;
   /** Debug-tilassa käytettävä esimerkkiarvo (merkkijonona, parsitaan tyypin mukaan) */
   debugExampleValue?: string;

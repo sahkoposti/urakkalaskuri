@@ -4,6 +4,7 @@ import type {
   FieldVisibilityCondition,
   FieldVisibilityOperator,
 } from '@/src/core/form/types';
+import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
 import { parseNumber } from '@/src/core/utils/formatters';
 
 const VISIBILITY_SOURCE_TYPES = new Set(['boolean', 'select', 'number', 'computed']);
@@ -68,9 +69,6 @@ export function comparableFieldValue(
     return trimmed === 'true' || trimmed === '1' || trimmed === 'kyllä' ? 'true' : 'false';
   }
   const trimmed = (raw ?? '').trim();
-  if (!trimmed && field?.type === 'select' && field.defaultValue?.trim()) {
-    return field.defaultValue.trim();
-  }
   return trimmed;
 }
 
@@ -164,7 +162,10 @@ export function isFieldVisible(
     Object.prototype.hasOwnProperty.call(numericContext, dependency.key)
       ? String(numericContext[dependency.key])
       : undefined;
-  const actual = fromContext ?? comparableFieldValue(dependency, fieldValues[condition.fieldKey]);
+  const actual = fromContext ?? comparableFieldValue(
+    dependency,
+    dependency ? resolveFieldRawValue(dependency, fieldValues) : fieldValues[condition.fieldKey],
+  );
   return conditionMatches(condition, actual, dependency);
 }
 

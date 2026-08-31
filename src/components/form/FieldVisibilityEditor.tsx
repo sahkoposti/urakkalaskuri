@@ -1,6 +1,7 @@
-import { Switch, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
+import { AppSwitch } from '@/src/components/common';
 import {
   isNumericVisibilityOperator,
   isVisibilitySourceField,
@@ -14,7 +15,6 @@ import type {
   FormField,
 } from '@/src/core/form/types';
 import type { AppColorPalette } from '@/src/theme/colors';
-import { useAppColors } from '@/src/theme/ThemeContext';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 type FieldVisibilityEditorProps = {
@@ -49,7 +49,6 @@ function coerceOperator(
 
 export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibilityEditorProps) {
   const styles = useThemedStyles(createStyles);
-  const colors = useAppColors();
   const sources = form.fields.filter(
     (item) => item.id !== field.id && isVisibilitySourceField(item),
   );
@@ -108,14 +107,13 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
 
       <View style={styles.switchRow}>
         <Text style={styles.switchLabel}>Näytä vain jos ehto täyttyy</Text>
-        <Switch
+        <AppSwitch
           value={enabled}
           onValueChange={(value) => {
             if (value) enableWithDefault();
             else onChange(undefined);
           }}
           disabled={sources.length === 0}
-          trackColor={{ true: colors.accent, false: colors.border }}
         />
       </View>
 

@@ -2,18 +2,23 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  Switch,
   Text,
   TextInput,
   View,
   type StyleProp,
+  type SwitchProps,
   type ViewStyle,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { SymbolView } from 'expo-symbols';
+import type { ReactNode } from 'react';
+import Slider from '@react-native-community/slider';
 
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useAppColors } from '@/src/theme/ThemeContext';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
+import { formatPercent } from '@/src/core/utils/formatters';
 
 type BrandLogoProps = {
   width?: number;
@@ -43,6 +48,21 @@ export function BrandIcon({ size = 32 }: BrandIconProps) {
       style={{ width: size, height: size }}
       resizeMode="contain"
       accessibilityLabel="ColoRajaton"
+    />
+  );
+}
+
+type AppSwitchProps = Omit<SwitchProps, 'trackColor' | 'thumbColor' | 'ios_backgroundColor'>;
+
+export function AppSwitch(props: AppSwitchProps) {
+  const colors = useAppColors();
+
+  return (
+    <Switch
+      {...props}
+      trackColor={{ false: colors.border, true: colors.accent }}
+      thumbColor={colors.secondary}
+      ios_backgroundColor={colors.border}
     />
   );
 }
@@ -199,6 +219,46 @@ function PressableButton({ title, onPress, disabled, variant }: PressableButtonP
   );
 }
 
+type AppPercentSliderProps = {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+};
+
+export function AppPercentSlider({
+  label,
+  value,
+  onChange,
+  min = 0,
+  max = 100,
+  step = 1,
+}: AppPercentSliderProps) {
+  const styles = useThemedStyles(createCommonStyles);
+  const colors = useAppColors();
+
+  return (
+    <View style={styles.sliderWrap}>
+      <View style={styles.sliderHeader}>
+        <Text style={styles.inputLabel}>{label}</Text>
+        <Text style={styles.sliderValue}>{formatPercent(value)}</Text>
+      </View>
+      <Slider
+        value={value}
+        onValueChange={onChange}
+        minimumValue={min}
+        maximumValue={max}
+        step={step}
+        minimumTrackTintColor={colors.accent}
+        maximumTrackTintColor={colors.border}
+        thumbTintColor={colors.accent}
+      />
+    </View>
+  );
+}
+
 type AppInputProps = {
   label: string;
   value: string;
@@ -207,6 +267,7 @@ type AppInputProps = {
   multiline?: boolean;
   placeholder?: string;
   compact?: boolean;
+  trailing?: ReactNode;
 };
 
 export function AppInput({
@@ -217,25 +278,30 @@ export function AppInput({
   multiline = false,
   placeholder,
   compact = false,
+  trailing,
 }: AppInputProps) {
   const styles = useThemedStyles(createCommonStyles);
   return (
     <View style={[styles.inputWrap, compact && styles.inputWrapCompact]}>
       <Text style={[styles.inputLabel, compact && styles.inputLabelCompact]}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        multiline={multiline}
-        placeholder={placeholder}
-        placeholderTextColor="#999"
-        style={[
-          styles.input,
-          compact && styles.inputCompact,
-          multiline && styles.inputMultiline,
-          compact && multiline && styles.inputMultilineCompact,
-        ]}
-      />
+      <View style={trailing ? styles.inputRow : undefined}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          multiline={multiline}
+          placeholder={placeholder}
+          placeholderTextColor="#999"
+          style={[
+            styles.input,
+            trailing ? styles.inputFlex : null,
+            compact && styles.inputCompact,
+            multiline && styles.inputMultiline,
+            compact && multiline && styles.inputMultilineCompact,
+          ]}
+        />
+        {trailing}
+      </View>
     </View>
   );
 }
@@ -387,6 +453,29 @@ function createCommonStyles(colors: AppColorPalette) {
       paddingVertical: 12,
       fontFamily: 'IBMPlexSans_400Regular',
       color: colors.primary,
+    },
+    inputRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 8,
+    },
+    inputFlex: {
+      flex: 1,
+    },
+    sliderWrap: {
+      marginBottom: 12,
+    },
+    sliderHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      gap: 12,
+      marginBottom: 4,
+    },
+    sliderValue: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.accent,
+      fontSize: 15,
     },
     inputCompact: {
       paddingHorizontal: 12,

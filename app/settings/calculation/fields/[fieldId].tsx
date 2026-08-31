@@ -1,9 +1,10 @@
 import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, Switch, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 
+import { FieldDefaultValueEditor } from '@/src/components/form/FieldDefaultValueEditor';
 import { FieldEffectsEditor } from '@/src/components/form/FieldEffectsEditor';
 import { FieldVisibilityEditor } from '@/src/components/form/FieldVisibilityEditor';
 import { FormulaDebugPanel } from '@/src/components/form/FormulaDebugPanel';
@@ -11,6 +12,7 @@ import { ProductFormulaHints } from '@/src/components/form/ProductFormulaHints';
 import { SelectOptionsEditor } from '@/src/components/form/SelectOptionsEditor';
 import {
   AppInput,
+  AppSwitch,
   OutlinedButton,
   PrimaryButton,
   ScreenLoading,
@@ -41,7 +43,6 @@ import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import type { AppColorPalette } from '@/src/theme/colors';
-import { useAppColors } from '@/src/theme/ThemeContext';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 function firstParam(value: string | string[] | undefined): string {
@@ -81,7 +82,6 @@ function applyFieldTypeChange(current: FormField, type: FieldType): FormField {
 
 export default function FormFieldEditorScreen() {
   const styles = useThemedStyles(createStyles);
-  const colors = useAppColors();
   const params = useLocalSearchParams<{
     fieldId: string;
     draft?: string;
@@ -405,21 +405,27 @@ export default function FormFieldEditorScreen() {
               Muokattavissa lomakkeella. Manuaalinen arvo säilyy, kunnes kaavan syötteitä muutetaan
               tai kenttä tyhjennetään.
             </Text>
-            <Switch
+            <AppSwitch
               value={field.allowManualOverride !== false}
               onValueChange={(allowManualOverride) => updateFieldState({ allowManualOverride })}
-              trackColor={{ true: colors.accent, false: colors.border }}
             />
           </View>
         ) : null}
 
         {isInputField ? (
+          <FieldDefaultValueEditor
+            field={field}
+            products={products}
+            onChange={(defaultValue) => updateFieldState({ defaultValue })}
+          />
+        ) : null}
+
+        {isInputField ? (
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>Pakollinen</Text>
-            <Switch
+            <AppSwitch
               value={field.required}
               onValueChange={(required) => updateFieldState({ required })}
-              trackColor={{ true: colors.accent, false: colors.border }}
             />
           </View>
         ) : null}
@@ -474,10 +480,9 @@ export default function FormFieldEditorScreen() {
         {field.type !== 'section' ? (
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>Näytä yhteenvetolomakkeella</Text>
-            <Switch
+            <AppSwitch
               value={field.showOnSummary}
               onValueChange={(showOnSummary) => updateFieldState({ showOnSummary })}
-              trackColor={{ true: colors.accent, false: colors.border }}
             />
           </View>
         ) : null}

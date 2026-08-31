@@ -213,13 +213,27 @@ function pruneMissingFieldIds(pages: FormPage[], fields: FormField[]): FormPage[
   }));
 }
 
-/** Vanha kovakoodattu Materiaalit-sivu muuttuu tavalliseksi sivuksi. */
-function migrateMaterialsSystemPages(pages: FormPage[]): FormPage[] {
-  return pages.map((page) => {
-    if (page.system !== 'materials') return page;
-    const { system: _system, ...rest } = page;
-    return rest;
-  });
+/** Lisää materiaalit-järjestelmäsivu jos puuttuu (ennen kestosivua tai loppuun). */
+function ensureMaterialsSystemPage(pages: FormPage[]): FormPage[] {
+  if (pages.some((page) => page.system === 'materials')) {
+    return pages;
+  }
+
+  const durationIndex = pages.findIndex((page) =>
+    (page.fieldIds ?? []).includes('field_system_tyoryhma_kesto_pv'),
+  );
+  const insertAt = durationIndex >= 0 ? durationIndex : pages.length;
+  const materialsPage: FormPage = {
+    id: 'page_materials',
+    title: 'Materiaalit',
+    sortOrder: insertAt,
+    system: 'materials',
+    fieldIds: [],
+  };
+
+  const next = [...pages];
+  next.splice(insertAt, 0, materialsPage);
+  return next.map((page, sortOrder) => ({ ...page, sortOrder }));
 }
 
 export function normalizeFormDefinition(raw: unknown): FormDefinition {
@@ -232,7 +246,7 @@ export function normalizeFormDefinition(raw: unknown): FormDefinition {
 
   const pages = dedupePageFieldAssignments(
     remapPromotedSystemFieldIds(
-      migrateMaterialsSystemPages(
+      ensureMaterialsSystemPage(
         isLegacyForm(form)
           ? migrateLegacyPages(form)
           : (form.pages ?? []).map((page) => ({ ...page, fieldIds: [...(page.fieldIds ?? [])] })),

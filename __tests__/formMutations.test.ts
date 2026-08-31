@@ -79,6 +79,17 @@ describe('formMutations', () => {
     const customerPage = form.pages.find((page) => page.system === 'customer')!;
     const next = removePage(form, customerPage.id);
     expect(next.pages).toHaveLength(form.pages.length);
+
+    const materialsPage = form.pages.find((page) => page.system === 'materials')!;
+    const afterMaterials = removePage(form, materialsPage.id);
+    expect(afterMaterials.pages).toHaveLength(form.pages.length);
+  });
+
+  test('isSystemPage includes customer and materials', () => {
+    const form = createDefaultFormDefinition();
+    expect(isSystemPage(form.pages.find((page) => page.system === 'customer')!)).toBe(true);
+    expect(isSystemPage(form.pages.find((page) => page.system === 'materials')!)).toBe(true);
+    expect(isSystemPage(form.pages.find((page) => page.title === 'Pinta-alat')!)).toBe(false);
   });
 
   test('movePage swaps sort order', () => {
@@ -501,17 +512,17 @@ describe('formMutations', () => {
     expect(next.fields.at(-1)?.type).toBe('product_select');
   });
 
-  test('default form has no hardcoded materials page', () => {
+  test('default form includes materials system page', () => {
     const form = createDefaultFormDefinition();
-    expect(form.pages.some((page) => page.system === 'materials')).toBe(false);
-    expect(form.pages.some((page) => page.id === 'page_materials')).toBe(false);
+    expect(form.pages.some((page) => page.system === 'materials')).toBe(true);
+    expect(form.pages.some((page) => page.id === 'page_materials')).toBe(true);
   });
 
-  test('normalizeFormDefinition converts legacy materials pages to regular pages', () => {
+  test('normalizeFormDefinition preserves materials system page', () => {
     const legacy = {
       ...createDefaultFormDefinition(),
       pages: [
-        ...createDefaultFormDefinition().pages,
+        ...createDefaultFormDefinition().pages.filter((page) => page.system !== 'materials'),
         {
           id: 'page_materials',
           title: 'Materiaalit',
@@ -524,10 +535,10 @@ describe('formMutations', () => {
     const normalized = normalizeFormDefinition(legacy);
     const materials = normalized.pages.find((page) => page.id === 'page_materials');
     expect(materials).toBeDefined();
-    expect(materials?.system).toBeUndefined();
-    expect(isSystemPage(materials!)).toBe(false);
+    expect(materials?.system).toBe('materials');
+    expect(isSystemPage(materials!)).toBe(true);
     const removed = removePage(normalized, materials!.id);
-    expect(removed.pages.some((page) => page.id === 'page_materials')).toBe(false);
+    expect(removed.pages.some((page) => page.id === 'page_materials')).toBe(true);
   });
 
   test('normalizeFormDefinition migrates legacy formula keys to Finnish', () => {

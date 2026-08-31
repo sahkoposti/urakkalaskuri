@@ -1,5 +1,5 @@
 import { previewFormContext } from '../src/core/calculation/calculationPipeline';
-import { applyFieldValueChange } from '../src/core/form/applyFieldValueChange';
+import { applyFieldValueChange, isComputedFieldOverridden, resetComputedFieldOverride } from '../src/core/form/applyFieldValueChange';
 import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
 import { computedFieldsAffectedByKeyChange } from '../src/core/form/formula/formulaDependencies';
@@ -106,6 +106,39 @@ describe('applyFieldValueChange', () => {
     const next = applyFieldValueChange(form, baseValues, 'laskenta_seinapinta_ala_m2', '150');
     expect(next.laskenta_seinapinta_ala_m2).toBe('150');
     expect(next.kiintea_seinapinta_ala_m2).toBe('120');
+  });
+
+  test('clearing a computed field keeps manual override mode with empty value', () => {
+    const form = defaultForm();
+    const overridden = applyFieldValueChange(
+      form,
+      baseValues,
+      'laskenta_seinapinta_ala_m2',
+      '200',
+    );
+    const cleared = applyFieldValueChange(form, overridden, 'laskenta_seinapinta_ala_m2', '');
+    expect(cleared.laskenta_seinapinta_ala_m2).toBe('');
+    expect(isComputedFieldOverridden(form, cleared, 'laskenta_seinapinta_ala_m2')).toBe(true);
+  });
+
+  test('clearing computed display without prior override enters manual mode', () => {
+    const form = defaultForm();
+    const cleared = applyFieldValueChange(form, baseValues, 'laskenta_seinapinta_ala_m2', '');
+    expect(cleared.laskenta_seinapinta_ala_m2).toBe('');
+    expect(isComputedFieldOverridden(form, cleared, 'laskenta_seinapinta_ala_m2')).toBe(true);
+  });
+
+  test('resetComputedFieldOverride removes manual override', () => {
+    const form = defaultForm();
+    const overridden = applyFieldValueChange(
+      form,
+      baseValues,
+      'laskenta_seinapinta_ala_m2',
+      '200',
+    );
+    const reset = resetComputedFieldOverride(overridden, 'laskenta_seinapinta_ala_m2');
+    expect(reset.laskenta_seinapinta_ala_m2).toBeUndefined();
+    expect(isComputedFieldOverridden(form, reset, 'laskenta_seinapinta_ala_m2')).toBe(false);
   });
 });
 

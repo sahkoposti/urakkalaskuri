@@ -1,8 +1,11 @@
-import { Switch, Text, View } from 'react-native';
+import { Text, View, Pressable } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
 import { AppPicker } from '@/src/components/AppPicker';
-import { AppInput, SectionTitle } from '@/src/components/common';
+import { AppInput, AppSwitch, SectionTitle } from '@/src/components/common';
+import { isComputedFieldOverridden } from '@/src/core/form/applyFieldValueChange';
 import { visibleHelpText } from '@/src/core/form/fieldHelpText';
+import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
 import { filterVisibleFields } from '@/src/core/form/fieldVisibility';
 import {
   findProductById,
@@ -25,6 +28,7 @@ type WizardFieldListProps = {
   computedValues: Record<string, number>;
   products: Product[];
   onChange: (key: string, value: string) => void;
+  onResetOverride: (key: string) => void;
 };
 
 export function WizardFieldList({
@@ -34,6 +38,7 @@ export function WizardFieldList({
   computedValues,
   products,
   onChange,
+  onResetOverride,
 }: WizardFieldListProps) {
   const styles = useThemedStyles(createStyles);
   const colors = useAppColors();
@@ -54,7 +59,7 @@ export function WizardFieldList({
           const computedText =
             computed !== undefined && Number.isFinite(computed) ? formatDecimal(computed) : '';
           const overrideRaw = fieldValues[field.key];
-          const isOverridden = overrideRaw !== undefined && overrideRaw.trim() !== '';
+          const isOverridden = isComputedFieldOverridden(form, fieldValues, field.key);
 
           if (canOverride) {
             const label = `${field.label}${field.unit ? ` (${field.unit})` : ''}`;
@@ -62,15 +67,33 @@ export function WizardFieldList({
               <View key={field.id}>
                 <AppInput
                   label={label}
-                  value={isOverridden ? overrideRaw : computedText}
+                  value={isOverridden ? overrideRaw ?? '' : computedText}
                   onChangeText={(value) => onChange(field.key, value)}
                   keyboardType="decimal-pad"
                   placeholder={computedText || 'Esim. 5'}
+                  trailing={
+                    isOverridden ? (
+                      <Pressable
+                        onPress={() => onResetOverride(field.key)}
+                        style={({ pressed }) => [
+                          styles.resetButton,
+                          pressed && styles.resetButtonPressed,
+                        ]}
+                        accessibilityLabel="Palauta laskettu arvo"
+                        hitSlop={8}
+                      >
+                        <SymbolView
+                          name="arrow.counterclockwise"
+                          size={18}
+                          tintColor={colors.accent}
+                        />
+                      </Pressable>
+                    ) : null
+                  }
                 />
                 {isOverridden ? (
                   <Text style={styles.overrideHint}>
-                    Manuaalinen arvo – tyhjennä kenttä tai muuta kaavan syötteitä palauttaaksesi
-                    laskennan
+                    Manuaalinen arvo – paina nuoli-painiketta palauttaaksesi laskennan
                   </Text>
                 ) : null}
                 {help ? <Text style={styles.hint}>{help}</Text> : null}
@@ -95,7 +118,7 @@ export function WizardFieldList({
         if (isSystemField(field)) return null;
 
         if (isProductField(field)) {
-          const selectedId = getSelectedProductId(fieldValues, field.key) ?? '';
+          const selectedId = getSelectedProductId(fieldValues, field.key, field) ?? '';
           const selectedProduct = findProductById(products, selectedId);
           const consumption = selectedProduct
             ? productConsumption(selectedProduct.attributes)
@@ -146,7 +169,7 @@ export function WizardFieldList({
                 {field.required ? ' *' : ''}
               </Text>
               <AppPicker
-                selectedValue={fieldValues[field.key] ?? field.defaultValue ?? ''}
+                selectedValue={resolveFieldRawValue(field, fieldValues)}
                 onValueChange={(value) => onChange(field.key, value)}
                 placeholder="Valitse..."
                 allowEmpty
@@ -161,15 +184,14 @@ export function WizardFieldList({
         }
 
         if (field.type === 'boolean') {
-          const checked = fieldValues[field.key] === 'true';
+          const checked = resolveFieldRawValue(field, fieldValues) === 'true';
           return (
             <View key={field.id}>
               <View style={styles.switchRow}>
                 <Text style={styles.inputLabel}>{field.label}</Text>
-                <Switch
+                <AppSwitch
                   value={checked}
                   onValueChange={(value) => onChange(field.key, value ? 'true' : 'false')}
-                  trackColor={{ true: colors.accent, false: colors.border }}
                 />
               </View>
               {help ? <Text style={styles.hint}>{help}</Text> : null}
@@ -182,7 +204,7 @@ export function WizardFieldList({
           <View key={field.id}>
             <AppInput
               label={label}
-              value={fieldValues[field.key] ?? ''}
+              value={resolveFieldRawValue(field, fieldValues)}
               onChangeText={(value) => onChange(field.key, value)}
               keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
               placeholder={field.type === 'number' ? 'Esim. 120' : undefined}
@@ -219,6 +241,16 @@ function createStyles(colors: AppColorPalette) {
       opacity: 0.7,
       fontFamily: 'IBMPlexSans_400Regular',
       fontSize: 12,
+    },
+    resetButton: {
+      padding: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      backgroundColor: colors.secondary,
+    },
+    resetButtonPressed: {
+      opacity: 0.85,
     },
     productMeta: {
       marginTop: -4,

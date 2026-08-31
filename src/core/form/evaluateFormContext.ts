@@ -17,6 +17,7 @@ import {
   isProductField,
 } from '@/src/core/form/productFieldUtils';
 import { buildSettingsFormulaContext } from '@/src/core/form/settingsFormulaContext';
+import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
 import { isSystemField, MATERIALS_CONTEXT_KEY } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { AppSettings, Product } from '@/src/core/models/types';
@@ -96,7 +97,10 @@ function exportProductField(
   products: Product[],
   context: Record<string, number>,
 ): void {
-  const product = findProductById(products, getSelectedProductId(fieldValues, field.key));
+  const product = findProductById(
+    products,
+    getSelectedProductId(fieldValues, field.key, field),
+  );
   if (!product) return;
   exportProductToContext(field.key, product, context);
 }
@@ -262,10 +266,10 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
 
       if (isSystemField(field)) continue;
 
-      const rawFromValues = useDebugExamples ? field.debugExampleValue : fieldValues[field.key];
-      const raw =
-        rawFromValues?.trim() ||
-        (!useDebugExamples && field.type === 'select' ? field.defaultValue : undefined);
+      const rawFromValues = useDebugExamples ? field.debugExampleValue : undefined;
+      const raw = useDebugExamples
+        ? rawFromValues?.trim()
+        : resolveFieldRawValue(field, fieldValues) || undefined;
       const parsed = parseFieldRaw(field, raw);
       if (parsed === null) {
         if (recordTrace && useDebugExamples && field.required) {

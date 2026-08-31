@@ -1,18 +1,16 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, Switch, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
-import { AppCard, PrimaryButton, ScreenLoading } from '@/src/components/common';
+import { AppCard, AppSwitch, PrimaryButton, ScreenLoading } from '@/src/components/common';
 import type { FormDebugSettings } from '@/src/core/form/types';
 import { db, useApp } from '@/src/context/AppContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import type { AppColorPalette } from '@/src/theme/colors';
-import { useAppColors } from '@/src/theme/ThemeContext';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function FormDebugSettingsScreen() {
   const styles = useThemedStyles(createStyles);
-  const colors = useAppColors();
   const { ready, formDebug, refreshFormSettings } = useApp();
   const [debug, setDebug] = useState<FormDebugSettings>(formDebug);
 
@@ -60,10 +58,9 @@ export default function FormDebugSettingsScreen() {
                 näyttävät live-laskennan näiden arvojen pohjalta.
               </Text>
             </View>
-            <Switch
+            <AppSwitch
               value={debug.enabled}
               onValueChange={(enabled) => setDebug((current) => ({ ...current, enabled }))}
-              trackColor={{ true: colors.accent, false: colors.border }}
             />
           </View>
         </AppCard>
@@ -74,12 +71,11 @@ export default function FormDebugSettingsScreen() {
               <Text style={styles.title}>Näytä välivaiheet</Text>
               <Text style={styles.body}>Listaa kaikki laskentavaiheet live-paneelissa.</Text>
             </View>
-            <Switch
+            <AppSwitch
               value={debug.showIntermediateSteps}
               onValueChange={(showIntermediateSteps) =>
                 setDebug((current) => ({ ...current, showIntermediateSteps }))
               }
-              trackColor={{ true: colors.accent, false: colors.border }}
             />
           </View>
         </AppCard>

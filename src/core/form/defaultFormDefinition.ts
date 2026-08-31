@@ -71,9 +71,16 @@ export function createDefaultFormDefinition(): FormDefinition {
       ],
     },
     {
+      id: 'page_materials',
+      title: 'Materiaalit',
+      sortOrder: 2,
+      system: 'materials' as const,
+      fieldIds: [] as string[],
+    },
+    {
       id: 'page_duration',
       title: 'Työryhmän arvioitu kesto (pv)',
-      sortOrder: 2,
+      sortOrder: 3,
       fieldIds: ['field_system_tyoryhma_kesto_pv'],
     },
   ];
@@ -81,7 +88,7 @@ export function createDefaultFormDefinition(): FormDefinition {
   return {
     id: 'default',
     name: 'Peruslaskenta',
-    version: 5,
+    version: 6,
     pages,
     fields: userFields,
     updatedAt: Date.now(),

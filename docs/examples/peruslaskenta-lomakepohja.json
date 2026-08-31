@@ -1,0 +1,91 @@
+{
+  "id": "default",
+  "name": "Peruslaskenta",
+  "version": 1,
+  "updatedAt": 0,
+  "pages": [
+    {
+      "id": "page_customer",
+      "title": "Asiakas",
+      "sortOrder": 0,
+      "system": "customer",
+      "fieldIds": []
+    },
+    {
+      "id": "page_surfaces",
+      "title": "Pinta-alat",
+      "sortOrder": 1,
+      "fieldIds": [
+        "field_kiintea_seinapinta",
+        "field_aukkovahennykset",
+        "field_laudoitustyyppi",
+        "field_laskenta_seinapinta"
+      ]
+    },
+    {
+      "id": "page_materials",
+      "title": "Materiaalit",
+      "sortOrder": 2,
+      "system": "materials",
+      "fieldIds": []
+    },
+    {
+      "id": "page_duration",
+      "title": "Työryhmän arvioitu kesto (pv)",
+      "sortOrder": 3,
+      "fieldIds": [
+        "field_system_tyoryhma_kesto_pv"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": "field_kiintea_seinapinta",
+      "key": "kiintea_seinapinta_ala_m2",
+      "label": "Kiinteä seinäpinta-ala",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "unit": "m²",
+      "defaultValue": "120",
+      "helpText": "Mitattu pinta-ala ennen aukkoja."
+    },
+    {
+      "id": "field_aukkovahennykset",
+      "key": "aukkovahennykset",
+      "label": "Aukkovähennykset",
+      "type": "number",
+      "required": false,
+      "showOnSummary": true,
+      "unit": "m²",
+      "defaultValue": "18"
+    },
+    {
+      "id": "field_laudoitustyyppi",
+      "key": "laudoitustyyppi",
+      "label": "Laudoitustyyppi",
+      "type": "select",
+      "required": true,
+      "showOnSummary": true,
+      "defaultValue": "1.15",
+      "options": [
+        { "label": "Paneeli", "value": "1.15" },
+        { "label": "Lomalaudoitus", "value": "1.25" },
+        { "label": "Rimalaudoitus", "value": "1.3" },
+        { "label": "Hirsi", "value": "1" }
+      ]
+    },
+    {
+      "id": "field_laskenta_seinapinta",
+      "key": "laskenta_seinapinta_ala_m2",
+      "label": "Seinäpinta-ala (laskettu)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "m²",
+      "formula": "(kiintea_seinapinta_ala_m2 - aukkovahennykset) * laudoitustyyppi",
+      "helpText": "Voit ylikirjoittaa arvon wizardissa nuoli-painikkeella takaisin laskettuun."
+    }
+  ]
+}

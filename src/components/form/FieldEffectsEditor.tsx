@@ -1,11 +1,10 @@
-import { Pressable, Switch, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
-import { AppInput } from '@/src/components/common';
+import { AppInput, AppSwitch } from '@/src/components/common';
 import type { FieldEffect, FormDefinition, FormField } from '@/src/core/form/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 import type { AppColorPalette } from '@/src/theme/colors';
-import { useAppColors } from '@/src/theme/ThemeContext';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 const EFFECT_TYPES: { type: FieldEffect['type']; label: string }[] = [
@@ -73,7 +72,6 @@ type FieldEffectsEditorProps = {
 
 export function FieldEffectsEditor({ field, onChange }: FieldEffectsEditorProps) {
   const styles = useThemedStyles(createStyles);
-  const colors = useAppColors();
   const effects = (field.effects ?? []).filter(
     (effect) => effect.type !== 'add_material' && (effect.type as string) !== 'set_variable',
   );
@@ -127,10 +125,9 @@ export function FieldEffectsEditor({ field, onChange }: FieldEffectsEditorProps)
               {showFieldToggle ? (
                 <View style={styles.switchRow}>
                   <Text style={styles.switchLabel}>Käytä tämän kentän arvoa</Text>
-                  <Switch
+                  <AppSwitch
                     value={fieldValueMode}
                     onValueChange={(value) => setUseFieldValue(index, value)}
-                    trackColor={{ true: colors.accent, false: colors.border }}
                   />
                 </View>
               ) : null}

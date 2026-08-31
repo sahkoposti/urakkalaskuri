@@ -1,4 +1,5 @@
 import { fieldsForPage } from '@/src/core/form/formDefinitionHelpers';
+import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
 import { isFieldVisible } from '@/src/core/form/fieldVisibility';
 import {
   findProductById,
@@ -7,7 +8,7 @@ import {
 } from '@/src/core/form/productFieldUtils';
 import { isSystemField } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormPage } from '@/src/core/form/types';
-import type { Product } from '@/src/core/models/types';
+import type { Product, WizardLineDraft } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 
 export function getDurationDaysFromValues(
@@ -28,9 +29,21 @@ export function validateFormPageWithValues(
   customerName = '',
   products: Product[] = [],
   numericContext?: Record<string, number>,
+  materialLines: WizardLineDraft[] = [],
 ): string | null {
   if (page.system === 'customer' && !customerName.trim()) {
     return 'Anna asiakkaan nimi.';
+  }
+
+  if (page.system === 'materials') {
+    for (const [index, line] of materialLines.entries()) {
+      if (!(line.quantity > 0)) {
+        return `Materiaalirivi ${index + 1}: määrän on oltava suurempi kuin 0.`;
+      }
+      if (!products.some((product) => product.id === line.product.id)) {
+        return `Materiaalirivi ${index + 1}: valittu tuote ei ole enää saatavilla.`;
+      }
+    }
   }
   for (const field of fieldsForPage(form, page.id)) {
     if (field.type === 'section' || field.type === 'computed' || isSystemField(field)) {
@@ -40,10 +53,7 @@ export function validateFormPageWithValues(
       continue;
     }
 
-    const raw =
-      fieldValues[field.key]?.trim() ||
-      (field.type === 'select' ? field.defaultValue?.trim() : undefined) ||
-      '';
+    const raw = resolveFieldRawValue(field, fieldValues).trim();
     if (field.required && !raw) {
       return `${field.label}: kenttä on pakollinen.`;
     }
@@ -59,7 +69,7 @@ export function validateFormPageWithValues(
     }
 
     if (isProductField(field)) {
-      const productId = getSelectedProductId(fieldValues, field.key);
+      const productId = getSelectedProductId(fieldValues, field.key, field);
       if (field.required && !productId) {
         return `${field.label}: valitse tuote.`;
       }

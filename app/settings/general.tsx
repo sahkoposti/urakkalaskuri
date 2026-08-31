@@ -2,17 +2,21 @@ import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
-import { AppInput, PrimaryButton, ScreenLoading } from '@/src/components/common';
+import { AppInput, AppPercentSlider, PrimaryButton, ScreenLoading } from '@/src/components/common';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 
+function maxMarginPercent(commissionPercent: number): number {
+  return Math.max(0, 99 - commissionPercent);
+}
+
 export default function GeneralSettingsScreen() {
   const { ready, settings, refreshSettings } = useApp();
   const { showAlert } = useThemedAlert();
   const [vatPercent, setVatPercent] = useState('');
-  const [defaultMarginPercent, setDefaultMarginPercent] = useState('');
+  const [defaultMarginPercent, setDefaultMarginPercent] = useState(settings.defaultMarginPercent);
   const [defaultCommissionPercent, setDefaultCommissionPercent] = useState('');
   const [defaultHourlyRate, setDefaultHourlyRate] = useState('');
   const [defaultCrewSize, setDefaultCrewSize] = useState('');
@@ -20,17 +24,25 @@ export default function GeneralSettingsScreen() {
 
   useEffect(() => {
     setVatPercent(String(settings.vatPercent));
-    setDefaultMarginPercent(String(settings.defaultMarginPercent));
+    setDefaultMarginPercent(settings.defaultMarginPercent);
     setDefaultCommissionPercent(String(settings.defaultCommissionPercent));
     setDefaultHourlyRate(String(settings.defaultHourlyRate));
     setDefaultCrewSize(String(settings.defaultCrewSize));
     setWorkdayHours(String(settings.workdayHours));
   }, [settings]);
 
+  const commissionValue =
+    parseNumber(defaultCommissionPercent) ?? settings.defaultCommissionPercent;
+  const marginMax = maxMarginPercent(commissionValue);
+
+  useEffect(() => {
+    setDefaultMarginPercent((current) => Math.min(current, marginMax));
+  }, [marginMax]);
+
   const isDirty = useMemo(
     () =>
       vatPercent !== String(settings.vatPercent) ||
-      defaultMarginPercent !== String(settings.defaultMarginPercent) ||
+      defaultMarginPercent !== settings.defaultMarginPercent ||
       defaultCommissionPercent !== String(settings.defaultCommissionPercent) ||
       defaultHourlyRate !== String(settings.defaultHourlyRate) ||
       defaultCrewSize !== String(settings.defaultCrewSize) ||
@@ -49,7 +61,7 @@ export default function GeneralSettingsScreen() {
   async function persistSettings(): Promise<boolean> {
     const parsed = {
       vatPercent: parseNumber(vatPercent),
-      defaultMarginPercent: parseNumber(defaultMarginPercent),
+      defaultMarginPercent,
       defaultCommissionPercent: parseNumber(defaultCommissionPercent),
       defaultHourlyRate: parseNumber(defaultHourlyRate),
       defaultCrewSize: Number.parseInt(defaultCrewSize, 10),
@@ -57,17 +69,28 @@ export default function GeneralSettingsScreen() {
     };
 
     if (
-      Object.values(parsed).some((value) => value === null || !Number.isFinite(value)) ||
-      (parsed.defaultCrewSize ?? 0) <= 0
+      parsed.vatPercent === null ||
+      !Number.isFinite(parsed.defaultMarginPercent) ||
+      parsed.defaultCommissionPercent === null ||
+      parsed.defaultHourlyRate === null ||
+      parsed.defaultCrewSize === null ||
+      !Number.isFinite(parsed.defaultCrewSize) ||
+      parsed.workdayHours === null ||
+      parsed.defaultCrewSize <= 0
     ) {
       showAlert('Virhe', 'Anna kelvolliset arvot kaikille kentille.');
+      return false;
+    }
+
+    if (parsed.defaultMarginPercent + parsed.defaultCommissionPercent! >= 100) {
+      showAlert('Virhe', 'Myyntikate ja myyntipalkkio yhteensä on oltava alle 100 %.');
       return false;
     }
 
     await db.saveSettings({
       ...settings,
       vatPercent: parsed.vatPercent!,
-      defaultMarginPercent: parsed.defaultMarginPercent!,
+      defaultMarginPercent: parsed.defaultMarginPercent,
       defaultCommissionPercent: parsed.defaultCommissionPercent!,
       defaultHourlyRate: parsed.defaultHourlyRate!,
       defaultCrewSize: parsed.defaultCrewSize!,
@@ -101,11 +124,13 @@ export default function GeneralSettingsScreen() {
           onChangeText={setVatPercent}
           keyboardType="decimal-pad"
         />
-        <AppInput
+        <AppPercentSlider
           label="Myyntikatetavoite (%)"
           value={defaultMarginPercent}
-          onChangeText={setDefaultMarginPercent}
-          keyboardType="decimal-pad"
+          onChange={setDefaultMarginPercent}
+          min={0}
+          max={marginMax}
+          step={1}
         />
         <AppInput
           label="Myyntipalkkio (%)"

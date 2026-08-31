@@ -77,9 +77,9 @@ export default function FormPagesSettingsScreen() {
       <Stack.Screen options={{ title: 'Sivut' }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.helpText}>
-          Luo ja järjestä laskennan sivut. Valitse kunkin sivun kentät erikseen. Asiakas-sivulle voi
-          lisätä omia kenttiä; sivua itseään ei voi poistaa. Materiaalit lasketaan Tuotelista-kentistä,
-          ei erillisestä sivusta.
+          Luo ja järjestä laskennan sivut. Valitse kunkin sivun kentät erikseen. Asiakas- ja Materiaalit-sivuja
+          ei voi poistaa; niille voi lisätä omia kenttiä. Materiaalirivit lasketaan Materiaalit-sivulta ja
+          vaikuttavat kaavamuuttujaan materiaalit.
         </Text>
 
         {pages.map((page, index) => (

@@ -1,4 +1,5 @@
 import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
+import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
 import { isFieldVisible } from '@/src/core/form/fieldVisibility';
 import {
   findProductById,
@@ -16,12 +17,12 @@ export function formatFieldSummaryValue(
   products: Product[] = [],
 ): string {
   if (field.type === 'product_select') {
-    const product = findProductById(products, getSelectedProductId(fieldValues, field.key));
+    const product = findProductById(products, getSelectedProductId(fieldValues, field.key, field));
     return product?.name ?? '–';
   }
 
   if (field.type === 'select') {
-    const raw = fieldValues[field.key]?.trim() || field.defaultValue?.trim();
+    const raw = resolveFieldRawValue(field, fieldValues);
     if (!raw) return '–';
     return field.options?.find((option) => option.value === raw)?.label ?? raw;
   }
@@ -37,11 +38,12 @@ export function formatFieldSummaryValue(
   }
 
   if (field.type === 'boolean') {
-    return fieldValues[field.key] === 'true' ? 'Kyllä' : 'Ei';
+    const raw = resolveFieldRawValue(field, fieldValues);
+    return raw === 'true' ? 'Kyllä' : 'Ei';
   }
 
   if (field.type === 'text') {
-    const text = fieldValues[field.key]?.trim();
+    const text = resolveFieldRawValue(field, fieldValues);
     return text || '–';
   }
 

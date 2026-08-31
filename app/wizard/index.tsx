@@ -8,6 +8,8 @@ import {
   ScrollView,
   Text,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
@@ -17,13 +19,14 @@ import {
   SectionTitle,
 } from '@/src/components/common';
 import { CustomerStep } from '@/src/components/form/CustomerStep';
+import { MaterialsStep } from '@/src/components/form/MaterialsStep';
 import { WizardFieldList } from '@/src/components/form/WizardFieldList';
 import {
   CalculationValidationError,
   previewFormContext,
   runFormCalculation,
 } from '@/src/core/calculation/calculationPipeline';
-import { applyFieldValueChange } from '@/src/core/form/applyFieldValueChange';
+import { applyFieldValueChange, resetComputedFieldOverride } from '@/src/core/form/applyFieldValueChange';
 import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
 import {
   formVersionMismatchMessage,
@@ -361,6 +364,7 @@ export default function WizardScreen() {
       customerName,
       products,
       previewFormContext(formDefinition, fieldValues, draft.lines, products, settings, duration),
+      draft.lines,
     );
     if (error) {
       showError(error);
@@ -433,6 +437,22 @@ export default function WizardScreen() {
     setStep((current) => current - 1);
   }
 
+  const [isScrollable, setIsScrollable] = useState(false);
+  const scrollViewHeightRef = useRef(0);
+  const contentHeightRef = useRef(0);
+
+  function updateScrollable() {
+    setIsScrollable(contentHeightRef.current > scrollViewHeightRef.current + 1);
+  }
+
+  useEffect(() => {
+    setIsScrollable(false);
+    scrollViewHeightRef.current = 0;
+    contentHeightRef.current = 0;
+  }, [step, currentPage?.id]);
+
+  const nextButtonTitle = step === stepCount - 1 ? 'Laske' : 'Seuraava';
+
   return (
     <>
       <Stack.Screen options={{ title: editId ? 'Muokkaa laskelmaa' : title }} />
@@ -445,6 +465,14 @@ export default function WizardScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          onLayout={(event) => {
+            scrollViewHeightRef.current = event.nativeEvent.layout.height;
+            updateScrollable();
+          }}
+          onContentSizeChange={(_, height) => {
+            contentHeightRef.current = height;
+            updateScrollable();
+          }}
         >
           <SectionTitle title={currentPage?.title ?? 'Laskenta'} center />
 
@@ -464,19 +492,12 @@ export default function WizardScreen() {
             </View>
           ) : null}
 
-          <View style={styles.actionBar}>
-            {step > 0 ? (
-              <View style={styles.actionButton}>
-                <OutlinedButton title="Edellinen" onPress={handleBack} />
-              </View>
-            ) : null}
-            <View style={[styles.actionButton, step === 0 && styles.actionButtonFull]}>
-              <PrimaryButton
-                title={step === stepCount - 1 ? 'Laske' : 'Seuraava'}
-                onPress={handleNext}
-              />
-            </View>
-          </View>
+          <WizardActionBar
+            step={step}
+            nextTitle={nextButtonTitle}
+            onBack={handleBack}
+            onNext={handleNext}
+          />
 
           <View style={styles.stepContent}>
             {currentPage?.system === 'customer' && (
@@ -502,6 +523,13 @@ export default function WizardScreen() {
                 onNotesChange={setCustomerNotes}
               />
             )}
+            {currentPage?.system === 'materials' && (
+              <MaterialsStep
+                lines={draft.lines}
+                products={products}
+                onChange={(lines) => setDraft((current) => ({ ...current, lines }))}
+              />
+            )}
             {currentPage ? (
               <WizardFieldList
                 form={formDefinition}
@@ -512,9 +540,22 @@ export default function WizardScreen() {
                 onChange={(key, value) =>
                   setFieldValues((current) => applyFieldValueChange(formDefinition, current, key, value))
                 }
+                onResetOverride={(key) =>
+                  setFieldValues((current) => resetComputedFieldOverride(current, key))
+                }
               />
             ) : null}
           </View>
+
+          {isScrollable ? (
+            <WizardActionBar
+              step={step}
+              nextTitle={nextButtonTitle}
+              onBack={handleBack}
+              onNext={handleNext}
+              style={styles.actionBarBottom}
+            />
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -546,6 +587,31 @@ export default function WizardScreen() {
         ]}
       />
     </>
+  );
+}
+
+type WizardActionBarProps = {
+  step: number;
+  nextTitle: string;
+  onBack: () => void;
+  onNext: () => void;
+  style?: StyleProp<ViewStyle>;
+};
+
+function WizardActionBar({ step, nextTitle, onBack, onNext, style }: WizardActionBarProps) {
+  const styles = useThemedStyles(createStyles);
+
+  return (
+    <View style={[styles.actionBar, style]}>
+      {step > 0 ? (
+        <View style={styles.actionButton}>
+          <OutlinedButton title="Edellinen" onPress={onBack} />
+        </View>
+      ) : null}
+      <View style={[styles.actionButton, step === 0 && styles.actionButtonFull]}>
+        <PrimaryButton title={nextTitle} onPress={onNext} />
+      </View>
+    </View>
   );
 }
 
@@ -600,6 +666,10 @@ function createStyles(colors: AppColorPalette) {
       gap: 12,
       marginTop: 20,
       marginBottom: 8,
+    },
+    actionBarBottom: {
+      marginTop: 24,
+      marginBottom: 0,
     },
     actionButton: {
       flex: 1,
