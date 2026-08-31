@@ -2,6 +2,10 @@ import { Pressable, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 import { AppInput, AppSwitch } from '@/src/components/common';
+import {
+  effectCanUseFieldValue,
+  effectUsesFieldValue,
+} from '@/src/core/form/fieldEffects';
 import type { FieldEffect, FormDefinition, FormField } from '@/src/core/form/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -46,19 +50,8 @@ function effectValuePlaceholder(type: FieldEffect['type']): string {
   }
 }
 
-function canUseFieldValue(field: FormField, type: FieldEffect['type']): boolean {
-  if (type !== 'add_material_fixed' && type !== 'add_duration') return false;
-  return field.type === 'number' || field.type === 'computed' || field.type === 'select';
-}
-
-function usesFieldValue(effect: FieldEffect, field: FormField): boolean {
-  if (!canUseFieldValue(field, effect.type)) return false;
-  if (effect.value !== undefined && Number.isFinite(effect.value)) return false;
-  return !effect.quantityRef || effect.quantityRef === field.key;
-}
-
 function defaultEffect(type: FieldEffect['type'], field: FormField): FieldEffect {
-  if (canUseFieldValue(field, type) && (field.type === 'computed' || field.type === 'number')) {
+  if (effectCanUseFieldValue(field, type) && (field.type === 'computed' || field.type === 'number')) {
     return { type };
   }
   return { type };
@@ -110,8 +103,8 @@ export function FieldEffectsEditor({ field, onChange }: FieldEffectsEditorProps)
         <Text style={styles.empty}>Ei vaikutuksia.</Text>
       ) : (
         effects.map((effect, index) => {
-          const fieldValueMode = usesFieldValue(effect, field);
-          const showFieldToggle = canUseFieldValue(field, effect.type);
+          const fieldValueMode = effectUsesFieldValue(effect, field);
+          const showFieldToggle = effectCanUseFieldValue(field, effect.type);
 
           return (
             <View key={`${effect.type}-${index}`} style={styles.card}>
