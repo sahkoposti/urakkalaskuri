@@ -1,6 +1,7 @@
 import { previewFormContext } from '../src/core/calculation/calculationPipeline';
 import { applyFieldValueChange, isComputedFieldOverridden, resetComputedFieldOverride } from '../src/core/form/applyFieldValueChange';
 import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
+import { resolveFieldRawValue } from '../src/core/form/fieldDefaultValue';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
 import { computedFieldsAffectedByKeyChange } from '../src/core/form/formula/formulaDependencies';
 import type { FormDefinition } from '../src/core/form/types';
@@ -139,6 +140,21 @@ describe('applyFieldValueChange', () => {
     const reset = resetComputedFieldOverride(overridden, 'laskenta_seinapinta_ala_m2');
     expect(reset.laskenta_seinapinta_ala_m2).toBeUndefined();
     expect(isComputedFieldOverridden(form, reset, 'laskenta_seinapinta_ala_m2')).toBe(false);
+  });
+
+  test('clearing default-backed field keeps empty override instead of reverting', () => {
+    const form = defaultForm();
+    const surface = form.fields.find((field) => field.key === 'kiintea_seinapinta_ala_m2')!;
+    surface.defaultValue = '120';
+
+    const clearedFromDefault = applyFieldValueChange(form, {}, 'kiintea_seinapinta_ala_m2', '');
+    expect(clearedFromDefault.kiintea_seinapinta_ala_m2).toBe('');
+    expect(resolveFieldRawValue(surface, clearedFromDefault)).toBe('');
+
+    const edited = applyFieldValueChange(form, {}, 'kiintea_seinapinta_ala_m2', '90');
+    const clearedAfterEdit = applyFieldValueChange(form, edited, 'kiintea_seinapinta_ala_m2', '');
+    expect(clearedAfterEdit.kiintea_seinapinta_ala_m2).toBe('');
+    expect(resolveFieldRawValue(surface, clearedAfterEdit)).toBe('');
   });
 });
 

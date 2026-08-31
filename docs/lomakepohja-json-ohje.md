@@ -230,7 +230,342 @@ Sovellus **lisää automaattisesti** hinta- ja kestolaskennan järjestelmäkent�
 
 **Materiaalit:** kaavamuuttuja `materiaalit` (alv0, alkaa 0). Kenttäefektit `add_material_fixed` / `multiply_materials` vaikuttavat tähän.
 
-**Huom:** Osa järjestelmäkentistä on piilotettu asetusten Kentät-listasta, mutta voit sijoittaa ne sivulle JSON:ssa jos haluat näyttää ne wizardissa.
+**Huom:** Osa järjestelmäkentistä on piilotettu asetuksen Kentät-listasta, mutta voit sijoittaa ne sivulle JSON:ssa jos haluat näyttää ne wizardissa.
+
+**Järjestelmäkaavoja ei tarvitse muokata** materiaalien vuoksi – `kokonaishinta` ym. käyttävät jo muuttujaa `materiaalit`. Sinun tehtäväsi on vain **syöttää data** tähän muuttujaan (rivit tai efektit alla).
+
+### 9.1 Materiaalit JSONissa – kolme tapaa
+
+| Tapa | Milloin | JSON |
+|------|---------|------|
+| **A. Materiaalirivit** | Käyttäjä valitsee tuotteet listasta | `pages[].system: "materials"` |
+| **B. Kiinteä lisä €** | Esim. +150 € aina | `"effects": [{ "type": "add_material_fixed", "value": 150 }]` |
+| **C. Laskettu summa** | Kaava laskee hinnan → materiaaleihin | `computed` + `"effects": [{ "type": "add_material_fixed" }]` (ilman `value`) |
+
+Kaikki kolme **voidaan yhdistää**: `materiaalit = rivien summa × kerroin + efektien lisät`.
+
+---
+
+#### Tapa A – Materiaalirivit (wizard-sivu)
+
+Lisää sivu, jolla `system` on `"materials"`. Kenttälistaa (`fieldIds`) ei tarvita – sivu näyttää tuote+määrä -rivit automaattisesti.
+
+```json
+{
+  "id": "page_materials",
+  "title": "Materiaalit",
+  "sortOrder": 2,
+  "system": "materials",
+  "fieldIds": []
+}
+```
+
+Tuotteet määritellään sovelluksessa (**Tuotteet**), ei JSON-lomakkeessa. Käyttäjä lisää rivejä wizardissa.
+
+---
+
+#### Tapa B – Kiinteä materiaalisumma kentältä
+
+Numero- tai muu kenttä lisää aina saman €-summan:
+
+```json
+{
+  "id": "field_kuljetus",
+  "key": "kuljetuslisä",
+  "label": "Kuljetuslisä",
+  "type": "number",
+  "required": false,
+  "showOnSummary": true,
+  "unit": "€",
+  "effects": [
+    { "type": "add_material_fixed", "value": 85 }
+  ]
+}
+```
+
+Tai efekti **käyttää kentän syötettyä arvoa** (käyttäjä kirjoittaa summan wizardissa):
+
+```json
+{
+  "id": "field_lisamateriaali",
+  "key": "lisamateriaali_eur",
+  "label": "Lisämateriaalit (€)",
+  "type": "number",
+  "required": false,
+  "showOnSummary": true,
+  "unit": "€",
+  "effects": [
+    { "type": "add_material_fixed" }
+  ]
+}
+```
+
+**Tärkeä:** `"effects": [{ "type": "add_material_fixed" }]` **ilman** `"value"`-kenttää = käytä kentän omaa numero-/laskenta-arvoa.
+
+---
+
+#### Tapa C – Tuote + kaava + materiaaleihin (yleisin kaavamateriaali)
+
+**Vaihe 1 – Tuotevalinta** (`product_select`). Korvaa `TUOTE_ID` oikealla id:llä (**Tuotteet**-näkymä):
+
+```json
+{
+  "id": "field_maali",
+  "key": "kaytettava_maali",
+  "label": "Käytettävä maali",
+  "type": "product_select",
+  "required": true,
+  "showOnSummary": true
+}
+```
+
+**Vaihe 2 – Laskettu hinta** (`computed`). Kaava käyttää tuotteen attribuutteja:
+
+```json
+{
+  "id": "field_maalin_kustannus",
+  "key": "maalin_kustannus",
+  "label": "Maalin kustannus",
+  "type": "computed",
+  "required": false,
+  "showOnSummary": true,
+  "allowManualOverride": true,
+  "unit": "€",
+  "formula": "laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta",
+  "effects": [
+    { "type": "add_material_fixed" }
+  ]
+}
+```
+
+**Vaihe 3 – Sijoita kentät sivulle** (`pages[].fieldIds`):
+
+```json
+{
+  "id": "page_surfaces",
+  "title": "Pinta-alat",
+  "sortOrder": 1,
+  "fieldIds": [
+    "field_kiintea_seinapinta",
+    "field_laskenta_seinapinta",
+    "field_maali",
+    "field_maalin_kustannus"
+  ]
+}
+```
+
+`computed`-kentän `effects` ilman `value`:ää syöttää **lasketun arvon** järjestelmän `materiaalit`-muuttujaan. Kenttä voi silti näkyä yhteenvedossa – se on erillinen näyttökenttä, ei itse `materiaalit`-kaava.
+
+---
+
+#### Materiaalikerroin (koko summa × kerroin)
+
+Esim. +10 % materiaaleihin:
+
+```json
+{
+  "id": "field_materiaali_kerroin",
+  "key": "materiaali_kerroin",
+  "label": "Materiaalikerroin",
+  "type": "number",
+  "required": false,
+  "showOnSummary": false,
+  "defaultValue": "1",
+  "effects": [
+    { "type": "multiply_materials", "value": 1.1 }
+  ]
+}
+```
+
+`multiply_materials` käyttää JSONissa yleensä kiinteää `"value"`-kerrointa. Useita kertojiin efektejä kerrotaan peräkkäin.
+
+---
+
+#### Mitä **ei** tarvitse tehdä JSONissa
+
+- ❌ Kirjoittaa `materiaalit`-kenttää `fields`-taulukkoon – se on putken sisäinen muuttuja
+- ❌ Muokata `kokonaishinta`-järjestelmäkaavaa materiaalien lisäämiseksi
+- ❌ Odottaa, että `product_select` tai `computed` lisää materiaaleihin **ilman** `effects`-taulukkoa
+
+Valmis kopioitava esimerkki: **[examples/materiaalit-kaava-esimerkki.json](./examples/materiaalit-kaava-esimerkki.json)**
+
+### 9.2 Työ ja kesto JSONissa – vaikutukset
+
+**Urakkahinta** (`urakka_hinta_alv0`) lasketaan järjestelmäkaavalla:
+
+```text
+urakka_hinta_alv0 = tyoryhma_kesto_h × asetukset.tyoryhman_koko × asetukset.tuntihinta
+```
+
+Työhön **ei ole suoraa €-lisäefektiä** (kuten materiaaleilla `add_material_fixed`). Työn hinta muuttuu **keston** kautta. Voit vaikuttaa kestoon kolmella tavalla:
+
+| Tapa | Milloin | JSON / mekanismi |
+|------|---------|------------------|
+| **A. Kesto kaavalla** | Pinta-ala → päivät | Kaava kentälle `tyoryhma_kesto_pv` tai computed → syöttö kestoon |
+| **B. Lisää tunteja** | Esim. +2 h esivalmistusta | `"effects": [{ "type": "add_duration", "value": 2 }]` |
+| **C. Kerro kestoa** | Esim. vaikea kohde × 1,2 | `"effects": [{ "type": "multiply_duration", "value": 1.2 }]` |
+
+Kuten materiaaleissa: `add_duration` **ilman** `"value"`-kenttää käyttää kentän omaa numero-/laskenta-arvoa **tunteina**.
+
+Lopullinen kesto: `(peruskesto tunteina × kerroin) + lisätunnit` → siitä lasketaan urakkahinta.
+
+---
+
+#### Tapa A – Kesto laskettuna (kaava)
+
+Järjestelmäkenttä `tyoryhma_kesto_pv` (id: `field_system_tyoryhma_kesto_pv`) on wizardissa muokattavissa. Voit antaa sille kaavan **viedyn JSON:n kautta** (vie pohja → muokkaa → tuo):
+
+```json
+{
+  "id": "field_system_tyoryhma_kesto_pv",
+  "key": "tyoryhma_kesto_pv",
+  "label": "Työryhmän kesto (pv)",
+  "type": "computed",
+  "required": false,
+  "showOnSummary": true,
+  "allowManualOverride": true,
+  "unit": "pv",
+  "formula": "laskenta_seinapinta_ala_m2 / 25"
+}
+```
+
+Tai erillinen computed-kenttä, joka **lisää tunteja** efektillä (esim. laskettu lisäkesto tunteina):
+
+```json
+{
+  "id": "field_lisatyotunnit",
+  "key": "lisatyotunnit",
+  "label": "Lisätyötunnit (esim. tikkaat)",
+  "type": "computed",
+  "required": false,
+  "showOnSummary": true,
+  "unit": "h",
+  "formula": "if(onko_tikkaat, 4, 0)",
+  "effects": [
+    { "type": "add_duration" }
+  ]
+}
+```
+
+`effects` ilman `value` → kentän laskema arvo (tunnit) lisätään kestoon.
+
+**Huom:** Sijoita `field_system_tyoryhma_kesto_pv` jollekin sivulle `fieldIds`-listassa, jotta kesto näkyy wizardissa.
+
+---
+
+#### Tapa B – Kiinteät lisätunnit
+
+```json
+{
+  "id": "field_esivalmistus",
+  "key": "esivalmistus_tunnit",
+  "label": "Esivalmistustunnit",
+  "type": "number",
+  "required": false,
+  "showOnSummary": true,
+  "unit": "h",
+  "effects": [
+    { "type": "add_duration", "value": 2 }
+  ]
+}
+```
+
+Tai ehdollinen kenttä (`showWhen`): efekti ajetaan vain kun kenttä on **näkyvissä** wizardissa.
+
+```json
+{
+  "id": "field_extra_hours",
+  "key": "extra_hours",
+  "label": "Lisätunnit",
+  "type": "number",
+  "required": false,
+  "showOnSummary": true,
+  "unit": "h",
+  "effects": [
+    { "type": "add_duration" }
+  ]
+}
+```
+
+---
+
+#### Tapa C – Kestokerroin (työkerroin, vaikeus jne.)
+
+Kiinteä kerroin JSONissa:
+
+```json
+{
+  "id": "field_vaikeus",
+  "key": "vaikeuskerroin",
+  "label": "Vaikeuskerroin",
+  "type": "select",
+  "required": true,
+  "showOnSummary": true,
+  "defaultValue": "1",
+  "options": [
+    { "label": "Normaali", "value": "1" },
+    { "label": "Vaikea", "value": "1.2" },
+    { "label": "Erittäin vaikea", "value": "1.4" }
+  ],
+  "effects": [
+    { "type": "multiply_duration", "value": 1.2 }
+  ]
+}
+```
+
+**Select-kentällä** kerroin tulee yleensä kiinteästä `value`:sta efektissä, **tai** voit jättää `value` pois ja käyttää valinnan numeerista arvoa (option.value on merkkijono numerona kontekstissa):
+
+```json
+{
+  "id": "field_vaikeus",
+  "key": "vaikeuskerroin",
+  "label": "Vaikeuskerroin",
+  "type": "select",
+  "options": [
+    { "label": "Normaali", "value": "1" },
+    { "label": "Vaikea", "value": "1.2" }
+  ],
+  "effects": [
+    { "type": "multiply_duration" }
+  ]
+}
+```
+
+Tuotteen **työkerroin** kaavoissa (`maali.tyokerroin`) ei kerro kestoa automaattisesti – jos haluat saman vaikutuksen efektin kautta, luo computed esim. `kaytettava_maali.tyokerroin` ja `multiply_duration` ilman `value`.
+
+---
+
+#### Työ vs materiaali – efektit rinnakkain
+
+Sama kenttä voi vaikuttaa **molempiin** (harvinaista, mutta sallittu):
+
+```json
+{
+  "id": "field_erikoiskohde",
+  "key": "erikoiskohde_lisa",
+  "label": "Erikoiskohde",
+  "type": "number",
+  "required": false,
+  "showOnSummary": true,
+  "unit": "h",
+  "effects": [
+    { "type": "add_duration" },
+    { "type": "add_material_fixed", "value": 120 }
+  ]
+}
+```
+
+Tässä kesto kasvaa kentän arvon verran (tunnit) **ja** materiaaleihin lisätään 120 €.
+
+---
+
+#### Mitä **ei** tarvitse / voi tehdä
+
+- ❌ `add_urakka_fixed` tai suora € lisä työhön – ei ole olemassa; käytä `add_duration` tai pidennä kestoa kaavalla
+- ❌ Odottaa, että computed-työtuntien kaava muuttaa urakkahintaa **ilman** efektiä – kesto pitää päivittää kaavalla (`tyoryhma_kesto_pv`) tai `add_duration` / `multiply_duration`
+- ✅ Urakkahinta päivittyy automaattisesti, kun kesto muuttuu (järjestelmäkaava hoitaa)
+
+Valmis esimerkki (materiaalit + kesto): **[examples/materiaalit-kaava-esimerkki.json](./examples/materiaalit-kaava-esimerkki.json)** – voit yhdistää §9.1- ja §9.2-kentät samaan pohjaan.
 
 ---
 
@@ -262,29 +597,43 @@ Näytä kenttä vain kun toinen kenttä täyttää ehdon:
 
 ---
 
-## 11. Vaikutukset (`effects`)
+## 11. Vaikutukset (`effects`) – pika-reference
 
-Kenttä voi vaikuttaa materiaaleihin tai kestoon laskennan lopussa:
+Kenttä voi vaikuttaa **materiaaleihin** tai **kestoon** (työhön indirektisti). Yksityiskohtaiset JSON-esimerkit: **§9.1** (materiaalit), **§9.2** (työ/kesto).
 
 ```json
 {
   "effects": [
     { "type": "add_material_fixed", "value": 150 },
-    { "type": "add_duration", "value": 2 },
+    { "type": "add_material_fixed" },
     { "type": "multiply_materials", "value": 1.1 },
+    { "type": "add_duration", "value": 2 },
+    { "type": "add_duration" },
     { "type": "multiply_duration", "value": 1.05 }
   ]
 }
 ```
 
-| `type` | Vaikutus |
-|--------|----------|
-| `add_material_fixed` | Lisää € materiaaleihin (`materiaalit`) |
-| `multiply_materials` | Kertoo materiaalit |
-| `add_duration` | Lisää tunteja kestoon |
-| `multiply_duration` | Kertoo keston |
+| `type` | Vaikutus | `value` pois = kentän arvo |
+|--------|----------|----------------------------|
+| `add_material_fixed` | Lisää € materiaaleihin (`materiaalit`) | Kyllä (numero/computed/select) |
+| `multiply_materials` | Kertoo materiaalit | Yleensä kiinteä JSONissa |
+| `add_duration` | Lisää tunteja kestoon → kasvattaa urakkahintaa | Kyllä (numero/computed) |
+| `multiply_duration` | Kertoo keston → kasvattaa urakkahintaa | Kyllä (numero/select/computed kontekstissa) |
 
-Ilman `value`-kenttää voidaan käyttää kentän omaa arvoa (numero/select/computed) – asetetaan sovelluksen kenttäeditorissa.
+**Kentän oma arvo JSONissa:** jätä `value` pois – efekti lukee kentän arvon (numero, select tai computed):
+
+```json
+{ "type": "add_material_fixed" }
+```
+
+Kiinteä summa JSONissa:
+
+```json
+{ "type": "add_material_fixed", "value": 150 }
+```
+
+`add_material_fixed` + computed + ilman `value` = tyypillisin tapa viedä kaavamateriaali `materiaalit`-muuttujaan. Katso **§9.1 Tapa C**.
 
 ---
 
@@ -391,9 +740,14 @@ Se sisältää:
   "showOnSummary": true,
   "allowManualOverride": true,
   "unit": "€",
-  "formula": "laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta"
+  "formula": "laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta",
+  "effects": [
+    { "type": "add_material_fixed" }
+  ]
 }
 ```
+
+`effects` ilman `value` lisää lasketun hinnan järjestelmän `materiaalit`-summaan (ks. §9.1).
 
 Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 
@@ -410,8 +764,9 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 - [ ] `showWhen.fieldKey` viittaa olemassa olevaan kenttään
 - [ ] `defaultValue` on merkkijono (numerot lainausmerkeissä)
 - [ ] `product_select`-oletusarvo on olemassa oleva tuote-id
-
----
+- [ ] Materiaalit: joko `system: "materials"`-sivu ja/tai kentillä `effects` (`add_material_fixed` / `multiply_materials`)
+- [ ] Laskettu materiaali: `computed`-kentällä on `"effects": [{ "type": "add_material_fixed" }]` (ilman `value` jos käytetään kaavan tulosta)
+- [ ] Työn kesto: kaava `tyoryhma_kesto_pv`:lle ja/tai `add_duration` / `multiply_duration` -efektit
 
 ## 17. Yleisimmät virheet
 
@@ -423,6 +778,10 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 | Kaava palauttaa 0 | Tarkista `key`-nimet; onko lähdekenttä piilotettu `showWhen`:lla |
 | Valinta ei vaikuta kaavaan | `select`-option `value` pitää olla numero merkkijonona |
 | Järjestelmähinnat puuttuvat | Varmista kestosivu ja järjestelmäkaavat; tarkista Yleinen-asetukset |
+| Materiaalit jäävät 0 | Lisää `effects` computed-kentälle tai materiaalirivit-sivu; pelkkä kaava ei riitä |
+| Computed näyttää hinnan mutta kokonaishinta ei muutu | Puuttuu `"effects": [{ "type": "add_material_fixed" }]` |
+| Urakkahinta ei muutu vaikka lisäsit työtä | Työhön ei ole €-efektiä – käytä `add_duration` (tunnit) tai kaavaa kestoon |
+| Lisätunnit eivät vaikuta | Puuttuu `"effects": [{ "type": "add_duration" }]` tai kenttä piilotettu `showWhen`:lla |
 
 ---
 

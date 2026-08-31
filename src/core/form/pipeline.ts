@@ -1,5 +1,7 @@
-import { evaluateFormContext } from '@/src/core/form/evaluateFormContext';
+import { previewFormContextDetailed } from '@/src/core/calculation/calculationPipeline';
+import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
 import { extractFormulaIdentifiers } from '@/src/core/form/formula/evaluator';
+import { isSystemField } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { AppSettings, Product } from '@/src/core/models/types';
 import { defaultSettings } from '@/src/core/models/types';
@@ -8,8 +10,61 @@ export type DebugStepSource = 'input' | 'select' | 'computed';
 
 export interface DebugPipelineOptions {
   settings?: AppSettings;
-  materialsVat0?: number;
   products?: Product[];
+}
+
+/** Syötekenttien arvot debug-esimerkeistä (kaavadetut lasketaan kaavalla). */
+export function buildDebugFieldValues(form: FormDefinition): Record<string, string> {
+  const fieldValues: Record<string, string> = {};
+  for (const field of form.fields) {
+    if (field.type === 'section') continue;
+
+    if (field.type === 'computed') {
+      const isInputStyle =
+        !field.formula?.trim() ||
+        (isSystemField(field) && field.allowManualOverride !== false);
+      if (!isInputStyle) continue;
+
+      const example = field.debugExampleValue?.trim();
+      const defaultRaw = resolveFieldRawValue(field, fieldValues);
+      const raw = example || defaultRaw;
+      if (raw) fieldValues[field.key] = raw;
+      continue;
+    }
+
+    const example = field.debugExampleValue?.trim();
+    if (example) {
+      fieldValues[field.key] = example;
+      continue;
+    }
+    const defaultRaw = resolveFieldRawValue(field, fieldValues);
+    if (defaultRaw) fieldValues[field.key] = defaultRaw;
+  }
+  return fieldValues;
+}
+
+function hasDebugInputValue(field: FormField): boolean {
+  if (field.debugExampleValue?.trim()) return true;
+  if (field.defaultValue?.trim()) return true;
+  return Boolean(resolveFieldRawValue(field, {})?.trim());
+}
+
+function collectMissingDebugExampleErrors(
+  form: FormDefinition,
+  focusFieldKey?: string,
+): string[] {
+  const relevant = focusFieldKey ? collectRelevantFieldKeys(form, focusFieldKey) : null;
+  const errors: string[] = [];
+
+  for (const field of form.fields) {
+    if (field.type === 'section' || field.type === 'computed' || isSystemField(field)) continue;
+    if (relevant && !relevant.has(field.key)) continue;
+    if (!field.required) continue;
+    if (hasDebugInputValue(field)) continue;
+    errors.push(`${field.label}: debug-esimerkkiarvo puuttuu`);
+  }
+
+  return errors;
 }
 
 export interface DebugStep {
@@ -82,29 +137,42 @@ function filterTraceForFocus(
   return { steps: filteredSteps, errors: filteredErrors };
 }
 
-/** Live-debug: sama evaluateFormContext kuin wizardissa, debug-esimerkkisyötteillä. */
+/** Live-debug: sama previewFormContextDetailed kuin wizardissa, debug-esimerkkisyötteillä. */
 export function runDebugPipeline(
   form: FormDefinition,
   focusFieldKey?: string,
   options: DebugPipelineOptions = {},
 ): DebugTrace {
   const settings = options.settings ?? defaultSettings;
-  const materialsVat0 = options.materialsVat0 ?? 0;
+  const products = options.products ?? [];
+  const fieldValues = buildDebugFieldValues(form);
 
-  const { context, steps, errors } = evaluateFormContext({
+  const pipelineResult = previewFormContextDetailed({
     form,
+    fieldValues,
+    materialLines: [],
+    products,
     settings,
-    materialsTotal: materialsVat0,
-    products: options.products ?? [],
-    useDebugExamples: true,
+    strict: false,
     collectTrace: true,
-    strictSystemFields: false,
   });
+
+  const validationErrors = collectMissingDebugExampleErrors(form, focusFieldKey);
+  const errors = [...validationErrors, ...pipelineResult.errors];
+  const steps = pipelineResult.steps;
 
   if (focusFieldKey) {
     const filtered = filterTraceForFocus(form, focusFieldKey, steps, errors);
-    return { context, steps: filtered.steps, errors: filtered.errors };
+    return {
+      context: pipelineResult.context,
+      steps: filtered.steps,
+      errors: filtered.errors,
+    };
   }
 
-  return { context, steps, errors };
+  return {
+    context: pipelineResult.context,
+    steps,
+    errors,
+  };
 }

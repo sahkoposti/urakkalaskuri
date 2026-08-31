@@ -6,7 +6,7 @@ import {
 } from '../src/core/calculation/calculationPipeline';
 import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
-import { runDebugPipeline } from '../src/core/form/pipeline';
+import { buildDebugFieldValues, runDebugPipeline } from '../src/core/form/pipeline';
 import type { Product } from '../src/core/models/types';
 import { defaultSettings } from '../src/core/models/types';
 
@@ -373,30 +373,17 @@ describe('runFormCalculation', () => {
     expect(result.totalPriceVat).toBeCloseTo(context.kokonaishinta, 2);
   });
 
-  test('debug pipeline agrees with wizard formulas on kokonaishinta', () => {
+  test('debug pipeline agrees with wizard previewFormContext', () => {
     const form = defaultForm();
-    const fieldValues = {
-      kiintea_seinapinta_ala_m2: '120',
-      aukkovahennykset: '18',
-      laudoitustyyppi: '1.15',
-      tyoryhma_kesto_pv: '5',
-    };
-
-    const { context } = runFormCalculation({
-      form,
-      fieldValues,
-      materialLines: [{ product: materialProduct, quantity: 1 }],
-      products: [],
-      settings: defaultSettings,
-    });
+    const fieldValues = buildDebugFieldValues(form);
+    const wizardContext = previewFormContext(form, fieldValues, [], [], defaultSettings);
 
     const debug = runDebugPipeline(form, 'kokonaishinta', {
       settings: defaultSettings,
-      materialsVat0: 250,
     });
 
     expect(debug.errors).toHaveLength(0);
-    expect(debug.context.kokonaishinta).toBeCloseTo(context.kokonaishinta, 2);
+    expect(debug.context.kokonaishinta).toBeCloseTo(wizardContext.kokonaishinta, 2);
   });
 
   test('materialsVat0 comes from materiaalit pipeline variable', () => {

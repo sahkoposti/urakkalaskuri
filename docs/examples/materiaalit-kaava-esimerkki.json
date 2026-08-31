@@ -1,0 +1,88 @@
+{
+  "id": "materiaali_esimerkki",
+  "name": "Materiaalit – kaavaesimerkki",
+  "version": 1,
+  "updatedAt": 0,
+  "pages": [
+    {
+      "id": "page_customer",
+      "title": "Asiakas",
+      "sortOrder": 0,
+      "system": "customer",
+      "fieldIds": []
+    },
+    {
+      "id": "page_work",
+      "title": "Työ ja materiaalit",
+      "sortOrder": 1,
+      "fieldIds": [
+        "field_pinta_ala",
+        "field_maali",
+        "field_maalin_kustannus",
+        "field_kuljetus"
+      ]
+    },
+    {
+      "id": "page_materials",
+      "title": "Materiaalit (rivit)",
+      "sortOrder": 2,
+      "system": "materials",
+      "fieldIds": []
+    },
+    {
+      "id": "page_duration",
+      "title": "Kesto",
+      "sortOrder": 3,
+      "fieldIds": ["field_system_tyoryhma_kesto_pv"]
+    }
+  ],
+  "fields": [
+    {
+      "id": "field_pinta_ala",
+      "key": "pinta_ala_m2",
+      "label": "Pinta-ala",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "unit": "m²",
+      "defaultValue": "100"
+    },
+    {
+      "id": "field_maali",
+      "key": "kaytettava_maali",
+      "label": "Käytettävä maali",
+      "type": "product_select",
+      "required": true,
+      "showOnSummary": true,
+      "helpText": "Tuote valitaan Tuotteet-rekisteristä. Korvaa defaultValue oikealla tuote-id:llä."
+    },
+    {
+      "id": "field_maalin_kustannus",
+      "key": "maalin_kustannus",
+      "label": "Maalin kustannus (laskettu)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "€",
+      "formula": "pinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta",
+      "effects": [
+        { "type": "add_material_fixed" }
+      ],
+      "helpText": "Kaava laskee hinnan; effects syöttää sen materiaalit-muuttujaan."
+    },
+    {
+      "id": "field_kuljetus",
+      "key": "kuljetuslisä",
+      "label": "Kuljetuslisä",
+      "type": "number",
+      "required": false,
+      "showOnSummary": true,
+      "unit": "€",
+      "effects": [
+        { "type": "add_material_fixed", "value": 85 }
+      ],
+      "helpText": "Kiinteä 85 € lisätään materiaaleihin jokaisella laskennalla."
+    }
+  ]
+}

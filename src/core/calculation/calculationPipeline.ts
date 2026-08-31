@@ -8,6 +8,8 @@ import {
 import {
   evaluateFormContext,
   reevaluateComputedFields,
+  type EvaluateFormContextResult,
+  type FormContextStep,
 } from '@/src/core/form/evaluateFormContext';
 import type { FormDefinition } from '@/src/core/form/types';
 import type { AppSettings, Product, WizardLineDraft } from '@/src/core/models/types';
@@ -48,15 +50,16 @@ export interface FormCalculationOutput {
 }
 
 /** Tuotantoputki: syötteet + tuotteet + asetukset + lomakekaavat. */
-export function runProductionPipeline(
+export function evaluateProductionPipeline(
   form: FormDefinition,
   fieldValues: Record<string, string>,
   materialsTotal: number,
   settings: AppSettings,
   products: Product[] = [],
-  options: { strictSystemFields?: boolean } = {},
-): Record<string, number> {
+  options: { strictSystemFields?: boolean; collectTrace?: boolean } = {},
+): EvaluateFormContextResult {
   const strictSystemFields = options.strictSystemFields ?? true;
+  const collectTrace = options.collectTrace ?? false;
   try {
     return evaluateFormContext({
       form,
@@ -65,13 +68,26 @@ export function runProductionPipeline(
       fieldValues,
       products,
       strictSystemFields,
-    }).context;
+      collectTrace,
+    });
   } catch (error) {
     if (error instanceof CalculationValidationError) throw error;
     throw new CalculationValidationError(
       error instanceof Error ? error.message : 'Kaavavirhe',
     );
   }
+}
+
+export function runProductionPipeline(
+  form: FormDefinition,
+  fieldValues: Record<string, string>,
+  materialsTotal: number,
+  settings: AppSettings,
+  products: Product[] = [],
+  options: { strictSystemFields?: boolean } = {},
+): Record<string, number> {
+  return evaluateProductionPipeline(form, fieldValues, materialsTotal, settings, products, options)
+    .context;
 }
 
 function resolveGroupDurationHours(
@@ -174,12 +190,16 @@ export interface ResolveFormContextInput {
   legacyDuration?: string;
   /** false = live-esikatselu (ei heitä kestovirhettä). */
   strict?: boolean;
+  /** Kerää kaavavälivaiheet (debug). */
+  collectTrace?: boolean;
 }
 
 export interface ResolveFormContextOutput {
   context: Record<string, number>;
   materialLines: WizardLineDraft[];
   groupDurationHours: number | null;
+  steps: FormContextStep[];
+  errors: string[];
 }
 
 /**
@@ -226,14 +246,18 @@ export function resolveFormContextWithEffects(
     baseHours === null ? null : applyDurationEffects(baseHours, effects);
 
   // 4) Lopullinen kaavalaskenta lopullisilla materiaaleilla (+ kestopäivitys)
-  const context = runProductionPipeline(
+  const collectTrace = input.collectTrace ?? false;
+  const finalPipeline = evaluateProductionPipeline(
     input.form,
     input.fieldValues,
     materialsVat0,
     input.settings,
     input.products,
-    { strictSystemFields: strict },
+    { strictSystemFields: strict, collectTrace },
   );
+  const context = finalPipeline.context;
+  const steps = collectTrace ? finalPipeline.steps : [];
+  const errors = collectTrace ? finalPipeline.errors : [];
 
   if (groupDurationHours !== null) {
     const formulaHours = context.tyoryhma_kesto_h;
@@ -254,7 +278,63 @@ export function resolveFormContextWithEffects(
     }
   }
 
-  return { context, materialLines, groupDurationHours };
+  return { context, materialLines, groupDurationHours, steps, errors };
+}
+
+/** Live-esikatselu + valinnainen debug-jälki (sama laskenta kuin wizardissa). */
+export function previewFormContextDetailed(
+  input: ResolveFormContextInput,
+): ResolveFormContextOutput {
+  const collectTrace = input.collectTrace ?? false;
+
+  try {
+    if (!formHasFieldEffects(input.form)) {
+      const result = evaluateFormContext({
+        form: input.form,
+        settings: input.settings,
+        materialsTotal: materialLinesTotal(input.materialLines),
+        fieldValues: input.fieldValues,
+        products: input.products,
+        strictSystemFields: false,
+        collectTrace,
+      });
+      return {
+        context: result.context,
+        materialLines: [...input.materialLines],
+        groupDurationHours: resolveGroupDurationHours(
+          result.context,
+          input.fieldValues,
+          input.settings,
+          input.legacyDuration,
+          1,
+          0,
+          false,
+        ),
+        steps: collectTrace ? result.steps : [],
+        errors: collectTrace ? result.errors : [],
+      };
+    }
+    return resolveFormContextWithEffects({
+      ...input,
+      strict: false,
+    });
+  } catch {
+    const result = evaluateProductionPipeline(
+      input.form,
+      input.fieldValues,
+      materialLinesTotal(input.materialLines),
+      input.settings,
+      input.products,
+      { strictSystemFields: false, collectTrace },
+    );
+    return {
+      context: result.context,
+      materialLines: [...input.materialLines],
+      groupDurationHours: null,
+      steps: collectTrace ? result.steps : [],
+      errors: collectTrace ? result.errors : [],
+    };
+  }
 }
 
 /** Live-esikatselu: sama tulos kuin finish, ilman turhaa toista kaavakierrosta. */
@@ -266,31 +346,14 @@ export function previewFormContext(
   settings: AppSettings,
   legacyDuration?: string,
 ): Record<string, number> {
-  try {
-    if (!formHasFieldEffects(form)) {
-      return evaluateFormContext({
-        form,
-        settings,
-        materialsTotal: materialLinesTotal(materialLines),
-        fieldValues,
-        products,
-        strictSystemFields: false,
-      }).context;
-    }
-    return resolveFormContextWithEffects({
-      form,
-      fieldValues,
-      materialLines,
-      products,
-      settings,
-      legacyDuration,
-      strict: false,
-    }).context;
-  } catch {
-    return runProductionPipeline(form, fieldValues, materialLinesTotal(materialLines), settings, products, {
-      strictSystemFields: false,
-    });
-  }
+  return previewFormContextDetailed({
+    form,
+    fieldValues,
+    materialLines,
+    products,
+    settings,
+    legacyDuration,
+  }).context;
 }
 
 /**

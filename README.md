@@ -2,7 +2,7 @@
 
 ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen laskentaan (Android).
 
-Nykyinen versio on **v1.2.1** (`app.json` / `package.json` 1.2.1). Suunnitelma: [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md).
+Nykyinen versio on **v1.2.2** (`app.json` / `package.json` 1.2.2). Suunnitelmat: [v1.2 (valmis)](docs/v1.2-suunnitelma.md) · [v1.3 (seuraava: PDF)](docs/v1.3-suunnitelma.md).
 
 **Lomakepohjan JSON-ohje:** [docs/lomakepohja-json-ohje.md](docs/lomakepohja-json-ohje.md) · esimerkki: [docs/examples/peruslaskenta-lomakepohja.json](docs/examples/peruslaskenta-lomakepohja.json)
 
@@ -89,5 +89,6 @@ https://github.com/sahkoposti/urakkalaskuri
 
 ## Dokumentaatio
 
-- [v1.2 – nykyinen](docs/v1.2-suunnitelma.md)
+- [v1.3 – seuraava (PDF)](docs/v1.3-suunnitelma.md)
+- [v1.2 – nykyinen julkaisu](docs/v1.2-suunnitelma.md)
 - [Arkisto: v1](docs/archive/v1-suunnitelma.md), [v1.1](docs/archive/v1.1-suunnitelma.md)

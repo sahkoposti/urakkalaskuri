@@ -16,13 +16,17 @@ function formatDebugValue(form: FormDefinition, fieldKey: string, value: number)
   return formatDebugDecimal(value);
 }
 
+function contextNumber(context: Record<string, number>, fieldKey: string): number | undefined {
+  const value = context[fieldKey];
+  return value !== undefined && Number.isFinite(value) ? value : undefined;
+}
+
 type FormulaDebugPanelProps = {
   form: FormDefinition;
   focusFieldKey: string;
   formula?: string;
   showIntermediateSteps?: boolean;
   settings: AppSettings;
-  materialsVat0?: number;
   products?: Product[];
 };
 
@@ -32,24 +36,23 @@ export function FormulaDebugPanel({
   formula,
   showIntermediateSteps = true,
   settings,
-  materialsVat0 = 0,
   products = [],
 }: FormulaDebugPanelProps) {
   const styles = useThemedStyles(createStyles);
   const trace = useMemo(
-    () => runDebugPipeline(form, focusFieldKey, { settings, materialsVat0, products }),
-    [form, focusFieldKey, settings, materialsVat0, products],
+    () => runDebugPipeline(form, focusFieldKey, { settings, products }),
+    [form, focusFieldKey, settings, products],
   );
 
   const focusedStep = trace.steps.find((step) => step.fieldKey === focusFieldKey);
+  const focusValue = contextNumber(trace.context, focusFieldKey);
 
   return (
     <View style={styles.wrap}>
       <Text style={styles.title}>Live-laskenta (debug)</Text>
       <Text style={styles.help}>
-        Syötekentät käyttävät debug-esimerkkiarvoja. Järjestelmäkaavat käyttävät myös Yleinen-asetuksia
-        (tuntihinta, kate, ALV…) ja automaattista materiaalit-muuttujaa (
-        {formatCurrency(materialsVat0)} alv0).
+        Sama laskenta kuin wizardissa: syötteinä debug-esimerkkiarvot, materiaalirivejä ei simuloida.
+        Materiaalit-muuttuja: {formatCurrency(trace.context.materiaalit ?? 0)} (alv0).
       </Text>
 
       {trace.errors.length > 0 ? (
@@ -74,6 +77,10 @@ export function FormulaDebugPanel({
           ) : null}
           {focusedStep?.error ? (
             <Text style={styles.errorText}>{focusedStep.error}</Text>
+          ) : focusValue !== undefined ? (
+            <Text style={styles.result}>
+              Tulos: {formatDebugValue(form, focusFieldKey, focusValue)}
+            </Text>
           ) : focusedStep && !Number.isNaN(focusedStep.result) ? (
             <Text style={styles.result}>
               Tulos: {formatDebugValue(form, focusedStep.fieldKey, focusedStep.result)}
@@ -88,14 +95,17 @@ export function FormulaDebugPanel({
           {trace.steps.length === 0 ? (
             <Text style={styles.help}>Ei välivaiheita tälle kaavalle.</Text>
           ) : (
-            trace.steps.map((step) => (
+            trace.steps.map((step) => {
+              const value = contextNumber(trace.context, step.fieldKey);
+              return (
               <View key={step.fieldKey} style={styles.stepRow}>
                 <Text style={styles.stepLabel}>{step.label}</Text>
                 <Text style={styles.stepValue}>
-                  {step.error ? '–' : formatDebugValue(form, step.fieldKey, step.result)}
+                  {step.error ? '–' : formatDebugValue(form, step.fieldKey, value ?? step.result)}
                 </Text>
               </View>
-            ))
+              );
+            })
           )}
         </>
       ) : null}

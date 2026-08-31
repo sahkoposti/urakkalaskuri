@@ -1,5 +1,6 @@
 import { evaluateFormula } from '../src/core/form/formula/evaluator';
-import { runDebugPipeline } from '../src/core/form/pipeline';
+import { previewFormContext } from '../src/core/calculation/calculationPipeline';
+import { buildDebugFieldValues, runDebugPipeline } from '../src/core/form/pipeline';
 import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition, pipelineFieldOrder } from '../src/core/form/formDefinitionHelpers';
 import { defaultSettings } from '../src/core/models/types';
@@ -94,13 +95,12 @@ describe('runDebugPipeline', () => {
     const form = defaultForm();
     const trace = runDebugPipeline(form, 'kokonaishinta', {
       settings: defaultSettings,
-      materialsVat0: 250,
     });
 
     expect(trace.errors).toHaveLength(0);
     expect(trace.context.tyoryhma_kesto_h).toBeCloseTo(40, 2);
     expect(trace.context.urakka_hinta_alv0).toBeCloseTo(2400, 2);
-    expect(trace.context.materiaalit).toBe(250);
+    expect(trace.context.materiaalit).toBe(0);
     expect(trace.context.kokonaishinta).toBeGreaterThan(0);
   });
 
@@ -120,7 +120,6 @@ describe('runDebugPipeline', () => {
     const form = defaultForm();
     const trace = runDebugPipeline(form, 'alv_maara', {
       settings: defaultSettings,
-      materialsVat0: 250,
     });
 
     expect(trace.errors).toHaveLength(0);
@@ -136,7 +135,6 @@ describe('runDebugPipeline', () => {
     );
     const trace = runDebugPipeline(form, 'alv_maara', {
       settings: defaultSettings,
-      materialsVat0: 250,
     });
 
     expect(trace.errors.some((error) => error.includes('Odottaa laskettuja kenttiä'))).toBe(true);
@@ -193,5 +191,90 @@ describe('runDebugPipeline', () => {
     expect(trace.context['kaytettava_maali.consumption']).toBe(8);
     expect(trace.context['kaytettava_maali.menekki']).toBe(8);
     expect(trace.context.materiaali_maara).toBeCloseTo(117.3 / 8, 2);
+  });
+
+  test('computes materiaalit from debug product and add_material_fixed effect', () => {
+    const form = defaultForm();
+    form.fields.push({
+      id: 'field_paint',
+      key: 'kaytettava_maali',
+      label: 'Käytettävä maali',
+      type: 'product_select',
+      required: true,
+      showOnSummary: true,
+      debugExampleValue: 'paint-1',
+    });
+    form.fields.push({
+      id: 'field_paint_cost',
+      key: 'maalin_kustannus',
+      label: 'Maalin kustannus',
+      type: 'computed',
+      required: false,
+      showOnSummary: true,
+      unit: '€',
+      formula: 'laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta',
+      effects: [{ type: 'add_material_fixed' }],
+    });
+
+    const paint = {
+      id: 'paint-1',
+      name: 'Maali',
+      unit: 'l',
+      unitPriceVat0: 12,
+      attributes: { consumption: 8 },
+      createdAt: new Date(),
+    };
+
+    const trace = runDebugPipeline(form, 'kokonaishinta', {
+      settings: defaultSettings,
+      products: [paint],
+    });
+
+    const expectedMaterials = (117.3 / 8) * 12;
+    expect(trace.errors).toHaveLength(0);
+    expect(trace.context.maalin_kustannus).toBeCloseTo(expectedMaterials, 2);
+    expect(trace.context.materiaalit).toBeCloseTo(expectedMaterials, 2);
+    expect(trace.context.kokonaishinta).toBeGreaterThan(0);
+  });
+
+  test('debug context matches wizard previewFormContext with debug field values', () => {
+    const form = defaultForm();
+    form.fields.push({
+      id: 'field_paint',
+      key: 'kaytettava_maali',
+      label: 'Käytettävä maali',
+      type: 'product_select',
+      required: true,
+      showOnSummary: true,
+      debugExampleValue: 'paint-1',
+    });
+    form.fields.push({
+      id: 'field_paint_cost',
+      key: 'maalin_kustannus',
+      label: 'Maalin kustannus',
+      type: 'computed',
+      required: false,
+      showOnSummary: true,
+      unit: '€',
+      formula: 'laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta',
+      effects: [{ type: 'add_material_fixed' }],
+    });
+
+    const paint = {
+      id: 'paint-1',
+      name: 'Maali',
+      unit: 'l',
+      unitPriceVat0: 12,
+      attributes: { consumption: 8 },
+      createdAt: new Date(),
+    };
+    const products = [paint];
+    const fieldValues = buildDebugFieldValues(form);
+    const wizardContext = previewFormContext(form, fieldValues, [], products, defaultSettings);
+    const trace = runDebugPipeline(form, undefined, { settings: defaultSettings, products });
+
+    for (const [key, value] of Object.entries(wizardContext)) {
+      expect(trace.context[key]).toBeCloseTo(value, 5);
+    }
   });
 });

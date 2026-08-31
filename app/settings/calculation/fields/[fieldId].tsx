@@ -503,7 +503,6 @@ export default function FormFieldEditorScreen() {
             formula={field.formula}
             showIntermediateSteps={formDebug.showIntermediateSteps}
             settings={settings}
-            materialsVat0={formDebug.materialsVat0 ?? 250}
             products={products}
           />
         ) : null}

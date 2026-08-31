@@ -40,24 +40,13 @@ export function applyFieldValueChange(
   value: string,
 ): Record<string, string> {
   const trimmed = value.trim();
-  const had = Object.prototype.hasOwnProperty.call(prev, key);
-  const manualComputed = keepsEmptyComputedOverride(form, key);
 
-  if (!trimmed && !had) {
-    if (manualComputed) {
-      return { ...prev, [key]: '' };
-    }
-    return prev;
-  }
   if (trimmed && prev[key] === value) return prev;
 
   const next = { ...prev };
   if (!trimmed) {
-    if (manualComputed && had) {
-      next[key] = '';
-    } else {
-      delete next[key];
-    }
+    // Explicit empty keeps the field cleared; omitting the key would show defaultValue again.
+    next[key] = '';
   } else {
     next[key] = value;
   }
