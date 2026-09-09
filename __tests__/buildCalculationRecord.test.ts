@@ -1,5 +1,5 @@
 import { buildCalculationRecord, buildCalculationRecordFromComposer } from '@/src/core/wizard/buildCalculationRecord';
-import { createDefaultFormDefinition } from '@/src/core/form/defaultFormDefinition';
+import { createMinimalFormDefinition } from '@/src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '@/src/core/form/formDefinitionHelpers';
 import type { FormDefinition } from '@/src/core/form/types';
 import type { AppSettings, Product, WizardDraft } from '@/src/core/models/types';
@@ -103,7 +103,7 @@ describe('buildCalculationRecord', () => {
 
 describe('buildCalculationRecordFromComposer', () => {
   test('summaa rivit kokonaissummaksi ilman kestoa', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const structure = {
       id: 'default',
       name: 'Ulkoverhoilun maalaus',
@@ -138,7 +138,7 @@ describe('buildCalculationRecordFromComposer', () => {
   });
 
   test('tallentaa lomakesnapshotin jokaiselle täytetylle riville', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const structureA = {
       id: 'a',
       name: 'Ulkoverhoilu',
