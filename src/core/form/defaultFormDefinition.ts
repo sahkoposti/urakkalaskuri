@@ -1,7 +1,7 @@
 import julkisivumaalausV100 from '../../../docs/examples/julkisivumaalaus_v100.json';
 import type { FormDefinition } from '@/src/core/form/types';
 
-/** Pieni testilomake – ei tuotannon oletus. */
+/** Pieni Peruslaskenta-lomake testeille. Tuotannon oletus on createDefaultFormDefinition(). */
 export function createMinimalFormDefinition(): FormDefinition {
   const userFields = [
     {

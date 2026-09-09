@@ -1,4 +1,4 @@
-import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
+import { createDefaultFormDefinition, createMinimalFormDefinition } from '../src/core/form/defaultFormDefinition';
 import {
   FormDefinitionImportError,
   importedFormSummary,
@@ -140,7 +140,7 @@ describe('formDefinitionIo', () => {
 
 describe('unknownFormulaIdentifiers with builtins', () => {
   test('min max round if are not unknown identifiers', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     expect(
       unknownFormulaIdentifiers(
         form,

@@ -1,12 +1,12 @@
 import { evaluateFormula } from '../src/core/form/formula/evaluator';
 import { previewFormContext } from '../src/core/calculation/calculationPipeline';
 import { buildDebugFieldValues, runDebugPipeline } from '../src/core/form/pipeline';
-import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
+import { createMinimalFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition, pipelineFieldOrder } from '../src/core/form/formDefinitionHelpers';
 import { defaultSettings } from '../src/core/models/types';
 
 function defaultForm() {
-  return normalizeFormDefinition(createDefaultFormDefinition());
+  return normalizeFormDefinition(createMinimalFormDefinition());
 }
 
 describe('evaluateFormula', () => {

@@ -4,14 +4,14 @@ import {
   runFormCalculation,
   runProductionPipeline,
 } from '../src/core/calculation/calculationPipeline';
-import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
+import { createMinimalFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
 import { buildDebugFieldValues, runDebugPipeline } from '../src/core/form/pipeline';
 import type { Product } from '../src/core/models/types';
 import { defaultSettings } from '../src/core/models/types';
 
 function defaultForm() {
-  return normalizeFormDefinition(createDefaultFormDefinition());
+  return normalizeFormDefinition(createMinimalFormDefinition());
 }
 
 const paintProduct: Product = {

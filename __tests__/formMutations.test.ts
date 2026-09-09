@@ -1,4 +1,4 @@
-import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
+import { createDefaultFormDefinition, createMinimalFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
 import {
   addField,
@@ -54,7 +54,7 @@ describe('formMutations', () => {
   });
 
   test('addPage appends with empty fieldIds', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const next = addPage(form, 'Työvaiheet');
     expect(next.pages).toHaveLength(form.pages.length + 1);
     const added = next.pages.find((page) => page.title === 'Työvaiheet');
@@ -63,7 +63,7 @@ describe('formMutations', () => {
   });
 
   test('removePage keeps global fields', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const withPage = addPage(form, 'Testisivu');
     const pageId = withPage.pages.find((page) => page.title === 'Testisivu')!.id;
     const withField = addField(withPage, 'number');
@@ -76,7 +76,7 @@ describe('formMutations', () => {
   });
 
   test('removePage can delete a leftover customer page', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const withCustomer = {
       ...form,
       pages: [
@@ -95,7 +95,7 @@ describe('formMutations', () => {
   });
 
   test('isSystemPage is only the customer page', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     expect(
       isSystemPage({
         id: 'page_customer',
@@ -109,7 +109,7 @@ describe('formMutations', () => {
   });
 
   test('movePage swaps sort order', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const pages = [...form.pages].sort((a, b) => a.sortOrder - b.sortOrder);
     const firstId = pages[0].id;
     const secondId = pages[1].id;
@@ -120,7 +120,7 @@ describe('formMutations', () => {
   });
 
   test('addField creates global select field', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const next = addField(form, 'select');
     const created = next.fields.at(-1);
     expect(created?.type).toBe('select');
@@ -129,14 +129,14 @@ describe('formMutations', () => {
   });
 
   test('addField without page keeps field off all pages', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const next = addField(form, 'number');
     const created = next.fields.at(-1)!;
     expect(next.pages.every((page) => !(page.fieldIds ?? []).includes(created.id))).toBe(true);
   });
 
   test('addField with pageId appends field to the end of that page', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const page = form.pages.find((item) => item.title === 'Pinta-alat')!;
     const previous = fieldsForPage(form, page.id);
     const next = addField(form, 'number', page.id);
@@ -149,7 +149,7 @@ describe('formMutations', () => {
   });
 
   test('addField can assign to a chosen page', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const page = form.pages.find((item) => item.title === 'Pinta-alat')!;
     const next = addField(form, 'number', page.id);
     const created = next.fields.at(-1)!;
@@ -160,14 +160,14 @@ describe('formMutations', () => {
   });
 
   test('pagesAssignableForNewField lists content pages', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const pages = pagesAssignableForNewField(form);
     expect(pages.some((page) => page.system === 'customer')).toBe(false);
     expect(pages.some((page) => page.title === 'Pinta-alat')).toBe(true);
   });
 
   test('insertField adds a prepared field without persisting side effects', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const field = {
       id: 'field_draft_1',
       key: 'luonnos',
@@ -182,12 +182,12 @@ describe('formMutations', () => {
   });
 
   test('uniqueFieldKey avoids collisions', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     expect(uniqueFieldKey(form, 'kiintea_seinapinta_ala_m2')).toBe('kiintea_seinapinta_ala_m2_2');
   });
 
   test('moveFieldOnPage reorders page fieldIds', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const pageId = form.pages.find((page) => page.title === 'Pinta-alat')!.id;
     const fields = fieldsForPage(form, pageId);
     const first = fields[0];
@@ -199,7 +199,7 @@ describe('formMutations', () => {
   });
 
   test('removeField removes from all pages', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const pageId = form.pages.find((page) => page.title === 'Pinta-alat')!.id;
     const target = fieldsForPage(form, pageId)[0];
     const next = removeField(form, target.id);
@@ -208,7 +208,7 @@ describe('formMutations', () => {
   });
 
   test('addFieldToPage moves field from other pages', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const sourcePageId = form.pages.find((page) => page.title === 'Pinta-alat')!.id;
     const targetPageId = form.pages.find((page) => page.title.includes('kesto'))!.id;
     const field = fieldsForPage(form, sourcePageId)[0];
@@ -219,7 +219,7 @@ describe('formMutations', () => {
   });
 
   test('fieldsAvailableForPage excludes assigned fields', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const assignedPage = form.pages.find((page) => (page.fieldIds ?? []).length > 0)!;
     const available = fieldsAvailableForPage(form, assignedPage.id);
     const assignedIds = new Set(assignedPage.fieldIds);
@@ -228,14 +228,14 @@ describe('formMutations', () => {
   });
 
   test('removeField blocks system fields', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const systemField = form.fields.find((field) => isSystemField(field))!;
     const next = removeField(form, systemField.id);
     expect(next.fields.some((field) => field.id === systemField.id)).toBe(true);
   });
 
   test('UI-hidden system fields stay out of settings and wizard even if assigned to a page', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const hiddenKeys = ['myyntikate_eur', 'alv_maara', 'alennus_eur'] as const;
 
     for (const systemKey of hiddenKeys) {
@@ -282,7 +282,7 @@ describe('formMutations', () => {
   });
 
   test('price system fields can be shown and overridden on the form', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const visibleKeys = [
       'urakka_hinta_alv0',
       'materiaalit',
@@ -310,7 +310,7 @@ describe('formMutations', () => {
   });
 
   test('restoreSystemField resets label and formula to defaults', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const systemField = form.fields.find((field) => field.systemKey === 'kokonaishinta')!;
     const edited = { ...systemField, label: 'Muokattu', formula: '1 + 1' };
     const restored = restoreSystemField(edited);
@@ -319,7 +319,7 @@ describe('formMutations', () => {
   });
 
   test('merge keeps JSON formula for kokonaishinta_alv0 but not for ALV totals', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const customized = {
       ...form,
       fields: form.fields.map((field) => {
@@ -351,7 +351,7 @@ describe('formMutations', () => {
   });
 
   test('merge does not inject default duration debug example onto a JSON formula', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const customized = {
       ...form,
       fields: form.fields.map((field) =>
@@ -393,15 +393,15 @@ describe('formMutations', () => {
   });
 
   test('normalizeFormDefinition merges system fields', () => {
-    const normalized = normalizeFormDefinition(createDefaultFormDefinition());
+    const normalized = normalizeFormDefinition(createMinimalFormDefinition());
     expect(normalized.fields.some((field) => field.systemKey === 'kokonaishinta')).toBe(true);
     expect(normalized.fields.some((field) => field.systemKey === 'tyoryhma_kesto_h')).toBe(true);
   });
 
   test('normalizeFormDefinition migrates legacy select options', () => {
     const legacy = {
-      ...createDefaultFormDefinition(),
-      fields: createDefaultFormDefinition().fields.map((field) => {
+      ...createMinimalFormDefinition(),
+      fields: createMinimalFormDefinition().fields.map((field) => {
         if (field.key === 'laudoitustyyppi') {
           return {
             ...field,
@@ -437,8 +437,8 @@ describe('formMutations', () => {
 
   test('normalizeFormDefinition migrates legacy finnish keys', () => {
     const legacy = normalizeFormDefinition({
-      ...createDefaultFormDefinition(),
-      fields: createDefaultFormDefinition().fields.map((field) =>
+      ...createMinimalFormDefinition(),
+      fields: createMinimalFormDefinition().fields.map((field) =>
         field.key === 'kiintea_seinapinta_ala_m2'
           ? { ...field, key: 'kiinteä_seinäpinta_ala_m2' }
           : field,
@@ -448,7 +448,7 @@ describe('formMutations', () => {
   });
 
   test('normalizeFormDefinition drops unimplemented set_variable effects', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const target = form.fields.find((field) => field.key === 'laskenta_seinapinta_ala_m2')!;
     const normalized = normalizeFormDefinition({
       ...form,
@@ -469,7 +469,7 @@ describe('formMutations', () => {
   });
 
   test('duplicateField creates copy with new id and key', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const source = form.fields[0];
     const next = duplicateField(form, source.id);
     expect(next.fields).toHaveLength(form.fields.length + 1);
@@ -480,40 +480,40 @@ describe('formMutations', () => {
   });
 
   test('buildDuplicatedField does not insert into the form', () => {
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const source = form.fields[0];
     const copy = buildDuplicatedField(form, source.id);
     expect(copy).not.toBeNull();
     expect(copy?.id).not.toBe(source.id);
-    expect(form.fields).toHaveLength(createDefaultFormDefinition().fields.length);
+    expect(form.fields).toHaveLength(createMinimalFormDefinition().fields.length);
     expect(form.fields.some((field) => field.id === copy?.id)).toBe(false);
   });
 
   test('duplicateField skips system fields', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const systemField = form.fields.find((field) => field.systemKey)!;
     const next = duplicateField(form, systemField.id);
     expect(next.fields).toHaveLength(form.fields.length);
   });
 
   test('unknownFormulaIdentifiers flags missing keys', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const unknown = unknownFormulaIdentifiers(form, 'kiintea_seinapinta_ala_m2 + puuttuva_avain');
     expect(unknown).toContain('puuttuva_avain');
     expect(unknown).not.toContain('kiintea_seinapinta_ala_m2');
   });
 
   test('unknownFormulaIdentifiers allows materiaalit pipeline variable', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const unknown = unknownFormulaIdentifiers(form, 'urakka_hinta_alv0 + materiaalit');
     expect(unknown).toHaveLength(0);
   });
 
   test('normalize migrates legacy materiaalit_alv0 formulas to materiaalit', () => {
     const form = normalizeFormDefinition({
-      ...createDefaultFormDefinition(),
+      ...createMinimalFormDefinition(),
       fields: [
-        ...createDefaultFormDefinition().fields,
+        ...createMinimalFormDefinition().fields,
         {
           id: 'field_system_materiaalit',
           systemKey: 'materiaalit_alv0',
@@ -561,19 +561,19 @@ describe('formMutations', () => {
   });
 
   test('unknownFormulaIdentifiers allows settings prefix', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const unknown = unknownFormulaIdentifiers(form, 'tyoryhma_kesto_pv * settings.workday_hours');
     expect(unknown).toHaveLength(0);
   });
 
   test('unknownFormulaIdentifiers allows asetukset prefix', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const unknown = unknownFormulaIdentifiers(form, 'tyoryhma_kesto_pv * asetukset.tyopaivan_pituus');
     expect(unknown).toHaveLength(0);
   });
 
   test('unknownFormulaIdentifiers allows product list attributes', () => {
-    const form = addField(normalizeFormDefinition(createDefaultFormDefinition()), 'product_select');
+    const form = addField(normalizeFormDefinition(createMinimalFormDefinition()), 'product_select');
     const created = form.fields.at(-1)!;
     created.key = 'kaytettava_maali';
     const unknown = unknownFormulaIdentifiers(
@@ -585,7 +585,7 @@ describe('formMutations', () => {
 
   test('product_select is an editable field type', () => {
     expect(EDITABLE_FIELD_TYPES).toContain('product_select');
-    const form = createDefaultFormDefinition();
+    const form = createMinimalFormDefinition();
     const next = addField(form, 'product_select');
     expect(next.fields.at(-1)?.type).toBe('product_select');
   });
@@ -597,9 +597,9 @@ describe('formMutations', () => {
 
   test('normalizeFormDefinition keeps an explicit materials page but it can be removed', () => {
     const withMaterials = {
-      ...createDefaultFormDefinition(),
+      ...createMinimalFormDefinition(),
       pages: [
-        ...createDefaultFormDefinition().pages,
+        ...createMinimalFormDefinition().pages,
         {
           id: 'page_materials',
           title: 'Materiaalit',
@@ -618,7 +618,7 @@ describe('formMutations', () => {
   });
 
   test('normalizeFormDefinition migrates legacy formula keys to Finnish', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     form.fields = form.fields.map((field) =>
       field.systemKey === 'tyoryhma_kesto_h'
         ? { ...field, formula: 'tyoryhma_kesto_pv * settings.workday_hours' }
@@ -630,7 +630,7 @@ describe('formMutations', () => {
   });
 
   test('tyoryhma_kesto_pv is a system field', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const duration = form.fields.find((field) => field.systemKey === 'tyoryhma_kesto_pv');
     expect(duration).toBeDefined();
     expect(duration?.type).toBe('computed');
@@ -641,7 +641,7 @@ describe('formMutations', () => {
   });
 
   test('alennus_prosentti is a number system field on the duration page', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
     const discount = form.fields.find((field) => field.systemKey === 'alennus_prosentti');
     expect(discount?.type).toBe('number');
     expect(discount?.defaultValue).toBe('0');
@@ -652,12 +652,12 @@ describe('formMutations', () => {
 
   test('normalizeFormDefinition promotes legacy duration user field', () => {
     const legacy = {
-      ...createDefaultFormDefinition(),
-      pages: createDefaultFormDefinition().pages.map((page) =>
+      ...createMinimalFormDefinition(),
+      pages: createMinimalFormDefinition().pages.map((page) =>
         page.title.includes('kesto') ? { ...page, fieldIds: ['field_duration'] } : page,
       ),
       fields: [
-        ...createDefaultFormDefinition().fields,
+        ...createMinimalFormDefinition().fields,
         {
           id: 'field_duration',
           key: 'tyoryhma_kesto_pv',

@@ -1,6 +1,6 @@
 import { previewFormContext } from '../src/core/calculation/calculationPipeline';
 import { applyFieldValueChange, isComputedFieldOverridden, resetComputedFieldOverride } from '../src/core/form/applyFieldValueChange';
-import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
+import { createMinimalFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { resolveFieldRawValue } from '../src/core/form/fieldDefaultValue';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
 import { computedFieldsAffectedByKeyChange } from '../src/core/form/formula/formulaDependencies';
@@ -8,7 +8,7 @@ import type { FormDefinition } from '../src/core/form/types';
 import { defaultSettings } from '../src/core/models/types';
 
 function defaultForm(): FormDefinition {
-  return normalizeFormDefinition(createDefaultFormDefinition());
+  return normalizeFormDefinition(createMinimalFormDefinition());
 }
 
 const baseValues = {

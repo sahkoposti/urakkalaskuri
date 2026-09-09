@@ -1,4 +1,4 @@
-import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
+import { createMinimalFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
 import {
   buildFormSnapshot,
@@ -10,7 +10,7 @@ import { runProductionPipeline } from '../src/core/calculation/calculationPipeli
 import { defaultSettings } from '../src/core/models/types';
 
 function defaultForm() {
-  return normalizeFormDefinition(createDefaultFormDefinition());
+  return normalizeFormDefinition(createMinimalFormDefinition());
 }
 
 describe('summaryDisplayFields', () => {

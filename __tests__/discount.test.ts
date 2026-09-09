@@ -2,12 +2,12 @@ import { applyDiscountToResult, clampDiscountPercent } from '../src/core/calcula
 import {
   runFormCalculation,
 } from '../src/core/calculation/calculationPipeline';
-import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
+import { createMinimalFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
 import { defaultSettings } from '../src/core/models/types';
 
 function defaultForm() {
-  return normalizeFormDefinition(createDefaultFormDefinition());
+  return normalizeFormDefinition(createMinimalFormDefinition());
 }
 
 describe('clampDiscountPercent', () => {
