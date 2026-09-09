@@ -154,6 +154,7 @@ const defaultSettingRows: Record<string, string> = {
   default_hourly_rate: String(defaultSettings.defaultHourlyRate),
   default_crew_size: String(defaultSettings.defaultCrewSize),
   workday_hours: String(defaultSettings.workdayHours),
+  weather_reserve_factor: String(defaultSettings.weatherReserveFactor),
   theme_accent_color: defaultSettings.theme.accentColor,
   theme_primary_color: defaultSettings.theme.primaryColor,
   theme_text_color: defaultSettings.theme.textColor,
@@ -259,6 +260,9 @@ export async function getSettings(): Promise<AppSettings> {
     ),
     defaultCrewSize: Number.parseInt(map.default_crew_size ?? String(defaultSettings.defaultCrewSize), 10),
     workdayHours: Number.parseFloat(map.workday_hours ?? String(defaultSettings.workdayHours)),
+    weatherReserveFactor: Number.parseFloat(
+      map.weather_reserve_factor ?? String(defaultSettings.weatherReserveFactor),
+    ),
     theme: parseThemeSettings(map),
   };
 }
@@ -276,6 +280,7 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
     default_hourly_rate: String(settings.defaultHourlyRate),
     default_crew_size: String(settings.defaultCrewSize),
     workday_hours: String(settings.workdayHours),
+    weather_reserve_factor: String(settings.weatherReserveFactor),
     theme_accent_color: settings.theme.accentColor,
     theme_primary_color: settings.theme.primaryColor,
     theme_text_color: settings.theme.textColor,

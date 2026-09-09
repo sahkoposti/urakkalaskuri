@@ -52,8 +52,15 @@ export function ceilWorkDurationDays(days: number): number {
   return Math.max(1, Math.ceil(days - 1e-9));
 }
 
-export function formatWorkDurationDays(days: number): string {
-  return String(ceilWorkDurationDays(days));
+/** Yhteenvedon arvioitu kesto: säävarauskerroin ennen ylöspäin pyöristystä. */
+export function estimateWorkDurationDays(days: number, weatherReserveFactor = 1): number {
+  const factor =
+    Number.isFinite(weatherReserveFactor) && weatherReserveFactor > 0 ? weatherReserveFactor : 1;
+  return ceilWorkDurationDays(days * factor);
+}
+
+export function formatWorkDurationDays(days: number, weatherReserveFactor = 1): string {
+  return String(estimateWorkDurationDays(days, weatherReserveFactor));
 }
 
 export function isWorkDurationDaysKey(key: string | undefined): boolean {
@@ -62,11 +69,9 @@ export function isWorkDurationDaysKey(key: string | undefined): boolean {
 
 /** Vanha nimi tulosteissa ja lomaketeksteissä. */
 export function displayWorkDurationText(text: string): string {
-  if (text === 'Työryhmän arvioitu kesto (pv)') {
-    return 'Työn kesto (pv)';
-  }
   return text
-    .replaceAll('Työryhmän kesto', 'Työn kesto')
+    .replaceAll('Työryhmän keston', 'Työn keston')
     .replaceAll('Työryhmän arvioitu kesto', 'Työn arvioitu kesto')
-    .replaceAll('Työryhmän keston', 'Työn keston');
+    .replaceAll('Työryhmän kesto', 'Työn arvioitu kesto')
+    .replace(/Työn kesto(?!n)/g, 'Työn arvioitu kesto');
 }

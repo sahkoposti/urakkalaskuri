@@ -28,7 +28,7 @@ Tämä ohje kertoo, miten Urakkalaskurin lomakepohja (`FormDefinition`) rakennet
 | Tuo uusi pohja | Asetukset → Lomakeasetukset → **Tuo JSON…** |
 | Palauta tehdas oletus | **Palauta oletuslomake** |
 
-Tuonnin jälkeen sovellus **normalisoi** pohjan: lisää järjestelmäkentät, korjaa vanhat avaimet ja siivoaa sivujen kenttäviittaukset.
+Tuonnin jälkeen sovellus **normalisoi** pohjan: lisää järjestelmäkentät, korjaa vanhat avaimet, hylkää `alv_maara` / `kokonaishinta`-kaavat ja siivoaa sivujen kenttäviittaukset.
 
 ---
 
@@ -82,10 +82,11 @@ Jokainen wizard-vaihe on yksi sivu. Kentät **eivät** kuulu sivuun upotettuna �
 
 ### Järjestelmäsivut
 
-- **`system: "customer"`** – Asiakastiedot (nimi, yhteystiedot). Voit lisätä omia kenttiä `fieldIds`-listaan; ne näkyvät asiakaslomakkeen jälkeen. Tätä sivua ei voi poistaa.
+- **`system: "customer"`** – Asiakastiedot. Nimi, yhteystiedot, postinumero, postitoimipaikka, lisätiedot, tyyppi ja käänteinen ALV ovat sovelluksen kiinteää UI:ta, eivät JSON-kenttiä. Voit lisätä omia kenttiä `fieldIds`-listaan; ne näkyvät asiakaslomakkeen jälkeen. Tätä sivua ei voi poistaa.
 - **`system: "materials"`** – Valinnainen tuote+määrä -rivi-editori. Summa menee kaavamuuttujaan `materiaalit`. **Oletuspohjassa ei ole tätä sivua** (materiaalit tulevat usein kaavoista ja `add_material_fixed`-efekteistä). Sivu voidaan poistaa asetuksista. Älä lisää sitä, jos lasket materiaalit jo omilla kentillä – muuten wizardissa näkyy tyhjä Materiaalit-vaihe.
-- **Työn kesto** – Lisää sivulle `field_system_tyoryhma_kesto_pv` (kaava-avain `tyoryhma_kesto_pv`).
+- **Työn kesto** – Lisää sivulle `field_system_tyoryhma_kesto_pv` (kaava-avain `tyoryhma_kesto_pv`). Wizardissa arvo on tarkka kesto. Yhteenvedon **Työn arvioitu kesto** kertoo säävarauskertoimen (Asetukset → Yleinen, ei kaavamuuttuja) ja pyöristää ylöspäin.
 - **Alennus %** – Lisää sivulle `field_system_alennus_prosentti` (kaava-avain `alennus_prosentti`). Oletus `0`.
+- **Hinnat** – Tehdasoletuksessa sivu `page_prices`: urakka, materiaalit, palkkio, myyntihinta alv0 ja kokonaishinta (sis. ALV). Voit yliajaa arvot wizardissa.
 
 Sama `pages[].id` ei saa toistua; tuonti uniikistaa kaksoiskappaleet (`page_materials` → `page_materials_2`).
 
@@ -115,7 +116,7 @@ Jokaisella kentällä on globaali määrittely. Sivu valitsee vain mitkä kentä
 | `label` | Näyttönimi wizardissa |
 | `type` | Kenttätyyppi (taulukko alla) |
 | `required` | `true` = pakollinen (tyhjä oletus + ei syötettä = virhe) |
-| `showOnSummary` | `true` = näkyy yhteenvedossa |
+| `showOnSummary` | `true` = näkyy yhteenvedon **Lomaketiedot**-osiossa (wizardista riippumatta). Järjestelmäkentät **eivät** tule tähän osioon. |
 
 ### Valinnaiset kentät
 
@@ -124,9 +125,13 @@ Jokaisella kentällä on globaali määrittely. Sivu valitsee vain mitkä kentä
 | `unit` | Yksikkö (esim. `"m²"`, `"€"`, `"pv"`) |
 | `helpText` | Ohjeteksti kentän alla wizardissa |
 | `defaultValue` | Oletusarvo merkkijonona (tyhjä/puuttuu = ei oletusta, **ei 0**) |
-| `showWhen` | Näkyvyys ehto (katso kohta 10) |
+| `formula` | Laskentakentän kaava (`type: "computed"`). Tyhjä kaava = käyttäjä syöttää arvon (kesto, alennus-%). |
+| `allowManualOverride` | `computed`: käyttäjä saa ylikirjoittaa tuloksen (oletus `true`). Hintakortin avaimilla `false`. |
+| `showWhen` | Wizardin näkyvyysehto (katso kohta 10) |
+| `showOnSummaryWhen` | Yhteenvedon näkyvyysehto (katso kohta 10) |
 | `effects` | Vaikutukset laskentaan (katso kohta 11) |
 | `debugExampleValue` | Debug-tilan esimerkkiarvo |
+| `systemKey` | Järjestelmäkentän tunnus. **Älä keksi omia** – tuonti liittää rungon kentät. |
 
 ---
 
@@ -218,6 +223,8 @@ Yleiset asetukset (ALV, kate, tuntihinta…) tulevat automaattisesti kaavakontek
 | `asetukset.tyoryhman_koko` | Työryhmän koko (hlö) |
 | `asetukset.tyopaivan_pituus` | Työpäivän pituus (h) |
 
+**Säävarauskerroin** (Asetukset → Yleinen) **ei** tule kaavakontekstiin. Se vaikuttaa vain yhteenvedossa näytettävään työn arvioituun kestoon, ei `tyoryhma_kesto_pv` / `_h` -arvoihin eikä hinnoitteluun.
+
 Vanhat `settings.*`-muodot toimivat vielä aliasina.
 
 **Liukuva myyntihinta (alv0)** suorista kustannuksista:
@@ -226,34 +233,83 @@ Vanhat `settings.*`-muodot toimivat vielä aliasina.
 liukuva_myyntihinta(suorat_kustannukset_alv0)
 ```
 
-Käytä tätä `kokonaishinta_alv0`-kaavana, jos hinnoittelet liukuvalla katteella. Älä kerro tulosta alennusprosentilla – alennus sovelletaan järjestelmässä listahinnan jälkeen.
+Vie tulos avaimeen `kokonaishinta_alv0`. Älä kerro tulosta alennusprosentilla – alennus on rungon jälkikäsittely.
 
 ---
 
-## 9. Järjestelmäkentät ja materiaalit
+## 9. Rungon avaimet ja materiaalit
 
-Sovellus **lisää automaattisesti** hinta- ja kestolaskennan järjestelmäkentät tuonnin yhteydessä. Niitä **ei tarvitse** kirjoittaa `fields`-taulukkoon, mutta sivuille voi viitata niiden id:llä.
+Sovellus on **runko**: se omistaa hintakortin ja muutaman johdetun arvon. JSON on **metodi**: se laskee arvot varattuihin avaimiin. Runko ei rakennu yhden lomakkeen ympärille; lomake tottelee tätä sopimusta.
 
-| `id` (sivuille) | `key` (kaavoissa) | Kuvaus |
+### 9.0 Mitä JSON vie, mitä runko näyttää ja laskee
+
+JSON **vie** arvot kaavalla tai efektillä. Hinnat näkyvät hintakortissa. Osa runkoriveistä voidaan myös näyttää ja yliajaa wizardissa, jos ne ovat sivun `fieldIds`-listassa (tehdasoletuksessa sivu **Hinnat**).
+
+**Wizardissa + hintakortissa** (laita sivulle `fieldIds`; yliajo nuolella takaisin kaavaan):
+
+| Avain | Kuka laskee | Wizard |
+|-------|-------------|--------|
+| `tyoryhma_kesto_pv` (ja tarvittaessa `_h`) | JSON / syöte | Kyllä – `field_system_tyoryhma_kesto_pv` |
+| `alennus_prosentti` | syöte, oletus 0 | Kyllä – `field_system_alennus_prosentti` |
+| `urakka_hinta_alv0` | JSON (oletus: kesto × ryhmä × tuntihinta) | Kyllä – `field_system_urakka` |
+| `materiaalit` | rivit ja/tai `add_material_fixed` | Kyllä – `field_system_materiaalit` |
+| `myyntipalkkio` | JSON | Kyllä – `field_system_myyntipalkkio` |
+| `kokonaishinta_alv0` | JSON (esim. `liukuva_myyntihinta(...)`) | Kyllä – `field_system_kokonaishinta_alv0` |
+| `kokonaishinta` | runko `alv0 + ALV`; yliajo johtaa uuden `kokonaishinta_alv0`:n | Kyllä – `field_system_kokonaishinta` |
+
+**Vain hintakortissa** (wizard piilottaa, vaikka `fieldIds` sisältäisi ne):
+
+| Avain | Kuka laskee |
+|-------|-------------|
+| `myyntikate` | JSON (listahinnalla); alennuksen jälkeen jäännös |
+| `alv_maara` | runko `kokonaishinta_alv0`:sta |
+| `alennus_eur` | runko listahinnasta × alennus-% |
+
+Runko **laskee itse** nämä `kokonaishinta_alv0`:sta, paitsi jos `kokonaishinta` yliajetaan lomakkeella (silloin runko laskee uuden alv0:n yliajetusta sis. ALV -hinnasta):
+
+| Avain | Runko |
+|-------|--------|
+| `alv_maara` | `kokonaishinta_alv0 × asetukset.alv_prosentti / 100` (käänteinen ALV → 0) |
+| `kokonaishinta` | `kokonaishinta_alv0 + alv_maara` (yliajo → alv0 = kokonaishinta / (1 + ALV-%)) |
+| `alennus_eur` ja alennetut kokonaishinnat | listahinta × (1 − alennus-%); kate on jäännös kustannusten ja palkkion jälkeen |
+
+Erittelyt (tunnit, litrat, tuotehinnat) kuuluvat lomakkeelle ja `showOnSummary`:iin.
+
+**Alennus:** JSON vie **listahinnan** `kokonaishinta_alv0`. Runko vähentää prosentin sen jälkeen. Älä kirjoita `(1 - alennus_prosentti/100)` myyntihintakaavaan. Listahinnalla kortin kate ja palkkio ovat JSON-kaavan tulos; alennuksen jälkeen kate on jäännös (myynti − suorat kustannukset − palkkio).
+
+**Tuonti:** JSON-kaava säilyy, paitsi `alv_maara` ja `kokonaishinta` (runko kirjoittaa ne aina). Jos kentällä on jo kaava, tehdas-`helpText` / `debugExampleValue` ei ylikirjoita. Vanha `myyntikate_eur` / `myyntipalkkio_eur` kaavassa muunnetaan muotoon `myyntikate` / `myyntipalkkio`.
+
+Sovellus lisää järjestelmäkentät tuonnissa. Sivuille viitataan id:llä. Kaavoissa käytetään `key`-arvoa. Kate, ALV € ja alennus € eivät näy **Kentät**-listassa eivätkä wizardissa, vaikka `fieldIds` sisältäisi ne.
+
+| `id` (sivuille) | `key` (kaavoissa) | Rooli |
 |-----------------|-------------------|--------|
-| `field_system_tyoryhma_kesto_pv` | `tyoryhma_kesto_pv` | Työn kesto (pv), muokattavissa |
-| `field_system_tyoryhma_kesto_h` | `tyoryhma_kesto_h` | Kesto tunneissa (kaava) |
-| `field_system_alennus_prosentti` | `alennus_prosentti` | Alennus % (0–100), oletus 0 |
-| `field_system_alennus_eur` | `alennus_eur` | Alennus € (laskettu, piilotettu Kentät-listasta) |
-| `field_system_urakka` | `urakka_hinta_alv0` | Urakkahinta alv0 |
-| `field_system_kokonaishinta` | `kokonaishinta` | Kokonaishinta (sis. ALV) |
-| `field_system_kokonaishinta_alv0` | `kokonaishinta_alv0` | Myyntihinta alv0 |
-| `field_system_myyntikate` | `myyntikate` | Myyntikate € |
-| `field_system_myyntipalkkio` | `myyntipalkkio` | Myyntipalkkio € |
-| `field_system_alv` | `alv_maara` | ALV € |
+| `field_system_tyoryhma_kesto_pv` | `tyoryhma_kesto_pv` | Kesto (pv), syöte tai kaava. Wizardissa tarkka arvo; yhteenvedossa arvioitu kesto + säävaraus. |
+| `field_system_tyoryhma_kesto_h` | `tyoryhma_kesto_h` | Kesto (h) ilman säävarausta. Näkyy wizardissa jos sivulla. |
+| `field_system_alennus_prosentti` | `alennus_prosentti` | Alennus % (0–100). Näkyy wizardissa. |
+| `field_system_urakka` | `urakka_hinta_alv0` | Vie urakka; wizardissa yliajettavissa |
+| `field_system_materiaalit` | `materiaalit` | Vie materiaalit; wizardissa yliajettavissa |
+| `field_system_kokonaishinta_alv0` | `kokonaishinta_alv0` | Vie myyntihinta alv0; wizardissa yliajettavissa |
+| `field_system_myyntikate` | `myyntikate` | Vie kate €; näyttö vain kortissa |
+| `field_system_myyntipalkkio` | `myyntipalkkio` | Vie palkkio; wizardissa yliajettavissa |
+| `field_system_alv` | `alv_maara` | Runko laskee |
+| `field_system_kokonaishinta` | `kokonaishinta` | Runko laskee; wizardissa yliajo → uusi alv0 |
+| `field_system_alennus_eur` | `alennus_eur` | Runko laskee |
 
-**Alennus:** lisää `field_system_alennus_prosentti` jollekin sivulle. Sovellus vähentää prosentin listahinnasta; kate yhteenvedossa on alennuksen jälkeen. Älä kirjoita `(1 - alennus_prosentti/100)` myyntihintakaavaan.
+**Materiaalit:** järjestelmäkenttä `materiaalit` (alv0). Alkaa tuoteriveistä; efektit `add_material_fixed` / `multiply_materials` täyttävät sen. Lomakkeella voi yliajaa summan. Älä luo omaa kenttää samalla avaimella. Tehdasoletuksen `kokonaishinta_alv0` käyttää `materiaalit`-muuttujaa, jos JSON ei korvaa kaavaa.
 
-**Materiaalit:** kaavamuuttuja `materiaalit` (alv0, alkaa 0). Kenttäefektit `add_material_fixed` / `multiply_materials` vaikuttavat tähän.
+**Tehdasoletuksen kaavat** (vienti / uusi pohja; JSON saa korvata muut paitsi ALV ja sis. ALV):
 
-**Huom:** Osa järjestelmäkentistä on piilotettu asetuksen Kentät-listasta, mutta voit sijoittaa ne sivulle JSON:ssa jos haluat näyttää ne wizardissa.
+```text
+tyoryhma_kesto_h     = tyoryhma_kesto_pv * asetukset.tyopaivan_pituus
+urakka_hinta_alv0    = tyoryhma_kesto_h * asetukset.tyoryhman_koko * asetukset.tuntihinta
+kokonaishinta_alv0   = (urakka_hinta_alv0 + materiaalit)
+                       / (1 - asetukset.myyntikate_prosentti/100 - asetukset.myyntipalkkio_prosentti/100)
+                       / (1 + asetukset.alv_prosentti/100)
+myyntikate           = kokonaishinta * asetukset.myyntikate_prosentti/100
+myyntipalkkio        = kokonaishinta * asetukset.myyntipalkkio_prosentti/100
+```
 
-**Järjestelmäkaavoja ei tarvitse muokata** materiaalien vuoksi – `kokonaishinta` ym. käyttävät jo muuttujaa `materiaalit`. Sinun tehtäväsi on vain **syöttää data** tähän muuttujaan (rivit tai efektit alla).
+Jos korvaat myyntihinnan esim. `liukuva_myyntihinta(urakka_hinta_alv0 + materiaalit)`, korvaa tarvittaessa myös `myyntikate` ja `myyntipalkkio` samaan metodiikkaan.
 
 ### 9.1 Materiaalit JSONissa – kolme tapaa
 
@@ -292,7 +348,7 @@ Numero- tai muu kenttä lisää aina saman €-summan:
 ```json
 {
   "id": "field_kuljetus",
-  "key": "kuljetuslisä",
+  "key": "kuljetuslisa",
   "label": "Kuljetuslisä",
   "type": "number",
   "required": false,
@@ -404,31 +460,35 @@ Esim. +10 % materiaaleihin:
 
 #### Mitä **ei** tarvitse tehdä JSONissa
 
-- ❌ Kirjoittaa `materiaalit`-kenttää `fields`-taulukkoon – se on putken sisäinen muuttuja
-- ❌ Muokata `kokonaishinta`-järjestelmäkaavaa materiaalien lisäämiseksi
+- ❌ Kirjoittaa omaa `materiaalit`-kenttää `fields`-taulukkoon – käytä `field_system_materiaalit` (putki täyttää arvon)
+- ❌ Kirjoittaa `alv_maara` / `kokonaishinta`-kaavaa – runko laskee ne `kokonaishinta_alv0`:sta
 - ❌ Odottaa, että `product_select` tai `computed` lisää materiaaleihin **ilman** `effects`-taulukkoa
 
 Valmis kopioitava esimerkki: **[examples/materiaalit-kaava-esimerkki.json](./examples/materiaalit-kaava-esimerkki.json)**
 
-### 9.2 Työ ja kesto JSONissa – vaikutukset
+### 9.2 Työ ja kesto JSONissa
 
-**Urakkahinta** (`urakka_hinta_alv0`) lasketaan järjestelmäkaavalla:
+Runko näyttää `urakka_hinta_alv0`-arvon hintakortissa. **JSON vie avaimen** – joko oletuskaavalla tai omalla kaavalla.
+
+Oletus (jos JSON ei korvaa):
 
 ```text
 urakka_hinta_alv0 = tyoryhma_kesto_h × asetukset.tyoryhman_koko × asetukset.tuntihinta
 ```
 
-Työhön **ei ole suoraa €-lisäefektiä** (kuten materiaaleilla `add_material_fixed`). Työn hinta muuttuu **keston** kautta. Voit vaikuttaa kestoon kolmella tavalla:
+Voit korvata kaavan viedyssä JSON:ssa (esim. henkilötunnit × tuntihinta + matka). Runko ei sido JSON:ia tähän oletukseen.
+
+Jos käytät oletusurakkaa, kestoa voi kasvattaa kolmella tavalla:
 
 | Tapa | Milloin | JSON / mekanismi |
 |------|---------|------------------|
-| **A. Kesto kaavalla** | Pinta-ala → päivät | Kaava kentälle `tyoryhma_kesto_pv` tai computed → syöttö kestoon |
+| **A. Kesto kaavalla** | Pinta-ala → päivät | Kaava kentälle `tyoryhma_kesto_pv` |
 | **B. Lisää tunteja** | Esim. +2 h esivalmistusta | `"effects": [{ "type": "add_duration", "value": 2 }]` |
 | **C. Kerro kestoa** | Esim. vaikea kohde × 1,2 | `"effects": [{ "type": "multiply_duration", "value": 1.2 }]` |
 
 Kuten materiaaleissa: `add_duration` **ilman** `"value"`-kenttää käyttää kentän omaa numero-/laskenta-arvoa **tunteina**.
 
-Lopullinen kesto: `(peruskesto tunteina × kerroin) + lisätunnit` → siitä lasketaan urakkahinta.
+Lopullinen kesto: `(peruskesto tunteina × kerroin) + lisätunnit`. Oletusurakka lukee tämän keston. Jos JSON:n `urakka_hinta_alv0`-kaava ei käytä `tyoryhma_kesto_h` / `_pv`, kestoefektit **eivät** muuta urakkahintaa – vie urakka omalla kaavalla.
 
 ---
 
@@ -470,7 +530,7 @@ Tai erillinen computed-kenttä, joka **lisää tunteja** efektillä (esim. laske
 
 `effects` ilman `value` → kentän laskema arvo (tunnit) lisätään kestoon.
 
-**Huom:** Sijoita `field_system_tyoryhma_kesto_pv` jollekin sivulle `fieldIds`-listassa, jotta kesto näkyy wizardissa.
+**Huom:** Sijoita `field_system_tyoryhma_kesto_pv` jollekin sivulle `fieldIds`-listassa, jotta kesto näkyy wizardissa. `showOnSummary` ei vie järjestelmäkenttää Lomaketietoihin. JSON-`label` voi olla „Työn kesto”; yhteenveto näyttää „Työn arvioitu kesto” ja kertoo säävarauskertoimen ennen ylöspäin pyöristystä.
 
 ---
 
@@ -582,17 +642,19 @@ Tässä kesto kasvaa kentän arvon verran (tunnit) **ja** materiaaleihin lisät�
 
 #### Mitä **ei** tarvitse / voi tehdä
 
-- ❌ `add_urakka_fixed` tai suora € lisä työhön – ei ole olemassa; käytä `add_duration` tai pidennä kestoa kaavalla
-- ❌ Odottaa, että computed-työtuntien kaava muuttaa urakkahintaa **ilman** efektiä – kesto pitää päivittää kaavalla (`tyoryhma_kesto_pv`) tai `add_duration` / `multiply_duration`
-- ✅ Urakkahinta päivittyy automaattisesti, kun kesto muuttuu (järjestelmäkaava hoitaa)
+- ❌ Näyttää `alv_maara`, kate € tai alennus € lomakkeella – ne ovat vain hintakortissa
+- ❌ Kertoa alennus myyntihintakaavaan – runko tekee sen listahinnan jälkeen
+- ❌ Kirjoittaa `alv_maara` / `kokonaishinta`-kaavaa – runko laskee ne `kokonaishinta_alv0`:sta (sis. ALV -yliajo kääntää suhteen)
+- ✅ Vie `urakka_hinta_alv0` ja `kokonaishinta_alv0` omilla kaavoilla, jos oletus ei riitä
+- ✅ Laita urakka, materiaalit, palkkio ja kokonaishinnat sivulle, jos haluat näyttää ja yliajaa ne lomakkeella
 
 Valmis esimerkki (materiaalit + kesto): **[examples/materiaalit-kaava-esimerkki.json](./examples/materiaalit-kaava-esimerkki.json)** – voit yhdistää §9.1- ja §9.2-kentät samaan pohjaan.
 
 ---
 
-## 10. Näkyvyys (`showWhen`)
+## 10. Näkyvyys (`showWhen` ja `showOnSummaryWhen`)
 
-Näytä kenttä vain kun toinen kenttä täyttää ehdon:
+**`showWhen`** – näytä kenttä wizardissa vain kun ehto täyttyy. Sama ehto piilottaa kentän myös yhteenvedosta (piilotettu kenttä on kaavoissa `0`).
 
 ```json
 {
@@ -605,6 +667,23 @@ Näytä kenttä vain kun toinen kenttä täyttää ehdon:
   }
 }
 ```
+
+**`showOnSummaryWhen`** – näytä kenttä **vain yhteenvedossa** kun ehto täyttyy. Wizardissa kenttä pysyy näkyvissä. Vaatii `showOnSummary: true`.
+
+```json
+{
+  "key": "lisatyot_kuvaus",
+  "type": "text",
+  "showOnSummary": true,
+  "showOnSummaryWhen": {
+    "fieldKey": "lisatyot",
+    "operator": "eq",
+    "value": "true"
+  }
+}
+```
+
+Boolean-kytkin: `"value": "true"` = Kyllä. Valintalista: `option.value`, ei näyttöteksti.
 
 | `operator` | Kelpaa lähteille |
 |------------|------------------|
@@ -639,8 +718,10 @@ Kenttä voi vaikuttaa **materiaaleihin** tai **kestoon** (työhön indirektisti)
 |--------|----------|----------------------------|
 | `add_material_fixed` | Lisää € materiaaleihin (`materiaalit`) | Kyllä (numero/computed/select) |
 | `multiply_materials` | Kertoo materiaalit | Yleensä kiinteä JSONissa |
-| `add_duration` | Lisää tunteja kestoon → kasvattaa urakkahintaa | Kyllä (numero/computed) |
-| `multiply_duration` | Kertoo keston → kasvattaa urakkahintaa | Kyllä (numero/select/computed kontekstissa) |
+| `add_duration` | Lisää tunteja `tyoryhma_kesto_h`:hon | Kyllä (numero/computed) |
+| `multiply_duration` | Kertoo `tyoryhma_kesto_h`:n | Kyllä (numero/select/computed kontekstissa) |
+
+Kestoefekti päivittää urakan **vain**, jos `urakka_hinta_alv0` riippuu kestosta (oletuskaava). Omalla urakkakaavalla efekti ei riitä – päivitä myös se kaava.
 
 **Kentän oma arvo JSONissa:** jätä `value` pois – efekti lukee kentän arvon (numero, select tai computed):
 
@@ -693,9 +774,9 @@ Tuotteet määritellään erikseen (**Tuotteet**-näkymä). Lomake viittaa tuott
 Kaavoissa käytettävissä (kun tuote valittu):
 
 ```text
-kaytettava_maali.yksikkohinta
-kaytettava_maali.menekki
-kaytettava_maali.tyokerroin
+kaytettava_maali.yksikkohinta   (alias: .hinta, .unit_price)
+kaytettava_maali.menekki        (alias: .consumption)
+kaytettava_maali.tyokerroin     (alias: .work_factor)
 ```
 
 Esimerkkikaava:
@@ -713,8 +794,10 @@ Katso valmis tiedosto: **[examples/peruslaskenta-lomakepohja.json](./examples/pe
 Se sisältää:
 - Asiakassivun
 - Pinta-alasivun (numero, select, computed)
-- Kestosivun (järjestelmäkenttä `tyoryhma_kesto_pv`; alennus lisätään id:llä `field_system_alennus_prosentti`)
+- Kestosivun (`field_system_tyoryhma_kesto_pv` ja `field_system_alennus_prosentti`)
+- Hintasivun (urakka, materiaalit, palkkio, kokonaishinnat – yliajettavissa)
 - Oletusarvot numero- ja select-kentille
+- **Ei** `system: "materials"` -sivua (kuten tehdasoletus)
 
 ---
 
@@ -782,12 +865,16 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 - [ ] Kaikki `key`-arvot ovat uniikkeja ja muotoa `a-z0-9_`
 - [ ] `select`-kentillä on vähintään yksi `option`
 - [ ] Kaavoissa käytetyt muuttujat ovat olemassa (tai tarkoituksella puuttuvia → 0)
-- [ ] `showWhen.fieldKey` viittaa olemassa olevaan kenttään
+- [ ] `showWhen.fieldKey` ja `showOnSummaryWhen.fieldKey` viittaavat olemassa olevaan kenttään
 - [ ] `defaultValue` on merkkijono (numerot lainausmerkeissä)
 - [ ] `product_select`-oletusarvo on olemassa oleva tuote-id
-- [ ] Materiaalit: joko `system: "materials"`-sivu ja/tai kentillä `effects` (`add_material_fixed` / `multiply_materials`)
-- [ ] Laskettu materiaali: `computed`-kentällä on `"effects": [{ "type": "add_material_fixed" }]` (ilman `value` jos käytetään kaavan tulosta)
-- [ ] Työn kesto: kaava `tyoryhma_kesto_pv`:lle ja/tai `add_duration` / `multiply_duration` -efektit
+- [ ] `kokonaishinta_alv0` on listahinta (ei alennusta kaavassa)
+- [ ] `alv_maara` / `kokonaishinta` jätetty rungolle (kaavaa ei tarvita)
+- [ ] Kesto, alennus-% ja halutut hinta-yliajot sivulla; kate / ALV € / alennus € eivät lomakkeella
+- [ ] Materiaalit: `system: "materials"`-sivu ja/tai `effects` (`add_material_fixed` / `multiply_materials`) — tai hyväksyt 0 €
+- [ ] Laskettu materiaali: `computed` + `"effects": [{ "type": "add_material_fixed" }]` (ilman `value` jos kaavan tulos)
+- [ ] Urakka: oletuskaava + kesto **tai** oma `urakka_hinta_alv0`-kaava (kestoefekti ei riitä omaan kaavaan)
+- [ ] Jos korvaat `kokonaishinta_alv0`-kaavan (`liukuva_myyntihinta` tms.), kate ja palkkio vastaavat samaa metodia
 
 ## 17. Yleisimmät virheet
 
@@ -795,24 +882,24 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 |---------|----------|
 | Tuonti: „JSON on tyhjä / virheellinen” | Tarkista syntaksi; poista kommentit (JSON ei tue `//`) |
 | Tuonti: „puuttuu fields tai pages” | Lisää molemmat taulukot juureen |
-| Kenttä ei näy wizardissa | Lisää kentän `id` jollekin sivulle `fieldIds`-listaan |
+| Kenttä ei näy wizardissa | Lisää `id` sivun `fieldIds`-listaan. Kate, ALV € ja alennus € piilotetaan aina. |
 | Kaava palauttaa 0 | Tarkista `key`-nimet; onko lähdekenttä piilotettu `showWhen`:lla |
 | Valinta ei vaikuta kaavaan | `select`-option `value` pitää olla numero merkkijonona |
-| Järjestelmähinnat puuttuvat | Varmista kestosivu ja järjestelmäkaavat; tarkista Yleinen-asetukset |
+| Hintakortti tyhjä / virhe | Vie `kokonaishinta_alv0`, `urakka_hinta_alv0`, kate, palkkio ja kesto. Tarkista Yleinen-asetukset (ALV, kate, tuntihinta). |
 | Materiaalit jäävät 0 | Lisää `effects` computed-kentälle tai materiaalirivit-sivu; pelkkä kaava ei riitä |
-| Computed näyttää hinnan mutta kokonaishinta ei muutu | Puuttuu `"effects": [{ "type": "add_material_fixed" }]` |
-| Urakkahinta ei muutu vaikka lisäsit työtä | Työhön ei ole €-efektiä – käytä `add_duration` (tunnit) tai kaavaa kestoon |
-| Lisätunnit eivät vaikuta | Puuttuu `"effects": [{ "type": "add_duration" }]` tai kenttä piilotettu `showWhen`:lla |
+| Computed näyttää hinnan mutta materiaalit-kortti ei muutu | Puuttuu `"effects": [{ "type": "add_material_fixed" }]` |
+| Urakkahinta ei muutu vaikka lisäsit työtä | Oletusurakka: `add_duration` tai kaava `tyoryhma_kesto_pv`:lle. Oma urakkakaava: päivitä `urakka_hinta_alv0`. |
+| Lisätunnit eivät vaikuta | Puuttuu `"effects": [{ "type": "add_duration" }]`, kenttä piilotettu, tai urakka ei lue kestoa |
 
 ---
 
 ## 18. Työnkulku suositus
 
 1. **Suunnittele sivut** – paperilla tai taulukossa: sivun nimi → kentät järjestyksessä.
-2. **Määrittele avaimet (`key`)** – lyhyet englanninkieliset/snake_case-nimet kaavoille.
+2. **Määrittele avaimet (`key`)** – `a-z0-9_` (suomeksi ilman ääkkösiä, esim. `laskenta_seinapinta_ala_m2`).
 3. **Rakenna JSON** – aloita esimerkistä; lisää kentät `fields`-taulukkoon; linkitä sivut.
 4. **Testaa tuonti** – dev-ympäristössä; korjaa virheet.
-5. **Kalibroi debug-tilassa** – Asetukset → Debug → esimerkkiarvot ja live-laskenta.
+5. **Kalibroi debug-tilassa** – Asetukset → Lomakeasetukset → Debug → esimerkkiarvot ja live-laskenta.
 6. **Aja testilaskenta** wizardissa ja tarkista yhteenveto.
 
 ---
@@ -823,6 +910,9 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 |----------|---------|
 | `src/core/form/types.ts` | Tyypit (`FormField`, `FormPage`, …) |
 | `src/core/form/formDefinitionIo.ts` | Tuonti / vienti |
-| `src/core/form/formDefinitionHelpers.ts` | Normalisointi ja validointi |
-| `src/core/form/systemFields.ts` | Järjestelmäkaavat |
-| `src/core/form/defaultFormDefinition.ts` | Tehdas oletuslomake |
+| `src/core/form/formDefinitionHelpers.ts` | Normalisointi ja wizard-näyttö |
+| `src/core/form/systemFields.ts` | Vientiavaimet, merge, rungon ALV-kaavat |
+| `src/core/calculation/pricingSkeleton.ts` | ALV ja sis. ALV `kokonaishinta_alv0`:sta |
+| `src/core/calculation/discount.ts` | Alennus listahinnan jälkeen |
+| `src/core/form/defaultFormDefinition.ts` | Tehdasoletus |
+| `src/core/form/productContext.ts` | Tuoteattribuutit kaavoissa (`.yksikkohinta`, `.menekki`, `.tyokerroin`) |

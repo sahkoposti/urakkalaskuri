@@ -376,6 +376,7 @@ export default function FormFieldEditorScreen() {
           <FieldVisibilityEditor
             form={previewForm}
             field={field}
+            condition={field.showWhen}
             onChange={(showWhen) => {
               setField((current) => {
                 if (!current) return current;
@@ -479,6 +480,27 @@ export default function FormFieldEditorScreen() {
               onValueChange={(showOnSummary) => updateFieldState({ showOnSummary })}
             />
           </View>
+        ) : null}
+
+        {!isSystem && field.type !== 'section' && field.showOnSummary ? (
+          <FieldVisibilityEditor
+            form={previewForm}
+            field={field}
+            condition={field.showOnSummaryWhen}
+            title="Yhteenvedon ehto"
+            help="Näytä kenttä yhteenvedossa vain kun ehto täyttyy. Wizardissa kenttä pysyy näkyvissä (ellei wizardin näkyvyysehto piilota sitä)."
+            switchLabel="Näytä yhteenvedossa vain jos ehto täyttyy"
+            onChange={(showOnSummaryWhen) => {
+              setField((current) => {
+                if (!current) return current;
+                if (!showOnSummaryWhen) {
+                  const { showOnSummaryWhen: _removed, ...rest } = current;
+                  return rest;
+                }
+                return { ...current, showOnSummaryWhen };
+              });
+            }}
+          />
         ) : null}
 
         <AppInput

@@ -38,6 +38,8 @@ export function calculationToFormState(
     customerPhone: customer.phone ?? '',
     customerEmail: customer.email ?? '',
     customerAddress: customer.address ?? '',
+    customerPostalCode: customer.postalCode ?? '',
+    customerPostalLocality: customer.postalLocality ?? '',
     customerNotes: customer.notes ?? '',
     duration: fieldValues.tyoryhma_kesto_pv || duration,
     fieldValues,

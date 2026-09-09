@@ -21,10 +21,12 @@ import {
   formatContractPriceVat0,
   formatMarginCommissionPrice,
   formatMaterialsPrice,
+  applyVat,
   isPrivateCustomer,
   reverseVatLabel,
 } from '@/src/core/utils/priceDisplay';
 import { formatCurrency, formatDecimal, formatPercent, formatWorkDurationDays } from '@/src/core/utils/formatters';
+import { useApp } from '@/src/context/AppContext';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -44,6 +46,7 @@ export function CalculationDetailView({
   onDeletePress,
 }: CalculationDetailViewProps) {
   const styles = useThemedStyles(createStyles);
+  const { settings } = useApp();
   const customer = customerFromRecord(record);
   const privateCustomer = isPrivateCustomer(customer);
   const vatRate = record.vatPercent;
@@ -95,8 +98,6 @@ export function CalculationDetailView({
           <ResultRow
             label="Käänteinen ALV"
             value={reverseVatLabel(customer)}
-            copyValue={reverseVatLabel(customer)}
-            onCopy={onCopy}
           />
         ) : null}
         <ResultRow
@@ -118,6 +119,18 @@ export function CalculationDetailView({
           onCopy={onCopy}
         />
         <ResultRow
+          label="Postinumero"
+          value={customer.postalCode ?? '–'}
+          copyValue={customer.postalCode}
+          onCopy={onCopy}
+        />
+        <ResultRow
+          label="Postitoimipaikka"
+          value={customer.postalLocality ?? '–'}
+          copyValue={customer.postalLocality}
+          onCopy={onCopy}
+        />
+        <ResultRow
           label="Lisätiedot"
           value={customer.notes ?? '–'}
           copyValue={customer.notes}
@@ -127,40 +140,34 @@ export function CalculationDetailView({
 
       <AppCard style={styles.card}>
         <ResultRow
-          label="Työn kesto (pv)"
-          value={formatWorkDurationDays(record.workDurationDays)}
-          copyValue={formatWorkDurationDays(record.workDurationDays)}
-          onCopy={onCopy}
+          label="Työn arvioitu kesto (pv)"
+          value={formatWorkDurationDays(record.workDurationDays, settings.weatherReserveFactor)}
         />
         <ResultRow
           label="Urakkahinta (alv0)"
           value={formatContractPriceVat0(record.contractPriceVat0)}
-          copyValue={String(record.contractPriceVat0)}
-          onCopy={onCopy}
         />
         <ResultRow
           label="Materiaalit (alv0)"
           value={formatCurrency(record.materialsVat0)}
-          copyValue={String(record.materialsVat0)}
-          onCopy={onCopy}
         />
+        {!customer.reverseVat ? (
+          <ResultRow
+            label="Materiaalit (sis. ALV)"
+            value={formatCurrency(applyVat(record.materialsVat0, vatRate))}
+          />
+        ) : null}
         <ResultRow
           label="Myyntikate"
           value={formatMarginCommissionPrice(record.marginEur)}
-          copyValue={String(record.marginEur)}
-          onCopy={onCopy}
         />
         <ResultRow
           label="Myyntikate (%)"
           value={formatPercent(record.marginPercent)}
-          copyValue={String(record.marginPercent)}
-          onCopy={onCopy}
         />
         <ResultRow
           label="Myyntipalkkio"
           value={formatMarginCommissionPrice(record.commissionEur)}
-          copyValue={String(record.commissionEur)}
-          onCopy={onCopy}
         />
         {record.discountPercent > 0 ? (
           <>
@@ -168,14 +175,10 @@ export function CalculationDetailView({
             <ResultRow
               label="Hinta ennen alennusta"
               value={formatCurrency(priceBeforeDiscount)}
-              copyValue={String(priceBeforeDiscount)}
-              onCopy={onCopy}
             />
             <ResultRow
               label={`Alennus (${formatPercent(record.discountPercent)})`}
               value={`−${formatCurrency(discountAmount)}`}
-              copyValue={String(-discountAmount)}
-              onCopy={onCopy}
             />
           </>
         ) : null}
@@ -185,20 +188,14 @@ export function CalculationDetailView({
             <ResultRow
               label="Kokonaishinta (alv0)"
               value={formatCurrency(record.totalPriceVat0)}
-              copyValue={String(record.totalPriceVat0)}
-              onCopy={onCopy}
             />
             <ResultRow
               label={`ALV (${formatPercent(vatRate)})`}
               value={formatCurrency(record.vatAmount)}
-              copyValue={String(record.vatAmount)}
-              onCopy={onCopy}
             />
             <ResultRow
               label="Kokonaishinta (alv)"
               value={formatCurrency(record.totalPriceVat)}
-              copyValue={String(record.totalPriceVat)}
-              onCopy={onCopy}
               highlight
             />
           </>
@@ -207,30 +204,19 @@ export function CalculationDetailView({
             <ResultRow
               label="Kokonaishinta (alv0)"
               value={formatCurrency(record.totalPriceVat0)}
-              copyValue={String(record.totalPriceVat0)}
-              onCopy={onCopy}
               highlight
             />
             {customer.reverseVat ? (
-              <ResultRow
-                label="ALV"
-                value="Käänteinen ALV"
-                copyValue="Käänteinen ALV"
-                onCopy={onCopy}
-              />
+              <ResultRow label="ALV" value="Käänteinen ALV" />
             ) : (
               <>
                 <ResultRow
                   label="ALV"
                   value={formatCurrency(record.vatAmount)}
-                  copyValue={String(record.vatAmount)}
-                  onCopy={onCopy}
                 />
                 <ResultRow
                   label="Kokonaishinta (alv)"
                   value={formatCurrency(record.totalPriceVat)}
-                  copyValue={String(record.totalPriceVat)}
-                  onCopy={onCopy}
                 />
               </>
             )}
@@ -238,7 +224,11 @@ export function CalculationDetailView({
         )}
       </AppCard>
 
-      <FormSummarySection snapshot={record.formSnapshot} />
+      <FormSummarySection
+        snapshot={record.formSnapshot}
+        workDurationDays={record.workDurationDays}
+        weatherReserveFactor={settings.weatherReserveFactor}
+      />
 
       {record.lines.length > 0 ? (
         <>

@@ -16,7 +16,7 @@ import {
 import { assignedFieldIds } from '@/src/core/form/formDefinitionHelpers';
 import {
   FIELD_TYPE_LABELS,
-  fieldsForPage,
+  wizardFieldsForPage,
   removeField,
   sortedGlobalFields,
   sortedPages,
@@ -166,8 +166,8 @@ export default function FormFieldsScreen() {
       <Stack.Screen options={{ title: 'Kentät' }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.help}>
-          Kentät ovat globaaleja. Kohdista ne sivuille kohdasta Lomakeasetukset → Sivut. Järjestelmäkentät
-          (kesto, hinnat, ALV) näkyvät omalla sivullaan.
+          Kentät ovat globaaleja. Kohdista ne sivuille kohdasta Lomakeasetukset → Sivut. Kesto ja
+          alennus-% näkyvät järjestelmäkenttinä; hinnat vain laskelman hintakortissa.
         </Text>
         {formDebug.enabled ? (
           <Text style={styles.debugHint}>
@@ -181,7 +181,7 @@ export default function FormFieldsScreen() {
         />
 
         {pages.map((page) => {
-          const pageFields = fieldsForPage(formDefinition, page.id);
+          const pageFields = wizardFieldsForPage(formDefinition, page.id);
           const expanded = isFieldsPageExpanded(expandedPages, page.id);
           return (
             <View key={page.id} style={styles.pageSection}>

@@ -1,5 +1,9 @@
 import { computedFieldsAffectedByKeyChange } from '@/src/core/form/formula/formulaDependencies';
 import type { FormDefinition } from '@/src/core/form/types';
+import { parseNumber } from '@/src/core/utils/formatters';
+
+const SELLING_PRICE_VAT0_KEY = 'kokonaishinta_alv0';
+const SELLING_PRICE_VAT_KEY = 'kokonaishinta';
 
 function findField(form: FormDefinition, key: string) {
   return form.fields.find((field) => field.key === key);
@@ -16,6 +20,25 @@ export function isComputedFieldOverridden(
   key: string,
 ): boolean {
   return keepsEmptyComputedOverride(form, key) && Object.prototype.hasOwnProperty.call(fieldValues, key);
+}
+
+/** Yliajettu numero, tai null jos avainta ei ole / arvo ei ole numero. */
+export function parsedComputedOverride(
+  form: FormDefinition,
+  fieldValues: Record<string, string>,
+  key: string,
+): number | null {
+  if (!isComputedFieldOverridden(form, fieldValues, key)) return null;
+  return parseNumber(fieldValues[key]?.trim() ?? '');
+}
+
+export function overriddenComputedKeys(
+  form: FormDefinition,
+  fieldValues: Record<string, string>,
+): string[] {
+  return form.fields
+    .filter((field) => field.type === 'computed' && isComputedFieldOverridden(form, fieldValues, field.key))
+    .map((field) => field.key);
 }
 
 export function resetComputedFieldOverride(
@@ -54,6 +77,12 @@ export function applyFieldValueChange(
   for (const computedKey of computedFieldsAffectedByKeyChange(form, key)) {
     if (computedKey === key) continue;
     delete next[computedKey];
+  }
+
+  if (key === SELLING_PRICE_VAT_KEY) {
+    delete next[SELLING_PRICE_VAT0_KEY];
+  } else if (key === SELLING_PRICE_VAT0_KEY) {
+    delete next[SELLING_PRICE_VAT_KEY];
   }
 
   return next;

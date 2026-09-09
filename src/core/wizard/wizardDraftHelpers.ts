@@ -15,6 +15,8 @@ export type WizardFormState = {
   customerPhone: string;
   customerEmail: string;
   customerAddress: string;
+  customerPostalCode: string;
+  customerPostalLocality: string;
   customerNotes: string;
   duration: string;
   fieldValues: Record<string, string>;
@@ -47,6 +49,8 @@ export function hasWizardDraftContent(state: WizardFormState): boolean {
     state.customerPhone.trim().length > 0 ||
     state.customerEmail.trim().length > 0 ||
     state.customerAddress.trim().length > 0 ||
+    state.customerPostalCode.trim().length > 0 ||
+    state.customerPostalLocality.trim().length > 0 ||
     state.customerNotes.trim().length > 0 ||
     state.duration.trim().length > 0 ||
     hasFieldValueContent(state.fieldValues) ||
@@ -77,6 +81,8 @@ export function buildPersistedWizardDraft(
     customerPhone: state.customerPhone,
     customerEmail: state.customerEmail,
     customerAddress: state.customerAddress,
+    customerPostalCode: state.customerPostalCode,
+    customerPostalLocality: state.customerPostalLocality,
     customerNotes: state.customerNotes,
     duration: state.duration,
     fieldValues: state.fieldValues,
@@ -123,6 +129,8 @@ export function persistedDraftToFormState(
     customerPhone: draft.customerPhone,
     customerEmail: draft.customerEmail,
     customerAddress: draft.customerAddress,
+    customerPostalCode: draft.customerPostalCode ?? '',
+    customerPostalLocality: draft.customerPostalLocality ?? '',
     customerNotes: draft.customerNotes,
     duration: draft.duration,
     fieldValues,
@@ -137,6 +145,8 @@ export function persistedDraftToFormState(
       phone: draft.customerPhone || undefined,
       email: draft.customerEmail || undefined,
       address: draft.customerAddress || undefined,
+      postalCode: draft.customerPostalCode || undefined,
+      postalLocality: draft.customerPostalLocality || undefined,
       notes: draft.customerNotes || undefined,
     },
     lines,

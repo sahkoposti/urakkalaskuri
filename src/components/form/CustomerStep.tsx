@@ -2,6 +2,10 @@ import { Pressable, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 import { AppInput } from '@/src/components/common';
+import {
+  lookupPostalLocality,
+  normalizePostalCode,
+} from '@/src/core/customer/varsinaisSuomiPostalCodes';
 import type { CustomerType } from '@/src/core/models/types';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -13,6 +17,8 @@ type CustomerStepProps = {
   phone: string;
   email: string;
   address: string;
+  postalCode: string;
+  postalLocality: string;
   notes: string;
   onNameChange: (value: string) => void;
   onCustomerTypeChange: (value: CustomerType) => void;
@@ -20,6 +26,8 @@ type CustomerStepProps = {
   onPhoneChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onAddressChange: (value: string) => void;
+  onPostalCodeChange: (value: string) => void;
+  onPostalLocalityChange: (value: string) => void;
   onNotesChange: (value: string) => void;
 };
 
@@ -30,6 +38,8 @@ export function CustomerStep({
   phone,
   email,
   address,
+  postalCode,
+  postalLocality,
   notes,
   onNameChange,
   onCustomerTypeChange,
@@ -37,9 +47,21 @@ export function CustomerStep({
   onPhoneChange,
   onEmailChange,
   onAddressChange,
+  onPostalCodeChange,
+  onPostalLocalityChange,
   onNotesChange,
 }: CustomerStepProps) {
   const styles = useThemedStyles(createStyles);
+
+  function handlePostalCodeChange(value: string) {
+    const code = normalizePostalCode(value);
+    onPostalCodeChange(code);
+    const locality = lookupPostalLocality(code);
+    if (locality) {
+      onPostalLocalityChange(locality);
+    }
+  }
+
   return (
     <View>
       <AppInput label="Nimi *" value={name} onChangeText={onNameChange} />
@@ -56,6 +78,19 @@ export function CustomerStep({
         keyboardType="email-address"
       />
       <AppInput label="Osoite" value={address} onChangeText={onAddressChange} />
+      <AppInput
+        label="Postinumero"
+        value={postalCode}
+        onChangeText={handlePostalCodeChange}
+        keyboardType="number-pad"
+        placeholder="Esim. 20100"
+      />
+      <AppInput
+        label="Postitoimipaikka"
+        value={postalLocality}
+        onChangeText={onPostalLocalityChange}
+        placeholder="Täyttyy postinumerosta"
+      />
       <AppInput
         label="Lisätiedot"
         value={notes}

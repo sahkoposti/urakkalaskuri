@@ -1,3 +1,4 @@
+import { applyOwnedVatTotals } from '@/src/core/calculation/pricingSkeleton';
 import { pipelineFieldOrder } from '@/src/core/form/formDefinitionHelpers';
 import {
   fieldValuesForVisibility,
@@ -18,7 +19,7 @@ import {
 } from '@/src/core/form/productFieldUtils';
 import { buildSettingsFormulaContext } from '@/src/core/form/settingsFormulaContext';
 import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
-import { isSystemField, MATERIALS_CONTEXT_KEY } from '@/src/core/form/systemFields';
+import { isMaterialsSystemField, isSystemField, MATERIALS_CONTEXT_KEY } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { AppSettings, Product } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
@@ -171,8 +172,9 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
         const overrideRaw = useDebugExamples ? field.debugExampleValue : fieldValues[field.key];
         const override =
           field.allowManualOverride !== false ? parseNumber(overrideRaw?.trim() ?? '') : null;
+        const keepMaterialsSeed = isMaterialsSystemField(field);
 
-        if (!field.formula?.trim()) {
+        if (!field.formula?.trim() || keepMaterialsSeed) {
           if (override !== null) {
             context[field.key] = isDiscountPercentKey(field.key)
               ? clampDiscountPercent(override)
@@ -187,10 +189,15 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
             }
             continue;
           }
-          if (recordTrace) {
-            errors.push(`${field.label}: kaava puuttuu`);
+          if (keepMaterialsSeed) {
+            continue;
           }
-          continue;
+          if (!field.formula?.trim()) {
+            if (recordTrace) {
+              errors.push(`${field.label}: kaava puuttuu`);
+            }
+            continue;
+          }
         }
 
         if (override !== null && !useDebugExamples) {
@@ -333,6 +340,18 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
   } else {
     processPass(undefined, collectTrace);
   }
+
+  const totalField = form.fields.find((field) => field.key === 'kokonaishinta');
+  const sellingOverrideRaw = totalField
+    ? useDebugExamples
+      ? totalField.debugExampleValue
+      : fieldValues[totalField.key]
+    : undefined;
+  const sellingPriceVatOverridden =
+    totalField?.allowManualOverride !== false &&
+    parseNumber(sellingOverrideRaw?.trim() ?? '') !== null &&
+    (useDebugExamples || Object.prototype.hasOwnProperty.call(fieldValues, 'kokonaishinta'));
+  applyOwnedVatTotals(context, settings.vatPercent, false, { sellingPriceVatOverridden });
 
   return { context, steps, errors };
 }

@@ -11,6 +11,8 @@ export interface AppSettings {
   defaultHourlyRate: number;
   defaultCrewSize: number;
   workdayHours: number;
+  /** Kerroin yhteenvedon työn kestolle (säävaraus). Ei vaikuta hinnoitteluun. */
+  weatherReserveFactor: number;
   theme: ThemeSettings;
 }
 
@@ -45,6 +47,7 @@ export const defaultSettings: AppSettings = {
   defaultHourlyRate: 30,
   defaultCrewSize: 2,
   workdayHours: 8,
+  weatherReserveFactor: 1.3,
   theme: { ...defaultThemeSettings },
 };
 
@@ -123,6 +126,8 @@ export interface CustomerInfo {
   phone?: string;
   email?: string;
   address?: string;
+  postalCode?: string;
+  postalLocality?: string;
   notes?: string;
 }
 
@@ -137,6 +142,8 @@ export function serializeCustomerDetails(customer: CustomerInfo): string {
     phone: customer.phone?.trim() || undefined,
     email: customer.email?.trim() || undefined,
     address: customer.address?.trim() || undefined,
+    postalCode: customer.postalCode?.trim() || undefined,
+    postalLocality: customer.postalLocality?.trim() || undefined,
     notes: customer.notes?.trim() || undefined,
   });
 }
@@ -153,6 +160,8 @@ export function parseCustomerDetails(raw?: string | null): Omit<CustomerInfo, 'n
       phone: parsed.phone,
       email: parsed.email,
       address: parsed.address,
+      postalCode: parsed.postalCode,
+      postalLocality: parsed.postalLocality,
       notes: parsed.notes,
     };
   } catch {
@@ -198,6 +207,8 @@ export interface PersistedWizardDraft {
   customerPhone: string;
   customerEmail: string;
   customerAddress: string;
+  customerPostalCode?: string;
+  customerPostalLocality?: string;
   customerNotes: string;
   duration: string;
   fieldValues?: Record<string, string>;

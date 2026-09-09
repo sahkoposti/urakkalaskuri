@@ -1,6 +1,6 @@
 import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
 import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
-import { isFieldVisible } from '@/src/core/form/fieldVisibility';
+import { isFieldVisibleOnSummary } from '@/src/core/form/fieldVisibility';
 import {
   findProductById,
   getSelectedProductId,
@@ -70,7 +70,7 @@ export function summaryDisplayFields(
   for (const page of sortedPages(form)) {
     for (const field of fieldsForPage(form, page.id)) {
       if (field.type === 'section' || isSystemField(field) || !field.showOnSummary) continue;
-      if (!isFieldVisible(field, fieldValues, form, new Set(), numericContext)) continue;
+      if (!isFieldVisibleOnSummary(field, fieldValues, form, numericContext)) continue;
       if (seen.has(field.id)) continue;
       seen.add(field.id);
       fields.push(field);
@@ -91,7 +91,7 @@ export function buildFormSnapshot(
   for (const page of sortedPages(form)) {
     for (const field of fieldsForPage(form, page.id)) {
       if (field.type === 'section' || isSystemField(field) || !field.showOnSummary) continue;
-      if (!isFieldVisible(field, fieldValues, form, new Set(), context)) continue;
+      if (!isFieldVisibleOnSummary(field, fieldValues, form, context)) continue;
       fields.push({
         key: field.key,
         label: displayWorkDurationText(field.label),

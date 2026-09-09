@@ -27,7 +27,7 @@ import {
   runFormCalculation,
 } from '@/src/core/calculation/calculationPipeline';
 import { applyFieldValueChange, resetComputedFieldOverride } from '@/src/core/form/applyFieldValueChange';
-import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
+import { wizardFieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
 import {
   formVersionMismatchMessage,
   hasFormVersionMismatch,
@@ -88,6 +88,8 @@ export default function WizardScreen() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+  const [customerPostalCode, setCustomerPostalCode] = useState('');
+  const [customerPostalLocality, setCustomerPostalLocality] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
   const [duration, setDuration] = useState('');
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
@@ -117,6 +119,8 @@ export default function WizardScreen() {
     setCustomerPhone('');
     setCustomerEmail('');
     setCustomerAddress('');
+    setCustomerPostalCode('');
+    setCustomerPostalLocality('');
     setCustomerNotes('');
     setDuration('');
     setFieldValues({});
@@ -130,6 +134,8 @@ export default function WizardScreen() {
     setCustomerPhone(form.customerPhone);
     setCustomerEmail(form.customerEmail);
     setCustomerAddress(form.customerAddress);
+    setCustomerPostalCode(form.customerPostalCode ?? '');
+    setCustomerPostalLocality(form.customerPostalLocality ?? '');
     setCustomerNotes(form.customerNotes);
     setDuration(form.duration);
     setFieldValues(form.fieldValues);
@@ -232,7 +238,7 @@ export default function WizardScreen() {
 
   const currentPage = pages[step] ?? pages[0];
   const pageFields = useMemo(
-    () => (currentPage ? fieldsForPage(formDefinition, currentPage.id) : []),
+    () => (currentPage ? wizardFieldsForPage(formDefinition, currentPage.id) : []),
     [currentPage, formDefinition],
   );
   const computedValues = useLiveFormContext({
@@ -272,6 +278,8 @@ export default function WizardScreen() {
       customerPhone,
       customerEmail,
       customerAddress,
+      customerPostalCode,
+      customerPostalLocality,
       customerNotes,
       duration,
       fieldValues,
@@ -347,6 +355,8 @@ export default function WizardScreen() {
     customerPhone,
     customerEmail,
     customerAddress,
+    customerPostalCode,
+    customerPostalLocality,
     customerNotes,
     duration,
     customerType,
@@ -396,6 +406,8 @@ export default function WizardScreen() {
     customerPhone,
     customerEmail,
     customerAddress,
+    customerPostalCode,
+    customerPostalLocality,
     customerNotes,
     duration,
     customerType,
@@ -421,6 +433,8 @@ export default function WizardScreen() {
       phone: customerPhone.trim() || undefined,
       email: customerEmail.trim() || undefined,
       address: customerAddress.trim() || undefined,
+      postalCode: customerPostalCode.trim() || undefined,
+      postalLocality: customerPostalLocality.trim() || undefined,
       notes: customerNotes.trim() || undefined,
     };
   }
@@ -603,6 +617,8 @@ export default function WizardScreen() {
                 phone={customerPhone}
                 email={customerEmail}
                 address={customerAddress}
+                postalCode={customerPostalCode}
+                postalLocality={customerPostalLocality}
                 notes={customerNotes}
                 onNameChange={setCustomerName}
                 onCustomerTypeChange={(type) => {
@@ -615,6 +631,8 @@ export default function WizardScreen() {
                 onPhoneChange={setCustomerPhone}
                 onEmailChange={setCustomerEmail}
                 onAddressChange={setCustomerAddress}
+                onPostalCodeChange={setCustomerPostalCode}
+                onPostalLocalityChange={setCustomerPostalLocality}
                 onNotesChange={setCustomerNotes}
               />
             )}

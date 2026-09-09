@@ -134,6 +134,43 @@ function conditionMatches(
   return compareNumeric(operator, actual, expected);
 }
 
+function readConditionActual(
+  condition: FieldVisibilityCondition,
+  fieldValues: Record<string, string>,
+  form: FormDefinition,
+  numericContext?: Record<string, number>,
+): { actual: string; source: FormField | undefined } {
+  const source = form.fields.find((item) => item.key === condition.fieldKey);
+  const fromContext =
+    source?.type === 'computed' &&
+    numericContext &&
+    Object.prototype.hasOwnProperty.call(numericContext, source.key)
+      ? String(numericContext[source.key])
+      : undefined;
+  const actual =
+    fromContext ??
+    comparableFieldValue(
+      source,
+      source ? resolveFieldRawValue(source, fieldValues) : fieldValues[condition.fieldKey],
+    );
+  return { actual, source };
+}
+
+/**
+ * Täyttääkö näkyvyysehto nykyiset vastaukset (ei ketjuta muita ehtoja).
+ * Puuttuva ehto = true.
+ */
+export function isVisibilityConditionMet(
+  condition: FieldVisibilityCondition | undefined,
+  fieldValues: Record<string, string>,
+  form: FormDefinition,
+  numericContext?: Record<string, number>,
+): boolean {
+  if (!condition?.fieldKey) return true;
+  const { actual, source } = readConditionActual(condition, fieldValues, form, numericContext);
+  return conditionMatches(condition, actual, source);
+}
+
 /**
  * Onko kenttä näkyvissä nykyisillä vastauksilla.
  * Ketjuttaa: jos riippuvuuskenttä on itse piilotettu, tämäkin piilotetaan.
@@ -156,17 +193,18 @@ export function isFieldVisible(
     return false;
   }
 
-  const fromContext =
-    dependency?.type === 'computed' &&
-    numericContext &&
-    Object.prototype.hasOwnProperty.call(numericContext, dependency.key)
-      ? String(numericContext[dependency.key])
-      : undefined;
-  const actual = fromContext ?? comparableFieldValue(
-    dependency,
-    dependency ? resolveFieldRawValue(dependency, fieldValues) : fieldValues[condition.fieldKey],
-  );
-  return conditionMatches(condition, actual, dependency);
+  return isVisibilityConditionMet(condition, fieldValues, form, numericContext);
+}
+
+/** Näkyykö kenttä yhteenvedossa: wizardin showWhen ja valinnainen showOnSummaryWhen. */
+export function isFieldVisibleOnSummary(
+  field: FormField,
+  fieldValues: Record<string, string>,
+  form: FormDefinition,
+  numericContext?: Record<string, number>,
+): boolean {
+  if (!isFieldVisible(field, fieldValues, form, new Set(), numericContext)) return false;
+  return isVisibilityConditionMet(field.showOnSummaryWhen, fieldValues, form, numericContext);
 }
 
 export function filterVisibleFields(

@@ -1,6 +1,6 @@
 # Urakkalaskuri – sovelluksen kuvaus
 
-ColoRajatonin tarjouslaskuri (Expo / React Native, Android). Nykyinen versio **v1.2.3**.
+ColoRajatonin tarjouslaskuri (Expo / React Native, Android). Nykyinen versio **v1.2.4**.
 
 Tämä sivu kuvaa **miten sovellus toimii nyt**. JSON-kentät ja kaavat: [lomakepohja-json-ohje.md](./lomakepohja-json-ohje.md). Kehitysympäristö: [README.md](../README.md).
 
@@ -12,10 +12,10 @@ Tämä sivu kuvaa **miten sovellus toimii nyt**. JSON-kentät ja kaavat: [lomake
 |-------|----------------|
 | Koti | Uusi laskenta, historia, tuotteet, asetukset |
 | Wizard | Lomakepohjan sivut järjestyksessä. Viimeinen sivu: **Laske** |
-| Laskelman tiedot | Yhteinen näkymä wizardin jälkeen ja historiasta. Roskakori nimen vieressä poistaa laskelman (vahvistus). **Sulje** → historia |
+| Laskelman tiedot | Yhteinen näkymä wizardin jälkeen ja historiasta. Roskakori nimen vieressä poistaa laskelman (vahvistus). Kopiointi vain asiakastiedoista (puhelin, sähköposti, osoite, postinumero, postitoimipaikka, lisätiedot). **Sulje** → historia |
 | Historia | Tallennetut laskelmat. Avaa laskelma nähdäksesi tiedot tai poistaaksesi sen |
 | Tuotteet | Materiaalit (nimi, yksikkö, hinta alv0, valinnaiset attribuutit) |
-| Asetukset | Yleinen (ALV, liukuva kate, palkkio, tuntihinta, työryhmä, työpäivä), teema, lomake |
+| Asetukset | Yleinen (ALV, liukuva kate, palkkio, tuntihinta, työryhmä, työpäivä, säävarauskerroin), teema, lomake |
 
 Kesken jäänyt uusi laskenta: punainen palkki **Jatka laskentaa**. **Uusi laskenta** kysyy vahvistuksen, jos luonnos on olemassa (luonnos ja istunto tyhjennetään).
 
@@ -38,14 +38,16 @@ Luonnos (`wizard_drafts`) sisältää tarvittaessa `editCalculationId`. Historia
 
 **Poista** (roskakorikuvake asiakkaan nimen rivillä oikealla) kysyy vahvistuksen ja poistaa laskelman sekä sen materiaalirivit. Onnistunut poisto palaa historialistaan. Jos sama laskelma oli muokattavana, wizard-istunto ja luonnos tyhjennetään.
 
+Asiakassivu (kiinteä UI, ei JSON-kenttiä): nimi, puhelin, sähköposti, osoite, **postinumero**, **postitoimipaikka**, lisätiedot, asiakastyyppi (yksityinen/yritys), yritykselle käänteinen ALV. Viisinumeroinen Varsinais-Suomen postinumero täyttää postitoimipaikan automaattisesti; kentän voi myös kirjoittaa itse. Tuntematon numero ei tyhjennä kirjoitettua paikkakuntaa. Yhteenvedossa kopiointinappi on vain asiakkaan yhteystiedoissa (ei hinnoissa eikä lomakekentissä).
+
 ---
 
 ## Hinnoittelun erittely
 
 Yhteinen kortti (wizard + historia):
 
-1. Työn kesto (pv) – näytössä **tasapäiviin ylöspäin** (1,1 → 2). Laskenta käyttää tarkkaa arvoa.
-2. Urakkahinta (alv0), materiaalit (alv0)
+1. Työn arvioitu kesto (pv) – **vain tämä näyttö**. Asetukset → Yleinen, säävarauskerroin (oletus 1,3) kerrotaan tallennetulla kestolla, sitten **tasapäiviin ylöspäin** (1 × 1,3 → 2). Wizardin kenttä ja hinnoittelu käyttävät tarkkaa kestoa ilman kerrointa. Kerroin ei ole kaavamuuttuja; yhteenvedossa käytetään aina nykyistä asetusta.
+2. Urakkahinta (alv0), materiaalit (alv0) ja materiaalit (sis. ALV; ei käänteisessä ALV:ssa)
 3. Myyntikate € ja % – **toteutunut** kate (jos alennus, jo alennuksen jälkeen)
 4. Myyntipalkkio
 5. Jos alennus > 0 %: hinta ennen alennusta + alennusrivi
@@ -79,7 +81,7 @@ Kaava: `liukuva_myyntihinta(suorat_kustannukset_alv0)` → myyntihinta alv0. Muu
 - **Sivut** = wizard-vaiheet. Kentät ovat globaaleja; sivu viittaa `fieldIds`.
 - **Asiakassivu** (`system: "customer"`) ei voi poistaa.
 - **Materiaalirivit** (`system: "materials"`) ovat valinnaisia. Oletuspohjassa ei ole rivi-sivua; maalit voidaan laskea kentillä + `add_material_fixed`.
-- Järjestelmäkentät (kesto, hinnat, alennus) lisätään tuonnissa automaattisesti. Piilotetut (kate, palkkio, ALV, alennus €) eivät näy Kentät-listassa.
+- Järjestelmäkentät lisätään tuonnissa. Wizardissa voi näyttää ja yliajaa keston, alennus-%:n, urakan, materiaalit, palkkion ja kokonaishinnat (alv0 ja sis. ALV). Kate, ALV € ja alennus € ovat vain hintakortissa. JSON laskee vientiavaimet; runko laskee ALV:n. Yliajettu kokonaishinta (sis. ALV) johtaa uuden alv0-hinnan.
 - Pohjan `version` kasvaa tallennettaessa. Vanhaa laskelmaa muokatessa näytetään varoitus, jos versio eroaa.
 - **Kentät**-asetuksissa jokainen sivu (esim. Asiakas) on oletuksena suljettu. Otsikko ja nuoli ovat samalla rivillä; nuolta painamalla sivun kentät avautuvat. Sovellus muistaa, mitkä sivut olivat auki (`settings`-avain `fields_page_expanded`).
 - Lasketun kentän manuaalinen arvo wizardissa: teemavärinen reset-nuoli palauttaa kaavan tuloksen.
@@ -90,7 +92,7 @@ Kaava: `liukuva_myyntihinta(suorat_kustannukset_alv0)` → myyntihinta alv0. Muu
 
 - `calculations` + `calculation_lines`
 - `products` (attribuutit JSON:ssa, esim. menekki, työkerroin)
-- `settings` (avain–arvo; lomakepohja avaimessa `form_definition`, Kentät-sivujen avaus `fields_page_expanded`)
+- `settings` (avain–arvo; lomakepohja `form_definition`, Kentät-sivujen avaus `fields_page_expanded`, säävaraus `weather_reserve_factor`)
 - `wizard_drafts` (yksi kesken oleva laskenta)
 
 Ei pilvisynkkaa.

@@ -156,6 +156,20 @@ describe('applyFieldValueChange', () => {
     expect(clearedAfterEdit.kiintea_seinapinta_ala_m2).toBe('');
     expect(resolveFieldRawValue(surface, clearedAfterEdit)).toBe('');
   });
+
+  test('editing VAT-inclusive total clears a VAT0 override and vice versa', () => {
+    const form = defaultForm();
+    const withVat0 = applyFieldValueChange(form, baseValues, 'kokonaishinta_alv0', '1800');
+    expect(withVat0.kokonaishinta_alv0).toBe('1800');
+
+    const withVatIncl = applyFieldValueChange(form, withVat0, 'kokonaishinta', '1255');
+    expect(withVatIncl.kokonaishinta).toBe('1255');
+    expect(withVatIncl.kokonaishinta_alv0).toBeUndefined();
+
+    const backToVat0 = applyFieldValueChange(form, withVatIncl, 'kokonaishinta_alv0', '2000');
+    expect(backToVat0.kokonaishinta_alv0).toBe('2000');
+    expect(backToVat0.kokonaishinta).toBeUndefined();
+  });
 });
 
 describe('computedFieldsAffectedByKeyChange', () => {

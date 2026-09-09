@@ -20,7 +20,11 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 type FieldVisibilityEditorProps = {
   form: FormDefinition;
   field: FormField;
-  onChange: (showWhen: FieldVisibilityCondition | undefined) => void;
+  condition: FieldVisibilityCondition | undefined;
+  onChange: (condition: FieldVisibilityCondition | undefined) => void;
+  title?: string;
+  help?: string;
+  switchLabel?: string;
 };
 
 const OPERATOR_LABELS: Record<FieldVisibilityOperator, string> = {
@@ -47,13 +51,20 @@ function coerceOperator(
   return allowed.includes(current) ? current : 'eq';
 }
 
-export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibilityEditorProps) {
+export function FieldVisibilityEditor({
+  form,
+  field,
+  condition,
+  onChange,
+  title = 'Näkyvyysehto',
+  help = 'Piilota kenttä wizardissa kunnes ehto täyttyy. Sopii Kyllä/Ei-, valintalista-, numero- ja laskentakentille (esim. näytä räystäsmetrit vain jos räystäät = Kyllä, ikkunamäärä jos laskettu ehto = 1, tai lisärivi jos pinta-ala > 100).',
+  switchLabel = 'Näytä vain jos ehto täyttyy',
+}: FieldVisibilityEditorProps) {
   const styles = useThemedStyles(createStyles);
   const sources = form.fields.filter(
     (item) => item.id !== field.id && isVisibilitySourceField(item),
   );
-  const enabled = Boolean(field.showWhen?.fieldKey);
-  const condition = field.showWhen;
+  const enabled = Boolean(condition?.fieldKey);
   const selectedSource = sources.find((item) => item.key === condition?.fieldKey);
   const allowedOperators = operatorsForVisibilitySource(selectedSource);
 
@@ -98,15 +109,11 @@ export function FieldVisibilityEditor({ form, field, onChange }: FieldVisibility
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.heading}>Näkyvyysehto</Text>
-      <Text style={styles.help}>
-        Piilota kenttä wizardissa kunnes ehto täyttyy. Sopii Kyllä/Ei-, valintalista-, numero- ja
-        laskentakentille (esim. näytä räystäsmetrit vain jos räystäät = Kyllä, ikkunamäärä jos
-        laskettu ehto = 1, tai lisärivi jos pinta-ala {'>'} 100).
-      </Text>
+      <Text style={styles.heading}>{title}</Text>
+      <Text style={styles.help}>{help}</Text>
 
       <View style={styles.switchRow}>
-        <Text style={styles.switchLabel}>Näytä vain jos ehto täyttyy</Text>
+        <Text style={styles.switchLabel}>{switchLabel}</Text>
         <AppSwitch
           value={enabled}
           onValueChange={(value) => {

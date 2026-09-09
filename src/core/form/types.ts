@@ -62,8 +62,13 @@ export interface FormField {
   options?: SelectOption[];
   formula?: string;
   effects?: FieldEffect[];
-  /** Näytä kenttä vain kun ehto täyttyy; puuttuu = aina näkyvissä */
+  /** Näytä kenttä vain kun ehto täyttyy; puuttuu = aina näkyvissä wizardissa */
   showWhen?: FieldVisibilityCondition;
+  /**
+   * Näytä kenttä yhteenvedossa vain kun ehto täyttyy. Ei vaikuta wizardin näkyvyyteen.
+   * Puuttuu = yhteenveto seuraa showOnSummary (+ wizardin showWhen).
+   */
+  showOnSummaryWhen?: FieldVisibilityCondition;
   helpText?: string;
   /** Wizardin oletusarvo (numero/teksti/valinta/tuote/boolean). Tyhjä = ei oletusta. */
   defaultValue?: string;

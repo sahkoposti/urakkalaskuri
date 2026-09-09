@@ -19,6 +19,7 @@ export {
   collectKnownFormulaIdentifiers,
   fieldsAvailableForPage,
   fieldsForPage,
+  wizardFieldsForPage,
   getFieldById,
   normalizeFormDefinition,
   pagesUsingField,

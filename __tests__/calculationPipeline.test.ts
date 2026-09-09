@@ -331,15 +331,15 @@ describe('runFormCalculation', () => {
     ).toThrow(CalculationValidationError);
   });
 
-  test('uses edited system formulas for wizard price', () => {
+  test('JSON selling price formula is used; ALV totals come from the skeleton', () => {
     const form = defaultForm();
     form.fields = form.fields.map((field) =>
-      field.systemKey === 'kokonaishinta'
+      field.systemKey === 'kokonaishinta_alv0'
         ? { ...field, formula: 'urakka_hinta_alv0 + materiaalit' }
-        : field.systemKey === 'kokonaishinta_alv0'
-          ? { ...field, formula: 'kokonaishinta' }
+        : field.systemKey === 'kokonaishinta'
+          ? { ...field, formula: '99999' }
           : field.systemKey === 'alv_maara'
-            ? { ...field, formula: '0' }
+            ? { ...field, formula: '88888' }
             : field.systemKey === 'myyntikate_eur'
               ? { ...field, formula: '0' }
               : field.systemKey === 'myyntipalkkio_eur'
@@ -356,8 +356,57 @@ describe('runFormCalculation', () => {
     });
 
     expect(result.contractPriceVat0).toBeCloseTo(2400, 2);
-    expect(result.totalPriceVat).toBeCloseTo(2650, 2);
-    expect(result.vatAmount).toBe(0);
+    expect(result.totalPriceVat0).toBeCloseTo(2650, 2);
+    expect(result.vatAmount).toBeCloseTo(2650 * (defaultSettings.vatPercent / 100), 2);
+    expect(result.totalPriceVat).toBeCloseTo(2650 * (1 + defaultSettings.vatPercent / 100), 2);
+  });
+
+  test('discount kate uses JSON cost identity including extra direct costs', () => {
+    const form = defaultForm();
+    form.fields.push({
+      id: 'field_muut_kulut',
+      key: 'muut_kulut_alv0',
+      label: 'Muut kulut',
+      type: 'number',
+      required: false,
+      showOnSummary: false,
+    });
+    form.fields = form.fields.map((field) => {
+      if (field.systemKey === 'kokonaishinta_alv0') {
+        return {
+          ...field,
+          formula:
+            '(urakka_hinta_alv0 + materiaalit + muut_kulut_alv0) / (1 - asetukset.myyntipalkkio_prosentti / 100)',
+        };
+      }
+      if (field.systemKey === 'myyntipalkkio_eur') {
+        return { ...field, formula: 'kokonaishinta_alv0 * asetukset.myyntipalkkio_prosentti / 100' };
+      }
+      if (field.systemKey === 'myyntikate_eur') {
+        return {
+          ...field,
+          formula:
+            'kokonaishinta_alv0 - urakka_hinta_alv0 - materiaalit - muut_kulut_alv0 - myyntipalkkio',
+        };
+      }
+      return field;
+    });
+
+    const fieldValues = { tyoryhma_kesto_pv: '5', muut_kulut_alv0: '100', alennus_prosentti: '10' };
+    const { result } = runFormCalculation({
+      form,
+      fieldValues,
+      materialLines: [],
+      products: [],
+      settings: defaultSettings,
+    });
+
+    const suorat = result.contractPriceVat0 + result.materialsVat0 + 100;
+    expect(result.discountPercent).toBe(10);
+    expect(result.marginEur).toBeCloseTo(
+      result.totalPriceVat0 - suorat - result.commissionEur,
+      2,
+    );
   });
 
   test('reverseVat omits ALV from result', () => {
@@ -472,5 +521,67 @@ describe('runFormCalculation', () => {
       defaultSettings,
     );
     expect(cleared.laskenta_seinapinta_ala_m2).toBeCloseTo(209.3, 2);
+  });
+
+  test('form overrides for contract, materials, commission and totals', () => {
+    const form = defaultForm();
+    const fieldValues = {
+      tyoryhma_kesto_pv: '5',
+      urakka_hinta_alv0: '1000',
+      materiaalit: '200',
+      myyntipalkkio: '50',
+      kokonaishinta_alv0: '1800',
+    };
+
+    const { result } = runFormCalculation({
+      form,
+      fieldValues,
+      materialLines: [{ product: materialProduct, quantity: 1 }],
+      products: [],
+      settings: defaultSettings,
+    });
+
+    expect(result.contractPriceVat0).toBe(1000);
+    expect(result.materialsVat0).toBe(200);
+    expect(result.commissionEur).toBe(50);
+    expect(result.totalPriceVat0).toBe(1800);
+    expect(result.vatAmount).toBeCloseTo(1800 * (defaultSettings.vatPercent / 100), 5);
+    expect(result.totalPriceVat).toBeCloseTo(1800 * (1 + defaultSettings.vatPercent / 100), 5);
+  });
+
+  test('overriding VAT-inclusive total derives a new kokonaishinta_alv0', () => {
+    const form = defaultForm();
+    const vatInclusive = 1255;
+    const { result, context } = runFormCalculation({
+      form,
+      fieldValues: { tyoryhma_kesto_pv: '5', kokonaishinta: String(vatInclusive) },
+      materialLines: [],
+      products: [],
+      settings: defaultSettings,
+    });
+
+    const expectedVat0 = vatInclusive / (1 + defaultSettings.vatPercent / 100);
+    expect(result.totalPriceVat).toBeCloseTo(vatInclusive, 5);
+    expect(result.totalPriceVat0).toBeCloseTo(expectedVat0, 5);
+    expect(result.vatAmount).toBeCloseTo(vatInclusive - expectedVat0, 5);
+    expect(context.kokonaishinta_alv0).toBeCloseTo(expectedVat0, 5);
+  });
+
+  test('VAT-inclusive override wins over a simultaneous VAT0 override', () => {
+    const form = defaultForm();
+    const { result } = runFormCalculation({
+      form,
+      fieldValues: {
+        tyoryhma_kesto_pv: '5',
+        kokonaishinta_alv0: '9999',
+        kokonaishinta: '1255',
+      },
+      materialLines: [],
+      products: [],
+      settings: defaultSettings,
+    });
+
+    expect(result.totalPriceVat).toBeCloseTo(1255, 5);
+    expect(result.totalPriceVat0).toBeCloseTo(1255 / (1 + defaultSettings.vatPercent / 100), 5);
   });
 });

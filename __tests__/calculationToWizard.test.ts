@@ -80,6 +80,22 @@ describe('calculationToFormState', () => {
     expect(wizardDraft.customer.name).toBe('Testitalo');
   });
 
+  test('restores postal code and locality from saved customer json', () => {
+    const record = sampleRecord();
+    record.customer = JSON.stringify({
+      customerType: 'private',
+      reverseVat: false,
+      address: 'Katu 1',
+      postalCode: '20780',
+      postalLocality: 'Kaarina',
+    });
+    const { form, wizardDraft } = calculationToFormState(record, [product]);
+    expect(form.customerAddress).toBe('Katu 1');
+    expect(form.customerPostalCode).toBe('20780');
+    expect(form.customerPostalLocality).toBe('Kaarina');
+    expect(wizardDraft.customer.postalLocality).toBe('Kaarina');
+  });
+
   test('falls back to workDurationDays when snapshot has no fieldValues', () => {
     const { form } = calculationToFormState(sampleRecord(undefined), [product]);
     expect(form.fieldValues.tyoryhma_kesto_pv).toBe('5');

@@ -33,7 +33,22 @@
       "id": "page_duration",
       "title": "Kesto",
       "sortOrder": 3,
-      "fieldIds": ["field_system_tyoryhma_kesto_pv"]
+      "fieldIds": [
+        "field_system_tyoryhma_kesto_pv",
+        "field_system_alennus_prosentti"
+      ]
+    },
+    {
+      "id": "page_prices",
+      "title": "Hinnat",
+      "sortOrder": 4,
+      "fieldIds": [
+        "field_system_urakka",
+        "field_system_materiaalit",
+        "field_system_myyntipalkkio",
+        "field_system_kokonaishinta_alv0",
+        "field_system_kokonaishinta"
+      ]
     }
   ],
   "fields": [
@@ -73,7 +88,7 @@
     },
     {
       "id": "field_kuljetus",
-      "key": "kuljetuslisä",
+      "key": "kuljetuslisa",
       "label": "Kuljetuslisä",
       "type": "number",
       "required": false,

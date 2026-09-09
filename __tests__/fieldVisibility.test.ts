@@ -3,6 +3,7 @@ import {
   filterVisibleFields,
   formHasComputedShowWhen,
   isFieldVisible,
+  isFieldVisibleOnSummary,
   omitHiddenFieldValues,
   visibilityConditionSummary,
 } from '../src/core/form/fieldVisibility';
@@ -127,6 +128,27 @@ describe('fieldVisibility', () => {
     expect(isFieldVisible(metrit, { raystaan_aluset_ja_otsalaudat: 'true' }, form)).toBe(true);
     expect(isFieldVisible(metrit, { raystaan_aluset_ja_otsalaudat: 'false' }, form)).toBe(false);
     expect(isFieldVisible(metrit, {}, form)).toBe(false);
+  });
+
+  test('showOnSummaryWhen hides from summary only, not wizard', () => {
+    const form = sampleForm();
+    const laudoitus = form.fields.find((f) => f.key === 'laudoitustyyppi')!;
+    laudoitus.showOnSummaryWhen = {
+      fieldKey: 'raystaan_aluset_ja_otsalaudat',
+      operator: 'eq',
+      value: 'true',
+    };
+
+    const valuesOff = { raystaan_aluset_ja_otsalaudat: 'false', laudoitustyyppi: '1.15' };
+    const valuesOn = { raystaan_aluset_ja_otsalaudat: 'true', laudoitustyyppi: '1.15' };
+
+    expect(isFieldVisible(laudoitus, valuesOff, form)).toBe(true);
+    expect(isFieldVisibleOnSummary(laudoitus, valuesOff, form)).toBe(false);
+    expect(filterVisibleFields(form.fields, valuesOff, form).map((f) => f.key)).toContain(
+      'laudoitustyyppi',
+    );
+
+    expect(isFieldVisibleOnSummary(laudoitus, valuesOn, form)).toBe(true);
   });
 
   test('select option equality shows dependent field', () => {

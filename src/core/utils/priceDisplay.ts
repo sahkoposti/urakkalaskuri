@@ -14,9 +14,7 @@ export function removeVat(vatIncluded: number, vatPercent: number): number {
 }
 
 /**
- * Myyntikate ja myyntipalkkio ovat osuuksia ALV-sisäisestä kokonaishinnasta:
- *   kate = kokonaishinta × kate%
- * Näytetään kaavan arvona (ilman erillistä ALV-vähennystä).
+ * Myyntikate ja myyntipalkkio näytetään rungon / kaavan euromääränä.
  */
 export function formatMarginCommissionPrice(amount: number): string {
   return formatCurrency(amount);

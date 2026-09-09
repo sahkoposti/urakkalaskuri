@@ -76,12 +76,24 @@ export function createDefaultFormDefinition(): FormDefinition {
       sortOrder: 2,
       fieldIds: ['field_system_tyoryhma_kesto_pv', 'field_system_alennus_prosentti'],
     },
+    {
+      id: 'page_prices',
+      title: 'Hinnat',
+      sortOrder: 3,
+      fieldIds: [
+        'field_system_urakka',
+        'field_system_materiaalit',
+        'field_system_myyntipalkkio',
+        'field_system_kokonaishinta_alv0',
+        'field_system_kokonaishinta',
+      ],
+    },
   ];
 
   return {
     id: 'default',
     name: 'Peruslaskenta',
-    version: 7,
+    version: 8,
     pages,
     fields: userFields,
     updatedAt: Date.now(),

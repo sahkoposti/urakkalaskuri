@@ -23,9 +23,19 @@ type FormSummarySectionProps = {
   context?: Record<string, number>;
   products?: Product[];
   snapshot?: FormSnapshot;
+  workDurationDays?: number;
+  weatherReserveFactor?: number;
 };
 
-export function FormSummarySection({ form, fieldValues, context, products = [], snapshot }: FormSummarySectionProps) {
+export function FormSummarySection({
+  form,
+  fieldValues,
+  context,
+  products = [],
+  snapshot,
+  workDurationDays,
+  weatherReserveFactor = 1,
+}: FormSummarySectionProps) {
   const styles = useThemedStyles(createStyles);
   if (snapshot) {
     if (snapshot.fields.length === 0) return null;
@@ -46,7 +56,7 @@ export function FormSummarySection({ form, fieldValues, context, products = [], 
                 {showPageTitle ? <Text style={styles.pageTitle}>{pageTitle}</Text> : null}
                 <ResultRow
                   label={displayWorkDurationText(field.label)}
-                  value={displaySnapshotFieldValue(field)}
+                  value={displaySnapshotFieldValue(field, workDurationDays, weatherReserveFactor)}
                 />
               </View>
             );
@@ -92,13 +102,19 @@ export function FormSummarySection({ form, fieldValues, context, products = [], 
   );
 }
 
-function displaySnapshotFieldValue(field: FormSnapshotField): string {
+function displaySnapshotFieldValue(
+  field: FormSnapshotField,
+  workDurationDays?: number,
+  weatherReserveFactor = 1,
+): string {
   if (!isWorkDurationDaysKey(field.key)) return field.value;
-  const numericPart = field.value.replace(/\s*pv\s*$/i, '').trim();
-  const parsed = parseNumber(numericPart);
-  if (parsed === null) return field.value;
-  const days = formatWorkDurationDays(parsed);
-  return field.unit ? `${days} ${field.unit}` : days;
+  const days =
+    workDurationDays !== undefined && Number.isFinite(workDurationDays)
+      ? workDurationDays
+      : parseNumber(field.value.replace(/\s*pv\s*$/i, '').trim());
+  if (days === null) return field.value;
+  const formatted = formatWorkDurationDays(days, weatherReserveFactor);
+  return field.unit ? `${formatted} ${field.unit}` : formatted;
 }
 
 function createStyles(colors: AppColorPalette) {

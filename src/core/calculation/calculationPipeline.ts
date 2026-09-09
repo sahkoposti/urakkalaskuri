@@ -19,6 +19,8 @@ import {
   discountPercentFromContext,
   writeDiscountedResultToContext,
 } from '@/src/core/calculation/discount';
+import { applyOwnedVatTotals } from '@/src/core/calculation/pricingSkeleton';
+import { overriddenComputedKeys, parsedComputedOverride } from '@/src/core/form/applyFieldValueChange';
 
 export class CalculationValidationError extends Error {
   constructor(message: string) {
@@ -139,12 +141,13 @@ function readContextNumber(
   throw new CalculationValidationError(`${label}: arvoa ei voitu laskea kaavasta`);
 }
 
-/** Rakentaa CalculationResult lomakekontekstista (järjestelmäkaavat). */
+/** Rakentaa CalculationResult lomakekontekstista (vientiavaimet + rungon ALV). */
 export function buildResultFromFormulaContext(
   context: Record<string, number>,
   settings: AppSettings,
   groupDurationHours: number,
   reverseVat = false,
+  sellingPriceVatOverridden = false,
 ): CalculationResult {
   const margin = settings.defaultMarginPercent / 100;
   const commission = settings.defaultCommissionPercent / 100;
@@ -158,8 +161,11 @@ export function buildResultFromFormulaContext(
     throw new CalculationValidationError('Työn keston on oltava suurempi kuin 0.');
   }
 
+  applyOwnedVatTotals(context, settings.vatPercent, reverseVat, { sellingPriceVatOverridden });
+
   const contractPriceVat0 = readContextNumber(context, ['urakka_hinta_alv0'], 'Urakkahinta');
   const materialsVat0 = readContextNumber(context, ['materiaalit', 'materiaalit_alv0'], 'Materiaalit');
+  const totalPriceVat0 = readContextNumber(context, ['kokonaishinta_alv0'], 'Kokonaishinta (alv0)');
   const totalPriceVat = readContextNumber(context, ['kokonaishinta'], 'Kokonaishinta');
   const marginEur = readContextNumber(context, ['myyntikate', 'myyntikate_eur'], 'Myyntikate');
   const commissionEur = readContextNumber(
@@ -167,16 +173,7 @@ export function buildResultFromFormulaContext(
     ['myyntipalkkio', 'myyntipalkkio_eur'],
     'Myyntipalkkio',
   );
-
-  let totalPriceVat0: number;
-  let vatAmount: number;
-  if (reverseVat) {
-    totalPriceVat0 = totalPriceVat;
-    vatAmount = 0;
-  } else {
-    totalPriceVat0 = readContextNumber(context, ['kokonaishinta_alv0'], 'Kokonaishinta (alv0)');
-    vatAmount = readContextNumber(context, ['alv_maara'], 'ALV');
-  }
+  const vatAmount = reverseVat ? 0 : readContextNumber(context, ['alv_maara'], 'ALV');
 
   const listResult: CalculationResult = {
     contractPriceVat0,
@@ -286,7 +283,10 @@ export function resolveFormContextWithEffects(
       context.tyoryhma_kesto_h = groupDurationHours;
       try {
         reevaluateComputedFields(input.form, context, {
-          skipKeys: new Set(['tyoryhma_kesto_h']),
+          skipKeys: new Set([
+            'tyoryhma_kesto_h',
+            ...overriddenComputedKeys(input.form, input.fieldValues),
+          ]),
           strictSystemFields: strict,
         });
       } catch (error) {
@@ -298,6 +298,11 @@ export function resolveFormContextWithEffects(
       }
     }
   }
+
+  applyOwnedVatTotals(context, input.settings.vatPercent, false, {
+    sellingPriceVatOverridden:
+      parsedComputedOverride(input.form, input.fieldValues, 'kokonaishinta') !== null,
+  });
 
   return { context, materialLines, groupDurationHours, steps, errors };
 }
@@ -400,6 +405,7 @@ export function runFormCalculation(input: FormCalculationInput): FormCalculation
     input.settings,
     groupDurationHours,
     input.reverseVat,
+    parsedComputedOverride(input.form, input.fieldValues, 'kokonaishinta') !== null,
   );
 
   return { context, result, materialLines };

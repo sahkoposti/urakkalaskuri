@@ -104,16 +104,16 @@ describe('runDebugPipeline', () => {
     expect(trace.context.kokonaishinta).toBeGreaterThan(0);
   });
 
-  test('orders kokonaishinta before alv_maara dependencies', () => {
+  test('orders kokonaishinta_alv0 before ALV and VAT-inclusive total', () => {
     const form = defaultForm();
     const order = pipelineFieldOrder(form).map((field) => field.key);
     const kokonaishinta = order.indexOf('kokonaishinta');
     const kokonaishintaAlv0 = order.indexOf('kokonaishinta_alv0');
     const alvMaara = order.indexOf('alv_maara');
 
-    expect(kokonaishinta).toBeGreaterThan(-1);
-    expect(kokonaishintaAlv0).toBeGreaterThan(kokonaishinta);
+    expect(kokonaishintaAlv0).toBeGreaterThan(-1);
     expect(alvMaara).toBeGreaterThan(kokonaishintaAlv0);
+    expect(kokonaishinta).toBeGreaterThan(alvMaara);
   });
 
   test('evaluates alv_maara after kokonaishinta chain', () => {

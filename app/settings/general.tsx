@@ -27,6 +27,7 @@ export default function GeneralSettingsScreen() {
   const [defaultHourlyRate, setDefaultHourlyRate] = useState('');
   const [defaultCrewSize, setDefaultCrewSize] = useState('');
   const [workdayHours, setWorkdayHours] = useState('');
+  const [weatherReserveFactor, setWeatherReserveFactor] = useState('');
 
   useEffect(() => {
     setVatPercent(String(settings.vatPercent));
@@ -38,6 +39,7 @@ export default function GeneralSettingsScreen() {
     setDefaultHourlyRate(String(settings.defaultHourlyRate));
     setDefaultCrewSize(String(settings.defaultCrewSize));
     setWorkdayHours(String(settings.workdayHours));
+    setWeatherReserveFactor(String(settings.weatherReserveFactor).replace('.', ','));
   }, [settings]);
 
   const commissionValue =
@@ -59,7 +61,8 @@ export default function GeneralSettingsScreen() {
       defaultCommissionPercent !== String(settings.defaultCommissionPercent) ||
       defaultHourlyRate !== String(settings.defaultHourlyRate) ||
       defaultCrewSize !== String(settings.defaultCrewSize) ||
-      workdayHours !== String(settings.workdayHours),
+      workdayHours !== String(settings.workdayHours) ||
+      weatherReserveFactor.replace(',', '.') !== String(settings.weatherReserveFactor),
     [
       vatPercent,
       marginLowAmount,
@@ -70,6 +73,7 @@ export default function GeneralSettingsScreen() {
       defaultHourlyRate,
       defaultCrewSize,
       workdayHours,
+      weatherReserveFactor,
       settings,
     ],
   );
@@ -85,6 +89,7 @@ export default function GeneralSettingsScreen() {
       defaultHourlyRate: parseNumber(defaultHourlyRate),
       defaultCrewSize: Number.parseInt(defaultCrewSize, 10),
       workdayHours: parseNumber(workdayHours),
+      weatherReserveFactor: parseNumber(weatherReserveFactor),
     };
 
     if (
@@ -98,7 +103,9 @@ export default function GeneralSettingsScreen() {
       parsed.defaultCrewSize === null ||
       !Number.isFinite(parsed.defaultCrewSize) ||
       parsed.workdayHours === null ||
-      parsed.defaultCrewSize <= 0
+      parsed.weatherReserveFactor === null ||
+      parsed.defaultCrewSize <= 0 ||
+      !(parsed.weatherReserveFactor > 0)
     ) {
       showAlert('Virhe', 'Anna kelvolliset arvot kaikille kentille.');
       return false;
@@ -129,6 +136,7 @@ export default function GeneralSettingsScreen() {
       defaultHourlyRate: parsed.defaultHourlyRate!,
       defaultCrewSize: parsed.defaultCrewSize!,
       workdayHours: parsed.workdayHours!,
+      weatherReserveFactor: parsed.weatherReserveFactor!,
     });
     await refreshSettings();
     return true;
@@ -214,6 +222,16 @@ export default function GeneralSettingsScreen() {
           onChangeText={setWorkdayHours}
           keyboardType="decimal-pad"
         />
+        <AppInput
+          label="Säävarauskerroin työn kestolle"
+          value={weatherReserveFactor}
+          onChangeText={setWeatherReserveFactor}
+          keyboardType="decimal-pad"
+        />
+        <Text style={styles.sectionHint}>
+          Kerroin vaikuttaa vain yhteenvedon arvioituun työn kestoon. Se kerrotaan kestolla ennen
+          pyöristystä ylöspäin (oletus 1,3). Hinnoittelu käyttää laskettua kestoa ilman kerrointa.
+        </Text>
         <PrimaryButton title="Tallenna" onPress={handleSave} />
       </ScrollView>
       {exitDialog}

@@ -123,13 +123,13 @@ export function ResultRow({
   const styles = useThemedStyles(createCommonStyles);
 
   async function handleCopy() {
-    const text = copyValue ?? value;
-    if (text === '–') return;
-    await Clipboard.setStringAsync(text);
+    const copyText = copyValue?.trim();
+    if (!copyText || copyText === '–') return;
+    await Clipboard.setStringAsync(copyText);
     onCopy?.();
   }
 
-  const canCopy = (copyValue ?? value) !== '–';
+  const canCopy = Boolean(copyValue?.trim() && copyValue.trim() !== '–');
 
   return (
     <View style={styles.resultRow}>

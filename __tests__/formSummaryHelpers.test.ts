@@ -118,4 +118,35 @@ describe('formatFieldSummaryValue', () => {
     const shown = summaryDisplayFields(form, { raystaat: 'true' }).map((f) => f.key);
     expect(shown).toContain('raystasmetrit');
   });
+
+  test('showOnSummaryWhen omits a wizard-visible field from summary until the condition matches', () => {
+    const form = defaultForm();
+    form.fields.push(
+      {
+        id: 'field_bool',
+        key: 'lisatyot',
+        label: 'Lisätyöt',
+        type: 'boolean',
+        required: false,
+        showOnSummary: true,
+      },
+      {
+        id: 'field_desc',
+        key: 'lisatyot_kuvaus',
+        label: 'Lisätöiden kuvaus',
+        type: 'text',
+        required: false,
+        showOnSummary: true,
+        showOnSummaryWhen: { fieldKey: 'lisatyot', operator: 'eq', value: 'true' },
+      },
+    );
+    form.pages[0].fieldIds.push('field_bool', 'field_desc');
+
+    const hidden = summaryDisplayFields(form, { lisatyot: 'false' }).map((field) => field.key);
+    expect(hidden).toContain('lisatyot');
+    expect(hidden).not.toContain('lisatyot_kuvaus');
+
+    const shown = summaryDisplayFields(form, { lisatyot: 'true' }).map((field) => field.key);
+    expect(shown).toContain('lisatyot_kuvaus');
+  });
 });

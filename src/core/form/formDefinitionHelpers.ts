@@ -155,6 +155,12 @@ function normalizeFieldKeys(fields: FormField[]): FormField[] {
           value: normalizeVisibilityConditionValue(field.showWhen.value),
         }
       : field.showWhen;
+    const showOnSummaryWhen = field.showOnSummaryWhen?.fieldKey
+      ? {
+          ...field.showOnSummaryWhen,
+          value: normalizeVisibilityConditionValue(field.showOnSummaryWhen.value),
+        }
+      : field.showOnSummaryWhen;
     return {
       ...field,
       key,
@@ -162,6 +168,7 @@ function normalizeFieldKeys(fields: FormField[]): FormField[] {
       formula: field.formula ? migrateFormulaKeys(field.formula) : field.formula,
       effects: effects && effects.length > 0 ? effects : undefined,
       showWhen,
+      showOnSummaryWhen,
     };
   });
 }
@@ -300,6 +307,11 @@ export function fieldsForPage(form: FormDefinition, pageId: string): FormField[]
   return (page.fieldIds ?? [])
     .map((fieldId) => getFieldById(form, fieldId))
     .filter((field): field is FormField => field !== undefined);
+}
+
+/** Wizard näyttää sivulle merkityt kentät ilman piilotettuja runkorivejä (kate, ALV €). */
+export function wizardFieldsForPage(form: FormDefinition, pageId: string): FormField[] {
+  return fieldsForPage(form, pageId).filter((field) => !isSystemFieldHiddenFromUi(field));
 }
 
 /** Kentät joita voi lisätä tälle sivulle (ei vielä millään sivulla). */

@@ -20,10 +20,7 @@ export function buildDebugFieldValues(form: FormDefinition): Record<string, stri
     if (field.type === 'section') continue;
 
     if (field.type === 'computed') {
-      const isInputStyle =
-        !field.formula?.trim() ||
-        (isSystemField(field) && field.allowManualOverride !== false);
-      if (!isInputStyle) continue;
+      if (field.formula?.trim()) continue;
 
       const example = field.debugExampleValue?.trim();
       const defaultRaw = resolveFieldRawValue(field, fieldValues);

@@ -23,18 +23,24 @@
       ]
     },
     {
-      "id": "page_materials",
-      "title": "Materiaalit",
+      "id": "page_duration",
+      "title": "Työn kesto (pv)",
       "sortOrder": 2,
-      "system": "materials",
-      "fieldIds": []
+      "fieldIds": [
+        "field_system_tyoryhma_kesto_pv",
+        "field_system_alennus_prosentti"
+      ]
     },
     {
-      "id": "page_duration",
-      "title": "Työryhmän arvioitu kesto (pv)",
+      "id": "page_prices",
+      "title": "Hinnat",
       "sortOrder": 3,
       "fieldIds": [
-        "field_system_tyoryhma_kesto_pv"
+        "field_system_urakka",
+        "field_system_materiaalit",
+        "field_system_myyntipalkkio",
+        "field_system_kokonaishinta_alv0",
+        "field_system_kokonaishinta"
       ]
     }
   ],

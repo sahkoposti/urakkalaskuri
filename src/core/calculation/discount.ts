@@ -63,9 +63,12 @@ export function applyDiscountToResult<T extends DiscountableTotals>(
   const identityOnVatIncl =
     Math.abs(listParts - totalPriceVatBeforeDiscount) <=
     Math.abs(listParts - totalPriceVat0BeforeDiscount);
+  const listSelling = identityOnVatIncl
+    ? totalPriceVatBeforeDiscount
+    : totalPriceVat0BeforeDiscount;
+  const impliedDirect = listSelling - result.marginEur - result.commissionEur;
   const sellingAfter = identityOnVatIncl ? totalPriceVat : totalPriceVat0;
-  const marginEur =
-    sellingAfter - result.contractPriceVat0 - result.materialsVat0 - commissionEur;
+  const marginEur = sellingAfter - impliedDirect - commissionEur;
 
   const discountEur =
     reverseVat || !identityOnVatIncl

@@ -7,6 +7,7 @@ export type SystemFieldKey =
   | 'alennus_prosentti'
   | 'alennus_eur'
   | 'urakka_hinta_alv0'
+  | 'materiaalit'
   | 'myyntikate_eur'
   | 'myyntipalkkio_eur'
   | 'kokonaishinta_alv0'
@@ -23,22 +24,23 @@ export const MATERIALS_CONTEXT_KEY = 'materiaalit';
 export const PIPELINE_CONTEXT_KEYS: ReadonlySet<string> = new Set([MATERIALS_CONTEXT_KEY]);
 
 /**
- * Järjestelmäkentät jotka säilyvät datamallissa ja laskennassa,
- * mutta eivät näy asetuksissa / wizardissa eivätkä ole muokattavissa.
- * Match by systemKey (myyntihinta = kokonaishinta_alv0).
+ * Rungon rivit, joita ei näytetä lomakkeella / Kentät-listassa.
+ * Urakka, materiaalit, palkkio ja kokonaishinnat saa laittaa sivulle ja yliajaa.
  */
 export const UI_HIDDEN_SYSTEM_FIELD_KEYS: ReadonlySet<SystemFieldKey> = new Set([
-  'kokonaishinta_alv0',
   'myyntikate_eur',
-  'myyntipalkkio_eur',
   'alv_maara',
   'alennus_eur',
 ]);
 
-/** Poistetut järjestelmäkentät (migraatio sivuilta / vanhoista pohjista). */
-export const REMOVED_SYSTEM_FIELD_IDS: ReadonlySet<string> = new Set([
-  'field_system_materiaalit',
+/** Runko laskee nämä aina itse kokonaishinta_alv0:sta. JSON-kaavaa ei säilytetä. */
+export const APP_OWNED_FORMULA_KEYS: ReadonlySet<SystemFieldKey> = new Set([
+  'alv_maara',
+  'kokonaishinta',
 ]);
+
+/** Poistetut järjestelmäkentät (migraatio sivuilta / vanhoista pohjista). */
+export const REMOVED_SYSTEM_FIELD_IDS: ReadonlySet<string> = new Set();
 
 const baseSystemField = (
   id: string,
@@ -63,8 +65,8 @@ const baseSystemField = (
 });
 
 /**
- * Järjestelmäkaavat ovat wizardin ja debugin yhteinen hintalähde.
- * runFormCalculation rakentaa CalculationResult näistä avaimista.
+ * Oletusvienti: tehdaslomake täyttää avaimet näillä kaavoilla.
+ * JSON saa korvata muut paitsi alv_maara ja kokonaishinta.
  */
 export function createSystemFields(): FormField[] {
   return [
@@ -111,7 +113,7 @@ export function createSystemFields(): FormField[] {
       'alennus_eur',
       'alennus_eur',
       'Alennus (€)',
-      'kokonaishinta * min(100, max(0, alennus_prosentti)) / 100',
+      'kokonaishinta_alv0 * min(100, max(0, alennus_prosentti)) / 100',
       '€',
     ),
     baseSystemField(
@@ -121,22 +123,37 @@ export function createSystemFields(): FormField[] {
       'Urakkahinta (alv0)',
       'tyoryhma_kesto_h * asetukset.tyoryhman_koko * asetukset.tuntihinta',
       '€',
+      { allowManualOverride: true },
     ),
     baseSystemField(
-      'field_system_kokonaishinta',
-      'kokonaishinta',
-      'kokonaishinta',
-      'Kokonaishinta (alv)',
-      `(urakka_hinta_alv0 + ${MATERIALS_CONTEXT_KEY}) / (1 - asetukset.myyntikate_prosentti/100 - asetukset.myyntipalkkio_prosentti/100)`,
+      'field_system_materiaalit',
+      'materiaalit',
+      MATERIALS_CONTEXT_KEY,
+      'Materiaalit (alv0)',
+      '',
       '€',
+      {
+        allowManualOverride: true,
+        helpText: 'Summa tuoteriveistä ja materiaaliefekteistä. Voit yliajaa arvon lomakkeella.',
+      },
     ),
     baseSystemField(
       'field_system_kokonaishinta_alv0',
       'kokonaishinta_alv0',
       'kokonaishinta_alv0',
       'Myyntihinta (alv0)',
-      'kokonaishinta / (1 + asetukset.alv_prosentti/100)',
+      `(urakka_hinta_alv0 + ${MATERIALS_CONTEXT_KEY}) / (1 - asetukset.myyntikate_prosentti/100 - asetukset.myyntipalkkio_prosentti/100) / (1 + asetukset.alv_prosentti/100)`,
       '€',
+      { allowManualOverride: true },
+    ),
+    baseSystemField(
+      'field_system_kokonaishinta',
+      'kokonaishinta',
+      'kokonaishinta',
+      'Kokonaishinta (alv)',
+      'kokonaishinta_alv0 + alv_maara',
+      '€',
+      { allowManualOverride: true },
     ),
     baseSystemField(
       'field_system_myyntikate',
@@ -153,13 +170,14 @@ export function createSystemFields(): FormField[] {
       'Myyntipalkkio (€)',
       'kokonaishinta * asetukset.myyntipalkkio_prosentti/100',
       '€',
+      { allowManualOverride: true },
     ),
     baseSystemField(
       'field_system_alv',
       'alv_maara',
       'alv_maara',
       'ALV (€)',
-      'kokonaishinta - kokonaishinta_alv0',
+      'kokonaishinta_alv0 * asetukset.alv_prosentti / 100',
       '€',
     ),
   ];
@@ -174,6 +192,17 @@ export function isSystemFieldHiddenFromUi(field: Pick<FormField, 'systemKey'>): 
     field.systemKey !== undefined &&
     UI_HIDDEN_SYSTEM_FIELD_KEYS.has(field.systemKey as SystemFieldKey)
   );
+}
+
+export function isAppOwnedFormulaField(field: Pick<FormField, 'systemKey'>): boolean {
+  return (
+    field.systemKey !== undefined &&
+    APP_OWNED_FORMULA_KEYS.has(field.systemKey as SystemFieldKey)
+  );
+}
+
+export function isMaterialsSystemField(field: Pick<FormField, 'systemKey' | 'key'>): boolean {
+  return field.systemKey === 'materiaalit' || field.key === MATERIALS_CONTEXT_KEY;
 }
 
 export function getDefaultSystemField(systemKey: SystemFieldKey): FormField | undefined {
@@ -209,16 +238,22 @@ export function mergeSystemFields(fields: FormField[]): FormField[] {
       existingSystem.find((field) => field.systemKey === template.systemKey) ??
       promoted.find((field) => field.key === template.key);
     if (!current) return template;
+    const ownedFormula =
+      isAppOwnedFormulaField(template) || template.systemKey === 'materiaalit';
+    const importedFormula = current.formula?.trim();
     return {
       ...template,
       id: current.systemKey ? current.id : template.id,
       label: displayWorkDurationText(current.label || template.label),
-      formula: migrateFormulaKeys(current.formula ?? template.formula ?? ''),
-      showOnSummary: current.showOnSummary,
-      helpText: current.helpText ?? template.helpText,
+      formula: ownedFormula
+        ? template.formula
+        : migrateFormulaKeys(current.formula ?? template.formula ?? ''),
+      showOnSummary: isSystemFieldHiddenFromUi(template) ? false : current.showOnSummary,
+      helpText: current.helpText ?? (importedFormula ? undefined : template.helpText),
       unit: current.unit ?? template.unit,
-      allowManualOverride: current.allowManualOverride ?? template.allowManualOverride,
-      debugExampleValue: current.debugExampleValue ?? template.debugExampleValue,
+      allowManualOverride: template.allowManualOverride,
+      debugExampleValue:
+        current.debugExampleValue ?? (importedFormula ? undefined : template.debugExampleValue),
     };
   });
   return [...userFields, ...mergedSystem];

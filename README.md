@@ -2,7 +2,7 @@
 
 ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen laskentaan (Android).
 
-Nykyinen versio on **v1.2.3** (`app.json` / `package.json`).
+Nykyinen versio on **v1.2.4** (`app.json` / `package.json`).
 
 | Dokumentti | Sisältö |
 |------------|---------|
@@ -15,15 +15,16 @@ Nykyinen versio on **v1.2.3** (`app.json` / `package.json`).
 ## Ominaisuudet
 
 - Dynaaminen wizard lomakepohjan (`FormDefinition`) sivuilla
-- **Laske** tallentaa laskelman heti; yhteenveto ja historia käyttävät samaa erittelysivua (**Sulje** → historia)
+- **Laske** tallentaa laskelman heti; yhteenveto ja historia käyttävät samaa erittelysivua. Kopiointi vain asiakastiedoista. **Sulje** → historia
+- Asiakas: puhelin, sähköposti, osoite, postinumero ja postitoimipaikka (Varsinais-Suomi täyttyy postinumerosta; voi kirjoittaa itse)
 - Historia: muokkaus päivittää saman rivin; **Jatka laskentaa** jatkaa luonnosta ilman duplikaattia; laskelman **Poista** (roskakori, vahvistus) palaa listaan
 - **Lomakeasetukset:** sivut, kentät (sivut oletuksena suljettu, avaus muistetaan), näkyvyys (`showWhen`), efektit, valintalistat, lasketut kentät, `product_select`, JSON-tuonti/vienti, debug
 - **Kaavat:** `min`, `max`, `round`, `if`, `sqrt`, `liukuva_myyntihinta`, vertailut. Puuttuva muuttuja ja jako nollalla = `0`
 - **Liukuva kate** asetuksissa (alaraja/yläraja € ja %)
 - **Alennus %** (0–100) järjestelmäkenttänä; yhteenveto näyttää rivin vain kun alennus > 0; kate on alennuksen jälkeinen
-- Työn kesto yhteenvedossa tasapäivinä ylöspäin
+- Työn arvioitu kesto yhteenvedossa: säävarauskerroin (oletus 1,3) ennen pyöristystä ylöspäin; hinnoittelu ilman kerrointa
 - Tuotteet: nimi, yksikkö, hinta alv0, valinnaiset attribuutit (menekki, työkerroin)
-- Asetukset: ALV, kate, palkkio, tuntihinta, työryhmän koko, työpäivän pituus, teema
+- Asetukset: ALV, kate, palkkio, tuntihinta, työryhmän koko, työpäivän pituus, säävarauskerroin, teema
 - Paikallinen SQLite, `form_snapshot` muokkausta varten
 
 ## Kehitysympäristö
@@ -68,7 +69,8 @@ eas build --platform android --profile preview
 app/                 # Expo Router -näytöt
 src/
   core/
-    calculation/     # putki, liukuva kate, alennus
+    calculation/     # putki, liukuva kate, alennus, pricingSkeleton
+    customer/        # Varsinais-Suomen postinumerot
     form/            # lomakepohja, kaavat, efektit
     wizard/          # tallennus, luonnos, historia → wizard
   components/        # UI (ThemedIcon = Ionicons, CalculationDetailView)

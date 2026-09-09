@@ -9,6 +9,7 @@ import {
   EDITABLE_FIELD_TYPES,
   fieldsAvailableForPage,
   fieldsForPage,
+  wizardFieldsForPage,
   insertField,
   isSystemPage,
   moveFieldOnPage,
@@ -206,14 +207,9 @@ describe('formMutations', () => {
     expect(next.fields.some((field) => field.id === systemField.id)).toBe(true);
   });
 
-  test('UI-hidden system fields stay out of settings lists but show when assigned to a page', () => {
+  test('UI-hidden system fields stay out of settings and wizard even if assigned to a page', () => {
     const form = normalizeFormDefinition(createDefaultFormDefinition());
-    const hiddenKeys = [
-      'kokonaishinta_alv0',
-      'myyntikate_eur',
-      'myyntipalkkio_eur',
-      'alv_maara',
-    ] as const;
+    const hiddenKeys = ['myyntikate_eur', 'alv_maara', 'alennus_eur'] as const;
 
     for (const systemKey of hiddenKeys) {
       expect(form.fields.some((field) => field.systemKey === systemKey)).toBe(true);
@@ -225,7 +221,6 @@ describe('formMutations', () => {
       false,
     );
 
-    // JSON-tuonti voi sijoittaa nämä sivulle; wizard näyttää sivulle merkityt kentät.
     const pageWithHidden = {
       ...form,
       pages: form.pages.map((page, index) =>
@@ -245,6 +240,11 @@ describe('formMutations', () => {
     expect(fieldsForPage(pageWithHidden, pageWithHidden.pages[0].id).some((field) => isSystemFieldHiddenFromUi(field))).toBe(
       true,
     );
+    expect(
+      wizardFieldsForPage(pageWithHidden, pageWithHidden.pages[0].id).some((field) =>
+        isSystemFieldHiddenFromUi(field),
+      ),
+    ).toBe(false);
 
     const margin = form.fields.find((field) => field.systemKey === 'myyntikate_eur')!;
     const updated = updateField(form, { ...margin, label: 'Hacked' });
@@ -254,30 +254,90 @@ describe('formMutations', () => {
     expect(added.pages[0].fieldIds?.includes(margin.id)).toBe(false);
   });
 
+  test('price system fields can be shown and overridden on the form', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const visibleKeys = [
+      'urakka_hinta_alv0',
+      'materiaalit',
+      'myyntipalkkio_eur',
+      'kokonaishinta_alv0',
+      'kokonaishinta',
+    ] as const;
+    const pricesPage = form.pages.find((page) => page.id === 'page_prices');
+    expect(pricesPage).toBeDefined();
+
+    for (const systemKey of visibleKeys) {
+      const field = form.fields.find((item) => item.systemKey === systemKey);
+      expect(field).toBeDefined();
+      expect(isSystemFieldHiddenFromUi(field!)).toBe(false);
+      expect(field?.allowManualOverride).toBe(true);
+      expect(pricesPage?.fieldIds).toContain(field?.id);
+      expect(
+        wizardFieldsForPage(form, pricesPage!.id).some((item) => item.systemKey === systemKey),
+      ).toBe(true);
+    }
+
+    const contract = form.fields.find((field) => field.systemKey === 'urakka_hinta_alv0')!;
+    const relabeled = updateField(form, { ...contract, label: 'Oma urakka' });
+    expect(relabeled.fields.find((field) => field.id === contract.id)?.label).toBe('Oma urakka');
+  });
+
   test('restoreSystemField resets label and formula to defaults', () => {
     const form = normalizeFormDefinition(createDefaultFormDefinition());
     const systemField = form.fields.find((field) => field.systemKey === 'kokonaishinta')!;
     const edited = { ...systemField, label: 'Muokattu', formula: '1 + 1' };
     const restored = restoreSystemField(edited);
     expect(restored.label).toBe('Kokonaishinta (alv)');
-    expect(restored.formula).toContain('urakka_hinta_alv0');
+    expect(restored.formula).toBe('kokonaishinta_alv0 + alv_maara');
   });
 
-  test('mergeSystemFields preserves custom system formula', () => {
+  test('merge keeps JSON formula for kokonaishinta_alv0 but not for ALV totals', () => {
     const form = normalizeFormDefinition(createDefaultFormDefinition());
-    const systemField = form.fields.find((field) => field.systemKey === 'kokonaishinta')!;
+    const customized = {
+      ...form,
+      fields: form.fields.map((field) => {
+        if (field.systemKey === 'kokonaishinta_alv0') {
+          return { ...field, formula: 'urakka_hinta_alv0 + 10', label: 'Oma myyntihinta' };
+        }
+        if (field.systemKey === 'kokonaishinta') {
+          return { ...field, formula: '999' };
+        }
+        if (field.systemKey === 'alv_maara') {
+          return { ...field, formula: '888' };
+        }
+        return field;
+      }),
+    };
+    const normalized = normalizeFormDefinition(customized);
+    expect(normalized.fields.find((field) => field.systemKey === 'kokonaishinta_alv0')?.formula).toBe(
+      'urakka_hinta_alv0 + 10',
+    );
+    expect(normalized.fields.find((field) => field.systemKey === 'kokonaishinta_alv0')?.label).toBe(
+      'Oma myyntihinta',
+    );
+    expect(normalized.fields.find((field) => field.systemKey === 'kokonaishinta')?.formula).toBe(
+      'kokonaishinta_alv0 + alv_maara',
+    );
+    expect(normalized.fields.find((field) => field.systemKey === 'alv_maara')?.formula).toBe(
+      'kokonaishinta_alv0 * asetukset.alv_prosentti / 100',
+    );
+  });
+
+  test('merge does not inject default duration debug example onto a JSON formula', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
     const customized = {
       ...form,
       fields: form.fields.map((field) =>
-        field.id === systemField.id
-          ? { ...field, formula: 'urakka_hinta_alv0 * 2', label: 'Oma nimi' }
+        field.systemKey === 'tyoryhma_kesto_pv'
+          ? { ...field, formula: 'laskenta_seinapinta_ala_m2 / 25', debugExampleValue: undefined, helpText: undefined }
           : field,
       ),
     };
     const normalized = normalizeFormDefinition(customized);
-    const restored = normalized.fields.find((field) => field.systemKey === 'kokonaishinta')!;
-    expect(restored.label).toBe('Oma nimi');
-    expect(restored.formula).toBe('urakka_hinta_alv0 * 2');
+    const duration = normalized.fields.find((field) => field.systemKey === 'tyoryhma_kesto_pv');
+    expect(duration?.formula).toBe('laskenta_seinapinta_ala_m2 / 25');
+    expect(duration?.debugExampleValue).toBeUndefined();
+    expect(duration?.helpText).toBeUndefined();
   });
 
   test('normalizeFormDefinition migrates legacy pageId fields', () => {
@@ -422,7 +482,7 @@ describe('formMutations', () => {
     expect(unknown).toHaveLength(0);
   });
 
-  test('normalize drops removed materiaalit system field and migrates formulas', () => {
+  test('normalize migrates legacy materiaalit_alv0 formulas to materiaalit', () => {
     const form = normalizeFormDefinition({
       ...createDefaultFormDefinition(),
       fields: [
@@ -457,15 +517,18 @@ describe('formMutations', () => {
       ],
     });
 
-    expect(form.fields.some((field) => field.id === 'field_system_materiaalit')).toBe(false);
     expect(form.fields.some((field) => field.systemKey === 'materiaalit_alv0')).toBe(false);
-    expect(form.pages[0].fieldIds).not.toContain('field_system_materiaalit');
+    expect(form.fields.some((field) => field.systemKey === 'materiaalit')).toBe(true);
+    expect(form.pages[0].fieldIds).toContain('field_system_materiaalit');
     expect(form.pages[0].fieldIds).toContain('field_custom_total');
     expect(form.fields.find((field) => field.key === 'oma_summa')?.formula).toBe('materiaalit + 10');
-    expect(form.fields.find((field) => field.systemKey === 'kokonaishinta')?.formula).toContain(
+    expect(form.fields.find((field) => field.systemKey === 'kokonaishinta_alv0')?.formula).toContain(
       'materiaalit',
     );
-    expect(form.fields.find((field) => field.systemKey === 'kokonaishinta')?.formula).not.toContain(
+    expect(form.fields.find((field) => field.systemKey === 'kokonaishinta')?.formula).toBe(
+      'kokonaishinta_alv0 + alv_maara',
+    );
+    expect(form.fields.find((field) => field.systemKey === 'kokonaishinta_alv0')?.formula).not.toContain(
       'materiaalit_alv0',
     );
   });

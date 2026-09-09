@@ -2,7 +2,7 @@
 
 Historialliset suunnitelmat. Näitä ei päivitetä.
 
-Nykyinen julkaisu: **v1.2.3**. Sovelluksen kuvaus: [sovellus.md](../sovellus.md). Seuraava: [v1.3](../v1.3-suunnitelma.md).
+Nykyinen julkaisu: **v1.2.4**. Sovelluksen kuvaus: [sovellus.md](../sovellus.md). Seuraava: [v1.3](../v1.3-suunnitelma.md).
 
 | Tiedosto | Aikakausi |
 |----------|-----------|
