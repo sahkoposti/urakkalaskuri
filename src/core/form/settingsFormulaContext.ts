@@ -8,6 +8,26 @@ const SETTING_BINDINGS: Array<{ finnish: string; legacy: string; value: (s: AppS
     value: (s) => s.defaultMarginPercent,
   },
   {
+    finnish: 'asetukset.myyntikate_alaraja_eur',
+    legacy: 'settings.margin_low_amount',
+    value: (s) => s.marginLowAmount,
+  },
+  {
+    finnish: 'asetukset.myyntikate_alaraja_prosentti',
+    legacy: 'settings.margin_low_percent',
+    value: (s) => s.marginLowPercent,
+  },
+  {
+    finnish: 'asetukset.myyntikate_ylaraja_eur',
+    legacy: 'settings.margin_high_amount',
+    value: (s) => s.marginHighAmount,
+  },
+  {
+    finnish: 'asetukset.myyntikate_ylaraja_prosentti',
+    legacy: 'settings.margin_high_percent',
+    value: (s) => s.marginHighPercent,
+  },
+  {
     finnish: 'asetukset.myyntipalkkio_prosentti',
     legacy: 'settings.default_commission_percent',
     value: (s) => s.defaultCommissionPercent,

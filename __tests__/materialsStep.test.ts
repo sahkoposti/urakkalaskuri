@@ -4,12 +4,12 @@ import type { Product } from '../src/core/models/types';
 import { validateFormPageWithValues } from '../src/core/wizard/wizardPageHelpers';
 
 describe('materials system page', () => {
-  test('default form includes materials page', () => {
+  test('default form does not include a hardcoded materials line page', () => {
     const form = normalizeFormDefinition(createDefaultFormDefinition());
-    expect(form.pages.some((page) => page.system === 'materials')).toBe(true);
+    expect(form.pages.some((page) => page.system === 'materials')).toBe(false);
   });
 
-  test('normalize adds materials page when missing', () => {
+  test('normalize does not add materials page when missing', () => {
     const form = normalizeFormDefinition({
       id: 'test',
       name: 'Testi',
@@ -33,12 +33,7 @@ describe('materials system page', () => {
       updatedAt: 1,
     });
 
-    const materialsPage = form.pages.find((page) => page.system === 'materials');
-    expect(materialsPage).toBeDefined();
-    expect(materialsPage?.title).toBe('Materiaalit');
-
-    const durationIndex = form.pages.findIndex((page) => page.id === 'page_duration');
-    expect(form.pages.findIndex((page) => page.system === 'materials')).toBe(durationIndex - 1);
+    expect(form.pages.some((page) => page.system === 'materials')).toBe(false);
   });
 
   test('normalize preserves explicit materials page', () => {
@@ -69,6 +64,36 @@ describe('materials system page', () => {
     expect(imported.pages.filter((page) => page.system === 'materials')).toHaveLength(1);
     expect(imported.pages.find((page) => page.system === 'materials')?.title).toBe('Omat materiaalit');
   });
+
+  test('normalize uniqueifies duplicate page ids', () => {
+    const form = normalizeFormDefinition({
+      id: 'test',
+      name: 'Testi',
+      version: 1,
+      pages: [
+        {
+          id: 'page_materials',
+          title: 'Maalit ja menekit',
+          sortOrder: 0,
+          fieldIds: [],
+        },
+        {
+          id: 'page_materials',
+          title: 'Materiaalit',
+          sortOrder: 1,
+          system: 'materials',
+          fieldIds: [],
+        },
+      ],
+      fields: [],
+      updatedAt: 1,
+    });
+
+    const ids = form.pages.map((page) => page.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(form.pages[0]?.id).toBe('page_materials');
+    expect(form.pages[1]?.id).toBe('page_materials_2');
+  });
 });
 
 describe('validateFormPageWithValues materials', () => {
@@ -82,14 +107,32 @@ describe('validateFormPageWithValues materials', () => {
     },
   ];
 
+  const materialsForm = () =>
+    normalizeFormDefinition({
+      id: 'test',
+      name: 'Testi',
+      version: 1,
+      pages: [
+        {
+          id: 'page_materials',
+          title: 'Materiaalit',
+          sortOrder: 0,
+          system: 'materials',
+          fieldIds: [],
+        },
+      ],
+      fields: [],
+      updatedAt: 1,
+    });
+
   test('accepts empty materials page', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = materialsForm();
     const page = form.pages.find((item) => item.system === 'materials')!;
     expect(validateFormPageWithValues(form, page, {}, '', products, {}, [])).toBeNull();
   });
 
   test('rejects zero quantity line', () => {
-    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const form = materialsForm();
     const page = form.pages.find((item) => item.system === 'materials')!;
     expect(
       validateFormPageWithValues(

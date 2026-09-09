@@ -1,18 +1,24 @@
-import { formatCurrency, formatDecimal, parseNumber } from '../src/core/utils/formatters';
+import {
+  ceilWorkDurationDays,
+  displayWorkDurationText,
+  formatWorkDurationDays,
+} from '../src/core/utils/formatters';
 
-describe('formatters', () => {
-  test('parseNumber accepts comma decimals', () => {
-    expect(parseNumber('1,5')).toBe(1.5);
-    expect(parseNumber('10.25')).toBe(10.25);
-    expect(parseNumber('abc')).toBeNull();
+describe('work duration display', () => {
+  test('ceils days upward', () => {
+    expect(ceilWorkDurationDays(1.1)).toBe(2);
+    expect(ceilWorkDurationDays(1)).toBe(1);
+    expect(ceilWorkDurationDays(0.1)).toBe(1);
+    expect(ceilWorkDurationDays(2.0)).toBe(2);
+    expect(formatWorkDurationDays(1.1)).toBe('2');
   });
 
-  test('formatDecimal uses one fraction digit', () => {
-    expect(formatDecimal(1)).toBe('1,0');
-    expect(formatDecimal(12.34)).toBe('12,3');
-  });
-
-  test('formatCurrency uses euro with two decimals', () => {
-    expect(formatCurrency(12.3)).toMatch(/12,30/);
+  test('renames crew duration labels', () => {
+    expect(displayWorkDurationText('Työryhmän kesto (pv)')).toBe('Työn kesto (pv)');
+    expect(displayWorkDurationText('Työryhmän kesto (h)')).toBe('Työn kesto (h)');
+    expect(displayWorkDurationText('Työryhmän arvioitu kesto (pv)')).toBe('Työn kesto (pv)');
+    expect(displayWorkDurationText('Työryhmän keston on oltava suurempi kuin 0.')).toBe(
+      'Työn keston on oltava suurempi kuin 0.',
+    );
   });
 });

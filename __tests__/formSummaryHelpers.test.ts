@@ -73,6 +73,22 @@ describe('formatFieldSummaryValue', () => {
     expect(formatFieldSummaryValue(field, { test_bool: 'false' }, {})).toBe('Ei');
   });
 
+  test('ceils work duration days on summary', () => {
+    const field = {
+      id: 'field_system_tyoryhma_kesto_pv',
+      key: 'tyoryhma_kesto_pv',
+      systemKey: 'tyoryhma_kesto_pv',
+      label: 'Työn kesto',
+      type: 'computed' as const,
+      required: false,
+      showOnSummary: true,
+      unit: 'pv',
+    };
+
+    expect(formatFieldSummaryValue(field, {}, { tyoryhma_kesto_pv: 1.1 })).toBe('2 pv');
+    expect(formatFieldSummaryValue(field, {}, { tyoryhma_kesto_pv: 1 })).toBe('1 pv');
+  });
+
   test('summaryDisplayFields omits fields hidden by showWhen', () => {
     const form = defaultForm();
     form.fields.push(

@@ -13,22 +13,13 @@ export function removeVat(vatIncluded: number, vatPercent: number): number {
   return vatIncluded / (1 + vatPercent / 100);
 }
 
-/** Kate/palkkio lasketaan ALV-sisäisestä kokonaishinnasta; näytetään aina alv0. */
-export function marginCommissionVat0Amount(
-  grossAmount: number,
-  customer: CustomerInfo,
-  vatPercent: number,
-): number {
-  if (customer.reverseVat) return grossAmount;
-  return removeVat(grossAmount, vatPercent);
-}
-
-export function formatMarginCommissionPrice(
-  grossAmount: number,
-  customer: CustomerInfo,
-  vatPercent: number,
-): string {
-  return formatCurrency(marginCommissionVat0Amount(grossAmount, customer, vatPercent));
+/**
+ * Myyntikate ja myyntipalkkio ovat osuuksia ALV-sisäisestä kokonaishinnasta:
+ *   kate = kokonaishinta × kate%
+ * Näytetään kaavan arvona (ilman erillistä ALV-vähennystä).
+ */
+export function formatMarginCommissionPrice(amount: number): string {
+  return formatCurrency(amount);
 }
 
 export function formatContractPriceVat0(contractPriceVat0: number): string {

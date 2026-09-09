@@ -10,6 +10,7 @@ import { isSystemField } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormPage } from '@/src/core/form/types';
 import type { Product, WizardLineDraft } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
+import { isDiscountPercentKey } from '@/src/core/calculation/discount';
 
 export function getDurationDaysFromValues(
   fieldValues: Record<string, string>,
@@ -46,7 +47,24 @@ export function validateFormPageWithValues(
     }
   }
   for (const field of fieldsForPage(form, page.id)) {
-    if (field.type === 'section' || field.type === 'computed' || isSystemField(field)) {
+    if (field.type === 'section') {
+      continue;
+    }
+
+    if (isDiscountPercentKey(field.key) || field.systemKey === 'alennus_prosentti') {
+      const raw = resolveFieldRawValue(field, fieldValues).trim();
+      if (raw) {
+        const parsed = parseNumber(raw);
+        if (parsed === null) {
+          return `${field.label}: anna kelvollinen numero.`;
+        }
+        if (parsed < 0 || parsed > 100) {
+          return `${field.label}: anna 0–100 %.`;
+        }
+      }
+    }
+
+    if (field.type === 'computed' || isSystemField(field)) {
       continue;
     }
     if (!isFieldVisible(field, fieldValues, form, new Set(), numericContext)) {

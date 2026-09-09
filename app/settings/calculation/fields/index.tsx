@@ -1,10 +1,18 @@
 import { router, Stack, type Href } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AppCard, OutlinedButton, ScreenLoading } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { ThemedIcon } from '@/src/components/ThemedIcon';
 import { formatDebugExampleDisplay } from '@/src/core/form/debugExampleHelpers';
+import {
+  UNASSIGNED_FIELDS_SECTION_ID,
+  isFieldsPageExpanded,
+  parseFieldsPageExpanded,
+  toggleFieldsPageExpanded,
+  type FieldsPageExpandedMap,
+} from '@/src/core/form/fieldsPageExpanded';
 import { assignedFieldIds } from '@/src/core/form/formDefinitionHelpers';
 import {
   FIELD_TYPE_LABELS,
@@ -90,10 +98,48 @@ function FieldCards({
   ));
 }
 
+function PageSectionHeader({
+  title,
+  expanded,
+  onPress,
+}: {
+  title: string;
+  expanded: boolean;
+  onPress: () => void;
+}) {
+  const styles = useThemedStyles(createStyles);
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.pageHeader, pressed && styles.pageHeaderPressed]}
+      accessibilityRole="button"
+      accessibilityState={{ expanded }}
+      accessibilityLabel={expanded ? `Piilota sivun ${title} kentät` : `Näytä sivun ${title} kentät`}
+    >
+      <Text style={styles.pageSectionTitle}>{title}</Text>
+      <ThemedIcon name={expanded ? 'chevron-down' : 'chevron-forward'} size={20} />
+    </Pressable>
+  );
+}
+
 export default function FormFieldsScreen() {
   const styles = useThemedStyles(createStyles);
   const { ready, formDefinition, formDebug, products, refreshFormSettings } = useApp();
   const [deleteTarget, setDeleteTarget] = useState<FormField | null>(null);
+  const [expandedPages, setExpandedPages] = useState<FieldsPageExpandedMap>({});
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const raw = await db.getFieldsPageExpandedSetting();
+      if (active) {
+        setExpandedPages(parseFieldsPageExpanded(raw));
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (!ready) return <ScreenLoading />;
 
@@ -107,6 +153,12 @@ export default function FormFieldsScreen() {
     await db.saveFormDefinition(next);
     await refreshFormSettings();
     setDeleteTarget(null);
+  }
+
+  async function togglePage(pageId: string) {
+    const next = toggleFieldsPageExpanded(expandedPages, pageId);
+    setExpandedPages(next);
+    await db.saveFieldsPageExpandedSetting(JSON.stringify(next));
   }
 
   return (
@@ -130,35 +182,52 @@ export default function FormFieldsScreen() {
 
         {pages.map((page) => {
           const pageFields = fieldsForPage(formDefinition, page.id);
+          const expanded = isFieldsPageExpanded(expandedPages, page.id);
           return (
             <View key={page.id} style={styles.pageSection}>
-              <Text style={styles.pageSectionTitle}>{page.title}</Text>
-              {pageFields.length === 0 ? (
-                <Text style={styles.empty}>Ei kenttiä tällä sivulla</Text>
-              ) : (
-                <FieldCards
-                  fields={pageFields}
-                  formDebugEnabled={formDebug.enabled}
-                  products={products}
-                  onDelete={setDeleteTarget}
-                />
-              )}
+              <PageSectionHeader
+                title={page.title}
+                expanded={expanded}
+                onPress={() => {
+                  void togglePage(page.id);
+                }}
+              />
+              {expanded ? (
+                pageFields.length === 0 ? (
+                  <Text style={styles.empty}>Ei kenttiä tällä sivulla</Text>
+                ) : (
+                  <FieldCards
+                    fields={pageFields}
+                    formDebugEnabled={formDebug.enabled}
+                    products={products}
+                    onDelete={setDeleteTarget}
+                  />
+                )
+              ) : null}
             </View>
           );
         })}
 
         <View style={styles.pageSection}>
-          <Text style={styles.pageSectionTitle}>Ilman sivukohdistusta</Text>
-          {unassignedFields.length === 0 ? (
-            <Text style={styles.empty}>Kaikki kentät on kohdistettu jollekin sivulle</Text>
-          ) : (
-            <FieldCards
-              fields={unassignedFields}
-              formDebugEnabled={formDebug.enabled}
-              products={products}
-              onDelete={setDeleteTarget}
-            />
-          )}
+          <PageSectionHeader
+            title="Ilman sivukohdistusta"
+            expanded={isFieldsPageExpanded(expandedPages, UNASSIGNED_FIELDS_SECTION_ID)}
+            onPress={() => {
+              void togglePage(UNASSIGNED_FIELDS_SECTION_ID);
+            }}
+          />
+          {isFieldsPageExpanded(expandedPages, UNASSIGNED_FIELDS_SECTION_ID) ? (
+            unassignedFields.length === 0 ? (
+              <Text style={styles.empty}>Kaikki kentät on kohdistettu jollekin sivulle</Text>
+            ) : (
+              <FieldCards
+                fields={unassignedFields}
+                formDebugEnabled={formDebug.enabled}
+                products={products}
+                onDelete={setDeleteTarget}
+              />
+            )
+          ) : null}
         </View>
       </ScrollView>
 
@@ -209,8 +278,18 @@ function createStyles(colors: AppColorPalette) {
     pageSection: {
       gap: 6,
     },
+    pageHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      gap: 12,
+      paddingVertical: 8,
+    },
+    pageHeaderPressed: {
+      opacity: 0.75,
+    },
     pageSectionTitle: {
-      marginTop: 8,
+      flex: 1,
       fontFamily: 'IBMPlexSans_700Bold',
       color: colors.primary,
       fontSize: 16,

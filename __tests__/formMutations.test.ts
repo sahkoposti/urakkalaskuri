@@ -74,21 +74,9 @@ describe('formMutations', () => {
     expect(cleaned.fields.some((field) => field.id === created.id)).toBe(true);
   });
 
-  test('does not remove system pages', () => {
-    const form = createDefaultFormDefinition();
-    const customerPage = form.pages.find((page) => page.system === 'customer')!;
-    const next = removePage(form, customerPage.id);
-    expect(next.pages).toHaveLength(form.pages.length);
-
-    const materialsPage = form.pages.find((page) => page.system === 'materials')!;
-    const afterMaterials = removePage(form, materialsPage.id);
-    expect(afterMaterials.pages).toHaveLength(form.pages.length);
-  });
-
-  test('isSystemPage includes customer and materials', () => {
+  test('isSystemPage is only the customer page', () => {
     const form = createDefaultFormDefinition();
     expect(isSystemPage(form.pages.find((page) => page.system === 'customer')!)).toBe(true);
-    expect(isSystemPage(form.pages.find((page) => page.system === 'materials')!)).toBe(true);
     expect(isSystemPage(form.pages.find((page) => page.title === 'Pinta-alat')!)).toBe(false);
   });
 
@@ -512,17 +500,16 @@ describe('formMutations', () => {
     expect(next.fields.at(-1)?.type).toBe('product_select');
   });
 
-  test('default form includes materials system page', () => {
+  test('default form does not force a materials line page', () => {
     const form = createDefaultFormDefinition();
-    expect(form.pages.some((page) => page.system === 'materials')).toBe(true);
-    expect(form.pages.some((page) => page.id === 'page_materials')).toBe(true);
+    expect(form.pages.some((page) => page.system === 'materials')).toBe(false);
   });
 
-  test('normalizeFormDefinition preserves materials system page', () => {
-    const legacy = {
+  test('normalizeFormDefinition keeps an explicit materials page but it can be removed', () => {
+    const withMaterials = {
       ...createDefaultFormDefinition(),
       pages: [
-        ...createDefaultFormDefinition().pages.filter((page) => page.system !== 'materials'),
+        ...createDefaultFormDefinition().pages,
         {
           id: 'page_materials',
           title: 'Materiaalit',
@@ -532,13 +519,12 @@ describe('formMutations', () => {
         },
       ],
     };
-    const normalized = normalizeFormDefinition(legacy);
+    const normalized = normalizeFormDefinition(withMaterials);
     const materials = normalized.pages.find((page) => page.id === 'page_materials');
-    expect(materials).toBeDefined();
     expect(materials?.system).toBe('materials');
-    expect(isSystemPage(materials!)).toBe(true);
+    expect(isSystemPage(materials!)).toBe(false);
     const removed = removePage(normalized, materials!.id);
-    expect(removed.pages.some((page) => page.id === 'page_materials')).toBe(true);
+    expect(removed.pages.some((page) => page.id === 'page_materials')).toBe(false);
   });
 
   test('normalizeFormDefinition migrates legacy formula keys to Finnish', () => {
@@ -562,6 +548,16 @@ describe('formMutations', () => {
     expect(form.fields.filter((field) => field.key === 'tyoryhma_kesto_pv')).toHaveLength(1);
     const page = form.pages.find((item) => item.title.includes('kesto'));
     expect(page?.fieldIds).toContain(duration?.id);
+  });
+
+  test('alennus_prosentti is a number system field on the duration page', () => {
+    const form = normalizeFormDefinition(createDefaultFormDefinition());
+    const discount = form.fields.find((field) => field.systemKey === 'alennus_prosentti');
+    expect(discount?.type).toBe('number');
+    expect(discount?.defaultValue).toBe('0');
+    expect(form.pages.find((item) => item.title.includes('kesto'))?.fieldIds).toContain(
+      discount?.id,
+    );
   });
 
   test('normalizeFormDefinition promotes legacy duration user field', () => {

@@ -16,6 +16,7 @@ import {
   REMOVED_SYSTEM_FIELD_IDS,
 } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormField, FormPage, SelectOption } from '@/src/core/form/types';
+import { displayWorkDurationText } from '@/src/core/utils/formatters';
 
 const ALLOWED_FORMULA_IDENTIFIERS = new Set([MATERIALS_CONTEXT_KEY]);
 
@@ -213,27 +214,22 @@ function pruneMissingFieldIds(pages: FormPage[], fields: FormField[]): FormPage[
   }));
 }
 
-/** Lisää materiaalit-järjestelmäsivu jos puuttuu (ennen kestosivua tai loppuun). */
-function ensureMaterialsSystemPage(pages: FormPage[]): FormPage[] {
-  if (pages.some((page) => page.system === 'materials')) {
-    return pages;
-  }
-
-  const durationIndex = pages.findIndex((page) =>
-    (page.fieldIds ?? []).includes('field_system_tyoryhma_kesto_pv'),
-  );
-  const insertAt = durationIndex >= 0 ? durationIndex : pages.length;
-  const materialsPage: FormPage = {
-    id: 'page_materials',
-    title: 'Materiaalit',
-    sortOrder: insertAt,
-    system: 'materials',
-    fieldIds: [],
-  };
-
-  const next = [...pages];
-  next.splice(insertAt, 0, materialsPage);
-  return next.map((page, sortOrder) => ({ ...page, sortOrder }));
+function uniquePageIds(pages: FormPage[]): FormPage[] {
+  const seen = new Set<string>();
+  return pages.map((page) => {
+    if (!seen.has(page.id)) {
+      seen.add(page.id);
+      return page;
+    }
+    let suffix = 2;
+    let nextId = `${page.id}_${suffix}`;
+    while (seen.has(nextId)) {
+      suffix += 1;
+      nextId = `${page.id}_${suffix}`;
+    }
+    seen.add(nextId);
+    return { ...page, id: nextId };
+  });
 }
 
 export function normalizeFormDefinition(raw: unknown): FormDefinition {
@@ -246,7 +242,7 @@ export function normalizeFormDefinition(raw: unknown): FormDefinition {
 
   const pages = dedupePageFieldAssignments(
     remapPromotedSystemFieldIds(
-      ensureMaterialsSystemPage(
+      uniquePageIds(
         isLegacyForm(form)
           ? migrateLegacyPages(form)
           : (form.pages ?? []).map((page) => ({ ...page, fieldIds: [...(page.fieldIds ?? [])] })),
@@ -261,7 +257,10 @@ export function normalizeFormDefinition(raw: unknown): FormDefinition {
     id: form.id ?? 'default',
     name: form.name ?? 'Peruslaskenta',
     version: typeof form.version === 'number' ? form.version : 3,
-    pages: pruneMissingFieldIds(pages, fields),
+    pages: pruneMissingFieldIds(pages, fields).map((page) => ({
+      ...page,
+      title: displayWorkDurationText(page.title),
+    })),
     fields,
     updatedAt: form.updatedAt ?? Date.now(),
   };

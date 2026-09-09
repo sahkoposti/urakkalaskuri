@@ -11,7 +11,7 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function HomeScreen() {
   const styles = useThemedStyles(createStyles);
-  const { wizardDraft, refreshWizardDraft } = useApp();
+  const { wizardDraft, refreshWizardDraft, setWizardSession } = useApp();
   const [newCalcDialogVisible, setNewCalcDialogVisible] = useState(false);
 
   function handleNewCalculation() {
@@ -20,10 +20,12 @@ export default function HomeScreen() {
       return;
     }
 
+    setWizardSession(null);
     router.push('/wizard');
   }
 
   async function startNewCalculation() {
+    setWizardSession(null);
     await db.clearWizardDraft();
     await refreshWizardDraft();
     setNewCalcDialogVisible(false);

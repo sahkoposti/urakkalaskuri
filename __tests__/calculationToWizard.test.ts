@@ -29,6 +29,10 @@ function sampleRecord(fieldValues?: Record<string, string>): CalculationRecord {
     vatAmount: 887.4,
     totalPriceVat: 4367.4,
     workDurationDays: 5,
+    discountPercent: 0,
+    discountEur: 0,
+    totalPriceVatBeforeDiscount: 4367.4,
+    totalPriceVat0BeforeDiscount: 3480,
     createdAt: new Date('2026-01-01'),
     formSnapshot: fieldValues
       ? {

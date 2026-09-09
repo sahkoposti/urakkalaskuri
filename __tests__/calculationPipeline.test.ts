@@ -307,6 +307,9 @@ describe('runFormCalculation', () => {
     expect(result.commissionEur).toBeCloseTo(319.83, 2);
     expect(result.vatAmount).toBeCloseTo(928.36, 2);
     expect(result.marginEur / result.totalPriceVat).toBeCloseTo(0.35, 4);
+    expect(
+      result.contractPriceVat0 + result.materialsVat0 + result.marginEur + result.commissionEur,
+    ).toBeCloseTo(result.totalPriceVat, 2);
     expect(context.kokonaishinta).toBeCloseTo(result.totalPriceVat, 2);
     expect(context.alv_maara).toBeCloseTo(result.vatAmount, 2);
   });

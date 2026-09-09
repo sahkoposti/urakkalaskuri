@@ -7,7 +7,13 @@ import {
   summaryDisplayFields,
 } from '@/src/core/form/formSummaryHelpers';
 import type { FormDefinition } from '@/src/core/form/types';
-import type { FormSnapshot, Product } from '@/src/core/models/types';
+import type { FormSnapshot, FormSnapshotField, Product } from '@/src/core/models/types';
+import {
+  displayWorkDurationText,
+  formatWorkDurationDays,
+  isWorkDurationDaysKey,
+  parseNumber,
+} from '@/src/core/utils/formatters';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -30,12 +36,18 @@ export function FormSummarySection({ form, fieldValues, context, products = [], 
         <SectionTitle title="Lomaketiedot" />
         <AppCard style={styles.card}>
           {snapshot.fields.map((field) => {
-            const showPageTitle = field.pageTitle && field.pageTitle !== lastPageTitle;
-            if (showPageTitle) lastPageTitle = field.pageTitle;
+            const pageTitle = field.pageTitle
+              ? displayWorkDurationText(field.pageTitle)
+              : undefined;
+            const showPageTitle = pageTitle && pageTitle !== lastPageTitle;
+            if (showPageTitle) lastPageTitle = pageTitle;
             return (
               <View key={field.key}>
-                {showPageTitle ? <Text style={styles.pageTitle}>{field.pageTitle}</Text> : null}
-                <ResultRow label={field.label} value={field.value} />
+                {showPageTitle ? <Text style={styles.pageTitle}>{pageTitle}</Text> : null}
+                <ResultRow
+                  label={displayWorkDurationText(field.label)}
+                  value={displaySnapshotFieldValue(field)}
+                />
               </View>
             );
           })}
@@ -61,13 +73,14 @@ export function FormSummarySection({ form, fieldValues, context, products = [], 
             .map((fieldId) => fieldById.get(fieldId))
             .filter((field): field is NonNullable<typeof field> => field !== undefined)
             .map((field) => {
-              const showPageTitle = page.title !== lastPageTitle;
-              if (showPageTitle) lastPageTitle = page.title;
+              const pageTitle = displayWorkDurationText(page.title);
+              const showPageTitle = pageTitle !== lastPageTitle;
+              if (showPageTitle) lastPageTitle = pageTitle;
               return (
                 <View key={field.id}>
-                  {showPageTitle ? <Text style={styles.pageTitle}>{page.title}</Text> : null}
+                  {showPageTitle ? <Text style={styles.pageTitle}>{pageTitle}</Text> : null}
                   <ResultRow
-                    label={field.label}
+                    label={displayWorkDurationText(field.label)}
                     value={formatFieldSummaryValue(field, fieldValues, context, products)}
                   />
                 </View>
@@ -77,6 +90,15 @@ export function FormSummarySection({ form, fieldValues, context, products = [], 
       </AppCard>
     </>
   );
+}
+
+function displaySnapshotFieldValue(field: FormSnapshotField): string {
+  if (!isWorkDurationDaysKey(field.key)) return field.value;
+  const numericPart = field.value.replace(/\s*pv\s*$/i, '').trim();
+  const parsed = parseNumber(numericPart);
+  if (parsed === null) return field.value;
+  const days = formatWorkDurationDays(parsed);
+  return field.unit ? `${days} ${field.unit}` : days;
 }
 
 function createStyles(colors: AppColorPalette) {

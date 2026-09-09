@@ -1,6 +1,12 @@
 export interface AppSettings {
   vatPercent: number;
   defaultMarginPercent: number;
+  /** Myyntihinta (alv0), jossa kate on marginLowPercent. */
+  marginLowAmount: number;
+  marginLowPercent: number;
+  /** Myyntihinta (alv0), jossa kate on marginHighPercent. */
+  marginHighAmount: number;
+  marginHighPercent: number;
   defaultCommissionPercent: number;
   defaultHourlyRate: number;
   defaultCrewSize: number;
@@ -31,6 +37,10 @@ export const defaultThemeSettings: ThemeSettings = {
 export const defaultSettings: AppSettings = {
   vatPercent: 25.5,
   defaultMarginPercent: 35,
+  marginLowAmount: 2000,
+  marginLowPercent: 45,
+  marginHighAmount: 10000,
+  marginHighPercent: 30,
   defaultCommissionPercent: 7,
   defaultHourlyRate: 30,
   defaultCrewSize: 2,
@@ -97,6 +107,10 @@ export interface CalculationRecord {
   vatAmount: number;
   totalPriceVat: number;
   workDurationDays: number;
+  discountPercent: number;
+  discountEur: number;
+  totalPriceVatBeforeDiscount: number;
+  totalPriceVat0BeforeDiscount: number;
   createdAt: Date;
   formSnapshot?: FormSnapshot;
   lines: CalculationLine[];
@@ -189,4 +203,8 @@ export interface PersistedWizardDraft {
   fieldValues?: Record<string, string>;
   lines: PersistedWizardLineDraft[];
   updatedAt: number;
+  /** Jos asetettu, Laske päivittää tämän historian rivin eikä luo uutta. */
+  editCalculationId?: string;
+  originalCreatedAt?: number;
+  editFormVersion?: number;
 }

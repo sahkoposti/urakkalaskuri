@@ -2,6 +2,8 @@
 
 Tämä ohje kertoo, miten Urakkalaskurin lomakepohja (`FormDefinition`) rakennetaan JSON-tiedostona ja tuodaan sovellukseen.
 
+**Sovelluksen toiminta (näytöt, tallennus, hinnoittelu):** [sovellus.md](./sovellus.md)
+
 **Esimerkkitiedosto:** [examples/peruslaskenta-lomakepohja.json](./examples/peruslaskenta-lomakepohja.json)
 
 ---
@@ -76,13 +78,16 @@ Jokainen wizard-vaihe on yksi sivu. Kentät **eivät** kuulu sivuun upotettuna �
 | `title` | Otsikko wizardissa |
 | `sortOrder` | Järjestysnumero (0 = ensimmäinen) |
 | `fieldIds` | Kenttien `id`-arvot **tässä järjestyksessä** |
-| `system` | Valinnainen: `"customer"` = asiakassivu, `"materials"` = materiaalirivit (ei poistettavissa) |
+| `system` | Valinnainen: `"customer"` = asiakassivu (ainoa poistamaton sivu), `"materials"` = materiaalirivit tuoterekisteristä |
 
 ### Järjestelmäsivut
 
-- **`system: "customer"`** – Asiakastiedot (nimi, yhteystiedot). Voit lisätä omia kenttiä `fieldIds`-listaan; ne näkyvät asiakaslomakkeen jälkeen.
-- **`system: "materials"`** – Materiaalirivit tuoterekisteristä (tuote + määrä). Rivien summa syötetään kaavamuuttujaan `materiaalit`. Voit lisätä omia kenttiä samaan sivuun.
-- **Työryhmän kesto** – Lisää sivulle järjestelmäkentän id: `field_system_tyoryhma_kesto_pv` (avain kaavoissa: `tyoryhma_kesto_pv`).
+- **`system: "customer"`** – Asiakastiedot (nimi, yhteystiedot). Voit lisätä omia kenttiä `fieldIds`-listaan; ne näkyvät asiakaslomakkeen jälkeen. Tätä sivua ei voi poistaa.
+- **`system: "materials"`** – Valinnainen tuote+määrä -rivi-editori. Summa menee kaavamuuttujaan `materiaalit`. **Oletuspohjassa ei ole tätä sivua** (materiaalit tulevat usein kaavoista ja `add_material_fixed`-efekteistä). Sivu voidaan poistaa asetuksista. Älä lisää sitä, jos lasket materiaalit jo omilla kentillä – muuten wizardissa näkyy tyhjä Materiaalit-vaihe.
+- **Työn kesto** – Lisää sivulle `field_system_tyoryhma_kesto_pv` (kaava-avain `tyoryhma_kesto_pv`).
+- **Alennus %** – Lisää sivulle `field_system_alennus_prosentti` (kaava-avain `alennus_prosentti`). Oletus `0`.
+
+Sama `pages[].id` ei saa toistua; tuonti uniikistaa kaksoiskappaleet (`page_materials` → `page_materials_2`).
 
 ---
 
@@ -178,7 +183,7 @@ Kaavoissa viitataan muihin kenttiin **`key`-arvolla**, ei `label`-tekstillä.
 - Lasku: `+`, `-`, `*`, `/`
 - Sulut: `( )`
 - Vertailu: `>`, `<`, `>=`, `<=`, `==`, `!=`
-- Funktiot: `min(a, b)`, `max(a, b)`, `round(x, desimaalit)`, `if(ehto, then, else)`, `sqrt(x)`
+- Funktiot: `min(a, b)`, `max(a, b)`, `round(x, desimaalit)`, `if(ehto, then, else)`, `sqrt(x)`, `liukuva_myyntihinta(suorat_kustannukset_alv0)`
 
 ### Esimerkkejä
 
@@ -203,13 +208,25 @@ Yleiset asetukset (ALV, kate, tuntihinta…) tulevat automaattisesti kaavakontek
 | Muuttuja | Lähde |
 |----------|-------|
 | `asetukset.alv_prosentti` | ALV % |
-| `asetukset.myyntikate_prosentti` | Myyntikatetavoite % |
+| `asetukset.myyntikate_prosentti` | Myyntikatetavoite % (yksittäinen; vanhat kaavat) |
+| `asetukset.myyntikate_alaraja_eur` | Liukuvan katteen alaraja € |
+| `asetukset.myyntikate_alaraja_prosentti` | Kate % alarajalla |
+| `asetukset.myyntikate_ylaraja_eur` | Liukuvan katteen yläraja € |
+| `asetukset.myyntikate_ylaraja_prosentti` | Kate % ylärajalla |
 | `asetukset.myyntipalkkio_prosentti` | Myyntipalkkio % |
 | `asetukset.tuntihinta` | Tuntihinta €/h |
 | `asetukset.tyoryhman_koko` | Työryhmän koko (hlö) |
 | `asetukset.tyopaivan_pituus` | Työpäivän pituus (h) |
 
 Vanhat `settings.*`-muodot toimivat vielä aliasina.
+
+**Liukuva myyntihinta (alv0)** suorista kustannuksista:
+
+```text
+liukuva_myyntihinta(suorat_kustannukset_alv0)
+```
+
+Käytä tätä `kokonaishinta_alv0`-kaavana, jos hinnoittelet liukuvalla katteella. Älä kerro tulosta alennusprosentilla – alennus sovelletaan järjestelmässä listahinnan jälkeen.
 
 ---
 
@@ -219,14 +236,18 @@ Sovellus **lisää automaattisesti** hinta- ja kestolaskennan järjestelmäkent�
 
 | `id` (sivuille) | `key` (kaavoissa) | Kuvaus |
 |-----------------|-------------------|--------|
-| `field_system_tyoryhma_kesto_pv` | `tyoryhma_kesto_pv` | Työryhmän kesto (pv), muokattavissa |
+| `field_system_tyoryhma_kesto_pv` | `tyoryhma_kesto_pv` | Työn kesto (pv), muokattavissa |
 | `field_system_tyoryhma_kesto_h` | `tyoryhma_kesto_h` | Kesto tunneissa (kaava) |
+| `field_system_alennus_prosentti` | `alennus_prosentti` | Alennus % (0–100), oletus 0 |
+| `field_system_alennus_eur` | `alennus_eur` | Alennus € (laskettu, piilotettu Kentät-listasta) |
 | `field_system_urakka` | `urakka_hinta_alv0` | Urakkahinta alv0 |
 | `field_system_kokonaishinta` | `kokonaishinta` | Kokonaishinta (sis. ALV) |
 | `field_system_kokonaishinta_alv0` | `kokonaishinta_alv0` | Myyntihinta alv0 |
 | `field_system_myyntikate` | `myyntikate` | Myyntikate € |
 | `field_system_myyntipalkkio` | `myyntipalkkio` | Myyntipalkkio € |
 | `field_system_alv` | `alv_maara` | ALV € |
+
+**Alennus:** lisää `field_system_alennus_prosentti` jollekin sivulle. Sovellus vähentää prosentin listahinnasta; kate yhteenvedossa on alennuksen jälkeen. Älä kirjoita `(1 - alennus_prosentti/100)` myyntihintakaavaan.
 
 **Materiaalit:** kaavamuuttuja `materiaalit` (alv0, alkaa 0). Kenttäefektit `add_material_fixed` / `multiply_materials` vaikuttavat tähän.
 
@@ -419,7 +440,7 @@ Järjestelmäkenttä `tyoryhma_kesto_pv` (id: `field_system_tyoryhma_kesto_pv`) 
 {
   "id": "field_system_tyoryhma_kesto_pv",
   "key": "tyoryhma_kesto_pv",
-  "label": "Työryhmän kesto (pv)",
+  "label": "Työn kesto",
   "type": "computed",
   "required": false,
   "showOnSummary": true,
@@ -692,7 +713,7 @@ Katso valmis tiedosto: **[examples/peruslaskenta-lomakepohja.json](./examples/pe
 Se sisältää:
 - Asiakassivun
 - Pinta-alasivun (numero, select, computed)
-- Kestosivun (järjestelmäkenttä)
+- Kestosivun (järjestelmäkenttä `tyoryhma_kesto_pv`; alennus lisätään id:llä `field_system_alennus_prosentti`)
 - Oletusarvot numero- ja select-kentille
 
 ---

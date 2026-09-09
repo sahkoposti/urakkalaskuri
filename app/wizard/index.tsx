@@ -34,9 +34,12 @@ import {
 } from '@/src/core/form/formVersion';
 import type { CustomerInfo, CustomerType, WizardDraft } from '@/src/core/models/types';
 import { emptyCustomerInfo } from '@/src/core/models/types';
+import { createId } from '@/src/core/utils/id';
+import { buildCalculationRecord } from '@/src/core/wizard/buildCalculationRecord';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
 import {
   buildPersistedWizardDraft,
+  firstNonEmptyId,
   hasWizardDraftContent,
   persistedDraftToFormState,
   type WizardFormState,
@@ -51,8 +54,18 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 export default function WizardScreen() {
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
-  const { editId } = useLocalSearchParams<{ editId?: string }>();
-  const { settings, products, wizardDraft, wizardSession, formDefinition, setWizardSession, refreshWizardDraft } = useApp();
+  const { editId } = useLocalSearchParams<{ editId?: string | string[] }>();
+  const routeEditId = firstNonEmptyId(editId);
+  const {
+    settings,
+    products,
+    wizardDraft,
+    wizardSession,
+    formDefinition,
+    setWizardSession,
+    refreshWizardDraft,
+    refreshCalculations,
+  } = useApp();
   const { showAlert } = useThemedAlert();
   const pages = useMemo(() => sortedPages(formDefinition), [formDefinition]);
   const stepCount = pages.length;
@@ -80,6 +93,7 @@ export default function WizardScreen() {
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
 
   const hydratedRef = useRef(false);
+  const loadedEditIdRef = useRef<string | null>(null);
   const allowExitRef = useRef(false);
   const pendingExitRef = useRef<(() => void) | null>(null);
   const [exitDialogVisible, setExitDialogVisible] = useState(false);
@@ -126,10 +140,16 @@ export default function WizardScreen() {
     useCallback(() => {
       allowExitRef.current = false;
 
-      if (editId) {
+      if (routeEditId) {
+        if (loadedEditIdRef.current === routeEditId) {
+          return;
+        }
+        loadedEditIdRef.current = routeEditId;
+        setEditCalculationId(routeEditId);
+        setWizardSession(null);
         let active = true;
         (async () => {
-          const record = await db.getCalculation(editId);
+          const record = await db.getCalculation(routeEditId);
           if (!active || !record) return;
           hydratedRef.current = true;
           const { form, wizardDraft: restoredDraft } = calculationToFormState(record, products);
@@ -143,11 +163,20 @@ export default function WizardScreen() {
             commissionPercent: settings.defaultCommissionPercent,
             crewSize: settings.defaultCrewSize,
           });
+          await db.saveWizardDraft(
+            buildPersistedWizardDraft(form, {
+              editCalculationId: record.id,
+              originalCreatedAt: record.createdAt,
+              editFormVersion: record.formSnapshot?.formVersion ?? null,
+            }),
+          );
         })();
         return () => {
           active = false;
         };
       }
+
+      loadedEditIdRef.current = null;
 
       // Paluu yhteenvedosta: palauta aina aktiivinen istunto
       if (wizardSession) {
@@ -171,17 +200,22 @@ export default function WizardScreen() {
 
       hydratedRef.current = true;
       const { form, wizardDraft: restoredDraft } = persistedDraftToFormState(wizardDraft, products);
+      setEditCalculationId(wizardDraft.editCalculationId ?? null);
+      setOriginalCreatedAt(
+        wizardDraft.originalCreatedAt != null ? new Date(wizardDraft.originalCreatedAt) : null,
+      );
+      setEditFormVersion(wizardDraft.editFormVersion ?? null);
       applyFormState(form, {
         ...restoredDraft,
         crewSize: settings.defaultCrewSize,
         marginPercent: settings.defaultMarginPercent,
         commissionPercent: settings.defaultCommissionPercent,
       });
-    }, [editId, wizardDraft, wizardSession, products, settings, formDefinition]),
+    }, [routeEditId, wizardDraft, wizardSession, products, settings, formDefinition, setWizardSession]),
   );
 
   useEffect(() => {
-    if (wizardDraft || editId) return;
+    if (wizardDraft || routeEditId) return;
     setDraft((current) => ({
       ...current,
       crewSize: settings.defaultCrewSize,
@@ -193,7 +227,7 @@ export default function WizardScreen() {
     settings.defaultMarginPercent,
     settings.defaultCommissionPercent,
     wizardDraft,
-    editId,
+    routeEditId,
   ]);
 
   const currentPage = pages[step] ?? pages[0];
@@ -246,7 +280,13 @@ export default function WizardScreen() {
   }
 
   async function persistDraft() {
-    await db.saveWizardDraft(buildPersistedWizardDraft(getFormState()));
+    await db.saveWizardDraft(
+      buildPersistedWizardDraft(getFormState(), {
+        editCalculationId,
+        originalCreatedAt,
+        editFormVersion,
+      }),
+    );
     await refreshWizardDraft();
   }
 
@@ -280,11 +320,22 @@ export default function WizardScreen() {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (editId || allowExitRef.current || !hasWizardDraftContent(getFormState())) {
+      if (allowExitRef.current || !hasWizardDraftContent(getFormState())) {
         return;
       }
 
+      const editingExisting = Boolean(
+        firstNonEmptyId(routeEditId, editCalculationId, wizardDraft?.editCalculationId),
+      );
       event.preventDefault();
+      if (editingExisting) {
+        void persistDraft().then(() => {
+          allowExitRef.current = true;
+          navigation.dispatch(event.data.action);
+        });
+        return;
+      }
+
       confirmExit(() => navigation.dispatch(event.data.action));
     });
 
@@ -302,7 +353,11 @@ export default function WizardScreen() {
     reverseVat,
     draft.lines,
     fieldValues,
-    editId,
+    routeEditId,
+    editCalculationId,
+    originalCreatedAt,
+    editFormVersion,
+    wizardDraft?.editCalculationId,
   ]);
 
   useEffect(() => {
@@ -312,8 +367,19 @@ export default function WizardScreen() {
         return true;
       }
 
-      if (editId || !hasWizardDraftContent(getFormState())) {
+      if (!hasWizardDraftContent(getFormState())) {
         return false;
+      }
+
+      const editingExisting = Boolean(
+        firstNonEmptyId(routeEditId, editCalculationId, wizardDraft?.editCalculationId),
+      );
+      if (editingExisting) {
+        void persistDraft().then(() => {
+          allowExitRef.current = true;
+          router.back();
+        });
+        return true;
       }
 
       confirmExit(() => {
@@ -336,7 +402,11 @@ export default function WizardScreen() {
     reverseVat,
     draft.lines,
     fieldValues,
-    editId,
+    routeEditId,
+    editCalculationId,
+    originalCreatedAt,
+    editFormVersion,
+    wizardDraft?.editCalculationId,
   ]);
 
   function showError(message: string) {
@@ -408,6 +478,33 @@ export default function WizardScreen() {
       });
       nextDraft.groupDurationHours = result.workDurationDays * settings.workdayHours;
       const formState = getFormState();
+      const savedId =
+        firstNonEmptyId(
+          routeEditId,
+          editCalculationId,
+          wizardDraft?.editCalculationId,
+          wizardSession?.editCalculationId,
+        ) ?? createId();
+      const createdAt = originalCreatedAt ?? new Date();
+      const record = buildCalculationRecord({
+        id: savedId,
+        draft: nextDraft,
+        result,
+        settings,
+        fieldValues: formState.fieldValues,
+        formDefinition,
+        formContext: context,
+        materialLines,
+        products,
+        createdAt,
+        createLineId: createId,
+      });
+      await db.saveCalculation(record);
+      await db.clearWizardDraft();
+      await refreshCalculations();
+      await refreshWizardDraft();
+      setEditCalculationId(savedId);
+      setOriginalCreatedAt(createdAt);
       setWizardSession({
         draft: nextDraft,
         result,
@@ -415,15 +512,13 @@ export default function WizardScreen() {
         form: formState,
         formContext: context,
         materialLines,
-        editCalculationId: editCalculationId ?? undefined,
-        originalCreatedAt: originalCreatedAt ?? undefined,
-        editFormVersion: editFormVersion ?? undefined,
+        editCalculationId: savedId,
+        originalCreatedAt: createdAt,
+        editFormVersion: editFormVersion ?? formDefinition.version,
       });
-      await db.saveWizardDraft(buildPersistedWizardDraft(formState));
-      await refreshWizardDraft();
       hydratedRef.current = false;
       allowExitRef.current = true;
-      router.push('/wizard/summary');
+      router.push({ pathname: '/history/[id]', params: { id: savedId, from: 'wizard' } });
     } catch (error) {
       if (error instanceof CalculationValidationError) {
         showError(error.message);
@@ -455,7 +550,7 @@ export default function WizardScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: editId ? 'Muokkaa laskelmaa' : title }} />
+      <Stack.Screen options={{ title: routeEditId || editCalculationId ? 'Muokkaa laskelmaa' : title }} />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

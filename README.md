@@ -2,36 +2,36 @@
 
 ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen laskentaan (Android).
 
-Nykyinen versio on **v1.2.2** (`app.json` / `package.json` 1.2.2). Suunnitelmat: [v1.2 (valmis)](docs/v1.2-suunnitelma.md) · [v1.3 (seuraava: PDF)](docs/v1.3-suunnitelma.md).
+Nykyinen versio on **v1.2.3** (`app.json` / `package.json`).
 
-**Lomakepohjan JSON-ohje:** [docs/lomakepohja-json-ohje.md](docs/lomakepohja-json-ohje.md) · esimerkki: [docs/examples/peruslaskenta-lomakepohja.json](docs/examples/peruslaskenta-lomakepohja.json)
+| Dokumentti | Sisältö |
+|------------|---------|
+| [docs/sovellus.md](docs/sovellus.md) | Miten sovellus toimii (näytöt, tallennus, hinnoittelu, alennus) |
+| [docs/lomakepohja-json-ohje.md](docs/lomakepohja-json-ohje.md) | Lomakepohjan JSON, kaavat, efektit |
+| [docs/examples/peruslaskenta-lomakepohja.json](docs/examples/peruslaskenta-lomakepohja.json) | Esimerkkipohja |
+| [docs/v1.3-suunnitelma.md](docs/v1.3-suunnitelma.md) | Seuraava: PDF-tarjous ja urakkakortti |
+| [docs/archive/](docs/archive/README.md) | Vanhat suunnitelmat |
 
 ## Ominaisuudet
 
 - Dynaaminen wizard lomakepohjan (`FormDefinition`) sivuilla
-- **Lomakeasetukset:** sivut, globaalit kentät, kenttävaikutukset, valintalistat, lasketut kentät (`Laskenta`), tuotelista (`product_select`), kaavavalidointi, kentän kopiointi, debug-laskenta
-- **Ehdollinen näkyvyys:** `showWhen` (`eq` / `neq` / `gt` / …). Piilotettu kenttä on kaavoissa `0`
-- **Kaavafunktiot:** `min`, `max`, `round`, `if`, `sqrt` + vertailut. Puuttuva muuttuja ja jako nollalla ovat `0`; tuotteen puuttuva työkerroin on `1`
-- Tuotteet (nimi, yksikkö, yksikköhinta alv0; valinnaiset attribuutit menekki, työkerroin). Editorin `work_factor` voittaa vanhan SQLite-avaimen `tyokerroin`
-- Laskenta: `calculationPipeline` (`runFormCalculation` → `resolveFormContextWithEffects` → `runProductionPipeline` → `buildResultFromFormulaContext`)
-- Lomakepohjan JSON-tuonti/vienti + oletuslomakkeen palautus
-- Historia (paikallinen SQLite) + `form_snapshot`; muokkaus palauttaa `fieldValues`; versionvaroitus
-- Asetukset (ALV, kate 35 %, palkkio 7 %, tuntihinta 30 €/h)
-- **Teema:** korostus-, pää-, teksti- ja pintaväri sekä taustakuva (URI) vaikuttavat UI:hin
-- Kentän ohjeteksti näkyy wizardissa kentän alla
-- Hinnat `formatCurrency`-funktiolla (tasan 2 desimaalia)
-- ColoRajaton-brändi (colorajaton.fi)
-
-Myöhemmin (ei v1.2-estettä): Esikatselu, Oletusarvot, Ulkoverhous-pohja, PDF-vienti, useita lomakepohjia. Lista: [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md).
+- **Laske** tallentaa laskelman heti; yhteenveto ja historia käyttävät samaa erittelysivua (**Sulje** → historia)
+- Historia: muokkaus päivittää saman rivin; **Jatka laskentaa** jatkaa luonnosta ilman duplikaattia; laskelman **Poista** (roskakori, vahvistus) palaa listaan
+- **Lomakeasetukset:** sivut, kentät (sivut oletuksena suljettu, avaus muistetaan), näkyvyys (`showWhen`), efektit, valintalistat, lasketut kentät, `product_select`, JSON-tuonti/vienti, debug
+- **Kaavat:** `min`, `max`, `round`, `if`, `sqrt`, `liukuva_myyntihinta`, vertailut. Puuttuva muuttuja ja jako nollalla = `0`
+- **Liukuva kate** asetuksissa (alaraja/yläraja € ja %)
+- **Alennus %** (0–100) järjestelmäkenttänä; yhteenveto näyttää rivin vain kun alennus > 0; kate on alennuksen jälkeinen
+- Työn kesto yhteenvedossa tasapäivinä ylöspäin
+- Tuotteet: nimi, yksikkö, hinta alv0, valinnaiset attribuutit (menekki, työkerroin)
+- Asetukset: ALV, kate, palkkio, tuntihinta, työryhmän koko, työpäivän pituus, teema
+- Paikallinen SQLite, `form_snapshot` muokkausta varten
 
 ## Kehitysympäristö
 
 ### Vaatimukset
 
 - [Node.js](https://nodejs.org/) (LTS)
-- Puhelimessa **Expo Go** -sovellus (Android/iOS)
-
-Ei tarvita Visual Studioa eikä Android Studioa kehitykseen.
+- Puhelimessa **Expo Go** (Android/iOS)
 
 ### Käynnistys
 
@@ -41,9 +41,7 @@ npm install
 npm start
 ```
 
-Skannaa terminaalissa näkyvä QR-koodi **Expo Go** -sovelluksella.
-
-> **Expo Go -yhteensopivuus:** Projekti käyttää **Expo SDK 54**, joka vastaa Play Store -version Expo Go -sovellusta. Jos saat virheen *incompatible version*, varmista että Play Store -Expo Go on ajan tasalla – tai asenna SDK 54 -versio: `npx expo-go download android 54`.
+Skannaa QR-koodi **Expo Go** -sovelluksella. SDK **54**.
 
 ### Testit
 
@@ -51,9 +49,9 @@ Skannaa terminaalissa näkyvä QR-koodi **Expo Go** -sovelluksella.
 npm test
 ```
 
-## APK-build (tuotanto)
+PowerShellissä älä ketjuta komentoja `&&`-operaattorilla.
 
-Asenna EAS CLI ja kirjaudu Expo-tilille:
+## APK-build
 
 ```powershell
 npm install -g eas-cli
@@ -62,33 +60,26 @@ eas build:configure
 eas build --platform android --profile preview
 ```
 
-Build tapahtuu pilvessä – paikallista Android SDK:ta ei tarvita.
-
-APK: käytä profiilia **preview**. **production** tekee AAB:n Play Storeen. GitHubin uusin `main` on lähde, kun build käynnistetään Expo-sivustolta (**Build from GitHub**).
+**preview** = APK, **production** = AAB. GitHubin `main` on lähde, kun build käynnistetään Expo-sivustolta.
 
 ## Projektirakenne
 
 ```
-app/              # Expo Router -näytöt
+app/                 # Expo Router -näytöt
 src/
   core/
-    calculation/  # calculationPipeline.ts (tuotantolaskenta)
-    form/         # Lomakepohja, kaavat, efektit, debug-putki
-  components/     # UI-komponentit
-  context/        # Sovelluksen tila
-  theme/          # ColoRajaton-värit
+    calculation/     # putki, liukuva kate, alennus
+    form/            # lomakepohja, kaavat, efektit
+    wizard/          # tallennus, luonnos, historia → wizard
+  components/        # UI (ThemedIcon = Ionicons, CalculationDetailView)
+  context/           # App-tila
+  theme/
 docs/
-  v1.2-suunnitelma.md   # Nykyinen suunnitelma
-  archive/              # v1, v1.1 ja brändi-CSS-kaappaus
-__tests__/        # Yksikkötestit
+  sovellus.md
+  lomakepohja-json-ohje.md
+__tests__/
 ```
 
 ## GitHub
 
 https://github.com/sahkoposti/urakkalaskuri
-
-## Dokumentaatio
-
-- [v1.3 – seuraava (PDF)](docs/v1.3-suunnitelma.md)
-- [v1.2 – nykyinen julkaisu](docs/v1.2-suunnitelma.md)
-- [Arkisto: v1](docs/archive/v1-suunnitelma.md), [v1.1](docs/archive/v1.1-suunnitelma.md)

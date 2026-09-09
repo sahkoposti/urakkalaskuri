@@ -21,6 +21,25 @@ export type WizardFormState = {
   lines: WizardLineDraft[];
 };
 
+export type WizardDraftEditMeta = {
+  editCalculationId?: string | null;
+  originalCreatedAt?: Date | number | null;
+  editFormVersion?: number | null;
+};
+
+/** Ensimmäinen ei-tyhjä id (Expo-router voi antaa merkkijonotaulukon). */
+export function firstNonEmptyId(
+  ...candidates: Array<string | string[] | null | undefined>
+): string | undefined {
+  for (const value of candidates) {
+    const id = Array.isArray(value) ? value[0] : value;
+    if (typeof id === 'string' && id.trim().length > 0) {
+      return id.trim();
+    }
+  }
+  return undefined;
+}
+
 export function hasWizardDraftContent(state: WizardFormState): boolean {
   return (
     state.step > 0 ||
@@ -35,7 +54,21 @@ export function hasWizardDraftContent(state: WizardFormState): boolean {
   );
 }
 
-export function buildPersistedWizardDraft(state: WizardFormState): PersistedWizardDraft {
+export function buildPersistedWizardDraft(
+  state: WizardFormState,
+  edit?: WizardDraftEditMeta | null,
+): PersistedWizardDraft {
+  const editCalculationId = firstNonEmptyId(edit?.editCalculationId);
+  const createdAt = edit?.originalCreatedAt;
+  const createdAtMs =
+    createdAt instanceof Date
+      ? createdAt.getTime()
+      : typeof createdAt === 'number' && Number.isFinite(createdAt)
+        ? createdAt
+        : undefined;
+  const editFormVersion =
+    typeof edit?.editFormVersion === 'number' ? edit.editFormVersion : undefined;
+
   return {
     step: state.step,
     customerName: state.customerName,
@@ -52,6 +85,9 @@ export function buildPersistedWizardDraft(state: WizardFormState): PersistedWiza
       quantity: line.quantity,
     })),
     updatedAt: Date.now(),
+    ...(editCalculationId ? { editCalculationId } : {}),
+    ...(createdAtMs != null ? { originalCreatedAt: createdAtMs } : {}),
+    ...(editFormVersion != null ? { editFormVersion } : {}),
   };
 }
 

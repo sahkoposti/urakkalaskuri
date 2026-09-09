@@ -22,6 +22,7 @@ import { isSystemField, MATERIALS_CONTEXT_KEY } from '@/src/core/form/systemFiel
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { AppSettings, Product } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
+import { clampDiscountPercent, isDiscountPercentKey } from '@/src/core/calculation/discount';
 
 export type FormContextStepSource = 'input' | 'select' | 'computed';
 
@@ -173,7 +174,9 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
 
         if (!field.formula?.trim()) {
           if (override !== null) {
-            context[field.key] = override;
+            context[field.key] = isDiscountPercentKey(field.key)
+              ? clampDiscountPercent(override)
+              : override;
             if (recordTrace) {
               steps.push({
                 fieldKey: field.key,
@@ -191,7 +194,9 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
         }
 
         if (override !== null && !useDebugExamples) {
-          context[field.key] = override;
+          context[field.key] = isDiscountPercentKey(field.key)
+            ? clampDiscountPercent(override)
+            : override;
           if (recordTrace) {
             steps.push({
               fieldKey: field.key,
@@ -264,7 +269,7 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
         continue;
       }
 
-      if (isSystemField(field)) continue;
+      if (isSystemField(field) && field.type !== 'number') continue;
 
       const rawFromValues = useDebugExamples ? field.debugExampleValue : undefined;
       const raw = useDebugExamples
@@ -307,6 +312,9 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
 
       if (typeof parsed === 'number' || typeof parsed === 'boolean') {
         exportNumericContext(field, parsed, context);
+        if (isDiscountPercentKey(field.key) && typeof context[field.key] === 'number') {
+          context[field.key] = clampDiscountPercent(context[field.key]);
+        }
         if (recordTrace && typeof context[field.key] === 'number') {
           steps.push({
             fieldKey: field.key,

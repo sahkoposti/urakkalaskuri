@@ -11,8 +11,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { SymbolView } from 'expo-symbols';
 import type { ReactNode } from 'react';
+
+import { ThemedIcon } from '@/src/components/ThemedIcon';
 import Slider from '@react-native-community/slider';
 
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -120,7 +121,6 @@ export function ResultRow({
   onCopy,
 }: ResultRowProps) {
   const styles = useThemedStyles(createCommonStyles);
-  const colors = useAppColors();
 
   async function handleCopy() {
     const text = copyValue ?? value;
@@ -145,7 +145,7 @@ export function ResultRow({
             accessibilityLabel={`Kopioi ${label}`}
             hitSlop={8}
           >
-            <SymbolView name="doc.on.doc" size={14} tintColor={colors.accent} />
+            <ThemedIcon name="copy" size={16} />
           </Pressable>
         ) : null}
       </View>
@@ -281,27 +281,38 @@ export function AppInput({
   trailing,
 }: AppInputProps) {
   const styles = useThemedStyles(createCommonStyles);
+  const inputStyle = [
+    styles.input,
+    trailing ? styles.inputBare : null,
+    trailing ? styles.inputFlex : null,
+    compact && styles.inputCompact,
+    multiline && styles.inputMultiline,
+    compact && multiline && styles.inputMultilineCompact,
+  ];
+
+  const field = (
+    <TextInput
+      value={value}
+      onChangeText={onChangeText}
+      keyboardType={keyboardType}
+      multiline={multiline}
+      placeholder={placeholder}
+      placeholderTextColor="#999"
+      style={inputStyle}
+    />
+  );
+
   return (
     <View style={[styles.inputWrap, compact && styles.inputWrapCompact]}>
       <Text style={[styles.inputLabel, compact && styles.inputLabelCompact]}>{label}</Text>
-      <View style={trailing ? styles.inputRow : undefined}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          multiline={multiline}
-          placeholder={placeholder}
-          placeholderTextColor="#999"
-          style={[
-            styles.input,
-            trailing ? styles.inputFlex : null,
-            compact && styles.inputCompact,
-            multiline && styles.inputMultiline,
-            compact && multiline && styles.inputMultilineCompact,
-          ]}
-        />
-        {trailing}
-      </View>
+      {trailing ? (
+        <View style={styles.inputInnerRow}>
+          {field}
+          {trailing}
+        </View>
+      ) : (
+        field
+      )}
     </View>
   );
 }
@@ -454,10 +465,18 @@ function createCommonStyles(colors: AppColorPalette) {
       fontFamily: 'IBMPlexSans_400Regular',
       color: colors.primary,
     },
-    inputRow: {
+    inputInnerRow: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
-      gap: 8,
+      backgroundColor: colors.secondary,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      paddingRight: 4,
+    },
+    inputBare: {
+      borderWidth: 0,
+      backgroundColor: 'transparent',
     },
     inputFlex: {
       flex: 1,

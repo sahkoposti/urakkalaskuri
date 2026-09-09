@@ -1,3 +1,8 @@
+import {
+  slidingMarginParamsFromContext,
+  slidingSellingPriceAlv0,
+} from '@/src/core/calculation/slidingMargin';
+
 export class FormulaEvaluationError extends Error {
   constructor(message: string) {
     super(message);
@@ -6,7 +11,14 @@ export class FormulaEvaluationError extends Error {
 }
 
 /** Sisäänrakennetut kaavafunktiot (eivät ole lomakemuuttujia). */
-export const FORMULA_FUNCTIONS = new Set(['min', 'max', 'round', 'if', 'sqrt']);
+export const FORMULA_FUNCTIONS = new Set([
+  'min',
+  'max',
+  'round',
+  'if',
+  'sqrt',
+  'liukuva_myyntihinta',
+]);
 
 type CompareOp = '>' | '<' | '>=' | '<=' | '==' | '!=';
 
@@ -156,7 +168,11 @@ function applyCompare(op: CompareOp, left: number, right: number): number {
   }
 }
 
-function callFormulaFunction(name: string, args: number[]): number {
+function callFormulaFunction(
+  name: string,
+  args: number[],
+  context: Record<string, number>,
+): number {
   switch (name) {
     case 'min': {
       if (args.length < 2) {
@@ -197,6 +213,20 @@ function callFormulaFunction(name: string, args: number[]): number {
         throw new FormulaEvaluationError('sqrt() ei salli negatiivista lukua');
       }
       return Math.sqrt(value);
+    }
+    case 'liukuva_myyntihinta': {
+      if (args.length !== 1) {
+        throw new FormulaEvaluationError(
+          'liukuva_myyntihinta() ottaa yhden argumentin: suorat kustannukset (alv0)',
+        );
+      }
+      try {
+        return slidingSellingPriceAlv0(args[0]!, slidingMarginParamsFromContext(context));
+      } catch (error) {
+        throw new FormulaEvaluationError(
+          error instanceof Error ? error.message : 'Liukuva myyntihinta epäonnistui',
+        );
+      }
     }
     default:
       throw new FormulaEvaluationError(`Tuntematon funktio: ${name}`);
@@ -308,7 +338,7 @@ function parsePrimary(tokens: Token[], context: Record<string, number>, pos: num
       if (tokens[afterArgs]?.type !== 'rparen') {
         throw new FormulaEvaluationError('Puuttuva sulkeva sulku funktiokutsussa');
       }
-      return [callFormulaFunction(token.value, args), afterArgs + 1];
+      return [callFormulaFunction(token.value, args, context), afterArgs + 1];
     }
     return [resolveIdentifier(token.value, context), pos + 1];
   }

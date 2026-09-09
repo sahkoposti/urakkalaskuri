@@ -1,52 +1,34 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
 
-import { FormSummarySection } from '@/src/components/form/FormSummarySection';
-import {
-  AppCard,
-  OutlinedButton,
-  PrimaryButton,
-  ResultRow,
-  ScreenLoading,
-  ScreenMessage,
-  SectionTitle,
-} from '@/src/components/common';
-import {
-  formVersionMismatchFromRecord,
-  formVersionMismatchMessage,
-} from '@/src/core/form/formVersion';
-import type { CalculationRecord } from '@/src/core/models/types';
-import { customerFromRecord } from '@/src/core/models/types';
-import {
-  applyVat,
-  customerTypeLabel,
-  formatContractPriceVat0,
-  formatDisplayPrice,
-  formatMarginCommissionPrice,
-  formatMaterialsPrice,
-  isPrivateCustomer,
-  materialsPriceLabel,
-  reverseVatLabel,
-} from '@/src/core/utils/priceDisplay';
-import { formatCurrency, formatDecimal, formatPercent } from '@/src/core/utils/formatters';
+import { CalculationDetailView } from '@/src/components/calculation/CalculationDetailView';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { ScreenLoading, ScreenMessage } from '@/src/components/common';
+import { customerFromRecord, type CalculationRecord } from '@/src/core/models/types';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
-import type { AppColorPalette } from '@/src/theme/colors';
-import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function HistoryDetailScreen() {
-  const styles = useThemedStyles(createStyles);
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, from } = useLocalSearchParams<{ id: string | string[]; from?: string | string[] }>();
+  const calcId = Array.isArray(id) ? id[0] : id;
+  const fromWizard = (Array.isArray(from) ? from[0] : from) === 'wizard';
   const { showAlert } = useThemedAlert();
-  const { formDefinition } = useApp();
+  const {
+    formDefinition,
+    refreshWizardDraft,
+    refreshCalculations,
+    setWizardSession,
+    wizardSession,
+    wizardDraft,
+  } = useApp();
   const [loading, setLoading] = useState(true);
   const [record, setRecord] = useState<CalculationRecord | null>(null);
+  const [deleteVisible, setDeleteVisible] = useState(false);
 
   useEffect(() => {
     let active = true;
     (async () => {
-      const loaded = await db.getCalculation(id);
+      const loaded = await db.getCalculation(calcId);
       if (active) {
         setRecord(loaded);
         setLoading(false);
@@ -55,282 +37,84 @@ export default function HistoryDetailScreen() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [calcId]);
 
-  function notifyCopied() {
-    showAlert('Kopioitu', 'Tieto kopioitu leikepöydälle.');
+  function goToHistoryList() {
+    if (router.canDismiss()) {
+      router.dismissAll();
+    }
+    router.replace('/history');
+  }
+
+  async function handleClose() {
+    const fromFinishedCalculation =
+      fromWizard || wizardSession?.editCalculationId === calcId;
+    if (fromFinishedCalculation) {
+      await db.clearWizardDraft();
+      await refreshWizardDraft();
+      setWizardSession(null);
+      goToHistoryList();
+      return;
+    }
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/history');
+  }
+
+  async function handleDelete() {
+    if (!calcId) return;
+    try {
+      await db.deleteCalculation(calcId);
+      if (wizardSession?.editCalculationId === calcId) {
+        setWizardSession(null);
+      }
+      if (wizardDraft?.editCalculationId === calcId) {
+        await db.clearWizardDraft();
+        await refreshWizardDraft();
+      }
+      await refreshCalculations();
+      setDeleteVisible(false);
+      goToHistoryList();
+    } catch (error) {
+      console.error(error);
+      setDeleteVisible(false);
+      showAlert('Virhe', 'Laskelman poistaminen epäonnistui.');
+    }
   }
 
   if (loading) return <ScreenLoading />;
   if (!record) return <ScreenMessage message="Laskelmaa ei löytynyt." />;
 
-  const customer = customerFromRecord(record);
-  const privateCustomer = isPrivateCustomer(customer);
-  const vatRate = record.vatPercent;
-  const displayTotal = formatDisplayPrice(record.totalPriceVat0, record.totalPriceVat, customer);
-  const formVersionMismatch = formVersionMismatchFromRecord(record, formDefinition);
-  const snapshotVersion = record.formSnapshot?.formVersion;
-
   return (
     <>
       <Stack.Screen options={{ title: 'Laskelman tiedot' }} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <SectionTitle title={customer.name} />
-
-        {formVersionMismatch && snapshotVersion != null ? (
-          <View style={styles.versionWarning}>
-            <Text style={styles.versionWarningTitle}>Lomakepohja on muuttunut</Text>
-            <Text style={styles.versionWarningText}>
-              {formVersionMismatchMessage(snapshotVersion, formDefinition.version)}
-            </Text>
-          </View>
-        ) : null}
-
-        <View style={styles.actions}>
-          <PrimaryButton
-            title="Muokkaa"
-            onPress={() => router.push({ pathname: '/wizard', params: { editId: record.id } })}
-          />
-        </View>
-
-        <AppCard style={styles.card}>
-          <ResultRow
-            label="Asiakastyyppi"
-            value={customerTypeLabel(customer)}
-            copyValue={customerTypeLabel(customer)}
-            onCopy={notifyCopied}
-          />
-          {!privateCustomer ? (
-            <ResultRow
-              label="Käänteinen ALV"
-              value={reverseVatLabel(customer)}
-              copyValue={reverseVatLabel(customer)}
-              onCopy={notifyCopied}
-            />
-          ) : null}
-          <ResultRow
-            label="Puh."
-            value={customer.phone ?? '–'}
-            copyValue={customer.phone}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label="Sähköposti"
-            value={customer.email ?? '–'}
-            copyValue={customer.email}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label="Osoite"
-            value={customer.address ?? '–'}
-            copyValue={customer.address}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label="Lisätiedot"
-            value={customer.notes ?? '–'}
-            copyValue={customer.notes}
-            onCopy={notifyCopied}
-          />
-        </AppCard>
-
-        <AppCard style={styles.card}>
-          <ResultRow
-            label="Työryhmän kesto (pv)"
-            value={formatDecimal(record.workDurationDays)}
-            copyValue={formatDecimal(record.workDurationDays)}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label="Työryhmän koko (hlö)"
-            value={`${record.crewSize} hlö`}
-            copyValue={`${record.crewSize}`}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label={privateCustomer ? 'Tuntihinta (alv)' : 'Tuntihinta (alv0)'}
-            value={formatDisplayPrice(
-              record.hourlyRate,
-              applyVat(record.hourlyRate, vatRate),
-              customer,
-            )}
-            copyValue={String(record.hourlyRate)}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label="Urakkahinta (alv0)"
-            value={formatContractPriceVat0(record.contractPriceVat0)}
-            copyValue={String(record.contractPriceVat0)}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label={materialsPriceLabel(customer)}
-            value={formatMaterialsPrice(record.materialsVat0, customer, vatRate)}
-            copyValue={String(record.materialsVat0)}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label="Myyntikate (alv0)"
-            value={formatMarginCommissionPrice(record.marginEur, customer, vatRate)}
-            copyValue={String(record.marginEur)}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label="Myyntikate (%)"
-            value={formatPercent(record.marginPercent)}
-            copyValue={String(record.marginPercent)}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label="Myyntipalkkio (alv0)"
-            value={formatMarginCommissionPrice(record.commissionEur, customer, vatRate)}
-            copyValue={String(record.commissionEur)}
-            onCopy={notifyCopied}
-          />
-          <ResultRow
-            label="Myyntipalkkio (%)"
-            value={formatPercent(record.commissionPercent)}
-            copyValue={String(record.commissionPercent)}
-            onCopy={notifyCopied}
-          />
-          <View style={styles.divider} />
-          {privateCustomer ? (
-            <>
-              <ResultRow
-                label="Kokonaishinta (alv0)"
-                value={formatCurrency(record.totalPriceVat0)}
-                copyValue={String(record.totalPriceVat0)}
-                onCopy={notifyCopied}
-              />
-              <ResultRow
-                label={`ALV (${formatPercent(vatRate)})`}
-                value={formatCurrency(record.vatAmount)}
-                copyValue={String(record.vatAmount)}
-                onCopy={notifyCopied}
-              />
-              <ResultRow
-                label="Kokonaishinta (alv)"
-                value={formatCurrency(record.totalPriceVat)}
-                copyValue={String(record.totalPriceVat)}
-                onCopy={notifyCopied}
-                highlight
-              />
-            </>
-          ) : (
-            <>
-              <ResultRow
-                label="Kokonaishinta (alv0)"
-                value={formatCurrency(record.totalPriceVat0)}
-                copyValue={String(record.totalPriceVat0)}
-                onCopy={notifyCopied}
-                highlight
-              />
-              {customer.reverseVat ? (
-                <ResultRow
-                  label="ALV"
-                  value="Käänteinen ALV"
-                  copyValue="Käänteinen ALV"
-                  onCopy={notifyCopied}
-                />
-              ) : (
-                <>
-                  <ResultRow
-                    label="ALV"
-                    value={formatCurrency(record.vatAmount)}
-                    copyValue={String(record.vatAmount)}
-                    onCopy={notifyCopied}
-                  />
-                  <ResultRow
-                    label="Kokonaishinta (alv)"
-                    value={formatCurrency(record.totalPriceVat)}
-                    copyValue={String(record.totalPriceVat)}
-                    onCopy={notifyCopied}
-                  />
-                </>
-              )}
-            </>
-          )}
-        </AppCard>
-
-        <FormSummarySection snapshot={record.formSnapshot} />
-
-        {record.lines.length > 0 ? (
-          <>
-            <SectionTitle title="Materiaalirivit" />
-            {record.lines.map((line) => (
-              <AppCard key={line.id} style={styles.lineCard}>
-                <View style={styles.lineRow}>
-                  <Text style={styles.lineText}>
-                    {line.productName} × {formatDecimal(line.quantity)} {line.unit}
-                  </Text>
-                  <Text style={styles.linePrice}>
-                    {formatMaterialsPrice(line.lineTotalVat0, customer, vatRate)}
-                  </Text>
-                </View>
-              </AppCard>
-            ))}
-          </>
-        ) : null}
-
-        <OutlinedButton title="Takaisin historiaan" onPress={() => router.back()} />
-      </ScrollView>
+      <CalculationDetailView
+        record={record}
+        formDefinition={formDefinition}
+        onCopy={() => showAlert('Kopioitu', 'Tieto kopioitu leikepöydälle.')}
+        onFooterPress={() => {
+          void handleClose();
+        }}
+        onDeletePress={() => setDeleteVisible(true)}
+      />
+      <ConfirmDialog
+        visible={deleteVisible}
+        title="Poista laskelma?"
+        message={`Poistetaanko laskelma asiakkaalle "${customerFromRecord(record).name}"? Tätä ei voi perua.`}
+        onClose={() => setDeleteVisible(false)}
+        buttons={[
+          { title: 'Peruuta', variant: 'outlined', onPress: () => setDeleteVisible(false) },
+          {
+            title: 'Poista',
+            variant: 'destructive',
+            onPress: () => {
+              void handleDelete();
+            },
+          },
+        ]}
+      />
     </>
   );
-}
-
-function createStyles(colors: AppColorPalette) {
-  return {
-    content: {
-      padding: 16,
-      paddingBottom: 32,
-      gap: 12,
-    },
-    versionWarning: {
-      padding: 12,
-      borderWidth: 1,
-      borderColor: colors.accent,
-      borderRadius: 5,
-      backgroundColor: colors.surface,
-      gap: 6,
-    },
-    versionWarningTitle: {
-      fontFamily: 'IBMPlexSans_700Bold',
-      fontSize: 15,
-      color: colors.accent,
-    },
-    versionWarningText: {
-      fontFamily: 'IBMPlexSans_400Regular',
-      fontSize: 13,
-      lineHeight: 20,
-      color: colors.text,
-    },
-    actions: {
-      marginTop: 8,
-    },
-    card: {
-      marginTop: 8,
-    },
-    divider: {
-      height: 1,
-      backgroundColor: colors.border,
-      marginVertical: 8,
-    },
-    lineCard: {
-      marginBottom: 0,
-    },
-    lineRow: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: 8,
-    },
-    lineText: {
-      flex: 1,
-      color: colors.text,
-      fontFamily: 'IBMPlexSans_400Regular',
-    },
-    linePrice: {
-      fontFamily: 'IBMPlexSans_600SemiBold',
-      color: colors.primary,
-    },
-  };
 }

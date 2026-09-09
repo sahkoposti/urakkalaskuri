@@ -56,7 +56,7 @@ export function generateId(prefix: string): string {
 }
 
 export function isSystemPage(page: FormPage): boolean {
-  return page.system === 'customer' || page.system === 'materials';
+  return page.system === 'customer';
 }
 
 export function uniqueFieldKey(form: FormDefinition, baseKey: string, excludeFieldId?: string): string {

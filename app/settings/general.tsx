@@ -1,22 +1,28 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 
 import { AppInput, AppPercentSlider, PrimaryButton, ScreenLoading } from '@/src/components/common';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 function maxMarginPercent(commissionPercent: number): number {
   return Math.max(0, 99 - commissionPercent);
 }
 
 export default function GeneralSettingsScreen() {
+  const styles = useThemedStyles(createStyles);
   const { ready, settings, refreshSettings } = useApp();
   const { showAlert } = useThemedAlert();
   const [vatPercent, setVatPercent] = useState('');
-  const [defaultMarginPercent, setDefaultMarginPercent] = useState(settings.defaultMarginPercent);
+  const [marginLowAmount, setMarginLowAmount] = useState('');
+  const [marginLowPercent, setMarginLowPercent] = useState(settings.marginLowPercent);
+  const [marginHighAmount, setMarginHighAmount] = useState('');
+  const [marginHighPercent, setMarginHighPercent] = useState(settings.marginHighPercent);
   const [defaultCommissionPercent, setDefaultCommissionPercent] = useState('');
   const [defaultHourlyRate, setDefaultHourlyRate] = useState('');
   const [defaultCrewSize, setDefaultCrewSize] = useState('');
@@ -24,7 +30,10 @@ export default function GeneralSettingsScreen() {
 
   useEffect(() => {
     setVatPercent(String(settings.vatPercent));
-    setDefaultMarginPercent(settings.defaultMarginPercent);
+    setMarginLowAmount(String(settings.marginLowAmount));
+    setMarginLowPercent(settings.marginLowPercent);
+    setMarginHighAmount(String(settings.marginHighAmount));
+    setMarginHighPercent(settings.marginHighPercent);
     setDefaultCommissionPercent(String(settings.defaultCommissionPercent));
     setDefaultHourlyRate(String(settings.defaultHourlyRate));
     setDefaultCrewSize(String(settings.defaultCrewSize));
@@ -36,20 +45,27 @@ export default function GeneralSettingsScreen() {
   const marginMax = maxMarginPercent(commissionValue);
 
   useEffect(() => {
-    setDefaultMarginPercent((current) => Math.min(current, marginMax));
+    setMarginLowPercent((current) => Math.min(current, marginMax));
+    setMarginHighPercent((current) => Math.min(current, marginMax));
   }, [marginMax]);
 
   const isDirty = useMemo(
     () =>
       vatPercent !== String(settings.vatPercent) ||
-      defaultMarginPercent !== settings.defaultMarginPercent ||
+      marginLowAmount !== String(settings.marginLowAmount) ||
+      marginLowPercent !== settings.marginLowPercent ||
+      marginHighAmount !== String(settings.marginHighAmount) ||
+      marginHighPercent !== settings.marginHighPercent ||
       defaultCommissionPercent !== String(settings.defaultCommissionPercent) ||
       defaultHourlyRate !== String(settings.defaultHourlyRate) ||
       defaultCrewSize !== String(settings.defaultCrewSize) ||
       workdayHours !== String(settings.workdayHours),
     [
       vatPercent,
-      defaultMarginPercent,
+      marginLowAmount,
+      marginLowPercent,
+      marginHighAmount,
+      marginHighPercent,
       defaultCommissionPercent,
       defaultHourlyRate,
       defaultCrewSize,
@@ -61,7 +77,10 @@ export default function GeneralSettingsScreen() {
   async function persistSettings(): Promise<boolean> {
     const parsed = {
       vatPercent: parseNumber(vatPercent),
-      defaultMarginPercent,
+      marginLowAmount: parseNumber(marginLowAmount),
+      marginLowPercent,
+      marginHighAmount: parseNumber(marginHighAmount),
+      marginHighPercent,
       defaultCommissionPercent: parseNumber(defaultCommissionPercent),
       defaultHourlyRate: parseNumber(defaultHourlyRate),
       defaultCrewSize: Number.parseInt(defaultCrewSize, 10),
@@ -70,7 +89,10 @@ export default function GeneralSettingsScreen() {
 
     if (
       parsed.vatPercent === null ||
-      !Number.isFinite(parsed.defaultMarginPercent) ||
+      parsed.marginLowAmount === null ||
+      parsed.marginHighAmount === null ||
+      !Number.isFinite(parsed.marginLowPercent) ||
+      !Number.isFinite(parsed.marginHighPercent) ||
       parsed.defaultCommissionPercent === null ||
       parsed.defaultHourlyRate === null ||
       parsed.defaultCrewSize === null ||
@@ -82,7 +104,15 @@ export default function GeneralSettingsScreen() {
       return false;
     }
 
-    if (parsed.defaultMarginPercent + parsed.defaultCommissionPercent! >= 100) {
+    if (!(parsed.marginLowAmount > 0) || !(parsed.marginHighAmount > parsed.marginLowAmount)) {
+      showAlert('Virhe', 'Suuren urakan rajan on oltava suurempi kuin pienen urakan raja.');
+      return false;
+    }
+
+    if (
+      parsed.marginLowPercent + parsed.defaultCommissionPercent! >= 100 ||
+      parsed.marginHighPercent + parsed.defaultCommissionPercent! >= 100
+    ) {
       showAlert('Virhe', 'Myyntikate ja myyntipalkkio yhteensä on oltava alle 100 %.');
       return false;
     }
@@ -90,7 +120,11 @@ export default function GeneralSettingsScreen() {
     await db.saveSettings({
       ...settings,
       vatPercent: parsed.vatPercent!,
-      defaultMarginPercent: parsed.defaultMarginPercent,
+      defaultMarginPercent: parsed.marginLowPercent,
+      marginLowAmount: parsed.marginLowAmount!,
+      marginLowPercent: parsed.marginLowPercent,
+      marginHighAmount: parsed.marginHighAmount!,
+      marginHighPercent: parsed.marginHighPercent,
       defaultCommissionPercent: parsed.defaultCommissionPercent!,
       defaultHourlyRate: parsed.defaultHourlyRate!,
       defaultCrewSize: parsed.defaultCrewSize!,
@@ -124,10 +158,34 @@ export default function GeneralSettingsScreen() {
           onChangeText={setVatPercent}
           keyboardType="decimal-pad"
         />
+        <Text style={styles.sectionHint}>
+          Kate on yrityksen osuus myyntihinnasta (alv 0). Palkkio tulee lisäksi. Kate liukuu
+          lineaarisesti pienen ja suuren urakan rajan välillä.
+        </Text>
+        <AppInput
+          label="Pienen urakan raja (€, alv 0)"
+          value={marginLowAmount}
+          onChangeText={setMarginLowAmount}
+          keyboardType="decimal-pad"
+        />
         <AppPercentSlider
-          label="Myyntikatetavoite (%)"
-          value={defaultMarginPercent}
-          onChange={setDefaultMarginPercent}
+          label="Kate pienellä urakalla (%)"
+          value={marginLowPercent}
+          onChange={setMarginLowPercent}
+          min={0}
+          max={marginMax}
+          step={1}
+        />
+        <AppInput
+          label="Suuren urakan raja (€, alv 0)"
+          value={marginHighAmount}
+          onChangeText={setMarginHighAmount}
+          keyboardType="decimal-pad"
+        />
+        <AppPercentSlider
+          label="Kate suurella urakalla (%)"
+          value={marginHighPercent}
+          onChange={setMarginHighPercent}
           min={0}
           max={marginMax}
           step={1}
@@ -163,10 +221,20 @@ export default function GeneralSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    gap: 4,
-    paddingBottom: 32,
-  },
-});
+function createStyles(colors: AppColorPalette) {
+  return {
+    content: {
+      padding: 16,
+      gap: 4,
+      paddingBottom: 32,
+    },
+    sectionHint: {
+      marginTop: 4,
+      marginBottom: 8,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      lineHeight: 20,
+      color: colors.text,
+    },
+  };
+}

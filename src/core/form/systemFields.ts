@@ -1,8 +1,11 @@
 import type { FormField } from '@/src/core/form/types';
+import { displayWorkDurationText } from '@/src/core/utils/formatters';
 
 export type SystemFieldKey =
   | 'tyoryhma_kesto_pv'
   | 'tyoryhma_kesto_h'
+  | 'alennus_prosentti'
+  | 'alennus_eur'
   | 'urakka_hinta_alv0'
   | 'myyntikate_eur'
   | 'myyntipalkkio_eur'
@@ -29,6 +32,7 @@ export const UI_HIDDEN_SYSTEM_FIELD_KEYS: ReadonlySet<SystemFieldKey> = new Set(
   'myyntikate_eur',
   'myyntipalkkio_eur',
   'alv_maara',
+  'alennus_eur',
 ]);
 
 /** Poistetut järjestelmäkentät (migraatio sivuilta / vanhoista pohjista). */
@@ -68,7 +72,7 @@ export function createSystemFields(): FormField[] {
       'field_system_tyoryhma_kesto_pv',
       'tyoryhma_kesto_pv',
       'tyoryhma_kesto_pv',
-      'Työryhmän kesto (pv)',
+      'Työn kesto (pv)',
       '',
       'pv',
       {
@@ -82,9 +86,33 @@ export function createSystemFields(): FormField[] {
       'field_system_tyoryhma_kesto_h',
       'tyoryhma_kesto_h',
       'tyoryhma_kesto_h',
-      'Työryhmän kesto (h)',
+      'Työn kesto (h)',
       'tyoryhma_kesto_pv * asetukset.tyopaivan_pituus',
       'h',
+    ),
+    baseSystemField(
+      'field_system_alennus_prosentti',
+      'alennus_prosentti',
+      'alennus_prosentti',
+      'Alennus',
+      '',
+      '%',
+      {
+        type: 'number',
+        required: false,
+        allowManualOverride: true,
+        defaultValue: '0',
+        debugExampleValue: '0',
+        helpText: 'Kaupallinen alennus myyntihinnasta (0–100 %). Tyhjä = ei alennusta.',
+      },
+    ),
+    baseSystemField(
+      'field_system_alennus_eur',
+      'alennus_eur',
+      'alennus_eur',
+      'Alennus (€)',
+      'kokonaishinta * min(100, max(0, alennus_prosentti)) / 100',
+      '€',
     ),
     baseSystemField(
       'field_system_urakka',
@@ -184,7 +212,7 @@ export function mergeSystemFields(fields: FormField[]): FormField[] {
     return {
       ...template,
       id: current.systemKey ? current.id : template.id,
-      label: current.label || template.label,
+      label: displayWorkDurationText(current.label || template.label),
       formula: migrateFormulaKeys(current.formula ?? template.formula ?? ''),
       showOnSummary: current.showOnSummary,
       helpText: current.helpText ?? template.helpText,

@@ -14,6 +14,11 @@ import {
 import type { FormDefinition } from '@/src/core/form/types';
 import type { AppSettings, Product, WizardLineDraft } from '@/src/core/models/types';
 import { getDurationDaysFromValues } from '@/src/core/wizard/wizardPageHelpers';
+import {
+  applyDiscountToResult,
+  discountPercentFromContext,
+  writeDiscountedResultToContext,
+} from '@/src/core/calculation/discount';
 
 export class CalculationValidationError extends Error {
   constructor(message: string) {
@@ -31,6 +36,10 @@ export interface CalculationResult {
   vatAmount: number;
   totalPriceVat: number;
   workDurationDays: number;
+  discountPercent: number;
+  discountEur: number;
+  totalPriceVatBeforeDiscount: number;
+  totalPriceVat0BeforeDiscount: number;
 }
 
 export interface FormCalculationInput {
@@ -108,7 +117,7 @@ function resolveGroupDurationHours(
     const days = getDurationDaysFromValues(fieldValues, legacyDuration);
     if (days === null) {
       if (!required) return null;
-      throw new CalculationValidationError('Anna työryhmän kesto (pv).');
+      throw new CalculationValidationError('Anna työn kesto (pv).');
     }
     hours = days * settings.workdayHours;
   }
@@ -146,7 +155,7 @@ export function buildResultFromFormulaContext(
   }
 
   if (!(groupDurationHours > 0)) {
-    throw new CalculationValidationError('Työryhmän keston on oltava suurempi kuin 0.');
+    throw new CalculationValidationError('Työn keston on oltava suurempi kuin 0.');
   }
 
   const contractPriceVat0 = readContextNumber(context, ['urakka_hinta_alv0'], 'Urakkahinta');
@@ -169,7 +178,7 @@ export function buildResultFromFormulaContext(
     vatAmount = readContextNumber(context, ['alv_maara'], 'ALV');
   }
 
-  return {
+  const listResult: CalculationResult = {
     contractPriceVat0,
     materialsVat0,
     marginEur,
@@ -178,7 +187,19 @@ export function buildResultFromFormulaContext(
     vatAmount,
     totalPriceVat,
     workDurationDays: groupDurationHours / settings.workdayHours,
+    discountPercent: 0,
+    discountEur: 0,
+    totalPriceVatBeforeDiscount: totalPriceVat,
+    totalPriceVat0BeforeDiscount: totalPriceVat0,
   };
+
+  const discounted = applyDiscountToResult(
+    listResult,
+    discountPercentFromContext(context),
+    reverseVat,
+  );
+  writeDiscountedResultToContext(context, discounted);
+  return discounted;
 }
 
 export interface ResolveFormContextInput {
@@ -371,7 +392,7 @@ export function runFormCalculation(input: FormCalculationInput): FormCalculation
   });
 
   if (groupDurationHours === null) {
-    throw new CalculationValidationError('Anna työryhmän kesto (pv).');
+    throw new CalculationValidationError('Anna työn kesto (pv).');
   }
 
   const result = buildResultFromFormulaContext(

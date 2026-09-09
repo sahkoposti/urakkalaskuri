@@ -51,6 +51,18 @@ async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
   if (!calculationColumns.some((column) => column.name === 'form_snapshot')) {
     await db.execAsync('ALTER TABLE calculations ADD COLUMN form_snapshot TEXT');
   }
+  if (!calculationColumns.some((column) => column.name === 'discount_percent')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN discount_percent REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'discount_eur')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN discount_eur REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'total_price_vat_before_discount')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN total_price_vat_before_discount REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'total_price_vat0_before_discount')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN total_price_vat0_before_discount REAL');
+  }
 
   const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
   if (!productColumns.some((column) => column.name === 'attributes')) {
@@ -134,6 +146,10 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
 const defaultSettingRows: Record<string, string> = {
   vat_percent: String(defaultSettings.vatPercent),
   default_margin_percent: String(defaultSettings.defaultMarginPercent),
+  margin_low_amount: String(defaultSettings.marginLowAmount),
+  margin_low_percent: String(defaultSettings.marginLowPercent),
+  margin_high_amount: String(defaultSettings.marginHighAmount),
+  margin_high_percent: String(defaultSettings.marginHighPercent),
   default_commission_percent: String(defaultSettings.defaultCommissionPercent),
   default_hourly_rate: String(defaultSettings.defaultHourlyRate),
   default_crew_size: String(defaultSettings.defaultCrewSize),
@@ -193,6 +209,12 @@ function calculationFromRow(
     vatAmount: row.vat_amount as number,
     totalPriceVat: row.total_price_vat as number,
     workDurationDays: row.work_duration_days as number,
+    discountPercent: (row.discount_percent as number | null) ?? 0,
+    discountEur: (row.discount_eur as number | null) ?? 0,
+    totalPriceVatBeforeDiscount:
+      (row.total_price_vat_before_discount as number | null) ?? (row.total_price_vat as number),
+    totalPriceVat0BeforeDiscount:
+      (row.total_price_vat0_before_discount as number | null) ?? (row.total_price_vat0 as number),
     createdAt: new Date(row.created_at as number),
     formSnapshot: parseFormSnapshot(row.form_snapshot),
     lines,
@@ -217,6 +239,18 @@ export async function getSettings(): Promise<AppSettings> {
     defaultMarginPercent: Number.parseFloat(
       map.default_margin_percent ?? String(defaultSettings.defaultMarginPercent),
     ),
+    marginLowAmount: Number.parseFloat(
+      map.margin_low_amount ?? String(defaultSettings.marginLowAmount),
+    ),
+    marginLowPercent: Number.parseFloat(
+      map.margin_low_percent ?? String(defaultSettings.marginLowPercent),
+    ),
+    marginHighAmount: Number.parseFloat(
+      map.margin_high_amount ?? String(defaultSettings.marginHighAmount),
+    ),
+    marginHighPercent: Number.parseFloat(
+      map.margin_high_percent ?? String(defaultSettings.marginHighPercent),
+    ),
     defaultCommissionPercent: Number.parseFloat(
       map.default_commission_percent ?? String(defaultSettings.defaultCommissionPercent),
     ),
@@ -234,6 +268,10 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
   const entries: Record<string, string> = {
     vat_percent: String(settings.vatPercent),
     default_margin_percent: String(settings.defaultMarginPercent),
+    margin_low_amount: String(settings.marginLowAmount),
+    margin_low_percent: String(settings.marginLowPercent),
+    margin_high_amount: String(settings.marginHighAmount),
+    margin_high_percent: String(settings.marginHighPercent),
     default_commission_percent: String(settings.defaultCommissionPercent),
     default_hourly_rate: String(settings.defaultHourlyRate),
     default_crew_size: String(settings.defaultCrewSize),
@@ -347,8 +385,10 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
         id, project_name, customer, group_duration_h, crew_size, hourly_rate,
         margin_percent, commission_percent, contract_price_vat0, materials_vat0,
         margin_eur, commission_eur, total_price_vat0, vat_percent, vat_amount, total_price_vat,
-        work_duration_days, created_at, form_snapshot
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        work_duration_days, discount_percent, discount_eur,
+        total_price_vat_before_discount, total_price_vat0_before_discount,
+        created_at, form_snapshot
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       record.id,
       record.projectName,
       record.customer ?? null,
@@ -366,6 +406,10 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.vatAmount,
       record.totalPriceVat,
       record.workDurationDays,
+      record.discountPercent,
+      record.discountEur,
+      record.totalPriceVatBeforeDiscount,
+      record.totalPriceVat0BeforeDiscount,
       record.createdAt.getTime(),
       record.formSnapshot ? JSON.stringify(record.formSnapshot) : null,
     );
@@ -386,6 +430,14 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
         line.lineTotalVat0,
       );
     }
+  });
+}
+
+export async function deleteCalculation(id: string): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', id);
+    await db.runAsync('DELETE FROM calculations WHERE id = ?', id);
   });
 }
 
@@ -475,5 +527,25 @@ export async function saveFormDebugSettings(debug: FormDebugSettings): Promise<v
     'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
     'form_debug',
     JSON.stringify(debug),
+  );
+}
+
+const FIELDS_PAGE_EXPANDED_KEY = 'fields_page_expanded';
+
+export async function getFieldsPageExpandedSetting(): Promise<string | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    FIELDS_PAGE_EXPANDED_KEY,
+  );
+  return row?.value ?? null;
+}
+
+export async function saveFieldsPageExpandedSetting(value: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    FIELDS_PAGE_EXPANDED_KEY,
+    value,
   );
 }

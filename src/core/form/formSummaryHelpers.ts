@@ -8,7 +8,13 @@ import {
 import { isSystemField } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { FormSnapshot, FormSnapshotField, Product } from '@/src/core/models/types';
-import { formatCurrency, formatDecimal } from '@/src/core/utils/formatters';
+import {
+  displayWorkDurationText,
+  formatCurrency,
+  formatDecimal,
+  formatWorkDurationDays,
+  isWorkDurationDaysKey,
+} from '@/src/core/utils/formatters';
 
 export function formatFieldSummaryValue(
   field: FormField,
@@ -32,6 +38,9 @@ export function formatFieldSummaryValue(
     if (num !== undefined && Number.isFinite(num)) {
       if (field.unit === '€') {
         return formatCurrency(num);
+      }
+      if (isWorkDurationDaysKey(field.key) || field.systemKey === 'tyoryhma_kesto_pv') {
+        return `${formatWorkDurationDays(num)}${field.unit ? ` ${field.unit}` : ''}`;
       }
       return `${formatDecimal(num)}${field.unit ? ` ${field.unit}` : ''}`;
     }
@@ -85,10 +94,10 @@ export function buildFormSnapshot(
       if (!isFieldVisible(field, fieldValues, form, new Set(), context)) continue;
       fields.push({
         key: field.key,
-        label: field.label,
+        label: displayWorkDurationText(field.label),
         unit: field.unit,
         value: formatFieldSummaryValue(field, fieldValues, context, products),
-        pageTitle: page.title,
+        pageTitle: displayWorkDurationText(page.title),
       });
     }
   }

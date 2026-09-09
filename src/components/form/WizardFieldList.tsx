@@ -1,5 +1,5 @@
 import { Text, View, Pressable } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { ThemedIcon } from '@/src/components/ThemedIcon';
 
 import { AppPicker } from '@/src/components/AppPicker';
 import { AppInput, AppSwitch, SectionTitle } from '@/src/components/common';
@@ -18,7 +18,6 @@ import type { Product } from '@/src/core/models/types';
 import { productConsumption, productWorkFactor } from '@/src/core/product/productAttributes';
 import { formatCurrency, formatDecimal } from '@/src/core/utils/formatters';
 import type { AppColorPalette } from '@/src/theme/colors';
-import { useAppColors } from '@/src/theme/ThemeContext';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 type WizardFieldListProps = {
@@ -41,7 +40,6 @@ export function WizardFieldList({
   onResetOverride,
 }: WizardFieldListProps) {
   const styles = useThemedStyles(createStyles);
-  const colors = useAppColors();
   const visibleFields = filterVisibleFields(fields, fieldValues, form, computedValues);
 
   return (
@@ -82,20 +80,11 @@ export function WizardFieldList({
                         accessibilityLabel="Palauta laskettu arvo"
                         hitSlop={8}
                       >
-                        <SymbolView
-                          name="arrow.counterclockwise"
-                          size={18}
-                          tintColor={colors.accent}
-                        />
+                        <ThemedIcon name="reset" size={22} />
                       </Pressable>
                     ) : null
                   }
                 />
-                {isOverridden ? (
-                  <Text style={styles.overrideHint}>
-                    Manuaalinen arvo – paina nuoli-painiketta palauttaaksesi laskennan
-                  </Text>
-                ) : null}
                 {help ? <Text style={styles.hint}>{help}</Text> : null}
               </View>
             );
@@ -115,7 +104,7 @@ export function WizardFieldList({
           );
         }
 
-        if (isSystemField(field)) return null;
+        if (isSystemField(field) && field.type !== 'number') return null;
 
         if (isProductField(field)) {
           const selectedId = getSelectedProductId(fieldValues, field.key, field) ?? '';
@@ -207,7 +196,9 @@ export function WizardFieldList({
               value={resolveFieldRawValue(field, fieldValues)}
               onChangeText={(value) => onChange(field.key, value)}
               keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
-              placeholder={field.type === 'number' ? 'Esim. 120' : undefined}
+              placeholder={
+                field.type === 'number' ? (field.unit === '%' ? 'Esim. 0' : 'Esim. 120') : undefined
+              }
               multiline={field.type === 'text'}
             />
             {help ? <Text style={styles.hint}>{help}</Text> : null}
@@ -234,20 +225,11 @@ function createStyles(colors: AppColorPalette) {
       opacity: 0.75,
       fontFamily: 'IBMPlexSans_400Regular',
     },
-    overrideHint: {
-      marginTop: -8,
-      marginBottom: 12,
-      color: colors.text,
-      opacity: 0.7,
-      fontFamily: 'IBMPlexSans_400Regular',
-      fontSize: 12,
-    },
     resetButton: {
-      padding: 10,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 5,
-      backgroundColor: colors.secondary,
+      paddingHorizontal: 6,
+      paddingVertical: 8,
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
     },
     resetButtonPressed: {
       opacity: 0.85,
