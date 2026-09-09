@@ -1,7 +1,8 @@
+import julkisivumaalausV100 from '../../../docs/examples/julkisivumaalaus_v100.json';
 import type { FormDefinition } from '@/src/core/form/types';
 
-/** Oletuslomake (Peruslaskenta) – esimerkkikentät modulaarisen laskennan debuggausta varten */
-export function createDefaultFormDefinition(): FormDefinition {
+/** Pieni testilomake – ei tuotannon oletus. */
+export function createMinimalFormDefinition(): FormDefinition {
   const userFields = [
     {
       id: 'field_kiintea_seinapinta',
@@ -53,16 +54,9 @@ export function createDefaultFormDefinition(): FormDefinition {
 
   const pages = [
     {
-      id: 'page_customer',
-      title: 'Asiakas',
-      sortOrder: 0,
-      system: 'customer' as const,
-      fieldIds: [] as string[],
-    },
-    {
       id: 'page_surfaces',
       title: 'Pinta-alat',
-      sortOrder: 1,
+      sortOrder: 0,
       fieldIds: [
         'field_kiintea_seinapinta',
         'field_aukkovahennykset',
@@ -73,13 +67,13 @@ export function createDefaultFormDefinition(): FormDefinition {
     {
       id: 'page_duration',
       title: 'Työn kesto (pv)',
-      sortOrder: 2,
+      sortOrder: 1,
       fieldIds: ['field_system_tyoryhma_kesto_pv', 'field_system_alennus_prosentti'],
     },
     {
       id: 'page_prices',
       title: 'Hinnat',
-      sortOrder: 3,
+      sortOrder: 2,
       fieldIds: [
         'field_system_urakka',
         'field_system_materiaalit',
@@ -98,4 +92,9 @@ export function createDefaultFormDefinition(): FormDefinition {
     fields: userFields,
     updatedAt: Date.now(),
   };
+}
+
+/** Oletuslomake (Julkisivumaalaus v100). */
+export function createDefaultFormDefinition(): FormDefinition {
+  return JSON.parse(JSON.stringify(julkisivumaalausV100)) as FormDefinition;
 }

@@ -1,5 +1,6 @@
 import type { CalculationRecord, Product, WizardDraft, WizardLineDraft } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
+import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import type { WizardFormState } from '@/src/core/wizard/wizardDraftHelpers';
 
 /** Palauttaa tallennetun laskelman wizard-tilaksi (asiakas, rivit, fieldValues). */
@@ -44,6 +45,9 @@ export function calculationToFormState(
     duration: fieldValues.tyoryhma_kesto_pv || duration,
     fieldValues,
     lines,
+    customerId: record.customerId,
+    deliveryScheduleText: record.deliveryScheduleText ?? '',
+    structureLines: ensureStructureLines(record),
   };
 
   const wizardDraft: WizardDraft = {

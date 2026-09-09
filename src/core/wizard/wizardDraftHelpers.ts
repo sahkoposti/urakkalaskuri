@@ -1,6 +1,7 @@
 import type {
   PersistedWizardDraft,
   Product,
+  StructureLine,
   WizardDraft,
   WizardLineDraft,
 } from '@/src/core/models/types';
@@ -21,6 +22,9 @@ export type WizardFormState = {
   duration: string;
   fieldValues: Record<string, string>;
   lines: WizardLineDraft[];
+  customerId?: string;
+  deliveryScheduleText?: string;
+  structureLines?: StructureLine[];
 };
 
 export type WizardDraftEditMeta = {
@@ -42,6 +46,89 @@ export function firstNonEmptyId(
   return undefined;
 }
 
+export function editMetaFromDraft(
+  draft?: PersistedWizardDraft | WizardDraftEditMeta | null,
+): WizardDraftEditMeta {
+  if (!draft) return {};
+  return {
+    editCalculationId: firstNonEmptyId(draft.editCalculationId),
+    originalCreatedAt: draft.originalCreatedAt,
+    editFormVersion: draft.editFormVersion,
+  };
+}
+
+/** Säilyttää tunnetun laskelma-id:n — myöhempi kirjoitus ei saa pudottaa sitä. */
+export function mergeWizardDraftEditMeta(
+  ...sources: Array<PersistedWizardDraft | WizardDraftEditMeta | null | undefined>
+): WizardDraftEditMeta {
+  let editCalculationId: string | undefined;
+  let originalCreatedAt: Date | number | null | undefined;
+  let editFormVersion: number | null | undefined;
+  for (const source of sources) {
+    if (!source) continue;
+    if (!editCalculationId) {
+      editCalculationId = firstNonEmptyId(source.editCalculationId);
+    }
+    if (originalCreatedAt == null && source.originalCreatedAt != null) {
+      originalCreatedAt = source.originalCreatedAt;
+    }
+    if (editFormVersion == null && typeof source.editFormVersion === 'number') {
+      editFormVersion = source.editFormVersion;
+    }
+  }
+  return { editCalculationId, originalCreatedAt, editFormVersion };
+}
+
+export function serializeFieldValues(values: Record<string, string> | undefined): string {
+  const normalized: Record<string, string> = {};
+  for (const key of Object.keys(values ?? {}).sort()) {
+    const value = values?.[key]?.trim() ?? '';
+    if (value) normalized[key] = value;
+  }
+  return JSON.stringify(normalized);
+}
+
+export function fieldValuesEqual(
+  a: Record<string, string> | undefined,
+  b: Record<string, string> | undefined,
+): boolean {
+  return serializeFieldValues(a) === serializeFieldValues(b);
+}
+
+function structureLineSignature(line: StructureLine) {
+  return {
+    id: line.id,
+    structureId: line.structureId,
+    name: line.name,
+    quantity: line.quantity,
+    unit: line.unit ?? '',
+    unitPriceVat0: line.unitPriceVat0,
+    materialsVat0: line.materialsVat0,
+    discountPercent: line.discountPercent,
+    formFilled: Boolean(line.formFilled),
+    fieldValues: serializeFieldValues(line.fieldValues),
+    pricesIncludeVat: line.pricesIncludeVat !== false,
+  };
+}
+
+/** Vertaa laskennan sisältöä tallennettuun tilaan (ei updatedAt). */
+export function composerStateSignature(state: WizardFormState): string {
+  return JSON.stringify({
+    customerId: state.customerId ?? '',
+    customerName: state.customerName.trim(),
+    customerType: state.customerType,
+    reverseVat: Boolean(state.reverseVat),
+    customerPhone: state.customerPhone.trim(),
+    customerEmail: state.customerEmail.trim(),
+    customerAddress: state.customerAddress.trim(),
+    customerPostalCode: (state.customerPostalCode ?? '').trim(),
+    customerPostalLocality: (state.customerPostalLocality ?? '').trim(),
+    customerNotes: state.customerNotes.trim(),
+    deliveryScheduleText: (state.deliveryScheduleText ?? '').trim(),
+    structureLines: (state.structureLines ?? []).map(structureLineSignature),
+  });
+}
+
 export function hasWizardDraftContent(state: WizardFormState): boolean {
   return (
     state.step > 0 ||
@@ -54,16 +141,29 @@ export function hasWizardDraftContent(state: WizardFormState): boolean {
     state.customerNotes.trim().length > 0 ||
     state.duration.trim().length > 0 ||
     hasFieldValueContent(state.fieldValues) ||
-    state.lines.length > 0
+    state.lines.length > 0 ||
+    Boolean(state.customerId) ||
+    Boolean(state.deliveryScheduleText?.trim()) ||
+    (state.structureLines?.length ?? 0) > 0
   );
+}
+
+export function composerHasUnsavedChanges(
+  state: WizardFormState,
+  savedSignature: string | null,
+): boolean {
+  if (savedSignature == null) return hasWizardDraftContent(state);
+  return composerStateSignature(state) !== savedSignature;
 }
 
 export function buildPersistedWizardDraft(
   state: WizardFormState,
   edit?: WizardDraftEditMeta | null,
+  previous?: PersistedWizardDraft | WizardDraftEditMeta | null,
 ): PersistedWizardDraft {
-  const editCalculationId = firstNonEmptyId(edit?.editCalculationId);
-  const createdAt = edit?.originalCreatedAt;
+  const merged = mergeWizardDraftEditMeta(edit, previous);
+  const editCalculationId = firstNonEmptyId(merged.editCalculationId);
+  const createdAt = merged.originalCreatedAt;
   const createdAtMs =
     createdAt instanceof Date
       ? createdAt.getTime()
@@ -71,7 +171,7 @@ export function buildPersistedWizardDraft(
         ? createdAt
         : undefined;
   const editFormVersion =
-    typeof edit?.editFormVersion === 'number' ? edit.editFormVersion : undefined;
+    typeof merged.editFormVersion === 'number' ? merged.editFormVersion : undefined;
 
   return {
     step: state.step,
@@ -94,6 +194,11 @@ export function buildPersistedWizardDraft(
     ...(editCalculationId ? { editCalculationId } : {}),
     ...(createdAtMs != null ? { originalCreatedAt: createdAtMs } : {}),
     ...(editFormVersion != null ? { editFormVersion } : {}),
+    ...(state.customerId ? { customerId: state.customerId } : {}),
+    ...(state.deliveryScheduleText != null
+      ? { deliveryScheduleText: state.deliveryScheduleText }
+      : {}),
+    ...(state.structureLines ? { structureLines: state.structureLines } : {}),
   };
 }
 
@@ -135,6 +240,9 @@ export function persistedDraftToFormState(
     duration: draft.duration,
     fieldValues,
     lines,
+    customerId: draft.customerId,
+    deliveryScheduleText: draft.deliveryScheduleText ?? '',
+    structureLines: draft.structureLines,
   };
   const wizardDraft: WizardDraft = {
     customer: {

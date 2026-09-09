@@ -1,8 +1,9 @@
-import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
-import { AppCard, OutlinedButton, PrimaryButton, ScreenLoading, ScreenMessage } from '@/src/components/common';
+import { AppCard, OutlinedButton, PrimaryButton, ScreenMessage } from '@/src/components/common';
+import { ReorderControls } from '@/src/components/ReorderControls';
 import {
   addFieldToPage,
   fieldsAvailableForPage,
@@ -14,7 +15,7 @@ import {
   sortedPages,
 } from '@/src/core/form/formMutations';
 import type { FormDefinition } from '@/src/core/form/types';
-import { db, useApp } from '@/src/context/AppContext';
+import { useStructureFormEditor } from '@/src/hooks/useStructureFormEditor';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -22,19 +23,22 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 export default function PageFieldsSettingsScreen() {
   const styles = useThemedStyles(createStyles);
   const { pageId } = useLocalSearchParams<{ pageId: string }>();
-  const { ready, formDefinition, refreshFormSettings } = useApp();
-  const [draft, setDraft] = useState<FormDefinition>(formDefinition);
+  const { persistForm, formDefinition, href } = useStructureFormEditor();
+  const [draft, setDraft] = useState<FormDefinition | null>(formDefinition ?? null);
 
   useEffect(() => {
-    setDraft(formDefinition);
+    if (formDefinition) setDraft(formDefinition);
   }, [formDefinition]);
 
-  const page = sortedPages(draft).find((item) => item.id === pageId);
-  const isDirty = useMemo(() => !formsEqual(draft, formDefinition), [draft, formDefinition]);
+  const page = draft ? sortedPages(draft).find((item) => item.id === pageId) : undefined;
+  const isDirty = useMemo(
+    () => Boolean(formDefinition && draft && !formsEqual(draft, formDefinition)),
+    [draft, formDefinition],
+  );
 
   async function persistSettings(): Promise<boolean> {
-    await db.saveFormDefinition(draft);
-    await refreshFormSettings();
+    if (!draft) return false;
+    await persistForm(draft);
     return true;
   }
 
@@ -43,7 +47,7 @@ export default function PageFieldsSettingsScreen() {
     onSave: persistSettings,
   });
 
-  if (!ready) return <ScreenLoading />;
+  if (!formDefinition || !draft) return <ScreenMessage message="Tuoterakennetta ei löytynyt." />;
   if (!page) return <ScreenMessage message="Sivua ei löytynyt." />;
 
   const assigned = fieldsForPage(draft, page.id);
@@ -75,31 +79,20 @@ export default function PageFieldsSettingsScreen() {
                   {field.type === 'computed' ? ' · muokattava lomakkeella' : ''}
                 </Text>
               </AppCard>
-              <View style={styles.actions}>
-                <Pressable
-                  style={[styles.moveButton, index === 0 && styles.moveButtonDisabled]}
-                  disabled={index === 0}
-                  onPress={() => setDraft((current) => moveFieldOnPage(current, page.id, field.id, -1))}
-                >
-                  <Text style={styles.moveButtonText}>↑</Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.moveButton,
-                    index === assigned.length - 1 && styles.moveButtonDisabled,
-                  ]}
-                  disabled={index === assigned.length - 1}
-                  onPress={() => setDraft((current) => moveFieldOnPage(current, page.id, field.id, 1))}
-                >
-                  <Text style={styles.moveButtonText}>↓</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.removeButton}
-                  onPress={() => setDraft((current) => removeFieldFromPage(current, page.id, field.id))}
-                >
-                  <Text style={styles.removeButtonText}>Poista</Text>
-                </Pressable>
-              </View>
+              <ReorderControls
+                index={index}
+                count={assigned.length}
+                onMove={(direction) =>
+                  setDraft((current) =>
+                    current ? moveFieldOnPage(current, page.id, field.id, direction) : current,
+                  )
+                }
+                onDelete={() =>
+                  setDraft((current) =>
+                    current ? removeFieldFromPage(current, page.id, field.id) : current,
+                  )
+                }
+              />
             </View>
           ))
         )}
@@ -112,7 +105,9 @@ export default function PageFieldsSettingsScreen() {
             <AppCard
               key={field.id}
               style={styles.addCard}
-              onPress={() => setDraft((current) => addFieldToPage(current, page.id, field.id))}
+              onPress={() =>
+                setDraft((current) => (current ? addFieldToPage(current, page.id, field.id) : current))
+              }
             >
               <Text style={styles.fieldLabel}>{field.label}</Text>
               <Text style={styles.fieldMeta}>{FIELD_TYPE_LABELS[field.type]}</Text>
@@ -122,7 +117,7 @@ export default function PageFieldsSettingsScreen() {
 
         <OutlinedButton
           title="Luo uusi kenttä"
-          onPress={() => router.push('/settings/calculation/fields/new' as Href)}
+          onPress={() => router.push(href('/settings/calculation/fields/new'))}
         />
 
         <PrimaryButton title="Tallenna" onPress={handleSave} />
@@ -173,39 +168,6 @@ function createStyles(colors: AppColorPalette) {
       marginTop: 4,
       fontFamily: 'IBMPlexSans_400Regular',
       color: colors.text,
-      fontSize: 13,
-    },
-    actions: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: 8,
-      paddingLeft: 4,
-      paddingBottom: 4,
-    },
-    moveButton: {
-      width: 32,
-      height: 32,
-      borderRadius: 5,
-      borderWidth: 1,
-      borderColor: colors.accent,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-    },
-    moveButtonDisabled: {
-      opacity: 0.35,
-    },
-    moveButtonText: {
-      color: colors.accent,
-      fontFamily: 'IBMPlexSans_700Bold',
-      fontSize: 16,
-    },
-    removeButton: {
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-    },
-    removeButtonText: {
-      color: colors.accent,
-      fontFamily: 'IBMPlexSans_600SemiBold',
       fontSize: 13,
     },
   };

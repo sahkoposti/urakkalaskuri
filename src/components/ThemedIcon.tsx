@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react';
 
 import { useAppColors } from '@/src/theme/ThemeContext';
 
-type ThemedIconName = 'reset' | 'trash' | 'chevron-down' | 'chevron-forward' | 'copy';
+type ThemedIconName = 'reset' | 'trash' | 'chevron-down' | 'chevron-forward' | 'copy' | 'settings';
 type IonName = ComponentProps<typeof Ionicons>['name'];
 
 const ION_NAMES: Record<ThemedIconName, IonName> = {
@@ -12,6 +12,7 @@ const ION_NAMES: Record<ThemedIconName, IonName> = {
   'chevron-down': 'chevron-down',
   'chevron-forward': 'chevron-forward',
   copy: 'copy-outline',
+  settings: 'settings-outline',
 };
 
 type ThemedIconProps = {

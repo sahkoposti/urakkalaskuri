@@ -8,43 +8,32 @@ import {
   type ReactNode,
 } from 'react';
 
-import type { CalculationResult } from '@/src/core/calculation/calculationPipeline';
 import * as db from '@/src/core/database/database';
 import type {
   AppSettings,
   CalculationRecord,
   PersistedWizardDraft,
   Product,
-  WizardDraft,
-  WizardLineDraft,
 } from '@/src/core/models/types';
 import { defaultSettings } from '@/src/core/models/types';
 import type { FormDebugSettings, FormDefinition } from '@/src/core/form/types';
 import { createDefaultFormDefinition } from '@/src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '@/src/core/form/formDefinitionHelpers';
 import { defaultFormDebugSettings } from '@/src/core/form/types';
-
-import type { WizardFormState } from '@/src/core/wizard/wizardDraftHelpers';
-
-type WizardSession = {
-  draft: WizardDraft;
-  result: CalculationResult;
-  settings: AppSettings;
-  form: WizardFormState;
-  formContext: Record<string, number>;
-  materialLines: WizardLineDraft[];
-  editCalculationId?: string;
-  originalCreatedAt?: Date;
-  /** Muokattavan laskelman snapshotin formVersion (varoitus jos eroaa nykyisestä). */
-  editFormVersion?: number;
-};
+import {
+  DEFAULT_STRUCTURE_ID,
+  type CustomerRecord,
+  type ProductStructure,
+} from '@/src/core/structure/types';
 
 type AppContextValue = {
   ready: boolean;
   settings: AppSettings;
   products: Product[];
   calculations: CalculationRecord[];
-  wizardSession: WizardSession | null;
+  structures: ProductStructure[];
+  customers: CustomerRecord[];
+  activeStructureId: string;
   wizardDraft: PersistedWizardDraft | null;
   formDefinition: FormDefinition;
   formDebug: FormDebugSettings;
@@ -53,7 +42,9 @@ type AppContextValue = {
   refreshCalculations: () => Promise<void>;
   refreshWizardDraft: () => Promise<void>;
   refreshFormSettings: () => Promise<void>;
-  setWizardSession: (session: WizardSession | null) => void;
+  refreshStructures: () => Promise<void>;
+  refreshCustomers: () => Promise<void>;
+  setActiveStructure: (id: string) => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -63,7 +54,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const [products, setProducts] = useState<Product[]>([]);
   const [calculations, setCalculations] = useState<CalculationRecord[]>([]);
-  const [wizardSession, setWizardSession] = useState<WizardSession | null>(null);
+  const [structures, setStructures] = useState<ProductStructure[]>([]);
+  const [customers, setCustomers] = useState<CustomerRecord[]>([]);
+  const [activeStructureId, setActiveStructureIdState] = useState(DEFAULT_STRUCTURE_ID);
   const [wizardDraft, setWizardDraft] = useState<PersistedWizardDraft | null>(null);
   const [formDefinition, setFormDefinition] = useState<FormDefinition>(
     normalizeFormDefinition(createDefaultFormDefinition()),
@@ -73,6 +66,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const refreshFormSettings = useCallback(async () => {
     setFormDefinition(await db.getFormDefinition());
     setFormDebug(await db.getFormDebugSettings());
+    const next = await db.getProductStructures();
+    setStructures(next);
+    setActiveStructureIdState(await db.getActiveStructureId());
   }, []);
 
   const refreshSettings = useCallback(async () => {
@@ -91,12 +87,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setWizardDraft(await db.getWizardDraft());
   }, []);
 
+  const refreshStructures = useCallback(async () => {
+    const next = await db.getProductStructures();
+    setStructures(next);
+    const activeId = await db.getActiveStructureId();
+    setActiveStructureIdState(activeId);
+  }, []);
+
+  const refreshCustomers = useCallback(async () => {
+    setCustomers(await db.getCustomers());
+  }, []);
+
+  const setActiveStructure = useCallback(async (id: string) => {
+    await db.setActiveStructureId(id);
+    setActiveStructureIdState(id);
+    setFormDefinition(await db.getFormDefinition());
+  }, []);
+
   useEffect(() => {
     let active = true;
 
     async function loadAll() {
       await refreshSettings();
+      await refreshStructures();
       await refreshProducts();
+      await refreshCustomers();
       await refreshCalculations();
       await refreshWizardDraft();
       await refreshFormSettings();
@@ -121,7 +136,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [refreshCalculations, refreshFormSettings, refreshProducts, refreshSettings, refreshWizardDraft]);
+  }, [
+    refreshCalculations,
+    refreshCustomers,
+    refreshFormSettings,
+    refreshProducts,
+    refreshSettings,
+    refreshStructures,
+    refreshWizardDraft,
+  ]);
 
   const value = useMemo(
     () => ({
@@ -129,7 +152,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       settings,
       products,
       calculations,
-      wizardSession,
+      structures,
+      customers,
+      activeStructureId,
       wizardDraft,
       formDefinition,
       formDebug,
@@ -138,14 +163,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       refreshCalculations,
       refreshWizardDraft,
       refreshFormSettings,
-      setWizardSession,
+      refreshStructures,
+      refreshCustomers,
+      setActiveStructure,
     }),
     [
       ready,
       settings,
       products,
       calculations,
-      wizardSession,
+      structures,
+      customers,
+      activeStructureId,
       wizardDraft,
       formDefinition,
       formDebug,
@@ -154,6 +183,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       refreshCalculations,
       refreshWizardDraft,
       refreshFormSettings,
+      refreshStructures,
+      refreshCustomers,
+      setActiveStructure,
     ],
   );
 

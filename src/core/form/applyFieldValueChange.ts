@@ -1,4 +1,5 @@
 import { computedFieldsAffectedByKeyChange } from '@/src/core/form/formula/formulaDependencies';
+import { getFieldByKey } from '@/src/core/form/formDefinitionHelpers';
 import type { FormDefinition } from '@/src/core/form/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 
@@ -6,7 +7,7 @@ const SELLING_PRICE_VAT0_KEY = 'kokonaishinta_alv0';
 const SELLING_PRICE_VAT_KEY = 'kokonaishinta';
 
 function findField(form: FormDefinition, key: string) {
-  return form.fields.find((field) => field.key === key);
+  return getFieldByKey(form, key);
 }
 
 function keepsEmptyComputedOverride(form: FormDefinition, key: string): boolean {

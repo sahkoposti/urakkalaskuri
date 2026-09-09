@@ -1,167 +1,39 @@
-import * as SQLite from 'expo-sqlite';
-
 import type {
   AppSettings,
   CalculationLine,
   CalculationRecord,
-  FormSnapshot,
+  CustomerType,
   PersistedWizardDraft,
   Product,
   ThemeSettings,
 } from '../models/types';
 import { defaultSettings, defaultThemeSettings } from '../models/types';
 import { parseProductAttributesJson } from '../product/productAttributes';
+import { productSortOrder } from '../product/productMutations';
+import {
+  parseStoredStructureIds,
+  productStructureIds,
+} from '../product/productStructures';
 import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../form/formDefinitionHelpers';
 import { bumpFormVersion } from '../form/formVersion';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
 import { defaultFormDebugSettings } from '../form/types';
+import {
+  DEFAULT_STRUCTURE_ID,
+  type CustomerRecord,
+  type ProductStructure,
+} from '../structure/types';
+import {
+  ACTIVE_STRUCTURE_KEY,
+  getDb,
+  inferVatPercent,
+  parseFormSnapshot,
+  parseStructureLines,
+  resetDatabaseConnection,
+} from './connection';
 
-let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
-
-/** Nollaa välimuistin (esim. hot reload / kuollut native-kahva Androidilla). */
-export function resetDatabaseConnection(): void {
-  dbPromise = null;
-}
-
-async function getDb(): Promise<SQLite.SQLiteDatabase> {
-  if (!dbPromise) {
-    dbPromise = openDatabase().catch((error) => {
-      dbPromise = null;
-      throw error;
-    });
-  }
-  return dbPromise;
-}
-
-function inferVatPercent(row: Record<string, unknown>): number {
-  const totalVat0 = row.total_price_vat0 as number;
-  const vatAmount = row.vat_amount as number;
-  if (totalVat0 <= 0 || vatAmount <= 0) {
-    return defaultSettings.vatPercent;
-  }
-  return (vatAmount / totalVat0) * 100;
-}
-
-async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
-  const calculationColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(calculations)');
-  if (!calculationColumns.some((column) => column.name === 'vat_percent')) {
-    await db.execAsync('ALTER TABLE calculations ADD COLUMN vat_percent REAL');
-  }
-  if (!calculationColumns.some((column) => column.name === 'form_snapshot')) {
-    await db.execAsync('ALTER TABLE calculations ADD COLUMN form_snapshot TEXT');
-  }
-  if (!calculationColumns.some((column) => column.name === 'discount_percent')) {
-    await db.execAsync('ALTER TABLE calculations ADD COLUMN discount_percent REAL');
-  }
-  if (!calculationColumns.some((column) => column.name === 'discount_eur')) {
-    await db.execAsync('ALTER TABLE calculations ADD COLUMN discount_eur REAL');
-  }
-  if (!calculationColumns.some((column) => column.name === 'total_price_vat_before_discount')) {
-    await db.execAsync('ALTER TABLE calculations ADD COLUMN total_price_vat_before_discount REAL');
-  }
-  if (!calculationColumns.some((column) => column.name === 'total_price_vat0_before_discount')) {
-    await db.execAsync('ALTER TABLE calculations ADD COLUMN total_price_vat0_before_discount REAL');
-  }
-
-  const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
-  if (!productColumns.some((column) => column.name === 'attributes')) {
-    await db.execAsync('ALTER TABLE products ADD COLUMN attributes TEXT');
-  }
-
-  await db.runAsync('DELETE FROM settings WHERE key = ?', 'wizard_step_order');
-}
-
-async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
-  // useNewConnection: Android/Expo Go voi muuten palauttaa kuolleen shared-kahvan (NPE prepareAsync).
-  const db = await SQLite.openDatabaseAsync('urakkalaskuri.db', {
-    useNewConnection: true,
-  });
-  await db.execAsync(`
-    PRAGMA foreign_keys = ON;
-    CREATE TABLE IF NOT EXISTS products (
-      id TEXT PRIMARY KEY NOT NULL,
-      name TEXT NOT NULL,
-      unit TEXT NOT NULL,
-      unit_price_vat0 REAL NOT NULL,
-      description TEXT,
-      created_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS calculations (
-      id TEXT PRIMARY KEY NOT NULL,
-      project_name TEXT NOT NULL,
-      customer TEXT,
-      group_duration_h REAL NOT NULL,
-      crew_size INTEGER NOT NULL,
-      hourly_rate REAL NOT NULL,
-      margin_percent REAL NOT NULL,
-      commission_percent REAL NOT NULL,
-      contract_price_vat0 REAL NOT NULL,
-      materials_vat0 REAL NOT NULL,
-      margin_eur REAL NOT NULL,
-      commission_eur REAL NOT NULL,
-      total_price_vat0 REAL NOT NULL,
-      vat_amount REAL NOT NULL,
-      total_price_vat REAL NOT NULL,
-      work_duration_days REAL NOT NULL,
-      created_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS calculation_lines (
-      id TEXT PRIMARY KEY NOT NULL,
-      calculation_id TEXT NOT NULL,
-      product_id TEXT,
-      product_name TEXT NOT NULL,
-      unit TEXT NOT NULL,
-      unit_price_vat0 REAL NOT NULL,
-      quantity REAL NOT NULL,
-      line_total_vat0 REAL NOT NULL,
-      FOREIGN KEY (calculation_id) REFERENCES calculations(id)
-    );
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY NOT NULL,
-      value TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS wizard_drafts (
-      id TEXT PRIMARY KEY NOT NULL,
-      step INTEGER NOT NULL,
-      payload TEXT NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-  `);
-
-  await migrateDatabase(db);
-
-  const settingsCount = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM settings',
-  );
-  if ((settingsCount?.count ?? 0) === 0) {
-    for (const [key, value] of Object.entries(defaultSettingRows)) {
-      await db.runAsync('INSERT INTO settings (key, value) VALUES (?, ?)', key, value);
-    }
-  }
-
-  return db;
-}
-
-const defaultSettingRows: Record<string, string> = {
-  vat_percent: String(defaultSettings.vatPercent),
-  default_margin_percent: String(defaultSettings.defaultMarginPercent),
-  margin_low_amount: String(defaultSettings.marginLowAmount),
-  margin_low_percent: String(defaultSettings.marginLowPercent),
-  margin_high_amount: String(defaultSettings.marginHighAmount),
-  margin_high_percent: String(defaultSettings.marginHighPercent),
-  default_commission_percent: String(defaultSettings.defaultCommissionPercent),
-  default_hourly_rate: String(defaultSettings.defaultHourlyRate),
-  default_crew_size: String(defaultSettings.defaultCrewSize),
-  workday_hours: String(defaultSettings.workdayHours),
-  weather_reserve_factor: String(defaultSettings.weatherReserveFactor),
-  theme_accent_color: defaultSettings.theme.accentColor,
-  theme_primary_color: defaultSettings.theme.primaryColor,
-  theme_text_color: defaultSettings.theme.textColor,
-  theme_surface_color: defaultSettings.theme.surfaceColor,
-  theme_background_image_uri: defaultSettings.theme.backgroundImageUri,
-  theme_background_opacity: String(defaultSettings.theme.backgroundOpacity),
-};
+export { resetDatabaseConnection };
 
 function parseThemeSettings(map: Record<string, string>): ThemeSettings {
   return {
@@ -176,14 +48,30 @@ function parseThemeSettings(map: Record<string, string>): ThemeSettings {
   };
 }
 
+function finitePrice(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
 function productFromRow(row: Record<string, unknown>): Product {
+  const structureIds = parseStoredStructureIds(
+    row.structure_ids as string | null | undefined,
+    row.structure_id as string | null | undefined,
+  );
+  const unitPrice = finitePrice(row.unit_price_vat0) ?? 0;
+  const purchasePrice = finitePrice(row.purchase_price_vat0) ?? unitPrice;
+  const salePrice = finitePrice(row.sale_price_vat0) ?? purchasePrice;
   return {
     id: row.id as string,
     name: row.name as string,
     unit: row.unit as string,
-    unitPriceVat0: row.unit_price_vat0 as number,
+    unitPriceVat0: purchasePrice,
+    purchasePriceVat0: purchasePrice,
+    salePriceVat0: salePrice,
     description: (row.description as string | null) ?? undefined,
     attributes: parseProductAttributesJson(row.attributes as string | null | undefined),
+    structureIds,
+    structureId: structureIds[0],
+    sortOrder: productSortOrder({ sortOrder: finitePrice(row.sort_order) }),
     createdAt: new Date(row.created_at as number),
   };
 }
@@ -219,16 +107,10 @@ function calculationFromRow(
     createdAt: new Date(row.created_at as number),
     formSnapshot: parseFormSnapshot(row.form_snapshot),
     lines,
+    customerId: (row.customer_id as string | null) ?? undefined,
+    deliveryScheduleText: (row.delivery_schedule_text as string | null) ?? undefined,
+    structureLines: parseStructureLines(row.structure_lines),
   };
-}
-
-function parseFormSnapshot(raw: unknown): FormSnapshot | undefined {
-  if (typeof raw !== 'string' || !raw.trim()) return undefined;
-  try {
-    return JSON.parse(raw) as FormSnapshot;
-  } catch {
-    return undefined;
-  }
 }
 
 export async function getSettings(): Promise<AppSettings> {
@@ -300,7 +182,7 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 export async function getProducts(): Promise<Product[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<Record<string, unknown>>(
-    'SELECT * FROM products ORDER BY name COLLATE NOCASE ASC',
+    'SELECT * FROM products ORDER BY sort_order ASC, name COLLATE NOCASE ASC',
   );
   return rows.map(productFromRow);
 }
@@ -316,17 +198,36 @@ export async function getProduct(id: string): Promise<Product | null> {
 
 export async function upsertProduct(product: Product): Promise<void> {
   const db = await getDb();
+  const structureIds = productStructureIds(product);
+  const purchasePrice = product.purchasePriceVat0 ?? product.unitPriceVat0;
+  const salePrice = product.salePriceVat0 ?? purchasePrice;
   await db.runAsync(
-    `INSERT OR REPLACE INTO products (id, name, unit, unit_price_vat0, description, attributes, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO products (
+      id, name, unit, unit_price_vat0, purchase_price_vat0, sale_price_vat0,
+      description, attributes, created_at, structure_id, structure_ids, sort_order
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     product.id,
     product.name,
     product.unit,
-    product.unitPriceVat0,
+    purchasePrice,
+    purchasePrice,
+    salePrice,
     product.description ?? null,
     product.attributes ? JSON.stringify(product.attributes) : null,
     product.createdAt.getTime(),
+    structureIds[0] ?? null,
+    JSON.stringify(structureIds),
+    productSortOrder(product),
   );
+}
+
+export async function saveProductOrder(productIds: string[]): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    for (let index = 0; index < productIds.length; index += 1) {
+      await db.runAsync('UPDATE products SET sort_order = ? WHERE id = ?', index, productIds[index]);
+    }
+  });
 }
 
 export async function deleteProduct(id: string): Promise<void> {
@@ -392,8 +293,8 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
         margin_eur, commission_eur, total_price_vat0, vat_percent, vat_amount, total_price_vat,
         work_duration_days, discount_percent, discount_eur,
         total_price_vat_before_discount, total_price_vat0_before_discount,
-        created_at, form_snapshot
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        created_at, form_snapshot, customer_id, delivery_schedule_text, structure_lines
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       record.id,
       record.projectName,
       record.customer ?? null,
@@ -417,6 +318,9 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.totalPriceVat0BeforeDiscount,
       record.createdAt.getTime(),
       record.formSnapshot ? JSON.stringify(record.formSnapshot) : null,
+      record.customerId ?? null,
+      record.deliveryScheduleText ?? null,
+      record.structureLines ? JSON.stringify(record.structureLines) : null,
     );
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', record.id);
     for (const line of record.lines) {
@@ -480,6 +384,16 @@ export async function clearWizardDraft(): Promise<void> {
 }
 
 export async function getFormDefinition(): Promise<FormDefinition> {
+  const structures = await getProductStructures();
+  if (structures.length > 0) {
+    const activeId = await getActiveStructureId();
+    const active =
+      structures.find((item) => item.id === activeId) ??
+      structures.find((item) => item.id === DEFAULT_STRUCTURE_ID) ??
+      structures[0];
+    return active.form;
+  }
+
   const db = await getDb();
   const row = await db.getFirstAsync<{ value: string }>(
     'SELECT value FROM settings WHERE key = ? LIMIT 1',
@@ -501,15 +415,30 @@ export async function getFormDefinition(): Promise<FormDefinition> {
 
 export async function saveFormDefinition(
   form: FormDefinition,
-  options?: { preserveVersion?: boolean },
+  options?: { preserveVersion?: boolean; structureId?: string },
 ): Promise<void> {
-  const db = await getDb();
   const toSave = options?.preserveVersion ? form : bumpFormVersion(form);
-  await db.runAsync(
-    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
-    'form_definition',
-    JSON.stringify({ ...toSave, updatedAt: Date.now() }),
-  );
+  const normalized = normalizeFormDefinition({ ...toSave, updatedAt: Date.now() });
+  const structures = await getProductStructures();
+  const targetId = options?.structureId ?? (await getActiveStructureId());
+  const target =
+    structures.find((item) => item.id === targetId) ??
+    structures.find((item) => item.id === DEFAULT_STRUCTURE_ID) ??
+    structures[0];
+  if (!target) {
+    const db = await getDb();
+    await db.runAsync(
+      'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+      'form_definition',
+      JSON.stringify(normalized),
+    );
+    return;
+  }
+  await upsertProductStructure({
+    ...target,
+    form: normalized,
+    updatedAt: new Date(),
+  });
 }
 
 export async function getFormDebugSettings(): Promise<FormDebugSettings> {
@@ -552,5 +481,172 @@ export async function saveFieldsPageExpandedSetting(value: string): Promise<void
     'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
     FIELDS_PAGE_EXPANDED_KEY,
     value,
+  );
+}
+
+function structureFromRow(row: Record<string, unknown>): ProductStructure {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    unit: (row.unit as string | null) ?? undefined,
+    form: normalizeFormDefinition(JSON.parse(row.form_json as string)),
+    commissionPercent: row.commission_percent as number,
+    sortOrder: row.sort_order as number,
+    createdAt: new Date(row.created_at as number),
+    updatedAt: new Date(row.updated_at as number),
+  };
+}
+
+function customerFromDbRow(row: Record<string, unknown>): CustomerRecord {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    customerType: ((row.customer_type as string) ?? 'private') as CustomerType,
+    reverseVat: Boolean(row.reverse_vat),
+    phone: (row.phone as string | null) ?? undefined,
+    email: (row.email as string | null) ?? undefined,
+    address: (row.address as string | null) ?? undefined,
+    postalCode: (row.postal_code as string | null) ?? undefined,
+    postalLocality: (row.postal_locality as string | null) ?? undefined,
+    notes: (row.notes as string | null) ?? undefined,
+    updatedAt: new Date(row.updated_at as number),
+  };
+}
+
+export async function getActiveStructureId(): Promise<string> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    ACTIVE_STRUCTURE_KEY,
+  );
+  return row?.value || DEFAULT_STRUCTURE_ID;
+}
+
+export async function setActiveStructureId(id: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    ACTIVE_STRUCTURE_KEY,
+    id,
+  );
+}
+
+export async function getProductStructures(): Promise<ProductStructure[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    'SELECT * FROM product_structures ORDER BY sort_order ASC, name COLLATE NOCASE ASC',
+  );
+  return rows.map(structureFromRow);
+}
+
+export async function getProductStructure(id: string): Promise<ProductStructure | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<Record<string, unknown>>(
+    'SELECT * FROM product_structures WHERE id = ? LIMIT 1',
+    id,
+  );
+  return row ? structureFromRow(row) : null;
+}
+
+export async function upsertProductStructure(structure: ProductStructure): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO product_structures (
+      id, name, unit, form_json, commission_percent, sort_order, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    structure.id,
+    structure.name,
+    structure.unit ?? null,
+    JSON.stringify(structure.form),
+    structure.commissionPercent,
+    structure.sortOrder,
+    structure.createdAt.getTime(),
+    structure.updatedAt.getTime(),
+  );
+}
+
+export async function deleteProductStructure(id: string): Promise<void> {
+  const structures = await getProductStructures();
+  if (structures.length <= 1) {
+    throw new Error('Viimeistä tuoterakennetta ei voi poistaa.');
+  }
+  const fallback =
+    structures.find((item) => item.id !== id && item.id === DEFAULT_STRUCTURE_ID) ??
+    structures.find((item) => item.id !== id);
+  if (!fallback) {
+    throw new Error('Viimeistä tuoterakennetta ei voi poistaa.');
+  }
+  const db = await getDb();
+  const products = await getProducts();
+  for (const product of products) {
+    const nextIds = productStructureIds(product).filter((item) => item !== id);
+    if (nextIds.length === productStructureIds(product).length) continue;
+    await upsertProduct({
+      ...product,
+      structureIds: nextIds,
+      structureId: nextIds[0],
+    });
+  }
+  await db.runAsync('DELETE FROM product_structures WHERE id = ?', id);
+  const activeId = await getActiveStructureId();
+  if (activeId === id) {
+    await setActiveStructureId(fallback.id);
+  }
+}
+
+export async function getCustomers(): Promise<CustomerRecord[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<Record<string, unknown>>(
+    'SELECT * FROM customers ORDER BY name COLLATE NOCASE ASC',
+  );
+  return rows.map(customerFromDbRow);
+}
+
+export async function getCustomer(id: string): Promise<CustomerRecord | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<Record<string, unknown>>(
+    'SELECT * FROM customers WHERE id = ? LIMIT 1',
+    id,
+  );
+  return row ? customerFromDbRow(row) : null;
+}
+
+export async function upsertCustomer(customer: CustomerRecord): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO customers (
+      id, name, customer_type, reverse_vat, phone, email, address,
+      postal_code, postal_locality, notes, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    customer.id,
+    customer.name,
+    customer.customerType,
+    customer.reverseVat ? 1 : 0,
+    customer.phone ?? null,
+    customer.email ?? null,
+    customer.address ?? null,
+    customer.postalCode ?? null,
+    customer.postalLocality ?? null,
+    customer.notes ?? null,
+    customer.updatedAt.getTime(),
+  );
+}
+
+export async function deleteCustomer(id: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('DELETE FROM customers WHERE id = ?', id);
+}
+
+export async function updateCalculationCustomerSnapshots(
+  customerId: string,
+  projectName: string,
+  customerJson: string,
+): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'UPDATE calculations SET project_name = ?, customer = ? WHERE customer_id = ?',
+    projectName,
+    customerJson,
+    customerId,
   );
 }

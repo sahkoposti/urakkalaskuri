@@ -110,3 +110,20 @@ export function buildFormSnapshot(
     fieldValues: { ...fieldValues },
   };
 }
+
+export function hasSummarySnapshotFields(snapshot?: FormSnapshot | null): boolean {
+  return Boolean(snapshot?.fields && snapshot.fields.length > 0);
+}
+
+/** Rivin yhteenvedon lomaketiedot: valmis snapshot tai live-kentät. */
+export function lineFormSnapshot(
+  line: { snapshot?: FormSnapshot; fieldValues?: Record<string, string> },
+  form: FormDefinition | undefined,
+  products: Product[] = [],
+  context: Record<string, number> = {},
+): FormSnapshot | undefined {
+  if (hasSummarySnapshotFields(line.snapshot)) return line.snapshot;
+  if (!form) return undefined;
+  const built = buildFormSnapshot(form, line.fieldValues ?? {}, context, products);
+  return built.fields.length > 0 ? built : undefined;
+}

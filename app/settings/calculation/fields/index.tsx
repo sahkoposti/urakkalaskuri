@@ -2,7 +2,7 @@ import { router, Stack, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { AppCard, OutlinedButton, ScreenLoading } from '@/src/components/common';
+import { AppCard, OutlinedButton, ScreenMessage } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
 import { formatDebugExampleDisplay } from '@/src/core/form/debugExampleHelpers';
@@ -24,6 +24,7 @@ import {
 import type { FormField } from '@/src/core/form/types';
 import type { Product } from '@/src/core/models/types';
 import { db, useApp } from '@/src/context/AppContext';
+import { useStructureFormEditor } from '@/src/hooks/useStructureFormEditor';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -79,11 +80,13 @@ function FieldCards({
   formDebugEnabled,
   products,
   onDelete,
+  href,
 }: {
   fields: FormField[];
   formDebugEnabled: boolean;
   products: Product[];
   onDelete: (field: FormField) => void;
+  href: (path: string) => Href;
 }) {
   return fields.map((field) => (
     <FieldCard
@@ -92,7 +95,7 @@ function FieldCards({
       formDebugEnabled={formDebugEnabled}
       products={products}
       deletable={!field.systemKey}
-      onPress={() => router.push(`/settings/calculation/fields/${field.id}` as Href)}
+      onPress={() => router.push(href(`/settings/calculation/fields/${field.id}`))}
       onDelete={() => onDelete(field)}
     />
   ));
@@ -124,7 +127,8 @@ function PageSectionHeader({
 
 export default function FormFieldsScreen() {
   const styles = useThemedStyles(createStyles);
-  const { ready, formDefinition, formDebug, products, refreshFormSettings } = useApp();
+  const { persistForm, formDefinition, href } = useStructureFormEditor();
+  const { formDebug, products } = useApp();
   const [deleteTarget, setDeleteTarget] = useState<FormField | null>(null);
   const [expandedPages, setExpandedPages] = useState<FieldsPageExpandedMap>({});
 
@@ -141,17 +145,17 @@ export default function FormFieldsScreen() {
     };
   }, []);
 
-  if (!ready) return <ScreenLoading />;
+  if (!formDefinition) return <ScreenMessage message="Tuoterakennetta ei löytynyt." />;
 
-  const pages = sortedPages(formDefinition);
-  const assigned = assignedFieldIds(formDefinition);
-  const unassignedFields = sortedGlobalFields(formDefinition).filter((field) => !assigned.has(field.id));
+  const form = formDefinition;
+  const pages = sortedPages(form);
+  const assigned = assignedFieldIds(form);
+  const unassignedFields = sortedGlobalFields(form).filter((field) => !assigned.has(field.id));
 
   async function confirmDeleteField() {
     if (!deleteTarget) return;
-    const next = removeField(formDefinition, deleteTarget.id);
-    await db.saveFormDefinition(next);
-    await refreshFormSettings();
+    const next = removeField(form, deleteTarget.id);
+    await persistForm(next);
     setDeleteTarget(null);
   }
 
@@ -177,11 +181,11 @@ export default function FormFieldsScreen() {
 
         <OutlinedButton
           title="Lisää kenttä"
-          onPress={() => router.push('/settings/calculation/fields/new' as Href)}
+          onPress={() => router.push(href('/settings/calculation/fields/new'))}
         />
 
         {pages.map((page) => {
-          const pageFields = wizardFieldsForPage(formDefinition, page.id);
+          const pageFields = wizardFieldsForPage(form, page.id);
           const expanded = isFieldsPageExpanded(expandedPages, page.id);
           return (
             <View key={page.id} style={styles.pageSection}>
@@ -201,6 +205,7 @@ export default function FormFieldsScreen() {
                     formDebugEnabled={formDebug.enabled}
                     products={products}
                     onDelete={setDeleteTarget}
+                    href={href}
                   />
                 )
               ) : null}
@@ -225,6 +230,7 @@ export default function FormFieldsScreen() {
                 formDebugEnabled={formDebug.enabled}
                 products={products}
                 onDelete={setDeleteTarget}
+                href={href}
               />
             )
           ) : null}

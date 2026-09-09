@@ -16,9 +16,9 @@ export default function SettingsScreen() {
           onPress={() => router.push('/settings/general')}
         />
         <SettingsNavCard
-          title="Lomakeasetukset"
-          subtitle="Kentät, kaavat, debug ja järjestys"
-          onPress={() => router.push('/settings/calculation' as Href)}
+          title="Tuoterakenteet"
+          subtitle="Lomakkeet ja myyntipalkkio"
+          onPress={() => router.push('/settings/structures' as Href)}
         />
         <SettingsNavCard
           title="Teema"

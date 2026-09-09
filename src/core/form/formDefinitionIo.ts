@@ -47,3 +47,8 @@ export function parseImportedFormDefinition(raw: string): FormDefinition {
     updatedAt: Date.now(),
   });
 }
+
+/** Lyhyt kuvaus tuonnin jälkeen. */
+export function importedFormSummary(form: FormDefinition): string {
+  return `Versio ${form.version}.`;
+}

@@ -55,10 +55,21 @@ export interface Product {
   id: string;
   name: string;
   unit: string;
+  /** Ostohinta (alv0). Materiaalirivit käyttävät tätä. */
   unitPriceVat0: number;
+  /** Ostohinta (alv0). Puuttuu vanhoissa riveissä → `unitPriceVat0`. */
+  purchasePriceVat0?: number;
+  /** Myyntihinta (alv0). Puuttuu vanhoissa riveissä → ostohinta. */
+  salePriceVat0?: number;
   description?: string;
-  /** Kaavoissa: menekki, yksikkohinta, tyokerroin jne. */
+  /** Kaavoissa: menekki, ostohinta, myyntihinta, tyokerroin jne. */
   attributes?: Record<string, number>;
+  /** Tuoterakenteet joihin materiaali kuuluu. */
+  structureIds?: string[];
+  /** Ensimmäinen rakenne; vanha kenttä, synkataan structureIds-listasta. */
+  structureId?: string;
+  /** Näyttöjärjestys Tuotteet-listassa ja tuotelistakentässä. Puuttuu vanhoissa → 0. */
+  sortOrder?: number;
   createdAt: Date;
 }
 
@@ -117,6 +128,41 @@ export interface CalculationRecord {
   createdAt: Date;
   formSnapshot?: FormSnapshot;
   lines: CalculationLine[];
+  customerId?: string;
+  deliveryScheduleText?: string;
+  structureLines?: StructureLine[];
+}
+
+export type StructureLineOverride =
+  | 'unitPrice'
+  | 'materials'
+  | 'discount'
+  | 'quantity'
+  | 'unit';
+
+export interface StructureLine {
+  id: string;
+  structureId: string;
+  name: string;
+  quantity: number;
+  unit?: string;
+  unitPriceVat0: number;
+  materialsVat0: number;
+  discountPercent: number;
+  vatPercent: number;
+  contractPriceVat0: number;
+  workDurationDays: number;
+  commissionPercent: number;
+  commissionEur: number;
+  marginEur: number;
+  marginPercent: number;
+  /** true = kortilla hinta/materiaalit ALV:llisina (oletus). */
+  pricesIncludeVat?: boolean;
+  fieldValues: Record<string, string>;
+  formFilled: boolean;
+  formVersion?: number;
+  snapshot?: FormSnapshot;
+  overrides: StructureLineOverride[];
 }
 
 export interface CustomerInfo {
@@ -190,10 +236,6 @@ export interface WizardDraft {
   lines: WizardLineDraft[];
 }
 
-export function materialsTotal(lines: WizardLineDraft[]): number {
-  return lines.reduce((sum, line) => sum + line.quantity * line.product.unitPriceVat0, 0);
-}
-
 export interface PersistedWizardLineDraft {
   productId: string;
   quantity: number;
@@ -218,4 +260,7 @@ export interface PersistedWizardDraft {
   editCalculationId?: string;
   originalCreatedAt?: number;
   editFormVersion?: number;
+  customerId?: string;
+  deliveryScheduleText?: string;
+  structureLines?: StructureLine[];
 }

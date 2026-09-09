@@ -38,21 +38,6 @@ export function BrandLogo({ width = 260 }: BrandLogoProps) {
   );
 }
 
-type BrandIconProps = {
-  size?: number;
-};
-
-export function BrandIcon({ size = 32 }: BrandIconProps) {
-  return (
-    <Image
-      source={require('@/assets/images/icon-r.png')}
-      style={{ width: size, height: size }}
-      resizeMode="contain"
-      accessibilityLabel="ColoRajaton"
-    />
-  );
-}
-
 type AppSwitchProps = Omit<SwitchProps, 'trackColor' | 'thumbColor' | 'ios_backgroundColor'>;
 
 export function AppSwitch(props: AppSwitchProps) {

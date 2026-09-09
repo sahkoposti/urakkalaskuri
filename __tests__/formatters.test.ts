@@ -2,7 +2,10 @@ import {
   ceilWorkDurationDays,
   displayWorkDurationText,
   estimateWorkDurationDays,
+  formatFixed2,
   formatWorkDurationDays,
+  limitDecimalInput,
+  roundToCents,
 } from '../src/core/utils/formatters';
 
 describe('work duration display', () => {
@@ -30,5 +33,19 @@ describe('work duration display', () => {
     expect(displayWorkDurationText('Työryhmän keston on oltava suurempi kuin 0.')).toBe(
       'Työn keston on oltava suurempi kuin 0.',
     );
+  });
+});
+
+describe('decimal helpers', () => {
+  test('pyöristää kahteen desimaaliin', () => {
+    expect(roundToCents(1.235)).toBe(1.24);
+    expect(formatFixed2(10)).toBe('10,00');
+    expect(formatFixed2(3.5)).toBe('3,50');
+  });
+
+  test('rajaa syötteen kahteen desimaaliin', () => {
+    expect(limitDecimalInput('3,555')).toBe('3,55');
+    expect(limitDecimalInput('3.1')).toBe('3,1');
+    expect(limitDecimalInput('12,')).toBe('12,');
   });
 });

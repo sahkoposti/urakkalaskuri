@@ -29,7 +29,14 @@ export function DraftResumeBanner() {
         },
         pressed && styles.bannerPressed,
       ]}
-      onPress={() => router.push('/wizard')}
+      onPress={() => {
+        const editId = wizardDraft.editCalculationId;
+        if (editId) {
+          router.push({ pathname: '/wizard', params: { editId } });
+          return;
+        }
+        router.push('/wizard');
+      }}
     >
       <Text style={styles.bannerText}>Jatka laskentaa →</Text>
     </Pressable>

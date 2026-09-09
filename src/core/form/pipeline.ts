@@ -1,12 +1,15 @@
 import { previewFormContextDetailed } from '@/src/core/calculation/calculationPipeline';
 import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
+import { getFieldByKey } from '@/src/core/form/formDefinitionHelpers';
 import { extractFormulaIdentifiers } from '@/src/core/form/formula/evaluator';
 import { isSystemField } from '@/src/core/form/systemFields';
+import type { FormContextStep, FormContextStepSource } from '@/src/core/form/evaluateFormContext';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { AppSettings, Product } from '@/src/core/models/types';
 import { defaultSettings } from '@/src/core/models/types';
 
-export type DebugStepSource = 'input' | 'select' | 'computed';
+export type DebugStepSource = FormContextStepSource;
+export type DebugStep = FormContextStep;
 
 export interface DebugPipelineOptions {
   settings?: AppSettings;
@@ -64,33 +67,19 @@ function collectMissingDebugExampleErrors(
   return errors;
 }
 
-export interface DebugStep {
-  fieldKey: string;
-  label: string;
-  source: DebugStepSource;
-  formula?: string;
-  substituted?: string;
-  result: number;
-  error?: string;
-}
-
 export interface DebugTrace {
   context: Record<string, number>;
   steps: DebugStep[];
   errors: string[];
 }
 
-function findFieldByKey(form: FormDefinition, key: string): FormField | undefined {
-  return form.fields.find((field) => field.key === key);
-}
-
 function findFieldProvidingVariable(form: FormDefinition, ident: string): FormField | undefined {
-  const exact = findFieldByKey(form, ident);
+  const exact = getFieldByKey(form, ident);
   if (exact) return exact;
 
   const baseKey = ident.split('.')[0] ?? ident;
   if (baseKey !== ident) {
-    return findFieldByKey(form, baseKey);
+    return getFieldByKey(form, baseKey);
   }
   return undefined;
 }
@@ -103,7 +92,7 @@ export function collectRelevantFieldKeys(form: FormDefinition, focusFieldKey: st
     if (relevant.has(fieldKey)) return;
     relevant.add(fieldKey);
 
-    const field = findFieldByKey(form, fieldKey);
+    const field = getFieldByKey(form, fieldKey);
     if (!field?.formula || field.type !== 'computed') return;
 
     for (const ident of extractFormulaIdentifiers(field.formula)) {

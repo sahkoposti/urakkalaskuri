@@ -1,0 +1,1769 @@
+{
+  "id": "default",
+  "name": "Peruslaskenta – modulaarinen",
+  "version": 123,
+  "pages": [
+    {
+      "id": "page_surfaces",
+      "title": "Maalattavat osa-alueet ja mitat",
+      "sortOrder": 0,
+      "fieldIds": [
+        "field_mt9uscef_aizypl",
+        "field_maaston_vaikeusaste",
+        "field_kohteen_korkeus",
+        "field_julkisivupinnat_valinta",
+        "field_raystassivun_pituus",
+        "field_raystaskorkeus",
+        "field_paadyn_leveys",
+        "field_harjakorkeus",
+        "field_lisaseinien_lkm",
+        "field_lisaseinien_pituus",
+        "field_lisaseinien_keskikorkeus",
+        "field_laudoitustyyppi",
+        "field_mt9q59ip_09mygx",
+        "field_mt9qct5j_j6r185",
+        "field_laskenta_seinapinta",
+        "field_raystaanaluset_valinta",
+        "field_raystastyyppi",
+        "field_raystaanaluset_jm",
+        "field_pieluslaudat_valinta",
+        "field_nurkkalaudat_valinta",
+        "field_listalaudat_valinta",
+        "field_alakatot_valinta",
+        "field_alakatot_m2",
+        "field_ikkunanpokat_valinta",
+        "field_maalattavat_ikkunanpokat_lkm",
+        "field_ikkunan_sisaristikot_valinta",
+        "field_ikkunanpokat_skrapausaste",
+        "field_ovet_valinta",
+        "field_maalattavat_ovet_lkm",
+        "field_ovien_skrapaus_valinta",
+        "field_sokkeli_valinta",
+        "field_sokkelin_piiri",
+        "field_sokkelin_korkeus",
+        "field_sokkelin_tasoitus",
+        "field_sokkelin_pinnoitus",
+        "field_kaiteet_valinta",
+        "field_kaiteet_jm",
+        "field_tiilikaton_pinnoitus_valinta",
+        "field_katon_kaltevuus",
+        "field_tiilikaton_ala_m2",
+        "field_muuta"
+      ]
+    },
+    {
+      "id": "page_work_phases",
+      "title": "Työvaiheet",
+      "sortOrder": 1,
+      "fieldIds": [
+        "field_markahomepesu_valinta",
+        "field_homeenestokasittely_valinta",
+        "field_maalinpoisto_valinta",
+        "field_skrapauksen_vaativuus",
+        "field_maalinpoisto_seinien_lkm",
+        "field_pohjamaalaus_valinta",
+        "field_pohjamaalaus_seinien_lkm",
+        "field_maalaus_valinta",
+        "field_varinvaihto_valinta",
+        "field_muu_tyo_kuvaus",
+        "field_muu_tyo_tyoparin_kesto"
+      ]
+    },
+    {
+      "id": "page_materials",
+      "title": "Maalit ja menekit",
+      "sortOrder": 2,
+      "fieldIds": [
+        "field_mt9uarlt_rwt6y1",
+        "field_tiilikaton_pinnoite",
+        "field_tiilikaton_litraa",
+        "field_mt9ueit0_6bsq5f",
+        "field_mt9uuyv8_8lx5v0",
+        "field_mt9ukec2_w3syp6",
+        "field_mt9uhqn1_wzi2ag",
+        "field_mt9z8xvv_cgfi1m",
+        "field_maalit_yhteensa_litraa",
+        "field_maalit_alv0",
+        "field_muut_materiaalikulut_alv0"
+      ]
+    },
+    {
+      "id": "page_duration",
+      "title": "Työn arvioitu kesto",
+      "sortOrder": 3,
+      "fieldIds": [
+        "field_section_tuotekohtainen_tyo",
+        "field_paatuote_tyo_h",
+        "field_ikkunanpokat_tyo_h",
+        "field_ovet_tyo_h",
+        "field_sokkeli_tyo_h",
+        "field_tyo_kaiteet_h",
+        "field_tyo_alakatot_h",
+        "field_tiilikaton_tyo_h",
+        "field_system_henkilotyotunnit",
+        "field_matka_henkilotyotunnit",
+        "field_system_tyoryhma_kesto_h",
+        "field_system_tyoryhma_kesto_pv"
+      ]
+    },
+    {
+      "id": "page_pricing",
+      "title": "Hinnoittelu",
+      "sortOrder": 4,
+      "fieldIds": [
+        "field_section_hinnoittelun_lahtotiedot",
+        "field_system_urakka",
+        "field_matkakustannus_alv0",
+        "field_system_materiaalit",
+        "field_muut_kulut_alv0",
+        "field_suorat_kustannukset_alv0",
+        "field_section_myyntihinta",
+        "field_system_kokonaishinta_alv0",
+        "field_system_alennus_prosentti",
+        "field_system_myyntipalkkio",
+        "field_system_kokonaishinta",
+        "field_section_tuotehinnat",
+        "field_paatuote_hinta_sis_alv",
+        "field_ikkunanpokat_hinta_sis_alv",
+        "field_ovet_hinta_sis_alv",
+        "field_sokkeli_hinta_sis_alv",
+        "field_kaiteet_hinta_sis_alv",
+        "field_alakatot_hinta_sis_alv",
+        "field_tiilikaton_hinta_sis_alv"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": "field_mt9uscef_aizypl",
+      "key": "etaisyys",
+      "label": "Matka-aika yhteen suuntaan",
+      "type": "number",
+      "required": false,
+      "showOnSummary": false,
+      "unit": "h",
+      "debugExampleValue": "0.75",
+      "defaultValue": "0.25"
+    },
+    {
+      "id": "field_system_alennus_prosentti",
+      "key": "alennus_prosentti",
+      "systemKey": "alennus_prosentti",
+      "label": "Alennus",
+      "type": "number",
+      "required": false,
+      "showOnSummary": false,
+      "unit": "%",
+      "defaultValue": "0"
+    },
+    {
+      "id": "field_maaston_vaikeusaste",
+      "key": "maaston_vaikeusaste",
+      "label": "Maaston vaikeusaste",
+      "type": "select",
+      "required": true,
+      "showOnSummary": true,
+      "defaultValue": "1",
+      "debugExampleValue": "1.1",
+      "options": [
+        {
+          "label": "Tasainen",
+          "value": "1"
+        },
+        {
+          "label": "Lievä rinne",
+          "value": "1.1"
+        },
+        {
+          "label": "Haastava",
+          "value": "1.25"
+        }
+      ]
+    },
+    {
+      "id": "field_kohteen_korkeus",
+      "key": "kohteen_korkeuskerroin",
+      "label": "Kohteen korkeus",
+      "type": "select",
+      "required": true,
+      "showOnSummary": true,
+      "defaultValue": "1",
+      "debugExampleValue": "1",
+      "options": [
+        {
+          "label": "Matala",
+          "value": "0.9"
+        },
+        {
+          "label": "Keskitaso",
+          "value": "1"
+        },
+        {
+          "label": "Korkea",
+          "value": "1.1"
+        }
+      ]
+    },
+    {
+      "id": "field_julkisivupinnat_valinta",
+      "key": "julkisivupinnat_valinta",
+      "label": "Julkisivu",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "julkisivupinnat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_raystaanaluset_valinta",
+      "key": "raystaanaluset_valinta",
+      "label": "Räystäänaluset ja otsalaudat",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "raystaanaluset_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_pieluslaudat_valinta",
+      "key": "pieluslaudat_valinta",
+      "label": "Ikkunoiden ja ovien pieluslaudat",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "pieluslaudat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_ikkunanpokat_valinta",
+      "key": "ikkunanpokat_valinta",
+      "label": "Ikkunanpokat",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "ikkunanpokat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_ikkunan_sisaristikot_valinta",
+      "key": "ikkunan_sisaristikot_valinta",
+      "label": "Onko ikkunoissa sisäristikot?",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showWhen": {
+        "fieldKey": "ikkunanpokat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_ikkunanpokat_skrapausaste",
+      "key": "ikkunanpokat_skrapausaste",
+      "label": "Ikkunanpokien skrapausaste",
+      "type": "select",
+      "required": true,
+      "showOnSummary": true,
+      "defaultValue": "1",
+      "debugExampleValue": "1",
+      "showWhen": {
+        "fieldKey": "ikkunanpokat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "options": [
+        {
+          "label": "Vähäinen",
+          "value": "1"
+        },
+        {
+          "label": "Normaali",
+          "value": "1.25"
+        },
+        {
+          "label": "Runsas",
+          "value": "1.5"
+        }
+      ]
+    },
+    {
+      "id": "field_kaiteet_valinta",
+      "key": "kaiteet_valinta",
+      "label": "Kaiteet",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "kaiteet_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_laudoitustyyppi",
+      "key": "laudoitustyyppi",
+      "label": "Pinnan materiaali",
+      "type": "select",
+      "required": true,
+      "showOnSummary": false,
+      "debugExampleValue": "1",
+      "showWhen": {
+        "fieldKey": "julkisivupinnat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "options": [
+        {
+          "label": "Panelointi",
+          "value": "1"
+        },
+        {
+          "label": "Lomalaudoitus",
+          "value": "1.25"
+        },
+        {
+          "label": "Rimalaudoitus",
+          "value": "1.1"
+        },
+        {
+          "label": "Hirsi",
+          "value": "1.1"
+        },
+        {
+          "label": "Rappaus / kiviseinä",
+          "value": "1.1"
+        },
+        {
+          "label": "Osittain tiiliverhoiltu",
+          "value": "0.3"
+        }
+      ],
+      "defaultValue": "1"
+    },
+    {
+      "id": "field_mt9q59ip_09mygx",
+      "key": "ikkunat_lkm",
+      "label": "Ikkunoiden lukumäärä",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "kpl",
+      "showWhen": {
+        "fieldKey": "julkisivupinnat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "13",
+      "defaultValue": "10"
+    },
+    {
+      "id": "field_mt9qct5j_j6r185",
+      "key": "ovet_lkm",
+      "label": "Ovien lukumäärä",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "kpl",
+      "showWhen": {
+        "fieldKey": "julkisivupinnat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1",
+      "defaultValue": "2"
+    },
+    {
+      "id": "field_raystastyyppi",
+      "key": "raystastyyppi",
+      "label": "Räystästyyppi",
+      "type": "select",
+      "required": true,
+      "showOnSummary": false,
+      "debugExampleValue": "1",
+      "defaultValue": "1",
+      "showWhen": {
+        "fieldKey": "raystaanaluset_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "options": [
+        {
+          "label": "Umpiräystäs",
+          "value": "1"
+        },
+        {
+          "label": "Avoräystäs",
+          "value": "1.25"
+        }
+      ]
+    },
+    {
+      "id": "field_raystaanaluset_jm",
+      "key": "raystaanaluset_jm",
+      "label": "Räystäiden pituus",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "raystaanaluset_jm",
+        "operator": "gt",
+        "value": "0"
+      },
+      "allowManualOverride": true,
+      "unit": "jm",
+      "formula": "piiri_jm",
+      "showWhen": {
+        "fieldKey": "raystaanaluset_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_alakatot_valinta",
+      "key": "alakatot_valinta",
+      "label": "Alakatot",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "alakatot_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_alakatot_m2",
+      "key": "alakatot_m2",
+      "label": "Alakattojen pinta-ala",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "alakatot_m2",
+        "operator": "gt",
+        "value": "0"
+      },
+      "unit": "m²",
+      "showWhen": {
+        "fieldKey": "alakatot_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "25"
+    },
+    {
+      "id": "field_listalaudat_valinta",
+      "key": "listalaudat_valinta",
+      "label": "Listalaudat",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "listalaudat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_nurkkalaudat_valinta",
+      "key": "nurkkalaudat_valinta",
+      "label": "Nurkkalaudat",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "nurkkalaudat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_kaiteet_jm",
+      "key": "kaiteet_jm",
+      "label": "Kaiteiden pituus",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "unit": "jm",
+      "showWhen": {
+        "fieldKey": "kaiteet_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0"
+    },
+    {
+      "id": "field_tiilikaton_pinnoitus_valinta",
+      "key": "tiilikaton_pinnoitus_valinta",
+      "label": "Tiilikaton pinnoitus",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "tiilikaton_pinnoitus_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "defaultValue": "false",
+      "debugExampleValue": "0"
+    },
+    {
+      "id": "field_katon_kaltevuus",
+      "key": "katon_kaltevuus",
+      "label": "Katon kaltevuus",
+      "type": "select",
+      "required": true,
+      "showOnSummary": true,
+      "defaultValue": "15",
+      "debugExampleValue": "15",
+      "helpText": "Vaikuttaa neliöihin (1/cos) ja työaikaan. Loiva = 15°, jyrkkä = 30°.",
+      "showWhen": {
+        "fieldKey": "tiilikaton_pinnoitus_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "options": [
+        {
+          "label": "Loiva (15°)",
+          "value": "15"
+        },
+        {
+          "label": "Jyrkkä (30°)",
+          "value": "30"
+        }
+      ]
+    },
+    {
+      "id": "field_tiilikaton_ala_m2",
+      "key": "tiilikaton_ala_m2",
+      "label": "Tiilikaton pinta-ala",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "m²",
+      "helpText": "(Räystässivun pituus + 1,5 m) × (päädyn leveys + 1,5 m) × 1/cos(kaltevuus). Loiva ≈ ×1,035, jyrkkä ≈ ×1,155.",
+      "formula": "tiilikaton_pinnoitus_valinta * (raystassivun_pituus_m + 1.5) * (paadyn_leveys_m + 1.5) * if(katon_kaltevuus == 30, 1.1547, 1.0353)",
+      "showWhen": {
+        "fieldKey": "tiilikaton_pinnoitus_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_markahomepesu_valinta",
+      "key": "markahomepesu_valinta",
+      "label": "Märkähomepesu",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "markahomepesu_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_homeenestokasittely_valinta",
+      "key": "homeenestokasittely_valinta",
+      "label": "Homeenestokäsittely",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "homeenestokasittely_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_maalinpoisto_valinta",
+      "key": "maalinpoisto_valinta",
+      "label": "Maalinpoisto",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "maalinpoisto_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_skrapauksen_vaativuus",
+      "key": "skrapauksen_vaativuus",
+      "label": "Skrapauksen vaativuus",
+      "type": "select",
+      "required": true,
+      "showOnSummary": false,
+      "defaultValue": "1",
+      "debugExampleValue": "1",
+      "showWhen": {
+        "fieldKey": "maalinpoisto_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "options": [
+        {
+          "label": "Helppo",
+          "value": "1"
+        },
+        {
+          "label": "Haastava",
+          "value": "1.5"
+        }
+      ]
+    },
+    {
+      "id": "field_maalinpoisto_seinien_lkm",
+      "key": "maalinpoisto_seinien_lkm",
+      "label": "Maalinpoistoa vaativien seinien lukumäärä",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "kpl",
+      "showWhen": {
+        "fieldKey": "maalinpoisto_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1"
+    },
+    {
+      "id": "field_pohjamaalaus_valinta",
+      "key": "pohjamaalaus_valinta",
+      "label": "Pohjamaalaus",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "pohjamaalaus_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_pohjamaalaus_seinien_lkm",
+      "key": "pohjamaalaus_seinien_lkm",
+      "label": "Pohjamaalattavien seinien lukumäärä",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "kpl",
+      "showWhen": {
+        "fieldKey": "pohjamaalaus_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "1"
+    },
+    {
+      "id": "field_maalaus_valinta",
+      "key": "maalaus_valinta",
+      "label": "Maalaus",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "maalaus_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "defaultValue": "true",
+      "debugExampleValue": "1"
+    },
+    {
+      "id": "field_varinvaihto_valinta",
+      "key": "varinvaihto_valinta",
+      "label": "Värinvaihto",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "debugExampleValue": "0",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_muu_tyo_kuvaus",
+      "key": "muu_tyo_kuvaus",
+      "label": "Muu työ – kuvaus",
+      "type": "text",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "muu_tyo_kuvaus",
+        "operator": "neq",
+        "value": ""
+      },
+      "debugExampleValue": ""
+    },
+    {
+      "id": "field_muu_tyo_tyoparin_kesto",
+      "key": "muu_tyo_tyoparin_kesto_h",
+      "label": "Muun työn kesto",
+      "type": "number",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "muu_tyo_tyoparin_kesto_h",
+        "operator": "gt",
+        "value": "0"
+      },
+      "unit": "h (työpari)",
+      "debugExampleValue": "0",
+      "defaultValue": "0"
+    },
+    {
+      "id": "field_mt9uarlt_rwt6y1",
+      "key": "kaytettava_maali",
+      "label": "Käytettävä maali",
+      "type": "product_select",
+      "required": true,
+      "showOnSummary": true,
+      "debugExampleValue": "15a3a629-b764-4e10-bf5e-3ce5e298c1e2"
+    },
+    {
+      "id": "field_tiilikaton_pinnoite",
+      "key": "tiilikaton_pinnoite",
+      "label": "Tiilikaton pinnoite",
+      "type": "product_select",
+      "required": true,
+      "showOnSummary": true,
+      "showWhen": {
+        "fieldKey": "tiilikaton_pinnoitus_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_tiilikaton_litraa",
+      "key": "tiilikaton_litraa",
+      "label": "Pinnoitteen menekki",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "litraa",
+      "formula": "if(tiilikaton_pinnoitus_valinta == 1, tiilikaton_ala_m2 / tiilikaton_pinnoite.menekki, 0)",
+      "showWhen": {
+        "fieldKey": "tiilikaton_pinnoitus_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_mt9ueit0_6bsq5f",
+      "key": "savyjen_lkm",
+      "label": "Sävyjen lukumäärä",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "kpl",
+      "debugExampleValue": "2",
+      "defaultValue": "2"
+    },
+    {
+      "id": "field_mt9uuyv8_8lx5v0",
+      "key": "ensimmainen_savy",
+      "label": "Ensimmäinen sävy",
+      "type": "text",
+      "required": true,
+      "showOnSummary": false,
+      "debugExampleValue": "Wanha punainen"
+    },
+    {
+      "id": "field_mt9ukec2_w3syp6",
+      "key": "toinen_savy",
+      "label": "Toinen sävy",
+      "type": "text",
+      "required": true,
+      "showOnSummary": false,
+      "showWhen": {
+        "fieldKey": "savyjen_lkm",
+        "operator": "gt",
+        "value": "1"
+      },
+      "defaultValue": "Maalarinvalkoinen",
+      "debugExampleValue": "Valkoinen"
+    },
+    {
+      "id": "field_mt9uhqn1_wzi2ag",
+      "key": "kolmas_savy",
+      "label": "Kolmas sävy",
+      "type": "text",
+      "required": true,
+      "showOnSummary": false,
+      "showWhen": {
+        "fieldKey": "savyjen_lkm",
+        "operator": "gt",
+        "value": "2"
+      },
+      "debugExampleValue": ""
+    },
+    {
+      "id": "field_mt9z8xvv_cgfi1m",
+      "key": "kolmas_savy_menekki",
+      "label": "Kolmannen sävyn menekki",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "litraa",
+      "showWhen": {
+        "fieldKey": "savyjen_lkm",
+        "operator": "gt",
+        "value": "2"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "0"
+    },
+    {
+      "id": "field_muut_kulut_alv0",
+      "key": "muut_kulut_alv0",
+      "label": "Muut suorat kulut (ALV 0)",
+      "type": "number",
+      "required": false,
+      "showOnSummary": true,
+      "unit": "€",
+      "defaultValue": "0",
+      "debugExampleValue": "0"
+    },
+    {
+      "id": "field_raystassivun_pituus",
+      "key": "raystassivun_pituus_m",
+      "label": "Räystässivun pituus",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "m",
+      "debugExampleValue": "9.5",
+      "showWhen": {
+        "fieldKey": "pohjamitat_tarvitaan",
+        "operator": "eq",
+        "value": "1"
+      }
+    },
+    {
+      "id": "field_raystaskorkeus",
+      "key": "raystaskorkeus_m",
+      "label": "Räystäskorkeus",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "m",
+      "debugExampleValue": "3.5",
+      "showWhen": {
+        "fieldKey": "julkisivupinnat_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_paadyn_leveys",
+      "key": "paadyn_leveys_m",
+      "label": "Päädyn leveys",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "m",
+      "debugExampleValue": "8",
+      "showWhen": {
+        "fieldKey": "pohjamitat_tarvitaan",
+        "operator": "eq",
+        "value": "1"
+      }
+    },
+    {
+      "id": "field_harjakorkeus",
+      "key": "harjakorkeus_m",
+      "label": "Harjakorkeus",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "m",
+      "debugExampleValue": "6.5",
+      "showWhen": {
+        "fieldKey": "julkisivupinnat_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_lisaseinien_lkm",
+      "key": "lisaseinien_lkm",
+      "label": "Lisäseinien lukumäärä",
+      "type": "number",
+      "required": false,
+      "showOnSummary": false,
+      "unit": "kpl",
+      "defaultValue": "0",
+      "debugExampleValue": "3",
+      "showWhen": {
+        "fieldKey": "julkisivupinnat_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_lisaseinien_pituus",
+      "key": "lisaseinien_pituus_m",
+      "label": "Lisäseinien pituus",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "m",
+      "debugExampleValue": "5.5",
+      "showWhen": {
+        "fieldKey": "lisaseinien_lkm",
+        "operator": "gt",
+        "value": "0"
+      }
+    },
+    {
+      "id": "field_lisaseinien_keskikorkeus",
+      "key": "lisaseinien_keskikorkeus_m",
+      "label": "Lisäseinien keskikorkeus",
+      "type": "number",
+      "required": true,
+      "showOnSummary": false,
+      "unit": "m",
+      "debugExampleValue": "2.2",
+      "showWhen": {
+        "fieldKey": "lisaseinien_lkm",
+        "operator": "gt",
+        "value": "0"
+      }
+    },
+    {
+      "id": "field_muuta",
+      "key": "muuta",
+      "label": "Muuta",
+      "type": "text",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "muuta",
+        "operator": "neq",
+        "value": ""
+      },
+      "debugExampleValue": "Liitupinta pestävä huolellisesti, rekkaharjat mukaan. Asiakas vaihtaa sokkelin puupokat ennen maalausta; maalataan 1-2 kertaa. Palotikkaat vaihdetaan uusiin, löytyvät asiakkaalta."
+    },
+    {
+      "id": "field_ovet_valinta",
+      "key": "ovet_valinta",
+      "label": "Ovet",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "ovet_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "defaultValue": "false",
+      "debugExampleValue": "0"
+    },
+    {
+      "id": "field_ovien_skrapaus_valinta",
+      "key": "ovien_skrapaus_valinta",
+      "label": "Ovien skrapaus",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "defaultValue": "false",
+      "showWhen": {
+        "fieldKey": "ovet_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0"
+    },
+    {
+      "id": "field_sokkeli_valinta",
+      "key": "sokkeli_valinta",
+      "label": "Sokkeli",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "sokkeli_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "defaultValue": "false",
+      "debugExampleValue": "0"
+    },
+    {
+      "id": "field_sokkelin_korkeus",
+      "key": "sokkelin_korkeus_m",
+      "label": "Sokkelin korkeus",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "unit": "m",
+      "showWhen": {
+        "fieldKey": "sokkeli_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0"
+    },
+    {
+      "id": "field_sokkelin_tasoitus",
+      "key": "sokkelin_tasoitus",
+      "label": "Tasoitus",
+      "type": "select",
+      "required": true,
+      "showOnSummary": true,
+      "defaultValue": "0",
+      "showWhen": {
+        "fieldKey": "sokkeli_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "options": [
+        {
+          "label": "Ei tasoitusta",
+          "value": "0"
+        },
+        {
+          "label": "Kevyt tasoitus",
+          "value": "0.03"
+        },
+        {
+          "label": "Ylitasoitus",
+          "value": "0.1"
+        }
+      ],
+      "debugExampleValue": "0"
+    },
+    {
+      "id": "field_sokkelin_pinnoitus",
+      "key": "sokkelin_pinnoitus",
+      "label": "Pintakäsittely",
+      "type": "select",
+      "required": true,
+      "showOnSummary": true,
+      "defaultValue": "0.1",
+      "showWhen": {
+        "fieldKey": "sokkeli_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "options": [
+        {
+          "label": "Maalaus",
+          "value": "0.1"
+        },
+        {
+          "label": "Rouhepinnoitus",
+          "value": "0.3"
+        }
+      ],
+      "debugExampleValue": "0.1"
+    },
+    {
+      "id": "field_piiri_jm",
+      "key": "piiri_jm",
+      "label": "Rakennuksen piiri",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "jm",
+      "formula": "2 * raystassivun_pituus_m + 2 * paadyn_leveys_m + if(lisaseinien_lkm > 0, lisaseinien_pituus_m, 0)"
+    },
+    {
+      "id": "field_pohjamitat_tarvitaan",
+      "key": "pohjamitat_tarvitaan",
+      "label": "Pohjamitat tarvitaan",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "formula": "max(julkisivupinnat_valinta, tiilikaton_pinnoitus_valinta)"
+    },
+    {
+      "id": "field_seinien_lkm",
+      "key": "seinien_lkm",
+      "label": "Seinien lukumäärä",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "kpl",
+      "formula": "max(4 + lisaseinien_lkm, 1)"
+    },
+    {
+      "id": "field_maalattavat_ikkunanpokat_lkm",
+      "key": "maalattavat_ikkunanpokat_lkm",
+      "label": "Ikkunoiden lukumäärä",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "kpl",
+      "formula": "if(julkisivupinnat_valinta == 1, ikkunat_lkm, 0)",
+      "showWhen": {
+        "fieldKey": "ikkunanpokat_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_maalattavat_ovet_lkm",
+      "key": "maalattavat_ovet_lkm",
+      "label": "Ovien lukumäärä",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "kpl",
+      "formula": "if(julkisivupinnat_valinta == 1, ovet_lkm, 0)",
+      "showWhen": {
+        "fieldKey": "ovet_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_sokkelin_piiri",
+      "key": "sokkelin_piiri_jm",
+      "label": "Sokkelin piiri",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "jm",
+      "formula": "piiri_jm",
+      "showWhen": {
+        "fieldKey": "sokkeli_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_laskenta_seinapinta",
+      "key": "laskenta_seinapinta_ala_m2",
+      "label": "Seinäpinta-ala (laskenta)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "m²",
+      "formula": "julkisivupinnat_valinta * max(0, (2 * raystassivun_pituus_m * raystaskorkeus_m + 2 * ((raystaskorkeus_m + harjakorkeus_m) / 2 * paadyn_leveys_m) + if(lisaseinien_lkm > 0, lisaseinien_pituus_m * lisaseinien_keskikorkeus_m, 0) - ikkunat_lkm * 1.5 - ovet_lkm * 2) * laudoitustyyppi)",
+      "showWhen": {
+        "fieldKey": "julkisivupinnat_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_seinamaalauksen_laskentapinta",
+      "key": "seinamaalauksen_laskentapinta_ala_m2",
+      "label": "Seinämaalauksen laskentapinta-ala",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "m²",
+      "formula": "laskenta_seinapinta_ala_m2 * (1 + varinvaihto_valinta + if(pohjamaalaus_valinta == 1, min(pohjamaalaus_seinien_lkm, seinien_lkm) / seinien_lkm, 0))"
+    },
+    {
+      "id": "field_pesupinta_m2",
+      "key": "pesupinta_m2",
+      "label": "Pesupinta-ala",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "m²",
+      "formula": "laskenta_seinapinta_ala_m2 + if(raystaanaluset_valinta == 1, piiri_jm * raystastyyppi * 0.4 + piiri_jm * 0.2, 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * 0.8, 0) + if(nurkkalaudat_valinta == 1, seinien_lkm * raystaskorkeus_m * 0.2, 0) + if(listalaudat_valinta == 1, piiri_jm * 0.2, 0)"
+    },
+    {
+      "id": "field_maalit_ennen_hukkaa",
+      "key": "maalit_ennen_hukkaa",
+      "label": "Maalit ennen hukkaa",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "litraa",
+      "formula": "(seinamaalauksen_laskentapinta_ala_m2 / kaytettava_maali.menekki + if(raystaanaluset_valinta == 1, piiri_jm * raystastyyppi * 0.1 * (1 + varinvaihto_valinta) + piiri_jm * 0.025 * (1 + varinvaihto_valinta), 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * 0.1 * (1 + varinvaihto_valinta), 0) + if(nurkkalaudat_valinta == 1, seinien_lkm * raystaskorkeus_m * 0.025 * (1 + varinvaihto_valinta), 0) + if(listalaudat_valinta == 1, piiri_jm * 0.025 * (1 + varinvaihto_valinta), 0)) + if(kaiteet_valinta == 1, kaiteet_jm * 0.1 * (1 + varinvaihto_valinta), 0) + if(alakatot_valinta == 1, alakatot_m2 * (1 + varinvaihto_valinta) / kaytettava_maali.menekki, 0)"
+    },
+    {
+      "id": "field_maalihukka_kerroin",
+      "key": "maalihukka_kerroin",
+      "label": "Maalihukkakerroin",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "formula": "1 + if(maalit_ennen_hukkaa <= 10, 25, if(maalit_ennen_hukkaa >= 30, 10, 25 - (maalit_ennen_hukkaa - 10) * 15 / 20)) / 100"
+    },
+    {
+      "id": "field_maalit_yhteensa_litraa",
+      "key": "maalit_yhteensa_litraa",
+      "label": "Maalit yhteensä",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "litraa",
+      "formula": "maalit_ennen_hukkaa * maalihukka_kerroin + if(savyjen_lkm > 2, kolmas_savy_menekki, 0)"
+    },
+    {
+      "id": "field_section_tuotekohtainen_tyo",
+      "key": "section_tuotekohtainen_tyo",
+      "label": "Tuotekohtainen työ",
+      "type": "section",
+      "required": false,
+      "showOnSummary": false
+    },
+    {
+      "id": "field_paatuote_tyo_h",
+      "key": "paatuote_tyo_h",
+      "label": "Pääurakan työ",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "(seinamaalauksen_laskentapinta_ala_m2 * 0.11 * kaytettava_maali.tyokerroin * if(laudoitustyyppi == 0.3, 2, 1) + if(raystaanaluset_valinta == 1, (piiri_jm * raystastyyppi * (1 + varinvaihto_valinta) * 0.067375 * kaytettava_maali.tyokerroin + piiri_jm * (1 + varinvaihto_valinta) * 0.026795 * kaytettava_maali.tyokerroin) * if(savyjen_lkm == 1, 0.7, 1), 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * (1 + varinvaihto_valinta) * 0.33 * kaytettava_maali.tyokerroin, 0) + if(nurkkalaudat_valinta == 1, seinien_lkm * raystaskorkeus_m * (1 + varinvaihto_valinta) * 0.055 * kaytettava_maali.tyokerroin * if(savyjen_lkm == 1, 0.2, 1), 0) + if(listalaudat_valinta == 1, piiri_jm * (1 + varinvaihto_valinta) * 0.039285 * kaytettava_maali.tyokerroin * if(savyjen_lkm == 1, 0.2, 1), 0) + if(markahomepesu_valinta == 1, pesupinta_m2 * 0.033 + 1.65 * asetukset.tyoryhman_koko, 0) + if(homeenestokasittely_valinta == 1, 2.75 * asetukset.tyoryhman_koko, 0) + if(maalinpoisto_valinta == 1, laskenta_seinapinta_ala_m2 * maalinpoisto_seinien_lkm / seinien_lkm * 0.0572 * skrapauksen_vaativuus, 0) + if(pohjamaalaus_valinta == 1, laskenta_seinapinta_ala_m2 * pohjamaalaus_seinien_lkm / seinien_lkm * 0.066, 0)) * maaston_vaikeusaste * kohteen_korkeuskerroin + if(muu_tyo_tyoparin_kesto_h > 0, muu_tyo_tyoparin_kesto_h * 2, 0) + max(savyjen_lkm - 1, 0) * 1.1 + 4.4"
+    },
+    {
+      "id": "field_ikkunanpokat_tyo_h",
+      "key": "ikkunanpokat_tyo_h",
+      "label": "Ikkunanpokien työ",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "if(ikkunanpokat_valinta == 1, maalattavat_ikkunanpokat_lkm * 1.1 * 2 * ikkunanpokat_skrapausaste * (1 + ikkunan_sisaristikot_valinta * 0.5) * maaston_vaikeusaste * kohteen_korkeuskerroin, 0)",
+      "showWhen": {
+        "fieldKey": "ikkunanpokat_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_ovet_tyo_h",
+      "key": "ovet_tyo_h",
+      "label": "Ovien työ",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "if(ovet_valinta == 1, maalattavat_ovet_lkm * (0.66 + ovien_skrapaus_valinta * 0.44) * 2 * maaston_vaikeusaste * kohteen_korkeuskerroin, 0)",
+      "showWhen": {
+        "fieldKey": "ovet_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_sokkeli_tyo_h",
+      "key": "sokkeli_tyo_h",
+      "label": "Sokkelin työ",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "if(sokkeli_valinta == 1, sokkelin_piiri_jm * sokkelin_korkeus_m * (sokkelin_tasoitus + sokkelin_pinnoitus) * 2.2 * if(sokkelin_korkeus_m < 0.4, 1.2, 1) * maaston_vaikeusaste, 0)",
+      "showWhen": {
+        "fieldKey": "sokkeli_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_tyo_kaiteet_h",
+      "key": "kaiteet_tyo_h",
+      "label": "Kaiteiden työ",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "if(kaiteet_valinta == 1, (kaiteet_jm * (1 + varinvaihto_valinta) * 0.165 * kaytettava_maali.tyokerroin + if(markahomepesu_valinta == 1, kaiteet_jm * 1.5 * 0.033, 0)) * maaston_vaikeusaste * kohteen_korkeuskerroin, 0)",
+      "showWhen": {
+        "fieldKey": "kaiteet_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_tyo_alakatot_h",
+      "key": "alakatot_tyo_h",
+      "label": "Alakattojen työ",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "if(alakatot_valinta == 1, (alakatot_m2 * (1 + varinvaihto_valinta) * 0.132 * kaytettava_maali.tyokerroin + if(markahomepesu_valinta == 1, alakatot_m2 * 0.033, 0)) * maaston_vaikeusaste * kohteen_korkeuskerroin, 0)",
+      "showWhen": {
+        "fieldKey": "alakatot_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_tiilikaton_tyo_h",
+      "key": "tiilikaton_tyo_h",
+      "label": "Tiilikaton pinnoituksen työ",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "if(tiilikaton_pinnoitus_valinta == 1, tiilikaton_ala_m2 * 0.22 * if(katon_kaltevuus == 30, 1.25, 1), 0)",
+      "showWhen": {
+        "fieldKey": "tiilikaton_pinnoitus_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_system_henkilotyotunnit",
+      "key": "henkilotyotunnit",
+      "label": "Urakan työ yhteensä ilman matkoja",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "h",
+      "formula": "paatuote_tyo_h + ikkunanpokat_tyo_h + ovet_tyo_h + sokkeli_tyo_h + kaiteet_tyo_h + alakatot_tyo_h + tiilikaton_tyo_h"
+    },
+    {
+      "id": "field_paatuote_materiaalit_alv0",
+      "key": "paatuote_materiaalit_alv0",
+      "label": "Pääurakan materiaalit (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "max(0, materiaalit - ikkunanpokat_materiaalit_alv0 - ovet_materiaalit_alv0 - sokkeli_materiaalit_alv0 - kaiteet_materiaalit_alv0 - alakatot_materiaalit_alv0 - tiilikaton_materiaalit_alv0)"
+    },
+    {
+      "id": "field_ikkunanpokat_materiaalit_alv0",
+      "key": "ikkunanpokat_materiaalit_alv0",
+      "label": "Ikkunanpokien materiaalit (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(ikkunanpokat_valinta == 1, 60 + maalattavat_ikkunanpokat_lkm * 7, 0)",
+      "showWhen": {
+        "fieldKey": "ikkunanpokat_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_ovet_materiaalit_alv0",
+      "key": "ovet_materiaalit_alv0",
+      "label": "Ovien materiaalit (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(ovet_valinta == 1, maalattavat_ovet_lkm * 15, 0)",
+      "showWhen": {
+        "fieldKey": "ovet_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_sokkeli_materiaalit_alv0",
+      "key": "sokkeli_materiaalit_alv0",
+      "label": "Sokkelin materiaalit (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(sokkeli_valinta == 1, sokkelin_piiri_jm * sokkelin_korkeus_m * if(sokkelin_pinnoitus == 0.3, 9, 5) / (1 + asetukset.alv_prosentti / 100), 0)",
+      "showWhen": {
+        "fieldKey": "sokkeli_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_kaiteet_materiaalit_alv0",
+      "key": "kaiteet_materiaalit_alv0",
+      "label": "Kaiteiden materiaalit (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(kaiteet_valinta == 1, (kaiteet_jm * 0.1 * (1 + varinvaihto_valinta)) * maalihukka_kerroin * kaytettava_maali.ostohinta + if(markahomepesu_valinta == 1, kaiteet_jm * 1.5 * 0.1, 0), 0)",
+      "showWhen": {
+        "fieldKey": "kaiteet_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_alakatot_materiaalit_alv0",
+      "key": "alakatot_materiaalit_alv0",
+      "label": "Alakattojen materiaalit (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(alakatot_valinta == 1, (alakatot_m2 * (1 + varinvaihto_valinta) / kaytettava_maali.menekki) * maalihukka_kerroin * kaytettava_maali.ostohinta + if(markahomepesu_valinta == 1, alakatot_m2 * 0.1, 0), 0)",
+      "showWhen": {
+        "fieldKey": "alakatot_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_tiilikaton_materiaalit_alv0",
+      "key": "tiilikaton_materiaalit_alv0",
+      "label": "Tiilikaton pinnoituksen materiaalit (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(tiilikaton_pinnoitus_valinta == 1, tiilikaton_litraa * tiilikaton_pinnoite.ostohinta, 0)",
+      "showWhen": {
+        "fieldKey": "tiilikaton_pinnoitus_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_maalit_alv0",
+      "key": "maalit_alv0",
+      "label": "Maalit (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": true,
+      "unit": "€",
+      "formula": "maalit_yhteensa_litraa * kaytettava_maali.ostohinta"
+    },
+    {
+      "id": "field_muut_materiaalikulut_alv0",
+      "key": "muut_materiaalikulut_alv0",
+      "label": "Muut materiaalikulut (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": true,
+      "unit": "€",
+      "formula": "60 + 30 * round(henkilotyotunnit / (asetukset.tyoryhman_koko * asetukset.tyopaivan_pituus) + 0.4999, 0) + if(markahomepesu_valinta == 1, pesupinta_m2 * 0.1, 0) + if(maalinpoisto_valinta == 1, laskenta_seinapinta_ala_m2 * maalinpoisto_seinien_lkm / seinien_lkm * 0.5, 0) + if(ikkunanpokat_valinta == 1, 60 + maalattavat_ikkunanpokat_lkm * 7, 0) + if(ovet_valinta == 1, maalattavat_ovet_lkm * 15, 0) + if(sokkeli_valinta == 1, sokkelin_piiri_jm * sokkelin_korkeus_m * if(sokkelin_pinnoitus == 0.3, 9, 5) / (1 + asetukset.alv_prosentti / 100), 0) + if(kaiteet_valinta == 1, if(markahomepesu_valinta == 1, kaiteet_jm * 1.5 * 0.1, 0), 0) + if(alakatot_valinta == 1, if(markahomepesu_valinta == 1, alakatot_m2 * 0.1, 0), 0) + if(tiilikaton_pinnoitus_valinta == 1, tiilikaton_materiaalit_alv0, 0)"
+    },
+    {
+      "id": "field_materiaalit_osto_alv0",
+      "key": "materiaalit_osto_alv0",
+      "label": "Materiaalikulut (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": true,
+      "unit": "€",
+      "formula": "maalit_alv0 + muut_materiaalikulut_alv0",
+      "effects": [
+        {
+          "type": "add_material_fixed"
+        }
+      ]
+    },
+    {
+      "id": "field_section_hinnoittelun_lahtotiedot",
+      "key": "section_hinnoittelun_lahtotiedot",
+      "label": "Suorat kustannukset (ALV 0)",
+      "type": "section",
+      "required": false,
+      "showOnSummary": false
+    },
+    {
+      "id": "field_section_myyntihinta",
+      "key": "section_myyntihinta",
+      "label": "Myyntihinta",
+      "type": "section",
+      "required": false,
+      "showOnSummary": false
+    },
+    {
+      "id": "field_system_tyoryhma_kesto_h",
+      "key": "tyoryhma_kesto_h",
+      "label": "Työn kesto",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "henkilotyotunnit / asetukset.tyoryhman_koko",
+      "systemKey": "tyoryhma_kesto_h"
+    },
+    {
+      "id": "field_system_tyoryhma_kesto_pv",
+      "key": "tyoryhma_kesto_pv",
+      "label": "Työn kesto",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": true,
+      "unit": "pv",
+      "formula": "tyoryhma_kesto_h / asetukset.tyopaivan_pituus",
+      "systemKey": "tyoryhma_kesto_pv"
+    },
+    {
+      "id": "field_matka_henkilotyotunnit",
+      "key": "matka_henkilotyotunnit",
+      "label": "Matka-aika yhteensä",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "etaisyys * 2 * tyoryhma_kesto_pv * asetukset.tyoryhman_koko"
+    },
+    {
+      "id": "field_matkakustannus_alv0",
+      "key": "matkakustannus_alv0",
+      "label": "Josta matka-ajan kustannus (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "matka_henkilotyotunnit * 25"
+    },
+    {
+      "id": "field_system_urakka",
+      "key": "urakka_hinta_alv0",
+      "label": "Tekijöiden urakka sis. matka-aika (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": true,
+      "unit": "€",
+      "formula": "henkilotyotunnit * asetukset.tuntihinta + matkakustannus_alv0",
+      "systemKey": "urakka_hinta_alv0"
+    },
+    {
+      "id": "field_suorat_kustannukset_alv0",
+      "key": "suorat_kustannukset_alv0",
+      "label": "Suorat kustannukset yhteensä (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "urakka_hinta_alv0 + materiaalit + if(muut_kulut_alv0 > 0, muut_kulut_alv0, 0)"
+    },
+    {
+      "id": "field_system_kokonaishinta_alv0",
+      "key": "kokonaishinta_alv0",
+      "label": "Myyntihinta (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": true,
+      "unit": "€",
+      "formula": "liukuva_myyntihinta(suorat_kustannukset_alv0)",
+      "systemKey": "kokonaishinta_alv0"
+    },
+    {
+      "id": "field_system_myyntipalkkio",
+      "key": "myyntipalkkio",
+      "label": "Myyntipalkkio (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": true,
+      "unit": "€",
+      "formula": "kokonaishinta_alv0 * asetukset.myyntipalkkio_prosentti / 100"
+    },
+    {
+      "id": "field_system_myyntikate",
+      "key": "myyntikate",
+      "label": "Yrityksen kate (€)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "kokonaishinta_alv0 - suorat_kustannukset_alv0 - myyntipalkkio"
+    },
+    {
+      "id": "field_tuotehintakerroin_sis_alv",
+      "key": "tuotehintakerroin_sis_alv",
+      "label": "Tuotehintakerroin (sis. ALV)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "formula": "kokonaishinta_alv0 * (1 + asetukset.alv_prosentti / 100) / max(suorat_kustannukset_alv0, 1)"
+    },
+    {
+      "id": "field_section_tuotehinnat",
+      "key": "section_tuotehinnat",
+      "label": "Kokonaishinnan jakautuminen tuotteittain (sis. ALV)",
+      "type": "section",
+      "required": false,
+      "showOnSummary": false
+    },
+    {
+      "id": "field_paatuote_hinta_sis_alv",
+      "key": "paatuote_hinta_sis_alv",
+      "label": "Julkisivu",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "max(0, kokonaishinta_alv0 * (1 + asetukset.alv_prosentti / 100) - ikkunanpokat_hinta_sis_alv - ovet_hinta_sis_alv - sokkeli_hinta_sis_alv - kaiteet_hinta_sis_alv - alakatot_hinta_sis_alv - tiilikaton_hinta_sis_alv)"
+    },
+    {
+      "id": "field_ikkunanpokat_hinta_sis_alv",
+      "key": "ikkunanpokat_hinta_sis_alv",
+      "label": "Ikkunanpokat",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(ikkunanpokat_valinta == 1, tuotehintakerroin_sis_alv * (ikkunanpokat_tyo_h * asetukset.tuntihinta + ikkunanpokat_materiaalit_alv0), 0)",
+      "showWhen": {
+        "fieldKey": "ikkunanpokat_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_ovet_hinta_sis_alv",
+      "key": "ovet_hinta_sis_alv",
+      "label": "Ovet",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(ovet_valinta == 1, tuotehintakerroin_sis_alv * (ovet_tyo_h * asetukset.tuntihinta + ovet_materiaalit_alv0), 0)",
+      "showWhen": {
+        "fieldKey": "ovet_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_sokkeli_hinta_sis_alv",
+      "key": "sokkeli_hinta_sis_alv",
+      "label": "Sokkeli",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(sokkeli_valinta == 1, tuotehintakerroin_sis_alv * (sokkeli_tyo_h * asetukset.tuntihinta + sokkeli_materiaalit_alv0), 0)",
+      "showWhen": {
+        "fieldKey": "sokkeli_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_kaiteet_hinta_sis_alv",
+      "key": "kaiteet_hinta_sis_alv",
+      "label": "Kaiteet",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(kaiteet_valinta == 1, tuotehintakerroin_sis_alv * (kaiteet_tyo_h * asetukset.tuntihinta + kaiteet_materiaalit_alv0), 0)",
+      "showWhen": {
+        "fieldKey": "kaiteet_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_alakatot_hinta_sis_alv",
+      "key": "alakatot_hinta_sis_alv",
+      "label": "Alakatot",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(alakatot_valinta == 1, tuotehintakerroin_sis_alv * (alakatot_tyo_h * asetukset.tuntihinta + alakatot_materiaalit_alv0), 0)",
+      "showWhen": {
+        "fieldKey": "alakatot_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_tiilikaton_hinta_sis_alv",
+      "key": "tiilikaton_hinta_sis_alv",
+      "label": "Tiilikaton pinnoitus",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "allowManualOverride": false,
+      "unit": "€",
+      "formula": "if(tiilikaton_pinnoitus_valinta == 1, tuotehintakerroin_sis_alv * (tiilikaton_tyo_h * asetukset.tuntihinta + tiilikaton_materiaalit_alv0), 0)",
+      "showWhen": {
+        "fieldKey": "tiilikaton_pinnoitus_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    }
+  ],
+  "updatedAt": 1788946034877
+}

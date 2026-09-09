@@ -1,7 +1,8 @@
 export const DISCOUNT_PERCENT_KEY = 'alennus_prosentti';
 export const DISCOUNT_EUR_KEY = 'alennus_eur';
 
-export type DiscountableTotals = {
+/** Yhteinen hintarunko form-finishille, alennukselle ja rivikoosteelle. */
+export type PriceTotals = {
   contractPriceVat0: number;
   materialsVat0: number;
   marginEur: number;
@@ -9,12 +10,13 @@ export type DiscountableTotals = {
   totalPriceVat0: number;
   vatAmount: number;
   totalPriceVat: number;
-  workDurationDays: number;
   discountPercent: number;
   discountEur: number;
   totalPriceVatBeforeDiscount: number;
   totalPriceVat0BeforeDiscount: number;
 };
+
+export type DiscountableTotals = PriceTotals;
 
 export function isDiscountPercentKey(key: string | undefined): boolean {
   return key === DISCOUNT_PERCENT_KEY;

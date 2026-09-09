@@ -2,30 +2,34 @@
 
 ColoRajatonin urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen laskentaan (Android).
 
-Nykyinen versio on **v1.2.4** (`app.json` / `package.json`).
+Pakettiversio **v1.2.4** (`app.json` / `package.json`). Laskelma = asiakas + toimitusajankohta + tuoterakennerivit.
 
 | Dokumentti | Sisältö |
 |------------|---------|
-| [docs/sovellus.md](docs/sovellus.md) | Miten sovellus toimii (näytöt, tallennus, hinnoittelu, alennus) |
+| [docs/sovellus.md](docs/sovellus.md) | Miten sovellus toimii nyt |
+| [docs/tuoterakenteet.md](docs/tuoterakenteet.md) | Tuoterakenteiden malli (toteutettu) |
 | [docs/lomakepohja-json-ohje.md](docs/lomakepohja-json-ohje.md) | Lomakepohjan JSON, kaavat, efektit |
+| [docs/yhtenaisyystarkistus.md](docs/yhtenaisyystarkistus.md) | Katselmus 9.9.2026: kaksoisarkkitehtuuri ja siivousehdotukset |
 | [docs/examples/peruslaskenta-lomakepohja.json](docs/examples/peruslaskenta-lomakepohja.json) | Esimerkkipohja |
 | [docs/v1.3-suunnitelma.md](docs/v1.3-suunnitelma.md) | Seuraava: PDF-tarjous ja urakkakortti |
+| [docs/v1.2-suunnitelma.md](docs/v1.2-suunnitelma.md) | Historiallinen v1.2 (yksi globaali wizard) |
 | [docs/archive/](docs/archive/README.md) | Vanhat suunnitelmat |
 
 ## Ominaisuudet
 
-- Dynaaminen wizard lomakepohjan (`FormDefinition`) sivuilla
-- **Laske** tallentaa laskelman heti; yhteenveto ja historia käyttävät samaa erittelysivua. Kopiointi vain asiakastiedoista. **Sulje** → historia
-- Asiakas: puhelin, sähköposti, osoite, postinumero ja postitoimipaikka (Varsinais-Suomi täyttyy postinumerosta; voi kirjoittaa itse)
-- Historia: muokkaus päivittää saman rivin; **Jatka laskentaa** jatkaa luonnosta ilman duplikaattia; laskelman **Poista** (roskakori, vahvistus) palaa listaan
-- **Lomakeasetukset:** sivut, kentät (sivut oletuksena suljettu, avaus muistetaan), näkyvyys (`showWhen`), efektit, valintalistat, lasketut kentät, `product_select`, JSON-tuonti/vienti, debug
-- **Kaavat:** `min`, `max`, `round`, `if`, `sqrt`, `liukuva_myyntihinta`, vertailut. Puuttuva muuttuja ja jako nollalla = `0`
-- **Liukuva kate** asetuksissa (alaraja/yläraja € ja %)
-- **Alennus %** (0–100) järjestelmäkenttänä; yhteenveto näyttää rivin vain kun alennus > 0; kate on alennuksen jälkeinen
-- Työn arvioitu kesto yhteenvedossa: säävarauskerroin (oletus 1,3) ennen pyöristystä ylöspäin; hinnoittelu ilman kerrointa
-- Tuotteet: nimi, yksikkö, hinta alv0, valinnaiset attribuutit (menekki, työkerroin)
-- Asetukset: ALV, kate, palkkio, tuntihinta, työryhmän koko, työpäivän pituus, säävarauskerroin, teema
-- Paikallinen SQLite, `form_snapshot` muokkausta varten
+- Laskentasivu: asiakas, toimitusajankohta, tuoterakennerivit. **Yhteenveto** tallentaa laskelman
+- Rivin lomake tuoterakenteen sivujen mukaan; keskeneräinen tallennus; Valmis laskee rivin hinnat
+- Asiakasrekisteri (haku nimellä, päivityskysymys vanhoille laskelmille)
+- Historia: muokkaus päivittää saman rivin; **Jatka laskentaa** jatkaa luonnosta ilman duplikaattia
+- Yhteenveto: kokonaissumma + jokaisen tuoterakenteen erittely ja lomaketiedot
+- **Tuoterakenteet:** oma lomake, myyntipalkkio-%; JSON-tuonti/vienti rakenteen lomakeasetuksista
+- **Kaavat:** `min`, `max`, `round`, `if`, `sqrt`, `liukuva_myyntihinta`. Puuttuva muuttuja ja jako nollalla = `0`
+- **Liukuva kate** (alaraja/yläraja € ja %)
+- **Alennus %** rivillä ja lomakkeella; kate on alennuksen jälkeinen
+- Työn arvioitu kesto yhteenvedossa: säävarauskerroin (oletus 1,3) ennen pyöristystä ylöspäin
+- Tuotteet: ostohinta, myyntihinta, kate, menekki, työkerroin; tuote voi kuulua useaan rakenteeseen; järjestys ↑↓ (sama tuotelistakentässä)
+- Asetukset: ALV, kate, palkkio, tuntihinta, työryhmä, työpäivä, säävaraus, teema
+- Paikallinen SQLite
 
 ## Kehitysympäristö
 
@@ -69,16 +73,20 @@ eas build --platform android --profile preview
 app/                 # Expo Router -näytöt
 src/
   core/
-    calculation/     # putki, liukuva kate, alennus, pricingSkeleton
-    customer/        # Varsinais-Suomen postinumerot
+    calculation/     # putki, liukuva kate, alennus
+    customer/        # rekisteri, postinumerot
+    database/        # paikallinen SQLite
     form/            # lomakepohja, kaavat, efektit
-    wizard/          # tallennus, luonnos, historia → wizard
-  components/        # UI (ThemedIcon = Ionicons, CalculationDetailView)
-  context/           # App-tila
+    models/          # jaetut tyypit
+    product/         # attribuutit, rakenteet, ostohinta/myyntihinta
+    structure/       # rivin hinnoittelu, lomake → rivi
+    utils/
+    wizard/          # luonnos, composer → CalculationRecord
+  components/
+  context/           # App-tila (vie myös db-olion)
+  hooks/
   theme/
 docs/
-  sovellus.md
-  lomakepohja-json-ohje.md
 __tests__/
 ```
 

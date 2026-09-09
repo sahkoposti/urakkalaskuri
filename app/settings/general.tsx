@@ -167,11 +167,11 @@ export default function GeneralSettingsScreen() {
           keyboardType="decimal-pad"
         />
         <Text style={styles.sectionHint}>
-          Kate on yrityksen osuus myyntihinnasta (alv 0). Palkkio tulee lisäksi. Kate liukuu
+          Kate on yrityksen osuus myyntihinnasta (ALV 0). Palkkio tulee lisäksi. Kate liukuu
           lineaarisesti pienen ja suuren urakan rajan välillä.
         </Text>
         <AppInput
-          label="Pienen urakan raja (€, alv 0)"
+          label="Pienen urakan raja (€, ALV 0)"
           value={marginLowAmount}
           onChangeText={setMarginLowAmount}
           keyboardType="decimal-pad"
@@ -185,7 +185,7 @@ export default function GeneralSettingsScreen() {
           step={1}
         />
         <AppInput
-          label="Suuren urakan raja (€, alv 0)"
+          label="Suuren urakan raja (€, ALV 0)"
           value={marginHighAmount}
           onChangeText={setMarginHighAmount}
           keyboardType="decimal-pad"
@@ -205,7 +205,7 @@ export default function GeneralSettingsScreen() {
           keyboardType="decimal-pad"
         />
         <AppInput
-          label="Tuntihinta (alv0) €/h"
+          label="Tuntihinta (ALV 0) €/h"
           value={defaultHourlyRate}
           onChangeText={setDefaultHourlyRate}
           keyboardType="decimal-pad"

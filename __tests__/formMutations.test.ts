@@ -75,9 +75,36 @@ describe('formMutations', () => {
     expect(cleaned.fields.some((field) => field.id === created.id)).toBe(true);
   });
 
+  test('removePage can delete a leftover customer page', () => {
+    const form = createDefaultFormDefinition();
+    const withCustomer = {
+      ...form,
+      pages: [
+        {
+          id: 'page_customer',
+          title: 'Asiakas',
+          sortOrder: 0,
+          system: 'customer' as const,
+          fieldIds: [] as string[],
+        },
+        ...form.pages,
+      ],
+    };
+    const cleaned = removePage(withCustomer, 'page_customer');
+    expect(cleaned.pages.some((page) => page.id === 'page_customer')).toBe(false);
+  });
+
   test('isSystemPage is only the customer page', () => {
     const form = createDefaultFormDefinition();
-    expect(isSystemPage(form.pages.find((page) => page.system === 'customer')!)).toBe(true);
+    expect(
+      isSystemPage({
+        id: 'page_customer',
+        title: 'Asiakas',
+        sortOrder: 0,
+        system: 'customer',
+        fieldIds: [],
+      }),
+    ).toBe(true);
     expect(isSystemPage(form.pages.find((page) => page.title === 'Pinta-alat')!)).toBe(false);
   });
 
@@ -121,21 +148,21 @@ describe('formMutations', () => {
     expect(created.type).toBe('number');
   });
 
-  test('addField can assign to the customer page', () => {
+  test('addField can assign to a chosen page', () => {
     const form = createDefaultFormDefinition();
-    const customer = form.pages.find((page) => page.system === 'customer')!;
-    const next = addField(form, 'number', customer.id);
+    const page = form.pages.find((item) => item.title === 'Pinta-alat')!;
+    const next = addField(form, 'number', page.id);
     const created = next.fields.at(-1)!;
-    expect((next.pages.find((page) => page.id === customer.id)?.fieldIds ?? []).includes(created.id)).toBe(
+    expect((next.pages.find((item) => item.id === page.id)?.fieldIds ?? []).includes(created.id)).toBe(
       true,
     );
-    expect(fieldsForPage(next, customer.id).at(-1)?.id).toBe(created.id);
+    expect(fieldsForPage(next, page.id).at(-1)?.id).toBe(created.id);
   });
 
-  test('pagesAssignableForNewField includes customer page', () => {
+  test('pagesAssignableForNewField lists content pages', () => {
     const form = createDefaultFormDefinition();
     const pages = pagesAssignableForNewField(form);
-    expect(pages.some((page) => page.system === 'customer')).toBe(true);
+    expect(pages.some((page) => page.system === 'customer')).toBe(false);
     expect(pages.some((page) => page.title === 'Pinta-alat')).toBe(true);
   });
 

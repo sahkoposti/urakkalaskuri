@@ -1,9 +1,9 @@
-import { router, Stack, type Href } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, Text } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
-import { PrimaryButton, ScreenLoading } from '@/src/components/common';
+import { PrimaryButton, ScreenMessage } from '@/src/components/common';
 import {
   EDITABLE_FIELD_TYPES,
   FIELD_TYPE_LABELS,
@@ -11,7 +11,7 @@ import {
   pagesAssignableForNewField,
 } from '@/src/core/form/formMutations';
 import type { FieldType } from '@/src/core/form/types';
-import { useApp } from '@/src/context/AppContext';
+import { useStructureFormEditor } from '@/src/hooks/useStructureFormEditor';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -19,21 +19,21 @@ const NO_PAGE = '';
 
 export default function NewFormFieldScreen() {
   const styles = useThemedStyles(createStyles);
-  const { ready, formDefinition } = useApp();
+  const { formDefinition, href } = useStructureFormEditor();
   const [type, setType] = useState<FieldType>('number');
   const [targetPageId, setTargetPageId] = useState(NO_PAGE);
   const assignablePages = useMemo(
-    () => pagesAssignableForNewField(formDefinition),
+    () => (formDefinition ? pagesAssignableForNewField(formDefinition) : []),
     [formDefinition],
   );
 
-  if (!ready) return <ScreenLoading />;
+  if (!formDefinition) return <ScreenMessage message="Tuoterakennetta ei löytynyt." />;
 
   function handleCreate() {
     const fieldId = generateId('field');
     const params = new URLSearchParams({ draft: '1', type });
     if (targetPageId) params.set('pageId', targetPageId);
-    router.replace(`/settings/calculation/fields/${fieldId}?${params.toString()}` as Href);
+    router.replace(href(`/settings/calculation/fields/${fieldId}?${params.toString()}`));
   }
 
   return (
@@ -67,10 +67,7 @@ export default function NewFormFieldScreen() {
             label: page.title,
           }))}
         />
-        <Text style={styles.hint}>
-          Valittu sivu saa kentän viimeiseksi. Asiakas-sivulle voi sijoittaa omia kenttiä
-          yhteystietojen lisäksi.
-        </Text>
+        <Text style={styles.hint}>Valittu sivu saa kentän viimeiseksi.</Text>
 
         <PrimaryButton title="Jatka muokkaukseen" onPress={handleCreate} />
       </ScrollView>

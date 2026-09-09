@@ -9,6 +9,7 @@ import {
 import { isSystemField } from '@/src/core/form/systemFields';
 import type { FormDefinition, FormPage } from '@/src/core/form/types';
 import type { Product, WizardLineDraft } from '@/src/core/models/types';
+import { structureFormPages } from '@/src/core/structure/formPages';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { isDiscountPercentKey } from '@/src/core/calculation/discount';
 
@@ -31,8 +32,10 @@ export function validateFormPageWithValues(
   products: Product[] = [],
   numericContext?: Record<string, number>,
   materialLines: WizardLineDraft[] = [],
+  options?: { requireCustomerName?: boolean },
 ): string | null {
-  if (page.system === 'customer' && !customerName.trim()) {
+  const requireCustomerName = options?.requireCustomerName ?? true;
+  if (page.system === 'customer' && requireCustomerName && !customerName.trim()) {
     return 'Anna asiakkaan nimi.';
   }
 
@@ -98,6 +101,37 @@ export function validateFormPageWithValues(
   }
 
   return null;
+}
+
+export function validateAllFormPages(
+  form: FormDefinition,
+  fieldValues: Record<string, string>,
+  products: Product[] = [],
+  numericContext?: Record<string, number>,
+): string | null {
+  for (const page of structureFormPages(form)) {
+    const error = validateFormPageWithValues(
+      form,
+      page,
+      fieldValues,
+      '',
+      products,
+      numericContext,
+      [],
+      { requireCustomerName: false },
+    );
+    if (error) return error;
+  }
+  return null;
+}
+
+export function isStructureFormFullyFilled(
+  form: FormDefinition,
+  fieldValues: Record<string, string>,
+  products: Product[] = [],
+  numericContext?: Record<string, number>,
+): boolean {
+  return validateAllFormPages(form, fieldValues, products, numericContext) === null;
 }
 
 export function hasFieldValueContent(fieldValues: Record<string, string>): boolean {

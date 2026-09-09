@@ -1,5 +1,5 @@
 import { applyOwnedVatTotals } from '@/src/core/calculation/pricingSkeleton';
-import { pipelineFieldOrder } from '@/src/core/form/formDefinitionHelpers';
+import { pipelineFieldOrder, getFieldByKey } from '@/src/core/form/formDefinitionHelpers';
 import {
   fieldValuesForVisibility,
   formHasComputedShowWhen,
@@ -49,6 +49,7 @@ export interface EvaluateFormContextOptions {
   strictSystemFields?: boolean;
   /** Kerää debug-jälki (soft errors). */
   collectTrace?: boolean;
+  reverseVat?: boolean;
 }
 
 export interface EvaluateFormContextResult {
@@ -107,10 +108,6 @@ function exportProductField(
   exportProductToContext(field.key, product, context);
 }
 
-function findFieldByKey(form: FormDefinition, key: string): FormField | undefined {
-  return form.fields.find((field) => field.key === key);
-}
-
 /**
  * Yhteinen kaavakontekstin laskenta wizardille ja debugille.
  * Syötteet → tuotteet → computed. Toinen kierros huomioi computed-showWhen-ehdot.
@@ -125,6 +122,7 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
     useDebugExamples = false,
     strictSystemFields = false,
     collectTrace = false,
+    reverseVat = false,
   } = options;
 
   const context: Record<string, number> = {
@@ -219,7 +217,7 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
           const missingDeps = missingComputedDependencies(form, field, context);
           if (missingDeps.length > 0) {
             const depLabels = missingDeps
-              .map((dep) => findFieldByKey(form, dep)?.label ?? dep)
+              .map((dep) => getFieldByKey(form, dep)?.label ?? dep)
               .join(', ');
             const message = `Odottaa laskettuja kenttiä: ${depLabels}`;
             errors.push(`${field.label}: ${message}`);
@@ -351,7 +349,7 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
     totalField?.allowManualOverride !== false &&
     parseNumber(sellingOverrideRaw?.trim() ?? '') !== null &&
     (useDebugExamples || Object.prototype.hasOwnProperty.call(fieldValues, 'kokonaishinta'));
-  applyOwnedVatTotals(context, settings.vatPercent, false, { sellingPriceVatOverridden });
+  applyOwnedVatTotals(context, settings.vatPercent, reverseVat, { sellingPriceVatOverridden });
 
   return { context, steps, errors };
 }

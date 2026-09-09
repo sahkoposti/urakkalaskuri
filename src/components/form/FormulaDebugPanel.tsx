@@ -5,6 +5,7 @@ import type { FormDefinition } from '@/src/core/form/types';
 import { runDebugPipeline } from '@/src/core/form/pipeline';
 import type { AppSettings, Product } from '@/src/core/models/types';
 import { formatCurrency, formatDebugDecimal } from '@/src/core/utils/formatters';
+import { vat0Tag } from '@/src/core/utils/priceDisplay';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -52,7 +53,7 @@ export function FormulaDebugPanel({
       <Text style={styles.title}>Live-laskenta (debug)</Text>
       <Text style={styles.help}>
         Sama laskenta kuin wizardissa: syötteinä debug-esimerkkiarvot, materiaalirivejä ei simuloida.
-        Materiaalit-muuttuja: {formatCurrency(trace.context.materiaalit ?? 0)} (alv0).
+        Materiaalit-muuttuja: {formatCurrency(trace.context.materiaalit ?? 0)} ({vat0Tag()}).
       </Text>
 
       {trace.errors.length > 0 ? (

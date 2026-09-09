@@ -1,8 +1,12 @@
 # Urakkalaskuri – sovelluksen kuvaus
 
-ColoRajatonin tarjouslaskuri (Expo / React Native, Android). Nykyinen versio **v1.2.4**.
+ColoRajatonin tarjouslaskuri (Expo / React Native, Android). Pakettiversio **v1.2.4**. Laskelma = asiakas + toimitusajankohta + tuoterakennerivit.
 
-Tämä sivu kuvaa **miten sovellus toimii nyt**. JSON-kentät ja kaavat: [lomakepohja-json-ohje.md](./lomakepohja-json-ohje.md). Kehitysympäristö: [README.md](../README.md).
+Tämä sivu kuvaa **miten sovellus toimii nyt**. JSON-kentät ja kaavat: [lomakepohja-json-ohje.md](./lomakepohja-json-ohje.md). Tuoterakenteiden malli: [tuoterakenteet.md](./tuoterakenteet.md). Kehitysympäristö: [README.md](../README.md).
+
+PDF (tarjous / urakkakortti) ei ole käytössä. Suunnitelma: [v1.3-suunnitelma.md](./v1.3-suunnitelma.md).
+
+Composer-malli on tuotantopolku. Yhtenäisyystarkistuksen siivous: [yhtenaisyystarkistus.md](./yhtenaisyystarkistus.md).
 
 ---
 
@@ -10,60 +14,107 @@ Tämä sivu kuvaa **miten sovellus toimii nyt**. JSON-kentät ja kaavat: [lomake
 
 | Polku | Mitä se tekee |
 |-------|----------------|
-| Koti | Uusi laskenta, historia, tuotteet, asetukset |
-| Wizard | Lomakepohjan sivut järjestyksessä. Viimeinen sivu: **Laske** |
-| Laskelman tiedot | Yhteinen näkymä wizardin jälkeen ja historiasta. Roskakori nimen vieressä poistaa laskelman (vahvistus). Kopiointi vain asiakastiedoista (puhelin, sähköposti, osoite, postinumero, postitoimipaikka, lisätiedot). **Sulje** → historia |
-| Historia | Tallennetut laskelmat. Avaa laskelma nähdäksesi tiedot tai poistaaksesi sen |
-| Tuotteet | Materiaalit (nimi, yksikkö, hinta alv0, valinnaiset attribuutit) |
-| Asetukset | Yleinen (ALV, liukuva kate, palkkio, tuntihinta, työryhmä, työpäivä, säävarauskerroin), teema, lomake |
+| Koti | Uusi laskenta, historia, tuotteet, asiakkaat, asetukset |
+| Laskenta (`/wizard`) | Asiakas, toimitusajankohta, tuoterakennerivit. **Yhteenveto** tallentaa laskelman |
+| Asiakas (`/wizard/customer`) | Yhteystiedot ja rekisterihaku (nimi *) |
+| Rivin lomake (`/wizard/line/…`) | Tuoterakenteen lomakesivut. **Valmis** laskee rivin hinnat |
+| Laskelman tiedot | Yhteinen näkymä yhteenvedon jälkeen ja historiasta. Roskakori poistaa laskelman. Kopiointi vain asiakastiedoista. **Sulje** → historia |
+| Historia | Tallennetut laskelmat |
+| Tuotteet | Materiaalit: ostohinta, myyntihinta, kate, menekki, työkerroin, tuoterakenteet. Järjestys nuolilla |
+| Asiakkaat | Rekisteri |
+| Asetukset | Yleinen, tuoterakenteet (lomake per rakenne), teema |
 
-Kesken jäänyt uusi laskenta: punainen palkki **Jatka laskentaa**. **Uusi laskenta** kysyy vahvistuksen, jos luonnos on olemassa (luonnos ja istunto tyhjennetään).
+Kesken jäänyt laskenta: punainen palkki **Jatka laskentaa**. **Uusi laskenta** kysyy vahvistuksen, jos luonnos on olemassa (luonnos tyhjennetään).
 
 ---
 
-## Laskenta ja tallennus
+## Laskenta
 
-**Laske** tallentaa SQLite-laskelman heti ja avaa yhteisen erittelysivun.
+Laskentasivulla ei ole enää yhtä globaalia wizardia. Rakenne:
+
+```
+Asiakas          → oma sivu (rekisteri)
+Toimitusajankohta   vapaateksti
+Tuoterakennerivit   kortti per rivi (määrä, yksikkö, alv0/sis. ALV, hinta, materiaalit, ale %, kate)
+Yhteenveto          tallentaa SQLite-laskelman
+```
+
+**Lisää tuoterakenne** valitsee mallipohjan. Hammasratas avaa rakenteen lomakkeen. Ilman lomaketta urakka/hinta on 0 kunnes se kirjoitetaan korttiin.
+
+**Yhteenveto** on pois käytöstä, kun jollain rivillä on keskeneräinen lomake.
+
+### Poistuminen
+
+- **Laskenta:** jos tila on sama kuin tallennettu luonnos tai avattu laskelma, tallennusta ei kysytä. Muuten: Peruuta / Tallenna keskeneräisenä / Poistu tallentamatta.
+- **Rivin lomake:** ei kysytä, jos kentät ovat samat kuin tallennetut. Muuten Sulje tallentamatta + **Tallenna keskeneräisenä**, tai **Tallenna** jos kaikki pakolliset kentät on täytetty (ajaa laskennan riville kuten Valmis).
+
+### Tallennus
 
 | Miten avattiin | Tallennus |
 |----------------|-----------|
-| Uusi laskenta | Uusi rivi (`createId`) |
+| Uusi laskenta | Uusi rivi ensimmäisellä **Yhteenveto**-kerralla |
 | Historia → **Muokkaa** | Sama `id`, alkuperäinen `createdAt` säilyy |
 | **Jatka laskentaa** kesken jääneestä muokkauksesta | Sama `id` kuin muokattavalla rivillä |
-| **Jatka laskentaa** uudesta luonnoksesta | Uusi rivi ensimmäisellä Laske-kerralla |
+| **Jatka laskentaa** uudesta luonnoksesta | Uusi rivi ensimmäisellä yhteenvedolla |
 
-Luonnos (`wizard_drafts`) sisältää tarvittaessa `editCalculationId`. Historia-muokkaus kirjoittaa luonnosta, jotta **Jatka laskentaa** ei luo toista riviä. Toinen **Laske** päivittää saman rivin (`INSERT OR REPLACE`).
+Luonnos (`wizard_drafts`) sisältää tarvittaessa `editCalculationId`. Historia-muokkaus kirjoittaa luonnosta, jotta **Jatka laskentaa** ei luo toista riviä.
 
-**Sulje** erittelyssä tyhjentää wizard-istunnon ja vie historiaan.
+**Sulje** erittelyssä tyhjentää luonnosta ja vie historiaan.
 
-**Poista** (roskakorikuvake asiakkaan nimen rivillä oikealla) kysyy vahvistuksen ja poistaa laskelman sekä sen materiaalirivit. Onnistunut poisto palaa historialistaan. Jos sama laskelma oli muokattavana, wizard-istunto ja luonnos tyhjennetään.
+**Poista** (roskakori nimen vieressä) kysyy vahvistuksen. Onnistunut poisto palaa historialistaan. Jos sama laskelma oli muokattavana, luonnos tyhjennetään.
 
-Asiakassivu (kiinteä UI, ei JSON-kenttiä): nimi, puhelin, sähköposti, osoite, **postinumero**, **postitoimipaikka**, lisätiedot, asiakastyyppi (yksityinen/yritys), yritykselle käänteinen ALV. Viisinumeroinen Varsinais-Suomen postinumero täyttää postitoimipaikan automaattisesti; kentän voi myös kirjoittaa itse. Tuntematon numero ei tyhjennä kirjoitettua paikkakuntaa. Yhteenvedossa kopiointinappi on vain asiakkaan yhteystiedoissa (ei hinnoissa eikä lomakekentissä).
+### Asiakas
+
+Oma sivu, ei tuoterakenteen JSON-kenttiä: nimi *, puhelin, sähköposti, osoite, postinumero, postitoimipaikka, lisätiedot, tyyppi (yksityinen/yritys), yritykselle käänteinen ALV.
+
+Nimi on haku rekisteristä. Valinta täyttää tiedot. Ilman valintaa tallennus luo uuden rekisteririvin (sama nimi saa esiintyä kahdesti). Viisinumeroinen Varsinais-Suomen postinumero täyttää postitoimipaikan; kentän voi kirjoittaa itse.
+
+Jos muokataan olemassa olevaa rekisteriasiakasta ja tiedot muuttuivat, kysytään päivitetäänkö vanhat laskelmat.
+
+Yhteenvedossa kopiointinappi on vain asiakkaan yhteystiedoissa.
 
 ---
 
-## Hinnoittelun erittely
+## Yhteenveto (erittely)
 
-Yhteinen kortti (wizard + historia):
+1. Asiakkaan tiedot ja toimitusajankohta.
+2. **Kokonaissumma:** materiaalit, työ, alennus (jos > 0 %), kokonaishinnat (alv0 / ALV / sis. ALV). Yksityinen: korostus sis. ALV. Yritys: korostus alv0; käänteinen ALV tarvittaessa.
+3. **Yksi rivi:** työn arvioitu kesto näytetään kokonaissummassa (säävarauskerroin + tasapäiviin ylöspäin). Päiviä ei summata riveiltä.
+4. **Useita rivejä:** jokaisella tuoterakenteella oma otsikko, hintakortti (kesto tälle riville) ja **Lomaketiedot**.
 
-1. Työn arvioitu kesto (pv) – **vain tämä näyttö**. Asetukset → Yleinen, säävarauskerroin (oletus 1,3) kerrotaan tallennetulla kestolla, sitten **tasapäiviin ylöspäin** (1 × 1,3 → 2). Wizardin kenttä ja hinnoittelu käyttävät tarkkaa kestoa ilman kerrointa. Kerroin ei ole kaavamuuttuja; yhteenvedossa käytetään aina nykyistä asetusta.
-2. Urakkahinta (alv0), materiaalit (alv0) ja materiaalit (sis. ALV; ei käänteisessä ALV:ssa)
-3. Myyntikate € ja % – **toteutunut** kate (jos alennus, jo alennuksen jälkeen)
-4. Myyntipalkkio
-5. Jos alennus > 0 %: hinta ennen alennusta + alennusrivi
-6. Kokonaishinnat (alv0 / ALV / alv). Yksityinen: korostus sis. ALV. Yritys: korostus alv0; käänteinen ALV tarvittaessa.
+Lomaketiedot tulevat rivin snapshotista tai täytetyistä kentistä. Jokainen täytetty rivi näyttää omat speksinsä.
 
-Lomaketiedot-osio tulee tallennetusta `formSnapshot`:sta.
+Lomakepohjan `version` kasvaa tallennettaessa. Vanhaa laskelmaa muokatessa näytetään varoitus, jos rivin lomakeversio eroaa nykyisestä.
+
+---
+
+## Tuoterakenteet
+
+Asetukset → **Tuoterakenteet**: nimi, valinnainen yksikkö, myyntipalkkio-%, **Lomake** (sivut, kentät, JSON, debug).
+
+Jokaisella rakenteella on oma `FormDefinition`. Tuotteet eivät ole rakenteen asetuksissa; ne liitetään tuotteelta (yksi tuote voi kuulua useaan rakenteeseen).
+
+Rivin lomake näyttää vain sivut, joilla on kenttiä. Tyhjä Asiakas-sivu (ilman lisäkenttiä) ja `system: "materials"` piilotetaan. Yhteystiedot ovat laskennan asiakassivulla.
+
+---
+
+## Tuotteet
+
+Nimi, yksikkö, **ostohinta** (alv0), **myyntihinta** (alv0), laskettu kate € / %, kuvaus, menekki, työkerroin, tuoterakenteet. Kopiointi luo uuden tuotteen listan loppuun.
+
+**Järjestys:** Tuotteet-listassa ↑↓. Sama järjestys on `product_select`-kentässä (suodatettuna rakenteen mukaan). Uusi tuote ja kopio lisätään loppuun.
+
+Kaavoissa (kun `product_select` on valittu): `.ostohinta`, `.myyntihinta`, `.kate`, `.kate_prosentti`, `.menekki`, `.tyokerroin`. Vanha `.yksikkohinta` = ostohinta. Materiaalirivit käyttävät ostohintaa.
 
 ---
 
 ## Alennus
 
-Järjestelmäkenttä `alennus_prosentti` (0–100 %). Oletuslomakkeella kestosivulla.
+Järjestelmäkenttä `alennus_prosentti` (0–100 %). Rivikortissa **Ale %**.
 
 - Kaavat laskevat ensin listahinnan.
 - Sovellus vähentää alennuksen myyntihinnasta; kate on jäännös kustannusten ja palkkion jälkeen.
-- **Älä** kerro alennusta `kokonaishinta` / `liukuva_myyntihinta`-kaavaan – se tehtäisiin kahdesti.
+- **Älä** kerro alennusta `kokonaishinta` / `liukuva_myyntihinta`-kaavaan.
 - JSON: lisää sivulle `"field_system_alennus_prosentti"`.
 
 ---
@@ -72,28 +123,31 @@ Järjestelmäkenttä `alennus_prosentti` (0–100 %). Oletuslomakkeella kestosiv
 
 Asetukset → Yleinen: alaraja € / kate %, yläraja € / kate %.
 
-Kaava: `liukuva_myyntihinta(suorat_kustannukset_alv0)` → myyntihinta alv0. Muuttujat: `asetukset.myyntikate_alaraja_eur`, `_prosentti`, `ylaraja_eur`, `_prosentti`, plus palkkio.
+Kaava: `liukuva_myyntihinta(suorat_kustannukset_alv0)` → myyntihinta alv0.
 
 ---
 
-## Lomake
+## Lomake (per tuoterakenne)
 
-- **Sivut** = wizard-vaiheet. Kentät ovat globaaleja; sivu viittaa `fieldIds`.
-- **Asiakassivu** (`system: "customer"`) ei voi poistaa.
-- **Materiaalirivit** (`system: "materials"`) ovat valinnaisia. Oletuspohjassa ei ole rivi-sivua; maalit voidaan laskea kentillä + `add_material_fixed`.
-- Järjestelmäkentät lisätään tuonnissa. Wizardissa voi näyttää ja yliajaa keston, alennus-%:n, urakan, materiaalit, palkkion ja kokonaishinnat (alv0 ja sis. ALV). Kate, ALV € ja alennus € ovat vain hintakortissa. JSON laskee vientiavaimet; runko laskee ALV:n. Yliajettu kokonaishinta (sis. ALV) johtaa uuden alv0-hinnan.
-- Pohjan `version` kasvaa tallennettaessa. Vanhaa laskelmaa muokatessa näytetään varoitus, jos versio eroaa.
-- **Kentät**-asetuksissa jokainen sivu (esim. Asiakas) on oletuksena suljettu. Otsikko ja nuoli ovat samalla rivillä; nuolta painamalla sivun kentät avautuvat. Sovellus muistaa, mitkä sivut olivat auki (`settings`-avain `fields_page_expanded`).
-- Lasketun kentän manuaalinen arvo wizardissa: teemavärinen reset-nuoli palauttaa kaavan tuloksen.
+- **Sivut** = rivin lomakkeen vaiheet. Kentät ovat globaaleja; sivu viittaa `fieldIds`.
+- **Asiakassivu** (`system: "customer"`) jää rakenteeseen lisäkentille. Järjestelmän yhteystiedot eivät ole tällä sivulla. Tyhjä sivu piilotetaan.
+- **Materiaalirivit** (`system: "materials"`) eivät ole rivin lomakkeessa. Tuote valitaan `product_select`-kentästä.
+- Järjestelmäkentät lisätään tuonnissa. Lomakkeella voi yliajaa keston, alennus-%:n, urakan, materiaalit, palkkion ja kokonaishinnat. Kate, ALV € ja alennus € ovat laskennan tulosta, eivät Lomaketiedot-osiossa.
+- **Kentät**-asetuksissa sivut ovat oletuksena suljettu; avaus muistetaan (`fields_page_expanded`).
+- Lasketun kentän manuaalinen arvo: teemavärinen reset-nuoli palauttaa kaavan tuloksen.
+
+JSON-tuonti: **Asetukset → Tuoterakenteet → [rakenne] → Lomake → Tuo JSON…**
 
 ---
 
 ## Tietokanta (paikallinen SQLite)
 
-- `calculations` + `calculation_lines`
-- `products` (attribuutit JSON:ssa, esim. menekki, työkerroin)
-- `settings` (avain–arvo; lomakepohja `form_definition`, Kentät-sivujen avaus `fields_page_expanded`, säävaraus `weather_reserve_factor`)
-- `wizard_drafts` (yksi kesken oleva laskenta)
+- `product_structures` (lomakepohja JSON:na, palkkio-%)
+- `products` (ostohinta, myyntihinta, attribuutit, `structure_ids`, `sort_order`)
+- `customers`
+- `calculations` (`structure_lines`, `form_snapshot` yhteensopivuutta varten, asiakas-snapshot)
+- `settings` (avain–arvo)
+- `wizard_drafts` (yksi kesken oleva laskenta, tarvittaessa `editCalculationId`)
 
 Ei pilvisynkkaa.
 
@@ -101,6 +155,19 @@ Ei pilvisynkkaa.
 
 ## Teema ja brändi
 
-Asetukset → Teema: korostus-, pää-, teksti- ja pintaväri, taustakuva. Fontti IBM Plex Sans. Logo ColoRajaton.
+Asetukset → Teema: korostus-, pää-, teksti- ja pintaväri, taustakuva, logo. Fontti IBM Plex Sans. Logo ColoRajaton.
 
-Kuvakkeet: `@expo/vector-icons` (Ionicons). UI käyttää `ThemedIcon`-komponenttia (`src/components/ThemedIcon.tsx`), joka värittää kuvakkeen teemavärillä. Uusi kuvake: lisää Ionicons-nimi karttaan ja käytä `<ThemedIcon name="…" />`. SF Symbols (`expo-symbols`) ei näy Androidilla.
+Kuvakkeet: `@expo/vector-icons` (Ionicons) `ThemedIcon`-komponentin kautta. SF Symbols ei näy Androidilla.
+
+---
+
+## Siirtymä (v1.2 → tuoterakenteet)
+
+Composer on tuotantopolku. Vanha istunto ja globaali lomake ovat yhä kytkettyinä koodissa:
+
+- `WizardSession`-tyyppi kantaa yhä `result` / `formContext` / `materialLines`, mutta UI kirjoittaa vain `null`. Luonnos on `wizard_drafts`.
+- `buildCalculationRecord` (form-putki) on testikäytössä; tallennus menee `buildCalculationRecordFromComposer`-kautta.
+- Lomake-editori (`/settings/calculation`) muokkaa **aktiivista** tuoterakennetta (`activeStructureId`) ja kirjoittaa myös `settings.form_definition`.
+- Alennus: lomakkeen `applyDiscountToResult` vs rivin ale-% + `aggregateStructureLines`.
+
+Näitä ei pidä käyttää uusena mallina. Lista: [yhtenaisyystarkistus.md](./yhtenaisyystarkistus.md).

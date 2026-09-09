@@ -239,6 +239,30 @@ function uniquePageIds(pages: FormPage[]): FormPage[] {
   });
 }
 
+export function isCustomerFormPage(page: Pick<FormPage, 'id' | 'system'>): boolean {
+  return page.system === 'customer' || page.id === 'page_customer';
+}
+
+/** Asiakkaan tiedot ovat laskennan kortilla; lomakkeen Asiakas-sivu poistetaan. */
+export function relocateCustomerPageFields(pages: FormPage[]): FormPage[] {
+  const customerPages = pages.filter((page) => isCustomerFormPage(page));
+  if (customerPages.length === 0) return pages;
+
+  const relocatedIds = customerPages.flatMap((page) => page.fieldIds ?? []);
+  const remaining = pages.filter((page) => !isCustomerFormPage(page));
+  if (remaining.length === 0) return [];
+
+  const [first, ...rest] = remaining;
+  const seen = new Set<string>();
+  const fieldIds = [...relocatedIds, ...(first.fieldIds ?? [])].filter((fieldId) => {
+    if (seen.has(fieldId)) return false;
+    seen.add(fieldId);
+    return true;
+  });
+
+  return [{ ...first, fieldIds }, ...rest].map((page, sortOrder) => ({ ...page, sortOrder }));
+}
+
 export function normalizeFormDefinition(raw: unknown): FormDefinition {
   const form = (raw ?? {}) as Partial<FormDefinition>;
   const legacyFields = (form.fields ?? []) as LegacyFormField[];
@@ -247,14 +271,16 @@ export function normalizeFormDefinition(raw: unknown): FormDefinition {
     migrateSelectFields(stripLegacyFieldProps(legacyFields)),
   );
 
-  const pages = dedupePageFieldAssignments(
-    remapPromotedSystemFieldIds(
-      uniquePageIds(
-        isLegacyForm(form)
-          ? migrateLegacyPages(form)
-          : (form.pages ?? []).map((page) => ({ ...page, fieldIds: [...(page.fieldIds ?? [])] })),
+  const pages = relocateCustomerPageFields(
+    dedupePageFieldAssignments(
+      remapPromotedSystemFieldIds(
+        uniquePageIds(
+          isLegacyForm(form)
+            ? migrateLegacyPages(form)
+            : (form.pages ?? []).map((page) => ({ ...page, fieldIds: [...(page.fieldIds ?? [])] })),
+        ),
+        normalizedUserFields,
       ),
-      normalizedUserFields,
     ),
   );
 
@@ -262,7 +288,7 @@ export function normalizeFormDefinition(raw: unknown): FormDefinition {
 
   return {
     id: form.id ?? 'default',
-    name: form.name ?? 'Peruslaskenta',
+    name: form.name ?? 'Julkisivumaalaus',
     version: typeof form.version === 'number' ? form.version : 3,
     pages: pruneMissingFieldIds(pages, fields).map((page) => ({
       ...page,
@@ -275,6 +301,10 @@ export function normalizeFormDefinition(raw: unknown): FormDefinition {
 
 export function getFieldById(form: FormDefinition, fieldId: string): FormField | undefined {
   return form.fields.find((field) => field.id === fieldId);
+}
+
+export function getFieldByKey(form: FormDefinition, key: string): FormField | undefined {
+  return form.fields.find((field) => field.key === key);
 }
 
 export function sortedGlobalFields(form: FormDefinition): FormField[] {

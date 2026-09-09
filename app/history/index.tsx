@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
-import { FlatList, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { BackHandler, FlatList, Text, View } from 'react-native';
 
 import { AppCard, ScreenLoading, ScreenMessage } from '@/src/components/common';
 import { customerFromRecord } from '@/src/core/models/types';
@@ -12,6 +13,15 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 export default function HistoryScreen() {
   const styles = useThemedStyles(createStyles);
   const { ready, calculations } = useApp();
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (router.canGoBack()) return false;
+      router.replace('/');
+      return true;
+    });
+    return () => subscription.remove();
+  }, []);
 
   if (!ready) return <ScreenLoading />;
   if (calculations.length === 0) {

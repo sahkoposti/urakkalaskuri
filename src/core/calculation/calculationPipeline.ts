@@ -18,6 +18,7 @@ import {
   applyDiscountToResult,
   discountPercentFromContext,
   writeDiscountedResultToContext,
+  type DiscountableTotals,
 } from '@/src/core/calculation/discount';
 import { applyOwnedVatTotals } from '@/src/core/calculation/pricingSkeleton';
 import { overriddenComputedKeys, parsedComputedOverride } from '@/src/core/form/applyFieldValueChange';
@@ -29,20 +30,9 @@ export class CalculationValidationError extends Error {
   }
 }
 
-export interface CalculationResult {
-  contractPriceVat0: number;
-  materialsVat0: number;
-  marginEur: number;
-  commissionEur: number;
-  totalPriceVat0: number;
-  vatAmount: number;
-  totalPriceVat: number;
+export type CalculationResult = DiscountableTotals & {
   workDurationDays: number;
-  discountPercent: number;
-  discountEur: number;
-  totalPriceVatBeforeDiscount: number;
-  totalPriceVat0BeforeDiscount: number;
-}
+};
 
 export interface FormCalculationInput {
   form: FormDefinition;
@@ -67,7 +57,7 @@ export function evaluateProductionPipeline(
   materialsTotal: number,
   settings: AppSettings,
   products: Product[] = [],
-  options: { strictSystemFields?: boolean; collectTrace?: boolean } = {},
+  options: { strictSystemFields?: boolean; collectTrace?: boolean; reverseVat?: boolean } = {},
 ): EvaluateFormContextResult {
   const strictSystemFields = options.strictSystemFields ?? true;
   const collectTrace = options.collectTrace ?? false;
@@ -80,6 +70,7 @@ export function evaluateProductionPipeline(
       products,
       strictSystemFields,
       collectTrace,
+      reverseVat: options.reverseVat,
     });
   } catch (error) {
     if (error instanceof CalculationValidationError) throw error;
@@ -95,7 +86,7 @@ export function runProductionPipeline(
   materialsTotal: number,
   settings: AppSettings,
   products: Product[] = [],
-  options: { strictSystemFields?: boolean } = {},
+  options: { strictSystemFields?: boolean; reverseVat?: boolean } = {},
 ): Record<string, number> {
   return evaluateProductionPipeline(form, fieldValues, materialsTotal, settings, products, options)
     .context;
@@ -210,6 +201,7 @@ export interface ResolveFormContextInput {
   strict?: boolean;
   /** Kerää kaavavälivaiheet (debug). */
   collectTrace?: boolean;
+  reverseVat?: boolean;
 }
 
 export interface ResolveFormContextOutput {
@@ -241,7 +233,7 @@ export function resolveFormContextWithEffects(
     baseMaterialsVat0,
     input.settings,
     input.products,
-    { strictSystemFields: strict },
+    { strictSystemFields: strict, reverseVat: input.reverseVat },
   );
 
   // 2) Kerää loppuvaikutukset
@@ -271,7 +263,7 @@ export function resolveFormContextWithEffects(
     materialsVat0,
     input.settings,
     input.products,
-    { strictSystemFields: strict, collectTrace },
+    { strictSystemFields: strict, collectTrace, reverseVat: input.reverseVat },
   );
   const context = finalPipeline.context;
   const steps = collectTrace ? finalPipeline.steps : [];
@@ -299,7 +291,7 @@ export function resolveFormContextWithEffects(
     }
   }
 
-  applyOwnedVatTotals(context, input.settings.vatPercent, false, {
+  applyOwnedVatTotals(context, input.settings.vatPercent, Boolean(input.reverseVat), {
     sellingPriceVatOverridden:
       parsedComputedOverride(input.form, input.fieldValues, 'kokonaishinta') !== null,
   });
@@ -323,6 +315,7 @@ export function previewFormContextDetailed(
         products: input.products,
         strictSystemFields: false,
         collectTrace,
+        reverseVat: input.reverseVat,
       });
       return {
         context: result.context,
@@ -351,7 +344,7 @@ export function previewFormContextDetailed(
       materialLinesTotal(input.materialLines),
       input.settings,
       input.products,
-      { strictSystemFields: false, collectTrace },
+      { strictSystemFields: false, collectTrace, reverseVat: input.reverseVat },
     );
     return {
       context: result.context,
@@ -371,6 +364,7 @@ export function previewFormContext(
   products: Product[],
   settings: AppSettings,
   legacyDuration?: string,
+  reverseVat = false,
 ): Record<string, number> {
   return previewFormContextDetailed({
     form,
@@ -379,6 +373,7 @@ export function previewFormContext(
     products,
     settings,
     legacyDuration,
+    reverseVat,
   }).context;
 }
 
@@ -393,6 +388,7 @@ export function runFormCalculation(input: FormCalculationInput): FormCalculation
     products: input.products,
     settings: input.settings,
     legacyDuration: input.legacyDuration,
+    reverseVat: input.reverseVat,
     strict: true,
   });
 

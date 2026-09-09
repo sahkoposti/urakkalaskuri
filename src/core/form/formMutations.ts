@@ -6,10 +6,7 @@ import type {
   SelectOption,
 } from '@/src/core/form/types';
 
-import {
-  getFieldById,
-  sortedPages,
-} from '@/src/core/form/formDefinitionHelpers';
+import { getFieldById, sortedPages } from '@/src/core/form/formDefinitionHelpers';
 import { slugifyKey } from '@/src/core/form/formKeyUtils';
 import { isSystemFieldHiddenFromUi } from '@/src/core/form/systemFields';
 
@@ -21,6 +18,7 @@ export {
   fieldsForPage,
   wizardFieldsForPage,
   getFieldById,
+  getFieldByKey,
   normalizeFormDefinition,
   pagesUsingField,
   pipelineFieldOrder,
@@ -53,7 +51,11 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
 };
 
 export function generateId(prefix: string): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  const uuid =
+    typeof globalThis.crypto?.randomUUID === 'function'
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${uuid}`;
 }
 
 export function isSystemPage(page: FormPage): boolean {
@@ -155,7 +157,7 @@ export function updatePage(form: FormDefinition, pageId: string, patch: Partial<
 
 export function removePage(form: FormDefinition, pageId: string): FormDefinition {
   const page = form.pages.find((item) => item.id === pageId);
-  if (!page || isSystemPage(page)) {
+  if (!page) {
     return form;
   }
   return {
@@ -181,7 +183,7 @@ export function movePage(form: FormDefinition, pageId: string, direction: -1 | 1
   };
 }
 
-/** Sivut, joille uuden kentän voi sijoittaa (myös Asiakas). */
+/** Sivut, joille uuden kentän voi sijoittaa. */
 export function pagesAssignableForNewField(form: FormDefinition): FormPage[] {
   return sortedPages(form);
 }

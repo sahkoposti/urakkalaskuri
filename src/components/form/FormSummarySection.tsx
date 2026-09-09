@@ -4,6 +4,7 @@ import { AppCard, ResultRow, SectionTitle } from '@/src/components/common';
 import { sortedPages } from '@/src/core/form/formDefinitionHelpers';
 import {
   formatFieldSummaryValue,
+  lineFormSnapshot,
   summaryDisplayFields,
 } from '@/src/core/form/formSummaryHelpers';
 import type { FormDefinition } from '@/src/core/form/types';
@@ -25,6 +26,8 @@ type FormSummarySectionProps = {
   snapshot?: FormSnapshot;
   workDurationDays?: number;
   weatherReserveFactor?: number;
+  title?: string;
+  fieldKeyPrefix?: string;
 };
 
 export function FormSummarySection({
@@ -35,24 +38,31 @@ export function FormSummarySection({
   snapshot,
   workDurationDays,
   weatherReserveFactor = 1,
+  title = 'Lomaketiedot',
+  fieldKeyPrefix = '',
 }: FormSummarySectionProps) {
   const styles = useThemedStyles(createStyles);
-  if (snapshot) {
-    if (snapshot.fields.length === 0) return null;
+  const resolvedSnapshot =
+    snapshot && snapshot.fields.length > 0
+      ? snapshot
+      : form && fieldValues
+        ? lineFormSnapshot({ snapshot, fieldValues }, form, products, context ?? {})
+        : undefined;
 
+  if (resolvedSnapshot && resolvedSnapshot.fields.length > 0) {
     let lastPageTitle: string | undefined;
     return (
       <>
-        <SectionTitle title="Lomaketiedot" />
+        <SectionTitle title={title} />
         <AppCard style={styles.card}>
-          {snapshot.fields.map((field) => {
+          {resolvedSnapshot.fields.map((field, index) => {
             const pageTitle = field.pageTitle
               ? displayWorkDurationText(field.pageTitle)
               : undefined;
             const showPageTitle = pageTitle && pageTitle !== lastPageTitle;
             if (showPageTitle) lastPageTitle = pageTitle;
             return (
-              <View key={field.key}>
+              <View key={`${fieldKeyPrefix}${field.key}:${index}`}>
                 {showPageTitle ? <Text style={styles.pageTitle}>{pageTitle}</Text> : null}
                 <ResultRow
                   label={displayWorkDurationText(field.label)}
@@ -66,7 +76,7 @@ export function FormSummarySection({
     );
   }
 
-  if (!form || !fieldValues || !context) return null;
+  if (!form || !fieldValues) return null;
 
   const fields = summaryDisplayFields(form, fieldValues, context);
   if (fields.length === 0) return null;
@@ -76,7 +86,7 @@ export function FormSummarySection({
 
   return (
     <>
-      <SectionTitle title="Lomaketiedot" />
+      <SectionTitle title={title} />
       <AppCard style={styles.card}>
         {sortedPages(form).flatMap((page) =>
           (page.fieldIds ?? [])
@@ -87,11 +97,11 @@ export function FormSummarySection({
               const showPageTitle = pageTitle !== lastPageTitle;
               if (showPageTitle) lastPageTitle = pageTitle;
               return (
-                <View key={field.id}>
+                <View key={`${fieldKeyPrefix}${field.id}`}>
                   {showPageTitle ? <Text style={styles.pageTitle}>{pageTitle}</Text> : null}
                   <ResultRow
                     label={displayWorkDurationText(field.label)}
-                    value={formatFieldSummaryValue(field, fieldValues, context, products)}
+                    value={formatFieldSummaryValue(field, fieldValues, context ?? {}, products)}
                   />
                 </View>
               );

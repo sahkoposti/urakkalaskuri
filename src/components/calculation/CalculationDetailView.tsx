@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
+import { PriceBreakdownCard } from '@/src/components/calculation/PriceBreakdownCard';
 import {
   AppCard,
   OutlinedButton,
@@ -10,22 +11,23 @@ import {
   ResultRow,
   SectionTitle,
 } from '@/src/components/common';
+import { previewFormContext } from '@/src/core/calculation/calculationPipeline';
+import { lineFormSnapshot } from '@/src/core/form/formSummaryHelpers';
 import {
-  formVersionMismatchFromRecord,
   formVersionMismatchMessage,
+  hasFormVersionMismatch,
 } from '@/src/core/form/formVersion';
 import type { FormDefinition } from '@/src/core/form/types';
-import type { CalculationRecord } from '@/src/core/models/types';
+import type { CalculationRecord, CustomerInfo, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
+import { productBelongsToStructure } from '@/src/core/product/productStructures';
+import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import {
-  formatContractPriceVat0,
-  formatMarginCommissionPrice,
-  formatMaterialsPrice,
-  applyVat,
-  isPrivateCustomer,
-  reverseVatLabel,
-} from '@/src/core/utils/priceDisplay';
-import { formatCurrency, formatDecimal, formatPercent, formatWorkDurationDays } from '@/src/core/utils/formatters';
+  lineListPriceVat0,
+  lineTotalVat0,
+  withDerivedLinePricing,
+} from '@/src/core/structure/linePricing';
+import { applyVat, isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
 import { useApp } from '@/src/context/AppContext';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -38,6 +40,24 @@ type CalculationDetailViewProps = {
   onDeletePress?: () => void;
 };
 
+function lineBreakdown(line: StructureLine, reverseVat: boolean) {
+  const priced = withDerivedLinePricing(line);
+  const total = lineTotalVat0(priced);
+  const list = lineListPriceVat0(priced);
+  const vatAmount = reverseVat ? 0 : applyVat(total, priced.vatPercent) - total;
+  return {
+    materialsVat0: priced.materialsVat0,
+    discountPercent: priced.discountPercent,
+    totalPriceVat0: total,
+    totalPriceVat: reverseVat ? total : total + vatAmount,
+    vatAmount,
+    vatPercent: priced.vatPercent,
+    totalPriceVatBeforeDiscount: reverseVat ? list : applyVat(list, priced.vatPercent),
+    totalPriceVat0BeforeDiscount: list,
+    workDurationDays: priced.workDurationDays,
+  };
+}
+
 export function CalculationDetailView({
   record,
   formDefinition,
@@ -46,17 +66,22 @@ export function CalculationDetailView({
   onDeletePress,
 }: CalculationDetailViewProps) {
   const styles = useThemedStyles(createStyles);
-  const { settings } = useApp();
+  const { settings, structures } = useApp();
   const customer = customerFromRecord(record);
   const privateCustomer = isPrivateCustomer(customer);
-  const vatRate = record.vatPercent;
-  const formVersionMismatch = formVersionMismatchFromRecord(record, formDefinition);
-  const snapshotVersion = record.formSnapshot?.formVersion;
-  const priceBeforeDiscount = privateCustomer
-    ? (record.totalPriceVatBeforeDiscount ?? record.totalPriceVat)
-    : (record.totalPriceVat0BeforeDiscount ?? record.totalPriceVat0);
-  const priceAfterDiscount = privateCustomer ? record.totalPriceVat : record.totalPriceVat0;
-  const discountAmount = Math.max(0, priceBeforeDiscount - priceAfterDiscount);
+  const structureLines = ensureStructureLines(record);
+  const showStructureSummaries = structureLines.length > 1;
+  const singleLineDuration =
+    structureLines.length === 1 ? structureLines[0].workDurationDays : undefined;
+  const mismatchLine = structureLines.find((line) => {
+    const structure = structures.find((item) => item.id === line.structureId);
+    const snapshotVersion = line.formVersion ?? line.snapshot?.formVersion;
+    const currentVersion = structure?.form.version ?? formDefinition.version;
+    return hasFormVersionMismatch(snapshotVersion, currentVersion);
+  });
+  const snapshotVersion =
+    mismatchLine?.formVersion ?? mismatchLine?.snapshot?.formVersion ?? record.formSnapshot?.formVersion;
+  const currentVersion = formDefinition.version;
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -77,11 +102,11 @@ export function CalculationDetailView({
         <View style={styles.titleUnderline} />
       </View>
 
-      {formVersionMismatch && snapshotVersion != null ? (
+      {mismatchLine && snapshotVersion != null ? (
         <View style={styles.versionWarning}>
           <Text style={styles.versionWarningTitle}>Lomakepohja on muuttunut</Text>
           <Text style={styles.versionWarningText}>
-            {formVersionMismatchMessage(snapshotVersion, formDefinition.version)}
+            {formVersionMismatchMessage(snapshotVersion, currentVersion)}
           </Text>
         </View>
       ) : null}
@@ -95,10 +120,7 @@ export function CalculationDetailView({
 
       <AppCard style={styles.card}>
         {!privateCustomer ? (
-          <ResultRow
-            label="Käänteinen ALV"
-            value={reverseVatLabel(customer)}
-          />
+          <ResultRow label="Käänteinen ALV" value={reverseVatLabel(customer)} />
         ) : null}
         <ResultRow
           label="Puh."
@@ -138,118 +160,89 @@ export function CalculationDetailView({
         />
       </AppCard>
 
-      <AppCard style={styles.card}>
-        <ResultRow
-          label="Työn arvioitu kesto (pv)"
-          value={formatWorkDurationDays(record.workDurationDays, settings.weatherReserveFactor)}
-        />
-        <ResultRow
-          label="Urakkahinta (alv0)"
-          value={formatContractPriceVat0(record.contractPriceVat0)}
-        />
-        <ResultRow
-          label="Materiaalit (alv0)"
-          value={formatCurrency(record.materialsVat0)}
-        />
-        {!customer.reverseVat ? (
-          <ResultRow
-            label="Materiaalit (sis. ALV)"
-            value={formatCurrency(applyVat(record.materialsVat0, vatRate))}
-          />
-        ) : null}
-        <ResultRow
-          label="Myyntikate"
-          value={formatMarginCommissionPrice(record.marginEur)}
-        />
-        <ResultRow
-          label="Myyntikate (%)"
-          value={formatPercent(record.marginPercent)}
-        />
-        <ResultRow
-          label="Myyntipalkkio"
-          value={formatMarginCommissionPrice(record.commissionEur)}
-        />
-        {record.discountPercent > 0 ? (
-          <>
-            <View style={styles.divider} />
-            <ResultRow
-              label="Hinta ennen alennusta"
-              value={formatCurrency(priceBeforeDiscount)}
-            />
-            <ResultRow
-              label={`Alennus (${formatPercent(record.discountPercent)})`}
-              value={`−${formatCurrency(discountAmount)}`}
-            />
-          </>
-        ) : null}
-        <View style={styles.divider} />
-        {privateCustomer ? (
-          <>
-            <ResultRow
-              label="Kokonaishinta (alv0)"
-              value={formatCurrency(record.totalPriceVat0)}
-            />
-            <ResultRow
-              label={`ALV (${formatPercent(vatRate)})`}
-              value={formatCurrency(record.vatAmount)}
-            />
-            <ResultRow
-              label="Kokonaishinta (alv)"
-              value={formatCurrency(record.totalPriceVat)}
-              highlight
-            />
-          </>
-        ) : (
-          <>
-            <ResultRow
-              label="Kokonaishinta (alv0)"
-              value={formatCurrency(record.totalPriceVat0)}
-              highlight
-            />
-            {customer.reverseVat ? (
-              <ResultRow label="ALV" value="Käänteinen ALV" />
-            ) : (
-              <>
-                <ResultRow
-                  label="ALV"
-                  value={formatCurrency(record.vatAmount)}
-                />
-                <ResultRow
-                  label="Kokonaishinta (alv)"
-                  value={formatCurrency(record.totalPriceVat)}
-                />
-              </>
-            )}
-          </>
-        )}
-      </AppCard>
+      {record.deliveryScheduleText?.trim() ? (
+        <AppCard style={styles.card}>
+          <ResultRow label="Toimitusajankohta" value={record.deliveryScheduleText.trim()} />
+        </AppCard>
+      ) : null}
 
-      <FormSummarySection
-        snapshot={record.formSnapshot}
-        workDurationDays={record.workDurationDays}
+      <PriceBreakdownCard
+        values={{
+          ...record,
+          workDurationDays: singleLineDuration ?? record.workDurationDays,
+        }}
+        customer={customer}
         weatherReserveFactor={settings.weatherReserveFactor}
+        showDuration={structureLines.length <= 1}
       />
 
-      {record.lines.length > 0 ? (
-        <>
-          <SectionTitle title="Materiaalirivit" />
-          {record.lines.map((line) => (
-            <AppCard key={line.id} style={styles.lineCard}>
-              <View style={styles.lineRow}>
-                <Text style={styles.lineText}>
-                  {line.productName} × {formatDecimal(line.quantity)} {line.unit}
-                </Text>
-                <Text style={styles.linePrice}>
-                  {formatMaterialsPrice(line.lineTotalVat0, customer, vatRate)}
-                </Text>
-              </View>
-            </AppCard>
-          ))}
-        </>
-      ) : null}
+      {structureLines.map((line) => (
+        <LineDetail
+          key={line.id}
+          line={line}
+          customer={customer}
+          weatherReserveFactor={settings.weatherReserveFactor}
+          showPriceSummary={showStructureSummaries}
+        />
+      ))}
 
       <OutlinedButton title="Sulje" onPress={onFooterPress} />
     </ScrollView>
+  );
+}
+
+function LineDetail({
+  line,
+  customer,
+  weatherReserveFactor,
+  showPriceSummary,
+}: {
+  line: StructureLine;
+  customer: CustomerInfo;
+  weatherReserveFactor: number;
+  showPriceSummary: boolean;
+}) {
+  const { products, structures, settings } = useApp();
+  const reverseVat = Boolean(customer.reverseVat);
+  const structure = structures.find((item) => item.id === line.structureId);
+  const structureProducts = products.filter((product) =>
+    productBelongsToStructure(product, line.structureId),
+  );
+  const context = structure
+    ? previewFormContext(
+        structure.form,
+        line.fieldValues ?? {},
+        [],
+        structureProducts,
+        settings,
+        undefined,
+        reverseVat,
+      )
+    : undefined;
+  const snapshot = lineFormSnapshot(line, structure?.form, structureProducts, context);
+
+  return (
+    <View>
+      {showPriceSummary ? <SectionTitle title={line.name} /> : null}
+      {showPriceSummary ? (
+        <PriceBreakdownCard
+          values={lineBreakdown(line, reverseVat)}
+          customer={customer}
+          weatherReserveFactor={weatherReserveFactor}
+          showDuration
+        />
+      ) : null}
+      <FormSummarySection
+        form={structure?.form}
+        fieldValues={line.fieldValues}
+        context={context}
+        products={structureProducts}
+        snapshot={snapshot}
+        workDurationDays={line.workDurationDays}
+        weatherReserveFactor={weatherReserveFactor}
+        fieldKeyPrefix={`${line.id}:`}
+      />
+    </View>
   );
 }
 
@@ -307,28 +300,6 @@ function createStyles(colors: AppColorPalette) {
     },
     card: {
       marginTop: 8,
-    },
-    divider: {
-      height: 1,
-      backgroundColor: colors.border,
-      marginVertical: 8,
-    },
-    lineCard: {
-      marginBottom: 0,
-    },
-    lineRow: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: 8,
-    },
-    lineText: {
-      flex: 1,
-      color: colors.text,
-      fontFamily: 'IBMPlexSans_400Regular',
-    },
-    linePrice: {
-      fontFamily: 'IBMPlexSans_600SemiBold',
-      color: colors.primary,
     },
   };
 }

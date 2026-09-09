@@ -80,7 +80,7 @@
       "showOnSummary": true,
       "allowManualOverride": true,
       "unit": "€",
-      "formula": "pinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta",
+      "formula": "pinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.ostohinta",
       "effects": [
         { "type": "add_material_fixed" }
       ],

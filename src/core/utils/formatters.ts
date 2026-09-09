@@ -37,6 +37,10 @@ export function formatPercent(value: number): string {
   return `${percentFormatter.format(value)} %`;
 }
 
+export function formatVatRate(vatPercent: number): string {
+  return percentFormatter.format(vatPercent);
+}
+
 export function formatDate(date: Date): string {
   return date.toLocaleDateString('fi-FI');
 }
@@ -44,6 +48,30 @@ export function formatDate(date: Date): string {
 export function parseNumber(value: string): number | null {
   const parsed = Number.parseFloat(value.replace(',', '.'));
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function roundToCents(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.round(value * 100 + Number.EPSILON) / 100;
+}
+
+export function formatFixed2(value: number): string {
+  if (!Number.isFinite(value)) return '';
+  return roundToCents(value).toFixed(2).replace('.', ',');
+}
+
+/** Rajaa syötteen enintään `maxDecimals` desimaaliin (pilkku tai piste). */
+export function limitDecimalInput(raw: string, maxDecimals = 2): string {
+  const normalized = raw.replace('.', ',');
+  const negative = normalized.startsWith('-');
+  const unsigned = negative ? normalized.slice(1) : normalized;
+  const commaIndex = unsigned.indexOf(',');
+  if (commaIndex < 0) {
+    return `${negative ? '-' : ''}${unsigned.replace(/[^\d]/g, '')}`;
+  }
+  const intPart = unsigned.slice(0, commaIndex).replace(/[^\d]/g, '');
+  const fracPart = unsigned.slice(commaIndex + 1).replace(/[^\d]/g, '').slice(0, maxDecimals);
+  return `${negative ? '-' : ''}${intPart},${fracPart}`;
 }
 
 /** Yhteenveto: työn kesto tasapäivinä, aina ylöspäin (1.1 → 2). */

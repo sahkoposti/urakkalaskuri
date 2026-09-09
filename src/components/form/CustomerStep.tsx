@@ -1,12 +1,15 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
+import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { AppInput } from '@/src/components/common';
 import {
   lookupPostalLocality,
   normalizePostalCode,
 } from '@/src/core/customer/varsinaisSuomiPostalCodes';
 import type { CustomerType } from '@/src/core/models/types';
+import type { CustomerRecord } from '@/src/core/structure/types';
+import { customerMatchLabel, formatCustomerType } from '@/src/core/customer/customerRegister';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -29,6 +32,8 @@ type CustomerStepProps = {
   onPostalCodeChange: (value: string) => void;
   onPostalLocalityChange: (value: string) => void;
   onNotesChange: (value: string) => void;
+  nameMatches?: CustomerRecord[];
+  onPickCustomer?: (customer: CustomerRecord) => void;
 };
 
 export function CustomerStep({
@@ -50,6 +55,8 @@ export function CustomerStep({
   onPostalCodeChange,
   onPostalLocalityChange,
   onNotesChange,
+  nameMatches = [],
+  onPickCustomer,
 }: CustomerStepProps) {
   const styles = useThemedStyles(createStyles);
 
@@ -65,6 +72,19 @@ export function CustomerStep({
   return (
     <View>
       <AppInput label="Nimi *" value={name} onChangeText={onNameChange} />
+      {nameMatches.length > 0 && onPickCustomer ? (
+        <View style={styles.matches}>
+          {nameMatches.map((customer) => (
+            <Pressable
+              key={customer.id}
+              onPress={() => onPickCustomer(customer)}
+              style={({ pressed }) => [styles.matchRow, pressed && styles.matchRowPressed]}
+            >
+              <Text style={styles.matchText}>{customerMatchLabel(customer)}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       <AppInput
         label="Puh."
         value={phone}
@@ -82,7 +102,7 @@ export function CustomerStep({
         label="Postinumero"
         value={postalCode}
         onChangeText={handlePostalCodeChange}
-        keyboardType="number-pad"
+        keyboardType="numeric"
         placeholder="Esim. 20100"
       />
       <AppInput
@@ -103,40 +123,20 @@ export function CustomerStep({
         selectedValue={customerType}
         onValueChange={(value) => onCustomerTypeChange(value as CustomerType)}
         items={[
-          { label: 'Yksityisasiakas', value: 'private' },
-          { label: 'Yritysasiakas', value: 'business' },
+          { label: formatCustomerType('private'), value: 'private' },
+          { label: formatCustomerType('business'), value: 'business' },
         ]}
       />
       {customerType === 'business' ? (
-        <View style={styles.toggleRow}>
-          <Text style={styles.toggleLabel}>Käänteinen arvonlisävero</Text>
-          <View style={styles.toggleActions}>
-            <Pressable
-              style={[
-                styles.toggleButton,
-                reverseVat && styles.toggleButtonActive,
-              ]}
-              onPress={() => onReverseVatChange(true)}
-            >
-              <Text style={[styles.toggleButtonText, reverseVat && styles.toggleButtonTextActive]}>
-                Kyllä
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.toggleButton,
-                !reverseVat && styles.toggleButtonActive,
-              ]}
-              onPress={() => onReverseVatChange(false)}
-            >
-              <Text
-                style={[styles.toggleButtonText, !reverseVat && styles.toggleButtonTextActive]}
-              >
-                Ei
-              </Text>
-            </Pressable>
-          </View>
-        </View>
+        <ChoiceToggle
+          label="Käänteinen arvonlisävero"
+          value={reverseVat}
+          options={[
+            { value: true, label: 'Kyllä' },
+            { value: false, label: 'Ei' },
+          ]}
+          onChange={onReverseVatChange}
+        />
       ) : null}
     </View>
   );
@@ -144,36 +144,27 @@ export function CustomerStep({
 
 function createStyles(colors: AppColorPalette) {
   return {
-    toggleRow: {
+    matches: {
+      marginTop: -6,
       marginBottom: 12,
-    },
-    toggleLabel: {
-      marginBottom: 6,
-      fontFamily: 'IBMPlexSans_600SemiBold',
-      color: colors.text,
-    },
-    toggleActions: {
-      flexDirection: 'row' as const,
-      gap: 8,
-    },
-    toggleButton: {
-      flex: 1,
       borderWidth: 1,
-      borderColor: colors.accent,
+      borderColor: colors.border,
       borderRadius: 5,
-      paddingVertical: 12,
-      alignItems: 'center' as const,
       backgroundColor: colors.secondary,
+      overflow: 'hidden' as const,
     },
-    toggleButtonActive: {
-      backgroundColor: colors.accent,
+    matchRow: {
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
-    toggleButtonText: {
-      fontFamily: 'IBMPlexSans_600SemiBold',
-      color: colors.accent,
+    matchRowPressed: {
+      opacity: 0.75,
     },
-    toggleButtonTextActive: {
-      color: colors.secondary,
+    matchText: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
     },
   };
 }

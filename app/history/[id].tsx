@@ -1,14 +1,16 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { CalculationDetailView } from '@/src/components/calculation/CalculationDetailView';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { ScreenLoading, ScreenMessage } from '@/src/components/common';
 import { customerFromRecord, type CalculationRecord } from '@/src/core/models/types';
+import { resetToHistoryList } from '@/src/core/navigation/appStack';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 
 export default function HistoryDetailScreen() {
+  const navigation = useNavigation();
   const { id, from } = useLocalSearchParams<{ id: string | string[]; from?: string | string[] }>();
   const calcId = Array.isArray(id) ? id[0] : id;
   const fromWizard = (Array.isArray(from) ? from[0] : from) === 'wizard';
@@ -17,8 +19,6 @@ export default function HistoryDetailScreen() {
     formDefinition,
     refreshWizardDraft,
     refreshCalculations,
-    setWizardSession,
-    wizardSession,
     wizardDraft,
   } = useApp();
   const [loading, setLoading] = useState(true);
@@ -40,19 +40,15 @@ export default function HistoryDetailScreen() {
   }, [calcId]);
 
   function goToHistoryList() {
-    if (router.canDismiss()) {
-      router.dismissAll();
-    }
-    router.replace('/history');
+    resetToHistoryList(navigation);
   }
 
   async function handleClose() {
     const fromFinishedCalculation =
-      fromWizard || wizardSession?.editCalculationId === calcId;
+      fromWizard || wizardDraft?.editCalculationId === calcId;
     if (fromFinishedCalculation) {
       await db.clearWizardDraft();
       await refreshWizardDraft();
-      setWizardSession(null);
       goToHistoryList();
       return;
     }
@@ -60,16 +56,13 @@ export default function HistoryDetailScreen() {
       router.back();
       return;
     }
-    router.replace('/history');
+    goToHistoryList();
   }
 
   async function handleDelete() {
     if (!calcId) return;
     try {
       await db.deleteCalculation(calcId);
-      if (wizardSession?.editCalculationId === calcId) {
-        setWizardSession(null);
-      }
       if (wizardDraft?.editCalculationId === calcId) {
         await db.clearWizardDraft();
         await refreshWizardDraft();

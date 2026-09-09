@@ -3,6 +3,7 @@ import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers'
 import {
   buildFormSnapshot,
   formatFieldSummaryValue,
+  lineFormSnapshot,
   summaryDisplayFields,
 } from '../src/core/form/formSummaryHelpers';
 import { runProductionPipeline } from '../src/core/calculation/calculationPipeline';
@@ -21,6 +22,48 @@ describe('summaryDisplayFields', () => {
     expect(keys).toContain('kiintea_seinapinta_ala_m2');
     expect(keys).toContain('laskenta_seinapinta_ala_m2');
     expect(keys).not.toContain('tyoryhma_kesto_h');
+  });
+});
+
+describe('lineFormSnapshot', () => {
+  test('keeps each structure line snapshot separate', () => {
+    const form = defaultForm();
+    const first = lineFormSnapshot(
+      { fieldValues: { kiintea_seinapinta_ala_m2: '120', laudoitustyyppi: '1.15' } },
+      form,
+      [],
+      { kiintea_seinapinta_ala_m2: 120, laudoitustyyppi: 1.15 },
+    );
+    const second = lineFormSnapshot(
+      { fieldValues: { kiintea_seinapinta_ala_m2: '40', laudoitustyyppi: '1' } },
+      form,
+      [],
+      { kiintea_seinapinta_ala_m2: 40, laudoitustyyppi: 1 },
+    );
+
+    expect(first?.fields.find((field) => field.key === 'kiintea_seinapinta_ala_m2')?.value).toContain(
+      '120',
+    );
+    expect(second?.fields.find((field) => field.key === 'kiintea_seinapinta_ala_m2')?.value).toContain(
+      '40',
+    );
+  });
+
+  test('prefers a stored snapshot over rebuilding from live values', () => {
+    const form = defaultForm();
+    const stored = buildFormSnapshot(form, { kiintea_seinapinta_ala_m2: '10' }, {
+      kiintea_seinapinta_ala_m2: 10,
+    });
+    const resolved = lineFormSnapshot(
+      {
+        snapshot: stored,
+        fieldValues: { kiintea_seinapinta_ala_m2: '99' },
+      },
+      form,
+      [],
+      { kiintea_seinapinta_ala_m2: 99 },
+    );
+    expect(resolved).toBe(stored);
   });
 });
 

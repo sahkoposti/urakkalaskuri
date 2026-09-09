@@ -14,6 +14,7 @@ type LiveFormContextInput = {
   products: Product[];
   settings: AppSettings;
   legacyDuration?: string;
+  reverseVat?: boolean;
 };
 
 export function useLiveFormContext({
@@ -23,17 +24,26 @@ export function useLiveFormContext({
   products,
   settings,
   legacyDuration,
+  reverseVat = false,
 }: LiveFormContextInput): Record<string, number> {
   const [computedValues, setComputedValues] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setComputedValues(
-        previewFormContext(form, fieldValues, materialLines, products, settings, legacyDuration),
+        previewFormContext(
+          form,
+          fieldValues,
+          materialLines,
+          products,
+          settings,
+          legacyDuration,
+          reverseVat,
+        ),
       );
     }, LIVE_FORM_CONTEXT_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [form, fieldValues, materialLines, products, settings, legacyDuration]);
+  }, [form, fieldValues, materialLines, products, settings, legacyDuration, reverseVat]);
 
   return computedValues;
 }

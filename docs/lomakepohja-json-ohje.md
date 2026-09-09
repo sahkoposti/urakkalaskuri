@@ -1,6 +1,6 @@
 # Lomakepohjan JSON-ohje
 
-Tämä ohje kertoo, miten Urakkalaskurin lomakepohja (`FormDefinition`) rakennetaan JSON-tiedostona ja tuodaan sovellukseen.
+Tämä ohje kertoo, miten Urakkalaskurin **tuoterakenteen** lomakepohja (`FormDefinition`) rakennetaan JSON-tiedostona ja tuodaan sovellukseen. Jokaisella tuoterakenteella on oma pohja.
 
 **Sovelluksen toiminta (näytöt, tallennus, hinnoittelu):** [sovellus.md](./sovellus.md)
 
@@ -13,7 +13,7 @@ Tämä ohje kertoo, miten Urakkalaskurin lomakepohja (`FormDefinition`) rakennet
 1. Kopioi esimerkki [`docs/examples/peruslaskenta-lomakepohja.json`](./examples/peruslaskenta-lomakepohja.json) uudeksi pohjaksi.
 2. Muokkaa kentät, sivut ja kaavat.
 3. Validoi JSON (esim. editorin JSON-tarkistus tai [jsonlint.com](https://jsonlint.com)).
-4. Avaa sovellus → **Asetukset → Lomakeasetukset → Tuo JSON…**
+4. Avaa sovellus → **Asetukset → Tuoterakenteet → [rakenne] → Lomake → Tuo JSON…**
 5. Liitä JSON ja vahvista tuonti.
 
 **Vinkki:** Vie ensin nykyinen pohja (**Vie JSON (leikepöytä)**) ja muokkaa sitä – saat mukaan oikeat järjestelmäkenttä-id:t ja rakenteen.
@@ -22,13 +22,15 @@ Tämä ohje kertoo, miten Urakkalaskurin lomakepohja (`FormDefinition`) rakennet
 
 ## 2. Tuonti ja vienti
 
-| Toiminto | Polku sovelluksessa |
-|----------|---------------------|
-| Vie nykyinen pohja | Asetukset → Lomakeasetukset → **Vie JSON (leikepöytä)** |
-| Tuo uusi pohja | Asetukset → Lomakeasetukset → **Tuo JSON…** |
+Polku: **Asetukset → Tuoterakenteet → [rakenne] → Lomake** (näytön otsikko on **Lomakeasetukset**). Editori avaa sen rakenteen, joka on merkitty aktiiviseksi (`activeStructureId`) juuri ennen navigointia — tarkista että avasit Lomake-kortin oikealta rakenteelta.
+
+| Toiminto | Painike |
+|----------|---------|
+| Vie nykyinen pohja | **Vie JSON (leikepöytä)** |
+| Tuo uusi pohja | **Tuo JSON…** |
 | Palauta tehdas oletus | **Palauta oletuslomake** |
 
-Tuonnin jälkeen sovellus **normalisoi** pohjan: lisää järjestelmäkentät, korjaa vanhat avaimet, hylkää `alv_maara` / `kokonaishinta`-kaavat ja siivoaa sivujen kenttäviittaukset.
+Tuonti korvaa **tämän rakenteen** lomakkeen, ei muiden rakenteiden pohjia. Sovellus **normalisoi** pohjan: lisää järjestelmäkentät, korjaa vanhat avaimet, hylkää `alv_maara` / `kokonaishinta`-kaavat ja siivoaa sivujen kenttäviittaukset.
 
 ---
 
@@ -82,11 +84,11 @@ Jokainen wizard-vaihe on yksi sivu. Kentät **eivät** kuulu sivuun upotettuna �
 
 ### Järjestelmäsivut
 
-- **`system: "customer"`** – Asiakastiedot. Nimi, yhteystiedot, postinumero, postitoimipaikka, lisätiedot, tyyppi ja käänteinen ALV ovat sovelluksen kiinteää UI:ta, eivät JSON-kenttiä. Voit lisätä omia kenttiä `fieldIds`-listaan; ne näkyvät asiakaslomakkeen jälkeen. Tätä sivua ei voi poistaa.
-- **`system: "materials"`** – Valinnainen tuote+määrä -rivi-editori. Summa menee kaavamuuttujaan `materiaalit`. **Oletuspohjassa ei ole tätä sivua** (materiaalit tulevat usein kaavoista ja `add_material_fixed`-efekteistä). Sivu voidaan poistaa asetuksista. Älä lisää sitä, jos lasket materiaalit jo omilla kentillä – muuten wizardissa näkyy tyhjä Materiaalit-vaihe.
-- **Työn kesto** – Lisää sivulle `field_system_tyoryhma_kesto_pv` (kaava-avain `tyoryhma_kesto_pv`). Wizardissa arvo on tarkka kesto. Yhteenvedon **Työn arvioitu kesto** kertoo säävarauskertoimen (Asetukset → Yleinen, ei kaavamuuttuja) ja pyöristää ylöspäin.
-- **Alennus %** – Lisää sivulle `field_system_alennus_prosentti` (kaava-avain `alennus_prosentti`). Oletus `0`.
-- **Hinnat** – Tehdasoletuksessa sivu `page_prices`: urakka, materiaalit, palkkio, myyntihinta alv0 ja kokonaishinta (sis. ALV). Voit yliajaa arvot wizardissa.
+- **`system: "customer"`** – Rakenteen Asiakas-sivu **lisäkentille**. Nimi, puhelin, osoite, tyyppi ja käänteinen ALV ovat laskennan omalla asiakassivulla, eivät tällä sivulla. Jos `fieldIds` on tyhjä, sivu piilotetaan rivin lomakkeesta. Sivua ei voi poistaa asetuksista.
+- **`system: "materials"`** – Tuote+määrä -rivi-editori. **Rivin lomake ei näytä tätä sivua.** Tuote valitaan `product_select`-kentästä. Älä lisää sivua, jos lasket materiaalit kaavoilla ja `add_material_fixed`-efekteillä.
+- **Työn kesto** – Lisää sivulle `field_system_tyoryhma_kesto_pv` (kaava-avain `tyoryhma_kesto_pv`). Lomakkeella arvo on tarkka kesto. Yhteenvedon **Työn arvioitu kesto** kertoo säävarauskertoimen (Asetukset → Yleinen, ei kaavamuuttuja) ja pyöristää ylöspäin.
+- **Alennus %** – Lisää sivulle `field_system_alennus_prosentti` (kaava-avain `alennus_prosentti`). Oletus `0`. Sama ale on myös rivikortissa.
+- **Hinnat** – Tehdasoletuksessa sivu `page_prices`: urakka, materiaalit, palkkio, myyntihinta alv0 ja kokonaishinta (sis. ALV). Voit yliajaa arvot lomakkeella.
 
 Sama `pages[].id` ei saa toistua; tuonti uniikistaa kaksoiskappaleet (`page_materials` → `page_materials_2`).
 
@@ -116,7 +118,7 @@ Jokaisella kentällä on globaali määrittely. Sivu valitsee vain mitkä kentä
 | `label` | Näyttönimi wizardissa |
 | `type` | Kenttätyyppi (taulukko alla) |
 | `required` | `true` = pakollinen (tyhjä oletus + ei syötettä = virhe) |
-| `showOnSummary` | `true` = näkyy yhteenvedon **Lomaketiedot**-osiossa (wizardista riippumatta). Järjestelmäkentät **eivät** tule tähän osioon. |
+| `showOnSummary` | `true` = näkyy yhteenvedon **Lomaketiedot**-osiossa **tällä rivillä** (wizardista riippumatta). Järjestelmäkentät **eivät** tule tähän osioon. |
 
 ### Valinnaiset kentät
 
@@ -315,7 +317,7 @@ Jos korvaat myyntihinnan esim. `liukuva_myyntihinta(urakka_hinta_alv0 + materiaa
 
 | Tapa | Milloin | JSON |
 |------|---------|------|
-| **A. Materiaalirivit** | Käyttäjä valitsee tuotteet listasta | `pages[].system: "materials"` |
+| **A. Materiaalirivit** | Tuote+määrä -editori (ei rivin lomakkeessa) | `pages[].system: "materials"` |
 | **B. Kiinteä lisä €** | Esim. +150 € aina | `"effects": [{ "type": "add_material_fixed", "value": 150 }]` |
 | **C. Laskettu summa** | Kaava laskee hinnan → materiaaleihin | `computed` + `"effects": [{ "type": "add_material_fixed" }]` (ilman `value`) |
 
@@ -323,9 +325,9 @@ Kaikki kolme **voidaan yhdistää**: `materiaalit = rivien summa × kerroin + ef
 
 ---
 
-#### Tapa A – Materiaalirivit (wizard-sivu)
+#### Tapa A – Materiaalirivit (`system: "materials"`)
 
-Lisää sivu, jolla `system` on `"materials"`. Kenttälistaa (`fieldIds`) ei tarvita – sivu näyttää tuote+määrä -rivit automaattisesti.
+Lisää sivu, jolla `system` on `"materials"`. Kenttälistaa (`fieldIds`) ei tarvita. **Tuoterakenteen rivin lomake ei näytä tätä sivua** (tuote valitaan `product_select`-kentästä). Sivua voi käyttää vain, jos jokin muu näkymä sitä lukee; oletuspohjassa sitä ei ole.
 
 ```json
 {
@@ -337,7 +339,7 @@ Lisää sivu, jolla `system` on `"materials"`. Kenttälistaa (`fieldIds`) ei tar
 }
 ```
 
-Tuotteet määritellään sovelluksessa (**Tuotteet**), ei JSON-lomakkeessa. Käyttäjä lisää rivejä wizardissa.
+Tuotteet määritellään sovelluksessa (**Tuotteet**), ei JSON-lomakkeessa. Rivin lomakkeessa tuote valitaan `product_select`-kentästä.
 
 ---
 
@@ -408,7 +410,7 @@ Tai efekti **käyttää kentän syötettyä arvoa** (käyttäjä kirjoittaa summ
   "showOnSummary": true,
   "allowManualOverride": true,
   "unit": "€",
-  "formula": "laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta",
+  "formula": "laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.ostohinta",
   "effects": [
     { "type": "add_material_fixed" }
   ]
@@ -757,7 +759,7 @@ Kiinteä summa JSONissa:
 
 ## 13. Tuotelista (`product_select`)
 
-Tuotteet määritellään erikseen (**Tuotteet**-näkymä). Lomake viittaa tuotteeseen id:llä:
+Tuotteet määritellään erikseen (**Tuotteet**-näkymä: ostohinta, myyntihinta, kate, menekki, työkerroin). Tuote voi kuulua useaan tuoterakenteeseen; rivin lomake näyttää vain kyseisen rakenteen tuotteet **siinä järjestyksessä, joka on asetettu Tuotteet-listassa** (↑↓). Lomake viittaa tuotteeseen id:llä:
 
 ```json
 {
@@ -774,15 +776,28 @@ Tuotteet määritellään erikseen (**Tuotteet**-näkymä). Lomake viittaa tuott
 Kaavoissa käytettävissä (kun tuote valittu):
 
 ```text
-kaytettava_maali.yksikkohinta   (alias: .hinta, .unit_price)
+kaytettava_maali.ostohinta      (alias: .purchase_price, .yksikkohinta, .hinta, .unit_price)
+kaytettava_maali.myyntihinta    (alias: .sale_price)
+kaytettava_maali.kate           (alias: .kate_eur, .margin) — myynti − osto, alv0
+kaytettava_maali.kate_prosentti (alias: .margin_percent) — (myynti − osto) / myynti × 100
 kaytettava_maali.menekki        (alias: .consumption)
 kaytettava_maali.tyokerroin     (alias: .work_factor)
 ```
 
-Esimerkkikaava:
+Hinnat tulevat **Tuotteet**-rekisteristä (ostohinta ja myyntihinta, alv0). Kate lasketaan automaattisesti. Vanha `.yksikkohinta` tarkoittaa ostohintaa, jotta aiemmat kaavat toimivat.
+
+Esimerkkikaava (materiaalikustannus ostohinnalla):
 
 ```text
-laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta
+laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.ostohinta
+```
+
+Myyntihinta ja kate samasta tuotteesta:
+
+```text
+laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.myyntihinta
+kaytettava_maali.kate
+kaytettava_maali.kate_prosentti
 ```
 
 ---
@@ -844,7 +859,7 @@ Se sisältää:
   "showOnSummary": true,
   "allowManualOverride": true,
   "unit": "€",
-  "formula": "laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.yksikkohinta",
+  "formula": "laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki * kaytettava_maali.ostohinta",
   "effects": [
     { "type": "add_material_fixed" }
   ]
@@ -886,7 +901,7 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 | Kaava palauttaa 0 | Tarkista `key`-nimet; onko lähdekenttä piilotettu `showWhen`:lla |
 | Valinta ei vaikuta kaavaan | `select`-option `value` pitää olla numero merkkijonona |
 | Hintakortti tyhjä / virhe | Vie `kokonaishinta_alv0`, `urakka_hinta_alv0`, kate, palkkio ja kesto. Tarkista Yleinen-asetukset (ALV, kate, tuntihinta). |
-| Materiaalit jäävät 0 | Lisää `effects` computed-kentälle tai materiaalirivit-sivu; pelkkä kaava ei riitä |
+| Materiaalit jäävät 0 | Lisää `effects` computed-kentälle tai `product_select`; pelkkä kaava ei riitä. `system: "materials"` ei näy rivin lomakkeessa. |
 | Computed näyttää hinnan mutta materiaalit-kortti ei muutu | Puuttuu `"effects": [{ "type": "add_material_fixed" }]` |
 | Urakkahinta ei muutu vaikka lisäsit työtä | Oletusurakka: `add_duration` tai kaava `tyoryhma_kesto_pv`:lle. Oma urakkakaava: päivitä `urakka_hinta_alv0`. |
 | Lisätunnit eivät vaikuta | Puuttuu `"effects": [{ "type": "add_duration" }]`, kenttä piilotettu, tai urakka ei lue kestoa |
@@ -899,8 +914,8 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 2. **Määrittele avaimet (`key`)** – `a-z0-9_` (suomeksi ilman ääkkösiä, esim. `laskenta_seinapinta_ala_m2`).
 3. **Rakenna JSON** – aloita esimerkistä; lisää kentät `fields`-taulukkoon; linkitä sivut.
 4. **Testaa tuonti** – dev-ympäristössä; korjaa virheet.
-5. **Kalibroi debug-tilassa** – Asetukset → Lomakeasetukset → Debug → esimerkkiarvot ja live-laskenta.
-6. **Aja testilaskenta** wizardissa ja tarkista yhteenveto.
+5. **Kalibroi debug-tilassa** – Asetukset → Tuoterakenteet → [rakenne] → Lomake → Debug.
+6. **Aja testilaskenta** ja tarkista yhteenveto (jokainen rivi omine lomaketietoineen).
 
 ---
 
@@ -915,4 +930,4 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 | `src/core/calculation/pricingSkeleton.ts` | ALV ja sis. ALV `kokonaishinta_alv0`:sta |
 | `src/core/calculation/discount.ts` | Alennus listahinnan jälkeen |
 | `src/core/form/defaultFormDefinition.ts` | Tehdasoletus |
-| `src/core/form/productContext.ts` | Tuoteattribuutit kaavoissa (`.yksikkohinta`, `.menekki`, `.tyokerroin`) |
+| `src/core/form/productContext.ts` | Tuoteattribuutit kaavoissa (`.ostohinta`, `.myyntihinta`, `.kate`, `.menekki`, `.tyokerroin`) |

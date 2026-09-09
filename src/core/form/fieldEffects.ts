@@ -2,6 +2,7 @@ import { pipelineFieldOrder } from '@/src/core/form/formDefinitionHelpers';
 import { isFieldVisible } from '@/src/core/form/fieldVisibility';
 import type { FieldEffect, FormDefinition, FormField } from '@/src/core/form/types';
 import type { Product, WizardLineDraft } from '@/src/core/models/types';
+import { productPurchasePriceVat0 } from '@/src/core/product/productPricing';
 
 export interface FieldEffectsResult {
   materialsFixedAdd: number;
@@ -125,12 +126,11 @@ export function applyFieldEffects(
   return result;
 }
 
-export function mergeMaterialLines(...groups: WizardLineDraft[][]): WizardLineDraft[] {
-  return groups.flat();
-}
-
 export function materialLinesTotal(lines: WizardLineDraft[]): number {
-  return lines.reduce((sum, line) => sum + line.quantity * line.product.unitPriceVat0, 0);
+  return lines.reduce(
+    (sum, line) => sum + line.quantity * productPurchasePriceVat0(line.product),
+    0,
+  );
 }
 
 /** Materiaalit laskennan lopussa: rivit × kerroin + kiinteät lisät. */

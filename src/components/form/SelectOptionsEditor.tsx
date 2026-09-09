@@ -1,6 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { AppInput, OutlinedButton } from '@/src/components/common';
+import { ReorderControls } from '@/src/components/ReorderControls';
 import type { SelectOption } from '@/src/core/form/types';
 import { createSelectOption } from '@/src/core/form/formMutations';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -49,28 +50,12 @@ export function SelectOptionsEditor({ fieldKey, options, onChange }: SelectOptio
           <View key={index} style={styles.optionCard}>
             <View style={styles.optionHeader}>
               <Text style={styles.optionIndex}>{index + 1}.</Text>
-              <View style={styles.optionActions}>
-                <Pressable
-                  style={[styles.moveButton, index === 0 && styles.moveButtonDisabled]}
-                  disabled={index === 0}
-                  onPress={() => moveOption(index, -1)}
-                >
-                  <Text style={styles.moveButtonText}>↑</Text>
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.moveButton,
-                    index === options.length - 1 && styles.moveButtonDisabled,
-                  ]}
-                  disabled={index === options.length - 1}
-                  onPress={() => moveOption(index, 1)}
-                >
-                  <Text style={styles.moveButtonText}>↓</Text>
-                </Pressable>
-                <Pressable style={styles.removeButton} onPress={() => removeOption(index)}>
-                  <Text style={styles.removeButtonText}>Poista</Text>
-                </Pressable>
-              </View>
+              <ReorderControls
+                index={index}
+                count={options.length}
+                onMove={(direction) => moveOption(index, direction)}
+                onDelete={() => removeOption(index)}
+              />
             </View>
 
             <AppInput
@@ -138,37 +123,6 @@ function createStyles(colors: AppColorPalette) {
       fontFamily: 'IBMPlexSans_700Bold',
       color: colors.accent,
       fontSize: 15,
-    },
-    optionActions: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: 6,
-    },
-    moveButton: {
-      width: 32,
-      height: 32,
-      borderRadius: 5,
-      borderWidth: 1,
-      borderColor: colors.accent,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-    },
-    moveButtonDisabled: {
-      opacity: 0.35,
-    },
-    moveButtonText: {
-      color: colors.accent,
-      fontFamily: 'IBMPlexSans_700Bold',
-      fontSize: 16,
-    },
-    removeButton: {
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-    },
-    removeButtonText: {
-      color: colors.accent,
-      fontFamily: 'IBMPlexSans_600SemiBold',
-      fontSize: 13,
     },
   };
 }

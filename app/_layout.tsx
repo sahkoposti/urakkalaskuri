@@ -76,14 +76,20 @@ function ThemedRoot() {
         >
           <Stack.Screen name="index" options={{ title: 'Urakkalaskuri' }} />
           <Stack.Screen name="wizard/index" options={{ title: 'Laskenta' }} />
+          <Stack.Screen name="wizard/customer" options={{ title: 'Asiakas' }} />
+          <Stack.Screen name="wizard/line/[lineId]" options={{ title: 'Lomake' }} />
           <Stack.Screen name="wizard/summary" options={{ title: 'Yhteenveto' }} />
           <Stack.Screen name="products/index" options={{ title: 'Tuotteet' }} />
           <Stack.Screen name="products/new" options={{ title: 'Lisää tuote' }} />
           <Stack.Screen name="products/[id]" options={{ title: 'Muokkaa tuotetta' }} />
+          <Stack.Screen name="customers/index" options={{ title: 'Asiakkaat' }} />
+          <Stack.Screen name="customers/[id]" options={{ title: 'Asiakas' }} />
           <Stack.Screen name="history/index" options={{ title: 'Historia' }} />
           <Stack.Screen name="history/[id]" options={{ title: 'Laskelman tiedot' }} />
           <Stack.Screen name="settings/index" options={{ title: 'Asetukset' }} />
           <Stack.Screen name="settings/general" options={{ title: 'Yleinen' }} />
+          <Stack.Screen name="settings/structures/index" options={{ title: 'Tuoterakenteet' }} />
+          <Stack.Screen name="settings/structures/[id]" options={{ title: 'Tuoterakenne' }} />
           <Stack.Screen name="settings/calculation/index" options={{ title: 'Lomakeasetukset' }} />
           <Stack.Screen name="settings/calculation/pages" options={{ title: 'Sivut' }} />
           <Stack.Screen name="settings/calculation/pages/[pageId]" options={{ title: 'Sivun kentät' }} />

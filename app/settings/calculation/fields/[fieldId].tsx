@@ -1,4 +1,4 @@
-import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
@@ -39,9 +39,10 @@ import { isProductField } from '@/src/core/form/productFieldUtils';
 import { isFieldEffectComplete } from '@/src/core/form/fieldEffects';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { isSystemField, isSystemFieldHiddenFromUi, restoreSystemField } from '@/src/core/form/systemFields';
-import type { FieldType, FormField } from '@/src/core/form/types';
-import { db, useApp } from '@/src/context/AppContext';
+import type { FieldType, FormDefinition, FormField } from '@/src/core/form/types';
+import { useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
+import { useStructureFormEditor } from '@/src/hooks/useStructureFormEditor';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -95,16 +96,19 @@ export default function FormFieldEditorScreen() {
   const createType = firstParam(params.type) as FieldType | '';
   const assignPageId = firstParam(params.pageId);
   const duplicateFrom = firstParam(params.duplicateFrom);
-  const { ready, formDefinition, formDebug, settings, products, refreshFormSettings } = useApp();
+  const { ready, formDebug, settings, products } = useApp();
+  const { formDefinition, persistForm, href } = useStructureFormEditor();
   const { showAlert } = useThemedAlert();
   const [field, setField] = useState<FormField | null>(null);
   const [savedField, setSavedField] = useState<FormField | null>(null);
-  const [draftForm, setDraftForm] = useState(formDefinition);
+  const [draftForm, setDraftForm] = useState<FormDefinition>(
+    formDefinition ?? { id: '', name: '', version: 0, pages: [], fields: [], updatedAt: 0 },
+  );
   const [deleteVisible, setDeleteVisible] = useState(false);
   const draftInitRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !formDefinition) return;
     if (isDraftParam) {
       if (draftInitRef.current === fieldId) return;
       draftInitRef.current = fieldId;
@@ -150,7 +154,7 @@ export default function FormFieldEditorScreen() {
   }, [field, savedField]);
 
   async function persistSettings(): Promise<boolean> {
-    if (!field) return false;
+    if (!field || !formDefinition) return false;
     if (isSystemFieldHiddenFromUi(field)) {
       showAlert('Virhe', 'Tätä järjestelmäkenttää ei voi muokata.');
       return false;
@@ -206,8 +210,7 @@ export default function FormFieldEditorScreen() {
     const nextForm = getFieldById(draftForm, field.id)
       ? updateField(draftForm, field)
       : insertField(draftForm, field, assignPageId || undefined);
-    await db.saveFormDefinition(nextForm);
-    await refreshFormSettings();
+    await persistForm(nextForm);
     setSavedField(field);
     setDraftForm(nextForm);
     return true;
@@ -219,10 +222,13 @@ export default function FormFieldEditorScreen() {
   });
 
   if (!ready) return <ScreenLoading />;
+  if (!formDefinition) return <ScreenMessage message="Tuoterakennetta ei löytynyt." />;
   if (!field) return <ScreenMessage message="Kenttää ei löytynyt." />;
   if (isSystemFieldHiddenFromUi(field)) {
     return <ScreenMessage message="Tätä järjestelmäkenttää ei voi muokata. Se on käytössä vain laskennassa." />;
   }
+
+  const structureForm = formDefinition;
 
   const editingField = field;
   const isSystem = isSystemField(editingField);
@@ -244,14 +250,13 @@ export default function FormFieldEditorScreen() {
     const copyId = generateId('field');
     allowExit();
     router.replace(
-      `/settings/calculation/fields/${copyId}?draft=1&duplicateFrom=${editingField.id}` as Href,
+      href(`/settings/calculation/fields/${copyId}?draft=1&duplicateFrom=${editingField.id}`),
     );
   }
 
   async function handleDelete() {
-    const next = removeField(formDefinition, editingField.id);
-    await db.saveFormDefinition(next);
-    await refreshFormSettings();
+    const next = removeField(structureForm, editingField.id);
+    await persistForm(next);
     allowExit();
     setDeleteVisible(false);
     router.back();

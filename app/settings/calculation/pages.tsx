@@ -1,21 +1,21 @@
-import { router, Stack, type Href } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
-import { AppInput, OutlinedButton, PrimaryButton, ScreenLoading } from '@/src/components/common';
+import { AppInput, OutlinedButton, PrimaryButton, ScreenMessage } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { ReorderControls } from '@/src/components/ReorderControls';
 import {
   addPage,
   fieldsForPage,
   formsEqual,
-  isSystemPage,
   movePage,
   removePage,
   sortedPages,
   updatePage,
 } from '@/src/core/form/formMutations';
 import type { FormDefinition, FormPage } from '@/src/core/form/types';
-import { db, useApp } from '@/src/context/AppContext';
+import { useStructureFormEditor } from '@/src/hooks/useStructureFormEditor';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -23,25 +23,28 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function FormPagesSettingsScreen() {
   const styles = useThemedStyles(createStyles);
-  const { ready, formDefinition, refreshFormSettings } = useApp();
+  const { persistForm, formDefinition, href } = useStructureFormEditor();
   const { showAlert } = useThemedAlert();
-  const [draft, setDraft] = useState<FormDefinition>(formDefinition);
+  const [draft, setDraft] = useState<FormDefinition | null>(formDefinition ?? null);
   const [deleteTarget, setDeleteTarget] = useState<FormPage | null>(null);
 
   useEffect(() => {
-    setDraft(formDefinition);
+    if (formDefinition) setDraft(formDefinition);
   }, [formDefinition]);
 
-  const isDirty = useMemo(() => !formsEqual(draft, formDefinition), [draft, formDefinition]);
+  const isDirty = useMemo(
+    () => Boolean(formDefinition && draft && !formsEqual(draft, formDefinition)),
+    [draft, formDefinition],
+  );
 
   async function persistSettings(): Promise<boolean> {
+    if (!draft) return false;
     const emptyTitle = sortedPages(draft).find((page) => !page.title.trim());
     if (emptyTitle) {
       showAlert('Virhe', 'Kaikilla sivuilla on oltava nimi.');
       return false;
     }
-    await db.saveFormDefinition(draft);
-    await refreshFormSettings();
+    await persistForm(draft);
     return true;
   }
 
@@ -50,7 +53,7 @@ export default function FormPagesSettingsScreen() {
     onSave: persistSettings,
   });
 
-  if (!ready) return <ScreenLoading />;
+  if (!formDefinition || !draft) return <ScreenMessage message="Tuoterakennetta ei löytynyt." />;
 
   const pages = sortedPages(draft);
 
@@ -58,17 +61,21 @@ export default function FormPagesSettingsScreen() {
     await save();
   }
 
+  function patchDraft(updater: (form: FormDefinition) => FormDefinition) {
+    setDraft((current) => (current ? updater(current) : current));
+  }
+
   function handleAddPage() {
-    setDraft((current) => addPage(current, 'Uusi sivu'));
+    patchDraft((current) => addPage(current, 'Uusi sivu'));
   }
 
   function handleRenamePage(pageId: string, title: string) {
-    setDraft((current) => updatePage(current, pageId, { title }));
+    patchDraft((current) => updatePage(current, pageId, { title }));
   }
 
   function confirmDeletePage() {
     if (!deleteTarget) return;
-    setDraft((current) => removePage(current, deleteTarget.id));
+    patchDraft((current) => removePage(current, deleteTarget.id));
     setDeleteTarget(null);
   }
 
@@ -77,9 +84,10 @@ export default function FormPagesSettingsScreen() {
       <Stack.Screen options={{ title: 'Sivut' }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.helpText}>
-          Luo ja järjestä laskennan sivut. Valitse kunkin sivun kentät erikseen. Asiakas-sivua ei voi
-          poistaa; sille voi lisätä omia kenttiä. Materiaalit tulevat kaavoista ja kenttävaikutuksista
-          (esim. add_material_fixed). Erillinen materiaalirivisivu ei ole pakollinen.
+          Luo ja järjestä laskennan sivut. Valitse kunkin sivun kentät erikseen. Asiakkaan nimi ja
+          yhteystiedot ovat laskennan omalla Asiakas-kortilla, eivät lomakkeen sivuilla. Materiaalit
+          tulevat kaavoista ja kenttävaikutuksista (esim. add_material_fixed). Erillinen
+          materiaalirivisivu ei ole pakollinen.
         </Text>
 
         {pages.map((page, index) => (
@@ -98,34 +106,18 @@ export default function FormPagesSettingsScreen() {
                 <OutlinedButton
                   title="Valitse kentät"
                   onPress={() =>
-                    router.push(`/settings/calculation/pages/${page.id}` as Href)
+                    router.push(href(`/settings/calculation/pages/${page.id}`))
                   }
                 />
               </View>
             </View>
             <View style={styles.actions}>
-              <Pressable
-                style={[styles.moveButton, index === 0 && styles.moveButtonDisabled]}
-                disabled={index === 0}
-                onPress={() => setDraft((current) => movePage(current, page.id, -1))}
-              >
-                <Text style={styles.moveButtonText}>↑</Text>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.moveButton,
-                  index === pages.length - 1 && styles.moveButtonDisabled,
-                ]}
-                disabled={index === pages.length - 1}
-                onPress={() => setDraft((current) => movePage(current, page.id, 1))}
-              >
-                <Text style={styles.moveButtonText}>↓</Text>
-              </Pressable>
-              {!isSystemPage(page) ? (
-                <Pressable style={styles.deleteButton} onPress={() => setDeleteTarget(page)}>
-                  <Text style={styles.deleteButtonText}>Poista</Text>
-                </Pressable>
-              ) : null}
+              <ReorderControls
+                index={index}
+                count={pages.length}
+                onMove={(direction) => patchDraft((current) => movePage(current, page.id, direction))}
+                onDelete={() => setDeleteTarget(page)}
+              />
             </View>
           </View>
         ))}
@@ -201,36 +193,7 @@ function createStyles(colors: AppColorPalette) {
     actions: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
-      gap: 8,
       paddingLeft: 32,
-    },
-    moveButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 5,
-      borderWidth: 1,
-      borderColor: colors.accent,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      backgroundColor: colors.secondary,
-    },
-    moveButtonDisabled: {
-      opacity: 0.35,
-    },
-    moveButtonText: {
-      color: colors.accent,
-      fontSize: 18,
-      fontFamily: 'IBMPlexSans_700Bold',
-      lineHeight: 20,
-    },
-    deleteButton: {
-      paddingHorizontal: 10,
-      paddingVertical: 8,
-    },
-    deleteButtonText: {
-      color: colors.accent,
-      fontFamily: 'IBMPlexSans_600SemiBold',
-      fontSize: 14,
     },
     buttons: {
       marginTop: 8,

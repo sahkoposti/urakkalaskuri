@@ -1,6 +1,7 @@
 import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
 import {
   FormDefinitionImportError,
+  importedFormSummary,
   parseImportedFormDefinition,
   serializeFormDefinition,
 } from '../src/core/form/formDefinitionIo';
@@ -58,6 +59,82 @@ describe('formDefinitionIo', () => {
     expect(() => parseImportedFormDefinition('')).toThrow(FormDefinitionImportError);
     expect(() => parseImportedFormDefinition('{')).toThrow(FormDefinitionImportError);
     expect(() => parseImportedFormDefinition('{"name":"x"}')).toThrow(FormDefinitionImportError);
+  });
+
+  test('does not inject an Asiakas page when the JSON omits it', () => {
+    const imported = parseImportedFormDefinition(
+      JSON.stringify({
+        id: 'default',
+        name: 'Peruslaskenta',
+        version: 119,
+        pages: [
+          {
+            id: 'page_surfaces',
+            title: 'Maalattavat osa-alueet ja mitat',
+            sortOrder: 0,
+            fieldIds: [],
+          },
+        ],
+        fields: [],
+        updatedAt: 1,
+      }),
+    );
+
+    expect(imported.pages.some((page) => page.id === 'page_customer' || page.system === 'customer')).toBe(
+      false,
+    );
+    expect(imported.pages[0]?.id).toBe('page_surfaces');
+    expect(importedFormSummary(imported)).toBe('Versio 119.');
+  });
+
+  test('moves Asiakas page fields onto the first remaining page', () => {
+    const imported = parseImportedFormDefinition(
+      JSON.stringify({
+        id: 'default',
+        name: 'Peruslaskenta',
+        version: 114,
+        pages: [
+          {
+            id: 'page_customer',
+            title: 'Asiakas',
+            sortOrder: 0,
+            system: 'customer',
+            fieldIds: ['field_etaisyys'],
+          },
+          {
+            id: 'page_surfaces',
+            title: 'Maalattavat osa-alueet ja mitat',
+            sortOrder: 1,
+            fieldIds: ['field_foo'],
+          },
+        ],
+        fields: [
+          {
+            id: 'field_etaisyys',
+            key: 'etaisyys',
+            label: 'Matka-aika yhteen suuntaan',
+            type: 'number',
+            required: false,
+            showOnSummary: false,
+          },
+          {
+            id: 'field_foo',
+            key: 'foo',
+            label: 'Foo',
+            type: 'number',
+            required: false,
+            showOnSummary: true,
+          },
+        ],
+        updatedAt: 1,
+      }),
+    );
+
+    expect(imported.pages.some((page) => page.id === 'page_customer' || page.system === 'customer')).toBe(
+      false,
+    );
+    expect(imported.pages[0]?.id).toBe('page_surfaces');
+    expect(imported.pages[0]?.fieldIds).toEqual(['field_etaisyys', 'field_foo']);
   });
 });
 

@@ -1,4 +1,4 @@
-import { router, useNavigation } from 'expo-router';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler } from 'react-native';
 
@@ -8,9 +8,22 @@ import { useSaveToast } from '@/src/context/SaveToastContext';
 type UseUnsavedChangesGuardOptions = {
   isDirty: boolean;
   onSave?: () => void | Promise<void | boolean>;
+  title?: string;
+  message?: string;
+  cancelTitle?: string;
+  discardTitle?: string;
+  saveTitle?: string;
 };
 
-export function useUnsavedChangesGuard({ isDirty, onSave }: UseUnsavedChangesGuardOptions) {
+export function useUnsavedChangesGuard({
+  isDirty,
+  onSave,
+  title = 'Tallentamattomia muutoksia',
+  message = 'Haluatko tallentaa muutokset ennen poistumista?',
+  cancelTitle = 'Peruuta',
+  discardTitle = 'Hylkää',
+  saveTitle = 'Tallenna',
+}: UseUnsavedChangesGuardOptions) {
   const navigation = useNavigation();
   const { showSaved } = useSaveToast();
   const allowExitRef = useRef(false);
@@ -64,21 +77,23 @@ export function useUnsavedChangesGuard({ isDirty, onSave }: UseUnsavedChangesGua
     return unsubscribe;
   }, [navigation, isDirty, confirmExit]);
 
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (allowExitRef.current || !isDirty) {
-        return false;
-      }
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (allowExitRef.current || !isDirty) {
+          return false;
+        }
 
-      confirmExit(() => {
-        allowExitRef.current = true;
-        router.back();
+        confirmExit(() => {
+          allowExitRef.current = true;
+          router.back();
+        });
+        return true;
       });
-      return true;
-    });
 
-    return () => subscription.remove();
-  }, [isDirty, confirmExit]);
+      return () => subscription.remove();
+    }, [isDirty, confirmExit]),
+  );
 
   function allowExit() {
     allowExitRef.current = true;
@@ -87,22 +102,22 @@ export function useUnsavedChangesGuard({ isDirty, onSave }: UseUnsavedChangesGua
   const exitDialog = (
     <ConfirmDialog
       visible={exitDialogVisible}
-      title="Tallentamattomia muutoksia"
-      message="Haluatko tallentaa muutokset ennen poistumista?"
+      title={title}
+      message={message}
       onClose={closeExitDialog}
       buttons={[
         {
-          title: 'Peruuta',
+          title: cancelTitle,
           variant: 'outlined',
           onPress: closeExitDialog,
         },
         {
-          title: 'Hylkää',
+          title: discardTitle,
           variant: 'destructive',
           onPress: leaveWithoutSaving,
         },
         {
-          title: 'Tallenna',
+          title: saveTitle,
           variant: 'primary',
           onPress: () => {
             void saveAndExit();

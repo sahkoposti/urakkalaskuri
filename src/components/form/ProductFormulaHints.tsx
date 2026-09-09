@@ -34,8 +34,8 @@ export function ProductFormulaHints({ form, field }: ProductFormulaHintsProps) {
     <View style={styles.wrap}>
       <Text style={styles.heading}>Kaavamuuttujat</Text>
       <Text style={styles.help}>
-        Valitun tuotteen menekki ja hinta tulevat kaavoihin näillä nimillä. Nimi näkyy lomakkeella,
-        ei kaavassa.
+        Valitun tuotteen ostohinta, myyntihinta, kate ja menekki tulevat kaavoihin näillä nimillä.
+        Nimi näkyy lomakkeella, ei kaavassa.
       </Text>
       {productFields.map((productField) => (
         <View key={productField.id} style={styles.fieldBlock}>
