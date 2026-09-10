@@ -75,6 +75,16 @@ function applyFieldTypeChange(current: FormField, type: FieldType): FormField {
     return { ...next, formula: current.formula ?? '', showOnSummary: true, allowManualOverride: true };
   }
 
+  if (type === 'section') {
+    const {
+      options: _options,
+      formula: _formula,
+      sameRowAsPrevious: _sameRow,
+      ...rest
+    } = next;
+    return rest as FormField;
+  }
+
   if (type === 'number' && !next.unit) {
     return { ...next, unit: '' };
   }
@@ -429,6 +439,31 @@ export default function FormFieldEditorScreen() {
               onValueChange={(required) => updateFieldState({ required })}
             />
           </View>
+        ) : null}
+
+        {field.type !== 'section' ? (
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>Rivitä edelliselle riville</Text>
+            <AppSwitch
+              value={Boolean(field.sameRowAsPrevious)}
+              onValueChange={(enabled) => {
+                setField((current) => {
+                  if (!current) return current;
+                  if (!enabled) {
+                    const { sameRowAsPrevious: _removed, ...rest } = current;
+                    return rest;
+                  }
+                  return { ...current, sameRowAsPrevious: true };
+                });
+              }}
+            />
+          </View>
+        ) : null}
+        {field.type !== 'section' ? (
+          <Text style={styles.help}>
+            Jos valittu, kenttä näytetään samalla rivillä kuin edellinen näkyvä kenttä sivulla.
+            Kaksi kenttää jakaa rivin tasan, kolme ⅓ jne. Järjestys tulee sivun kenttälistasta.
+          </Text>
         ) : null}
 
         {isInputField && formDebug.enabled ? (
