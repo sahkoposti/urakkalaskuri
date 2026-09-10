@@ -91,7 +91,7 @@ Lomakepohjan `version` kasvaa tallennettaessa. Vanhaa laskelmaa muokatessa näyt
 
 ## Tuoterakenteet
 
-Asetukset → **Tuoterakenteet**: nimi, valinnainen yksikkö, myyntipalkkio-%, lisätiedot (oletusteksti), oletushinta / työn hinta / materiaalit alv0, **Lomake** (sivut, kentät, JSON, debug).
+Asetukset → **Tuoterakenteet**: nimi, valinnainen yksikkö, myyntipalkkio-%, työryhmän koko, lisätiedot (oletusteksti), oletushinta / työn hinta / materiaalit alv0, **Lomake** (sivut, kentät, JSON, debug).
 
 Jokaisella rakenteella on oma `FormDefinition`. Tuotteet eivät ole rakenteen asetuksissa; ne liitetään tuotteelta (yksi tuote voi kuulua useaan rakenteeseen).
 
@@ -143,7 +143,7 @@ JSON-tuonti: **Asetukset → Tuoterakenteet → [rakenne] → Lomake → Tuo JSO
 
 ## Tietokanta (paikallinen SQLite)
 
-- `product_structures` (lomakepohja JSON:na, palkkio-%, lisätietojen oletus, oletushinnat alv0)
+- `product_structures` (lomakepohja JSON:na, palkkio-%, työryhmän koko, lisätietojen oletus, oletushinnat alv0)
 - `products` (ostohinta, myyntihinta, attribuutit, `structure_ids`, `sort_order`)
 - `customers`
 - `calculations` (`structure_lines`, `form_snapshot` yhteensopivuutta varten, asiakas-snapshot)

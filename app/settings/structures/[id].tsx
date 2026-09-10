@@ -19,6 +19,7 @@ import { createId } from '@/src/core/utils/id';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
+import { parseCrewSize } from '@/src/core/structure/structureSettings';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -44,6 +45,13 @@ export default function ProductStructureDetailScreen() {
         ? String(structure.commissionPercent).replace('.', ',')
         : '',
   );
+  const [crewSize, setCrewSize] = useState(
+    isNew
+      ? String(settings.defaultCrewSize)
+      : structure
+        ? String(structure.crewSize)
+        : '',
+  );
   const [unit, setUnit] = useState(isNew ? '' : (structure?.unit ?? ''));
   const [additionalInfo, setAdditionalInfo] = useState(
     isNew ? '' : (structure?.defaultAdditionalInfo ?? ''),
@@ -65,6 +73,7 @@ export default function ProductStructureDetailScreen() {
     return JSON.stringify({
       name: name.trim(),
       commission,
+      crewSize,
       unit: unit.trim(),
       additionalInfo,
       defaultUnitPrice,
@@ -77,6 +86,7 @@ export default function ProductStructureDetailScreen() {
     if (isNew || !structure) return;
     setName(structure.name);
     setCommission(String(structure.commissionPercent).replace('.', ','));
+    setCrewSize(String(structure.crewSize));
     setUnit(structure.unit ?? '');
     setAdditionalInfo(structure.defaultAdditionalInfo ?? '');
     setDefaultUnitPrice(optionalPriceText(structure.defaultUnitPriceVat0));
@@ -87,6 +97,7 @@ export default function ProductStructureDetailScreen() {
       JSON.stringify({
         name: structure.name,
         commission: String(structure.commissionPercent).replace('.', ','),
+        crewSize: String(structure.crewSize),
         unit: structure.unit ?? '',
         additionalInfo: structure.defaultAdditionalInfo ?? '',
         defaultUnitPrice: optionalPriceText(structure.defaultUnitPriceVat0),
@@ -104,6 +115,7 @@ export default function ProductStructureDetailScreen() {
     savedSnapshot,
     name,
     commission,
+    crewSize,
     unit,
     additionalInfo,
     defaultUnitPrice,
@@ -119,6 +131,11 @@ export default function ProductStructureDetailScreen() {
     }
     if (parsed === null || parsed < 0) {
       showAlert('Virhe', 'Virheellinen palkkio');
+      return false;
+    }
+    const parsedCrew = Number.parseInt(crewSize.replace(',', '.'), 10);
+    if (!Number.isFinite(parsedCrew) || parsedCrew <= 0) {
+      showAlert('Virhe', 'Virheellinen työryhmän koko');
       return false;
     }
     const unitPrice = parseOptionalPrice(defaultUnitPrice);
@@ -154,6 +171,7 @@ export default function ProductStructureDetailScreen() {
       unit: unit.trim() || undefined,
       form,
       commissionPercent: parsed,
+      crewSize: parseCrewSize(parsedCrew),
       defaultAdditionalInfo: additionalInfo.trim() || undefined,
       defaultUnitPriceVat0: unitPrice,
       defaultContractPriceVat0: contractPrice,
@@ -167,6 +185,7 @@ export default function ProductStructureDetailScreen() {
       JSON.stringify({
         name: name.trim(),
         commission,
+        crewSize,
         unit: unit.trim(),
         additionalInfo,
         defaultUnitPrice,
@@ -235,6 +254,13 @@ export default function ProductStructureDetailScreen() {
           value={commission}
           onChangeText={setCommission}
           keyboardType="decimal-pad"
+        />
+        <AppInput
+          label="Työryhmän koko"
+          value={crewSize}
+          onChangeText={setCrewSize}
+          keyboardType="numeric"
+          placeholder="Henkilöä"
         />
         <AppInput
           label="Lisätiedot"

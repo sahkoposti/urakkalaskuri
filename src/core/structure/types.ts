@@ -18,6 +18,8 @@ export interface ProductStructure {
   unit?: string;
   form: FormDefinition;
   commissionPercent: number;
+  /** Henkilöiden määrä. Kaava: `asetukset.tyoryhman_koko`. */
+  crewSize: number;
   /** Kopioidaan riville valittaessa. Valinnainen. */
   defaultAdditionalInfo?: string;
   /** Rivin Hinta € (alv0) valittaessa. Lomake yliajaa, ellei kortilla ole muokattu. */

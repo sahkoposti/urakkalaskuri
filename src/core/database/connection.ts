@@ -225,7 +225,8 @@ async function migrateProductStructures(db: SQLite.SQLiteDatabase): Promise<void
       default_additional_info TEXT,
       default_unit_price_vat0 REAL,
       default_contract_price_vat0 REAL,
-      default_materials_vat0 REAL
+      default_materials_vat0 REAL,
+      crew_size REAL
     );
     CREATE TABLE IF NOT EXISTS customers (
       id TEXT PRIMARY KEY NOT NULL,
@@ -411,6 +412,25 @@ async function migrateProductStructureDefaults(db: SQLite.SQLiteDatabase): Promi
   if (!names.has('default_materials_vat0')) {
     await db.execAsync('ALTER TABLE product_structures ADD COLUMN default_materials_vat0 REAL');
   }
+  if (!names.has('crew_size')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN crew_size REAL');
+  }
+  const crewFallback = Number.parseFloat(String(defaultSettings.defaultCrewSize));
+  const settingsCrew = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    'default_crew_size',
+  );
+  const migratedCrew = Number.parseFloat(settingsCrew?.value ?? '');
+  const crewSize =
+    Number.isFinite(migratedCrew) && migratedCrew > 0
+      ? migratedCrew
+      : Number.isFinite(crewFallback) && crewFallback > 0
+        ? crewFallback
+        : 2;
+  await db.runAsync(
+    'UPDATE product_structures SET crew_size = ? WHERE crew_size IS NULL OR crew_size <= 0',
+    crewSize,
+  );
 }
 
 function rawFormHasCustomerPage(raw: unknown): boolean {

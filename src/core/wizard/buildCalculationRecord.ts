@@ -19,6 +19,7 @@ import type {
 import { serializeCustomerDetails } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
 import { aggregateStructureLines, withDerivedLinePricing } from '@/src/core/structure/linePricing';
+import { parseCrewSize, settingsForStructure } from '@/src/core/structure/structureSettings';
 import type { ProductStructure } from '@/src/core/structure/types';
 
 export type BuildCalculationRecordInput = {
@@ -138,7 +139,7 @@ export function buildCalculationRecordFromComposer(
     deliveryScheduleText: input.deliveryScheduleText?.trim() || undefined,
     travelTimeHoursOneWay: parseTravelTimeHoursOneWay(input.travelTimeOneWay) || undefined,
     groupDurationHours: 0,
-    crewSize: input.settings.defaultCrewSize,
+    crewSize: firstStructureCrewSize(structureLines, input.structures, input.settings.defaultCrewSize),
     hourlyRate: input.settings.defaultHourlyRate,
     marginPercent: totals.marginPercent,
     commissionPercent: 0,
@@ -182,7 +183,7 @@ function withLineFormSnapshot(
     line.fieldValues ?? {},
     [],
     structureProducts,
-    input.settings,
+    settingsForStructure(input.settings, structure),
     undefined,
     Boolean(input.customer.reverseVat),
     buildCalculationFormulaContext({ travelTimeHoursOneWay: input.travelTimeOneWay }),
@@ -196,4 +197,16 @@ function withLineFormSnapshot(
       structureProducts,
     ),
   };
+}
+
+function firstStructureCrewSize(
+  lines: StructureLine[],
+  structures: ProductStructure[],
+  fallback: number,
+): number {
+  for (const line of lines) {
+    const structure = structures.find((item) => item.id === line.structureId);
+    if (structure) return parseCrewSize(structure.crewSize, fallback);
+  }
+  return fallback;
 }

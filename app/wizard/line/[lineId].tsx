@@ -22,6 +22,7 @@ import { buildFormSnapshot } from '@/src/core/form/formSummaryHelpers';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
 import { applyFormResultToLine, saveIncompleteFormToLine } from '@/src/core/structure/applyFormToLine';
 import { structureFormPages } from '@/src/core/structure/formPages';
+import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import {
   buildPersistedWizardDraft,
   firstNonEmptyId,
@@ -80,6 +81,10 @@ export default function StructureLineFormScreen() {
     ? wizardFieldsForPage(structure.form, currentPage.id)
     : [];
   const reverseVat = Boolean(draftState?.reverseVat);
+  const lineSettings = useMemo(
+    () => (structure ? settingsForStructure(settings, structure) : settings),
+    [settings, structure],
+  );
   const extraContext = useMemo(
     () =>
       buildCalculationFormulaContext({
@@ -92,7 +97,7 @@ export default function StructureLineFormScreen() {
     fieldValues,
     materialLines: [],
     products: structureProducts,
-    settings,
+    settings: lineSettings,
     reverseVat,
     extraContext,
   });
@@ -103,7 +108,7 @@ export default function StructureLineFormScreen() {
         fieldValues,
         [],
         structureProducts,
-        settings,
+        lineSettings,
         undefined,
         reverseVat,
         extraContext,
@@ -152,10 +157,6 @@ export default function StructureLineFormScreen() {
   async function persistComplete(): Promise<boolean> {
     if (!wizardDraft || !structure || !line) return false;
     try {
-      const lineSettings = {
-        ...settings,
-        defaultCommissionPercent: structure.commissionPercent,
-      };
       const { context, result } = runFormCalculation({
         form: structure.form,
         fieldValues,
@@ -221,7 +222,7 @@ export default function StructureLineFormScreen() {
       fieldValues,
       '',
       structureProducts,
-      previewFormContext(structure.form, fieldValues, [], structureProducts, settings, undefined, reverseVat),
+      previewFormContext(structure.form, fieldValues, [], structureProducts, lineSettings, undefined, reverseVat, extraContext),
       [],
       { requireCustomerName: false },
     );

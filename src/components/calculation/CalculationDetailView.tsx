@@ -29,6 +29,7 @@ import {
   withDerivedLinePricing,
 } from '@/src/core/structure/linePricing';
 import { applyVat, isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
+import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import { useApp } from '@/src/context/AppContext';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -226,7 +227,7 @@ function LineDetail({
         line.fieldValues ?? {},
         [],
         structureProducts,
-        settings,
+        settingsForStructure(settings, structure),
         undefined,
         reverseVat,
         buildCalculationFormulaContext({ travelTimeHoursOneWay }),

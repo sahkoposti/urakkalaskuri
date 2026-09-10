@@ -25,7 +25,6 @@ export default function GeneralSettingsScreen() {
   const [marginHighPercent, setMarginHighPercent] = useState(settings.marginHighPercent);
   const [defaultCommissionPercent, setDefaultCommissionPercent] = useState('');
   const [defaultHourlyRate, setDefaultHourlyRate] = useState('');
-  const [defaultCrewSize, setDefaultCrewSize] = useState('');
   const [workdayHours, setWorkdayHours] = useState('');
   const [weatherReserveFactor, setWeatherReserveFactor] = useState('');
 
@@ -37,7 +36,6 @@ export default function GeneralSettingsScreen() {
     setMarginHighPercent(settings.marginHighPercent);
     setDefaultCommissionPercent(String(settings.defaultCommissionPercent));
     setDefaultHourlyRate(String(settings.defaultHourlyRate));
-    setDefaultCrewSize(String(settings.defaultCrewSize));
     setWorkdayHours(String(settings.workdayHours));
     setWeatherReserveFactor(String(settings.weatherReserveFactor).replace('.', ','));
   }, [settings]);
@@ -60,7 +58,6 @@ export default function GeneralSettingsScreen() {
       marginHighPercent !== settings.marginHighPercent ||
       defaultCommissionPercent !== String(settings.defaultCommissionPercent) ||
       defaultHourlyRate !== String(settings.defaultHourlyRate) ||
-      defaultCrewSize !== String(settings.defaultCrewSize) ||
       workdayHours !== String(settings.workdayHours) ||
       weatherReserveFactor.replace(',', '.') !== String(settings.weatherReserveFactor),
     [
@@ -71,7 +68,6 @@ export default function GeneralSettingsScreen() {
       marginHighPercent,
       defaultCommissionPercent,
       defaultHourlyRate,
-      defaultCrewSize,
       workdayHours,
       weatherReserveFactor,
       settings,
@@ -87,7 +83,6 @@ export default function GeneralSettingsScreen() {
       marginHighPercent,
       defaultCommissionPercent: parseNumber(defaultCommissionPercent),
       defaultHourlyRate: parseNumber(defaultHourlyRate),
-      defaultCrewSize: Number.parseInt(defaultCrewSize, 10),
       workdayHours: parseNumber(workdayHours),
       weatherReserveFactor: parseNumber(weatherReserveFactor),
     };
@@ -100,11 +95,8 @@ export default function GeneralSettingsScreen() {
       !Number.isFinite(parsed.marginHighPercent) ||
       parsed.defaultCommissionPercent === null ||
       parsed.defaultHourlyRate === null ||
-      parsed.defaultCrewSize === null ||
-      !Number.isFinite(parsed.defaultCrewSize) ||
       parsed.workdayHours === null ||
       parsed.weatherReserveFactor === null ||
-      parsed.defaultCrewSize <= 0 ||
       !(parsed.weatherReserveFactor > 0)
     ) {
       showAlert('Virhe', 'Anna kelvolliset arvot kaikille kentille.');
@@ -134,7 +126,7 @@ export default function GeneralSettingsScreen() {
       marginHighPercent: parsed.marginHighPercent,
       defaultCommissionPercent: parsed.defaultCommissionPercent!,
       defaultHourlyRate: parsed.defaultHourlyRate!,
-      defaultCrewSize: parsed.defaultCrewSize!,
+      defaultCrewSize: settings.defaultCrewSize,
       workdayHours: parsed.workdayHours!,
       weatherReserveFactor: parsed.weatherReserveFactor!,
     });
@@ -209,12 +201,6 @@ export default function GeneralSettingsScreen() {
           value={defaultHourlyRate}
           onChangeText={setDefaultHourlyRate}
           keyboardType="decimal-pad"
-        />
-        <AppInput
-          label="Oletustyöryhmän koko (hlö)"
-          value={defaultCrewSize}
-          onChangeText={setDefaultCrewSize}
-          keyboardType="numeric"
         />
         <AppInput
           label="Työpäivän pituus (h)"

@@ -2,9 +2,13 @@
 
 Tämä ohje kertoo, miten Urakkalaskurin **tuoterakenteen** lomakepohja (`FormDefinition`) rakennetaan JSON-tiedostona ja tuodaan sovellukseen. Jokaisella tuoterakenteella on oma pohja.
 
-**Sovelluksen toiminta (näytöt, tallennus, hinnoittelu):** [sovellus.md](./sovellus.md)
+**Sovelluksen toiminta (näytöt, tallennus, hinnoittelu):** [sovellus.md](./sovellus.md). Tuoterakenteen malli (lisätiedot, oletushinnat, työryhmän koko, Ei pohjaa): [tuoterakenteet.md](./tuoterakenteet.md).
 
-**Esimerkkitiedosto:** [examples/peruslaskenta-lomakepohja.json](./examples/peruslaskenta-lomakepohja.json)
+**Esimerkkitiedosto (opetuspohja):** [examples/peruslaskenta-lomakepohja.json](./examples/peruslaskenta-lomakepohja.json). Tuotannon oletuslomake on Julkisivumaalaus ([examples/julkisivumaalaus_v100.json](./examples/julkisivumaalaus_v100.json)).
+
+JSON kuvaa **lomakkeen kentät ja kaavat**. Se ei sisällä tuoterakenteen asetuksia (työryhmän koko, myyntipalkkio-%, lisätiedot, oletushinnat) – ne asetetaan **Asetukset → Tuoterakenteet → [rakenne]**.
+
+*Päivitetty: syyskuu 2026.*
 
 ---
 
@@ -210,7 +214,11 @@ if(pinta_ala > 100, max(1, round(pinta_ala / 50, 1)), 1)
 
 ## 8. Asetukset kaavoissa
 
-Yleiset asetukset (ALV, kate, tuntihinta…) tulevat automaattisesti kaavakontekstiin:
+Kaavamuuttujat `asetukset.*` tulevat automaattisesti kontekstiin. Osa on **yleisiä** (koko sovellus), osa **tämän tuoterakenteen** asetuksia. Eri rakenteilla voi olla eri työryhmän koko ja palkkio.
+
+Vanhat `settings.*`-muodot toimivat vielä aliasina.
+
+### 8.1 Yleiset asetukset (Asetukset → Yleinen)
 
 | Muuttuja | Lähde |
 |----------|-------|
@@ -220,14 +228,23 @@ Yleiset asetukset (ALV, kate, tuntihinta…) tulevat automaattisesti kaavakontek
 | `asetukset.myyntikate_alaraja_prosentti` | Kate % alarajalla |
 | `asetukset.myyntikate_ylaraja_eur` | Liukuvan katteen yläraja € |
 | `asetukset.myyntikate_ylaraja_prosentti` | Kate % ylärajalla |
-| `asetukset.myyntipalkkio_prosentti` | Myyntipalkkio % |
 | `asetukset.tuntihinta` | Tuntihinta €/h |
-| `asetukset.tyoryhman_koko` | Työryhmän koko (hlö) |
 | `asetukset.tyopaivan_pituus` | Työpäivän pituus (h) |
 
 **Säävarauskerroin** (Asetukset → Yleinen) **ei** tule kaavakontekstiin. Se vaikuttaa vain yhteenvedossa näytettävään työn arvioituun kestoon, ei `tyoryhma_kesto_pv` / `_h` -arvoihin eikä hinnoitteluun.
 
-Vanhat `settings.*`-muodot toimivat vielä aliasina.
+### 8.2 Tuoterakenteen asetukset (Asetukset → Tuoterakenteet → [rakenne])
+
+Nämä **eivät kuulu JSON-tiedostoon**. Ne ovat rakenteen omia asetuksia ja tulevat kaavaan, kun tätä rakennetta lasketaan (rivin lomake, debug, yhteenveto).
+
+| Muuttuja | Lähde |
+|----------|-------|
+| `asetukset.tyoryhman_koko` | **Työryhmän koko** (hlö). Jokaisella rakenteella oma arvo. |
+| `asetukset.myyntipalkkio_prosentti` | Rakenteen **myyntipalkkio-%** (uuden rakenteen oletus tulee Yleinen-asetuksista) |
+
+Esimerkki: julkisivumaalaus 2 hlö, katto 3 hlö – sama kaava `henkilotyotunnit / asetukset.tyoryhman_koko` käyttää kummankin rakenteen omaa kokoa.
+
+**Ei kaavamuuttujia** (vain rivikortti / yhteenveto): lisätiedot, oletushinta alv0, oletus työn hinta alv0, oletus materiaalit alv0. Lomake yliajaa oletushinnat, jos se tuottaa hintapäivityksiä.
 
 ### Matka-aika kohteelle
 
@@ -254,7 +271,7 @@ Nouda kaavassa muuttujalla `laskelma.matka_aika_h`:
 
 Meno–paluu on `laskelma.matka_aika_h * 2`. Älä lisää lomakkeelle erillistä `etaisyys`-kenttää samaan tarkoitukseen – käyttäjä täyttää ajan laskentasivulla.
 
-Lomakkeen debug (Asetukset → Debug) käyttää `0`, koska siellä ei ole avointa laskelmaa.
+Lomakkeen debug (Asetukset → Tuoterakenteet → [rakenne] → Lomake → Debug) käyttää tämän rakenteen työryhmän kokoa. `laskelma.matka_aika_h` on debugissa `0`, koska siellä ei ole avointa laskelmaa.
 
 **Liukuva myyntihinta (alv0)** suorista kustannuksista:
 
@@ -337,6 +354,8 @@ kokonaishinta_alv0   = (urakka_hinta_alv0 + materiaalit)
 myyntikate           = kokonaishinta * asetukset.myyntikate_prosentti/100
 myyntipalkkio        = kokonaishinta * asetukset.myyntipalkkio_prosentti/100
 ```
+
+`asetukset.tyoryhman_koko` ja `asetukset.myyntipalkkio_prosentti` tulevat **tämän tuoterakenteen** asetuksista (katso §8.2). Tuntihinta, työpäivän pituus, ALV ja kateprosentit tulevat Yleinen-asetuksista.
 
 Jos korvaat myyntihinnan esim. `liukuva_myyntihinta(urakka_hinta_alv0 + materiaalit)`, korvaa tarvittaessa myös `myyntikate` ja `myyntipalkkio` samaan metodiikkaan.
 
@@ -504,6 +523,8 @@ Oletus (jos JSON ei korvaa):
 ```text
 urakka_hinta_alv0 = tyoryhma_kesto_h × asetukset.tyoryhman_koko × asetukset.tuntihinta
 ```
+
+(`tyoryhman_koko` = tämän tuoterakenteen Työryhmän koko; `tuntihinta` = Yleinen-asetukset.)
 
 Voit korvata kaavan viedyssä JSON:ssa (esim. henkilötunnit × tuntihinta + matka). Runko ei sido JSON:ia tähän oletukseen.
 
@@ -917,6 +938,7 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 - [ ] Laskettu materiaali: `computed` + `"effects": [{ "type": "add_material_fixed" }]` (ilman `value` jos kaavan tulos)
 - [ ] Urakka: oletuskaava + kesto **tai** oma `urakka_hinta_alv0`-kaava (kestoefekti ei riitä omaan kaavaan)
 - [ ] Jos korvaat `kokonaishinta_alv0`-kaavan (`liukuva_myyntihinta` tms.), kate ja palkkio vastaavat samaa metodia
+- [ ] Työryhmän koko asetettu **tälle rakenteelle** (Asetukset → Tuoterakenteet), ei Yleinen-sivulle
 
 ## 17. Yleisimmät virheet
 
@@ -927,7 +949,7 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 | Kenttä ei näy wizardissa | Lisää `id` sivun `fieldIds`-listaan. Kate, ALV € ja alennus € piilotetaan aina. |
 | Kaava palauttaa 0 | Tarkista `key`-nimet; onko lähdekenttä piilotettu `showWhen`:lla |
 | Valinta ei vaikuta kaavaan | `select`-option `value` pitää olla numero merkkijonona |
-| Hintakortti tyhjä / virhe | Vie `kokonaishinta_alv0`, `urakka_hinta_alv0`, kate, palkkio ja kesto. Tarkista Yleinen-asetukset (ALV, kate, tuntihinta). |
+| Hintakortti tyhjä / virhe | Vie `kokonaishinta_alv0`, `urakka_hinta_alv0`, kate, palkkio ja kesto. Tarkista Yleinen-asetukset (ALV, kate, tuntihinta) ja tuoterakenteen työryhmän koko / palkkio-%. |
 | Materiaalit jäävät 0 | Lisää `effects` computed-kentälle tai `product_select`; pelkkä kaava ei riitä. `system: "materials"` ei näy rivin lomakkeessa. |
 | Computed näyttää hinnan mutta materiaalit-kortti ei muutu | Puuttuu `"effects": [{ "type": "add_material_fixed" }]` |
 | Urakkahinta ei muutu vaikka lisäsit työtä | Oletusurakka: `add_duration` tai kaava `tyoryhma_kesto_pv`:lle. Oma urakkakaava: päivitä `urakka_hinta_alv0`. |
@@ -956,5 +978,7 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 | `src/core/form/systemFields.ts` | Vientiavaimet, merge, rungon ALV-kaavat |
 | `src/core/calculation/pricingSkeleton.ts` | ALV ja sis. ALV `kokonaishinta_alv0`:sta |
 | `src/core/calculation/discount.ts` | Alennus listahinnan jälkeen |
-| `src/core/form/defaultFormDefinition.ts` | Tehdasoletus |
+| `src/core/form/settingsFormulaContext.ts` | `asetukset.*` kaavamuuttujat |
+| `src/core/structure/structureSettings.ts` | Tuoterakenteen työryhmän koko ja palkkio kaavakontekstiin |
+| `src/core/form/defaultFormDefinition.ts` | Tehdasoletus (Julkisivumaalaus) |
 | `src/core/form/productContext.ts` | Tuoteattribuutit kaavoissa (`.ostohinta`, `.myyntihinta`, `.kate`, `.menekki`, `.tyokerroin`) |
