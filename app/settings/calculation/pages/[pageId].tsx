@@ -62,8 +62,9 @@ export default function PageFieldsSettingsScreen() {
       <Stack.Screen options={{ title: `${page.title} – kentät` }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.help}>
-          Valitse mitkä kentät näytetään tällä sivulla. Jokainen kenttä voi olla vain yhdellä
-          sivulla kerrallaan. Laskenta-kenttä näytetään lomakkeella muokattavana arvona.
+          Valitse mitkä kentät näytetään tällä sivulla. Järjestys on sama kuin lomakkeella.
+          Kenttä jossa on „Rivitä edelliselle riville” jakaa rivin edellisen kanssa (50/50, ⅓, …).
+          Jokainen kenttä voi olla vain yhdellä sivulla kerrallaan.
         </Text>
 
         <Text style={styles.sectionTitle}>Sivulla ({assigned.length})</Text>
@@ -77,6 +78,7 @@ export default function PageFieldsSettingsScreen() {
                 <Text style={styles.fieldMeta}>
                   {FIELD_TYPE_LABELS[field.type]}
                   {field.type === 'computed' ? ' · muokattava lomakkeella' : ''}
+                  {field.sameRowAsPrevious ? ' · samalla rivillä kuin edellinen' : ''}
                 </Text>
               </AppCard>
               <ReorderControls

@@ -55,6 +55,50 @@ describe('formDefinitionIo', () => {
     expect(imported.fields.find((field) => field.id === 'f2')?.showWhen?.value).toBe('true');
   });
 
+  test('preserves sameRowAsPrevious on import and omits false after normalize', () => {
+    const imported = parseImportedFormDefinition(
+      JSON.stringify({
+        id: 'imported',
+        name: 'Tuonti',
+        version: 1,
+        pages: [{ id: 'p1', title: 'Sivu', sortOrder: 0, fieldIds: ['f1', 'f2', 'f3'] }],
+        fields: [
+          {
+            id: 'f1',
+            key: 'leveys',
+            label: 'Leveys',
+            type: 'number',
+            required: false,
+            showOnSummary: true,
+          },
+          {
+            id: 'f2',
+            key: 'korkeus',
+            label: 'Korkeus',
+            type: 'number',
+            required: false,
+            showOnSummary: true,
+            sameRowAsPrevious: true,
+          },
+          {
+            id: 'f3',
+            key: 'otsikko',
+            label: 'Otsikko',
+            type: 'section',
+            required: false,
+            showOnSummary: false,
+            sameRowAsPrevious: true,
+          },
+        ],
+        updatedAt: 1,
+      }),
+    );
+
+    expect(imported.fields.find((field) => field.id === 'f2')?.sameRowAsPrevious).toBe(true);
+    expect(imported.fields.find((field) => field.id === 'f3')?.sameRowAsPrevious).toBeUndefined();
+    expect(serializeFormDefinition(imported)).toContain('"sameRowAsPrevious": true');
+  });
+
   test('rejects invalid payload', () => {
     expect(() => parseImportedFormDefinition('')).toThrow(FormDefinitionImportError);
     expect(() => parseImportedFormDefinition('{')).toThrow(FormDefinitionImportError);

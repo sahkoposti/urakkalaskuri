@@ -479,6 +479,14 @@ describe('formMutations', () => {
     expect(copy.label).toContain('kopio');
   });
 
+  test('buildDuplicatedField copies sameRowAsPrevious', () => {
+    const form = createMinimalFormDefinition();
+    const source = form.fields[0];
+    const withFlag = updateField(form, { ...source, sameRowAsPrevious: true });
+    const copy = buildDuplicatedField(withFlag, source.id);
+    expect(copy?.sameRowAsPrevious).toBe(true);
+  });
+
   test('buildDuplicatedField does not insert into the form', () => {
     const form = createMinimalFormDefinition();
     const source = form.fields[0];

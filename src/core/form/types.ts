@@ -70,6 +70,11 @@ export interface FormField {
    */
   showOnSummaryWhen?: FieldVisibilityCondition;
   helpText?: string;
+  /**
+   * Näytä kenttä samalla wizard-rivillä kuin edellinen näkyvä kenttä.
+   * Kaksi kenttää → 50/50, kolme peräkkäin → ⅓ jne. Otsikko (`section`) aloittaa aina uuden rivin.
+   */
+  sameRowAsPrevious?: boolean;
   /** Wizardin oletusarvo (numero/teksti/valinta/tuote/boolean). Tyhjä = ei oletusta. */
   defaultValue?: string;
   /** Debug-tilassa käytettävä esimerkkiarvo (merkkijonona, parsitaan tyypin mukaan) */
