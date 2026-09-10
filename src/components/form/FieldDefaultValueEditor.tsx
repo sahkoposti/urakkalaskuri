@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { AppPicker } from '@/src/components/AppPicker';
 import { AppInput } from '@/src/components/common';
 import { normalizeDefaultValue, supportsDefaultValue } from '@/src/core/form/fieldDefaultValue';
-import { isProductField } from '@/src/core/form/productFieldUtils';
+import { isProductField, selectedProductPickerValue } from '@/src/core/form/productFieldUtils';
 import type { FormField } from '@/src/core/form/types';
 import type { Product } from '@/src/core/models/types';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -41,7 +41,7 @@ export function FieldDefaultValueEditor({ field, products, onChange }: FieldDefa
       ) : isProductField(field) ? (
         <AppPicker
           label="Oletusarvo (tuote)"
-          selectedValue={field.defaultValue ?? ''}
+          selectedValue={selectedProductPickerValue(products, field.defaultValue)}
           onValueChange={setDefaultValue}
           placeholder="Ei oletusta"
           allowEmpty

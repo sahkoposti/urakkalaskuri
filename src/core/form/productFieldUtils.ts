@@ -19,7 +19,21 @@ export function getSelectedProductId(
   return productId || null;
 }
 
+/** Hakee tuotteen id:llä tai nimellä (nimihaku ei erota kirjainkokoa). */
 export function findProductById(products: Product[], productId: string | null | undefined): Product | null {
   if (!productId) return null;
-  return products.find((product) => product.id === productId) ?? null;
+  const needle = productId.trim();
+  if (!needle) return null;
+  const byId = products.find((product) => product.id === needle);
+  if (byId) return byId;
+  const lowered = needle.toLowerCase();
+  return products.find((product) => product.name.trim().toLowerCase() === lowered) ?? null;
+}
+
+/** Pickerin arvo on aina tuote-id, vaikka oletus olisi tuotteen nimi. */
+export function selectedProductPickerValue(
+  products: Product[],
+  productIdOrName: string | null | undefined,
+): string {
+  return findProductById(products, productIdOrName)?.id ?? '';
 }
