@@ -210,7 +210,7 @@ Muokkaa → laskentasivu.
 ```
 Asetukset → Tuoterakenteet
   [Ulkoverhoilun maalaus]
-    Nimi, yksikkö, myyntipalkkio-%
+    Nimi, yksikkö, myyntipalkkio-%, työryhmän koko
     Lisätiedot (oletusteksti riville)
     Oletushinta alv0, oletus työn hinta alv0, oletus materiaalit alv0
     Lomake (sivut, kentät, JSON, debug) — Asiakas-sivu saa olla, ilman CustomerStep-kenttiä
@@ -234,6 +234,7 @@ interface ProductStructure {
   unit?: string;
   form: FormDefinition;
   commissionPercent: number;
+  crewSize: number;            // Työryhmän koko; kaava asetukset.tyoryhman_koko
   defaultAdditionalInfo?: string;
   defaultUnitPriceVat0?: number;
   defaultContractPriceVat0?: number;

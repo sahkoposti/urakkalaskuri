@@ -15,6 +15,7 @@ function structure(partial: Partial<ProductStructure> = {}): ProductStructure {
     unit: 'm²',
     form: normalizeFormDefinition(createMinimalFormDefinition()),
     commissionPercent: 7,
+    crewSize: 2,
     sortOrder: 0,
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-01'),

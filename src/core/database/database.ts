@@ -24,6 +24,7 @@ import {
   type CustomerRecord,
   type ProductStructure,
 } from '../structure/types';
+import { parseCrewSize } from '../structure/structureSettings';
 import {
   ACTIVE_STRUCTURE_KEY,
   getDb,
@@ -501,6 +502,7 @@ function structureFromRow(row: Record<string, unknown>): ProductStructure {
     unit: (row.unit as string | null) ?? undefined,
     form: normalizeFormDefinition(JSON.parse(row.form_json as string)),
     commissionPercent: row.commission_percent as number,
+    crewSize: parseCrewSize(row.crew_size),
     defaultAdditionalInfo: additionalInfo || undefined,
     defaultUnitPriceVat0: optionalDbNumber(row.default_unit_price_vat0),
     defaultContractPriceVat0: optionalDbNumber(row.default_contract_price_vat0),
@@ -567,8 +569,9 @@ export async function upsertProductStructure(structure: ProductStructure): Promi
   await db.runAsync(
     `INSERT OR REPLACE INTO product_structures (
       id, name, unit, form_json, commission_percent, sort_order, created_at, updated_at,
-      default_additional_info, default_unit_price_vat0, default_contract_price_vat0, default_materials_vat0
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      default_additional_info, default_unit_price_vat0, default_contract_price_vat0, default_materials_vat0,
+      crew_size
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     structure.id,
     structure.name,
     structure.unit ?? null,
@@ -581,6 +584,7 @@ export async function upsertProductStructure(structure: ProductStructure): Promi
     structure.defaultUnitPriceVat0 ?? null,
     structure.defaultContractPriceVat0 ?? null,
     structure.defaultMaterialsVat0 ?? null,
+    parseCrewSize(structure.crewSize),
   );
 }
 

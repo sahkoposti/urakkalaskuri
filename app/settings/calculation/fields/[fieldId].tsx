@@ -40,6 +40,7 @@ import { isFieldEffectComplete } from '@/src/core/form/fieldEffects';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { isSystemField, isSystemFieldHiddenFromUi, restoreSystemField } from '@/src/core/form/systemFields';
 import type { FieldType, FormDefinition, FormField } from '@/src/core/form/types';
+import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import { useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useStructureFormEditor } from '@/src/hooks/useStructureFormEditor';
@@ -97,7 +98,7 @@ export default function FormFieldEditorScreen() {
   const assignPageId = firstParam(params.pageId);
   const duplicateFrom = firstParam(params.duplicateFrom);
   const { ready, formDebug, settings, products } = useApp();
-  const { formDefinition, persistForm, href } = useStructureFormEditor();
+  const { formDefinition, persistForm, href, structure } = useStructureFormEditor();
   const { showAlert } = useThemedAlert();
   const [field, setField] = useState<FormField | null>(null);
   const [savedField, setSavedField] = useState<FormField | null>(null);
@@ -523,7 +524,7 @@ export default function FormFieldEditorScreen() {
             focusFieldKey={field.key}
             formula={field.formula}
             showIntermediateSteps={formDebug.showIntermediateSteps}
-            settings={settings}
+            settings={structure ? settingsForStructure(settings, structure) : settings}
             products={products}
           />
         ) : null}

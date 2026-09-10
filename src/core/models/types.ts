@@ -9,6 +9,7 @@ export interface AppSettings {
   marginHighPercent: number;
   defaultCommissionPercent: number;
   defaultHourlyRate: number;
+  /** Uuden tuoterakenteen oletus. Kaavat käyttävät rakenteen `crewSize`-arvoa. */
   defaultCrewSize: number;
   workdayHours: number;
   /** Kerroin yhteenvedon työn kestolle (säävaraus). Ei vaikuta hinnoitteluun. */

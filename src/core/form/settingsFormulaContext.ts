@@ -40,6 +40,7 @@ const SETTING_BINDINGS: Array<{ finnish: string; legacy: string; value: (s: AppS
   {
     finnish: 'asetukset.tyoryhman_koko',
     legacy: 'settings.default_crew_size',
+    /** Tuoterakenteen työryhmän koko, kun settingsForStructure on käytössä. */
     value: (s) => s.defaultCrewSize,
   },
   {
