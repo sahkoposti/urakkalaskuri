@@ -153,12 +153,14 @@ function normalizeFieldKeys(fields: FormField[]): FormField[] {
     const showWhen = field.showWhen?.fieldKey
       ? {
           ...field.showWhen,
+          fieldKey: LEGACY_KEY_MAP[field.showWhen.fieldKey] ?? field.showWhen.fieldKey,
           value: normalizeVisibilityConditionValue(field.showWhen.value),
         }
       : field.showWhen;
     const showOnSummaryWhen = field.showOnSummaryWhen?.fieldKey
       ? {
           ...field.showOnSummaryWhen,
+          fieldKey: LEGACY_KEY_MAP[field.showOnSummaryWhen.fieldKey] ?? field.showOnSummaryWhen.fieldKey,
           value: normalizeVisibilityConditionValue(field.showOnSummaryWhen.value),
         }
       : field.showOnSummaryWhen;

@@ -275,7 +275,12 @@ export const LEGACY_KEY_MAP: Record<string, string> = {
   'settings.default_hourly_rate': 'asetukset.tuntihinta',
   'settings.default_crew_size': 'asetukset.tyoryhman_koko',
   'settings.workday_hours': 'asetukset.tyopaivan_pituus',
+  muu_tyo_tyoparin_kesto_h: 'muu_tyo_kesto_h',
 };
+
+/** Työparitunnit → henkilötunnit (muun työn kesto). */
+const LEGACY_MUU_TYO_PAIR_HOURS =
+  'if(muu_tyo_kesto_h > 0, muu_tyo_kesto_h * 2, 0)';
 
 export function migrateFormulaKeys(formula: string): string {
   if (!formula) return formula;
@@ -284,5 +289,12 @@ export function migrateFormulaKeys(formula: string): string {
   for (const [legacy, next] of entries) {
     result = result.replaceAll(legacy, next);
   }
-  return result;
+  return result.replaceAll(LEGACY_MUU_TYO_PAIR_HOURS, 'muu_tyo_kesto_h');
+}
+
+/** Vanhat syöteavaimet, jotka vastaavat nykyistä kentän avainta. */
+export function legacyKeysForCurrentKey(currentKey: string): string[] {
+  return Object.entries(LEGACY_KEY_MAP)
+    .filter(([legacy, current]) => current === currentKey && !legacy.includes('.'))
+    .map(([legacy]) => legacy);
 }

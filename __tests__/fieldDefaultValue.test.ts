@@ -34,6 +34,14 @@ describe('fieldDefaultValue', () => {
     expect(resolveFieldRawValue(formField, { pinta_ala: '' })).toBe('');
   });
 
+  test('reads legacy muu_tyo_tyoparin_kesto_h as muu_tyo_kesto_h', () => {
+    const formField = field('muu_tyo_kesto_h', 'number', '0');
+    expect(resolveFieldRawValue(formField, { muu_tyo_tyoparin_kesto_h: '3' })).toBe('3');
+    expect(resolveFieldRawValue(formField, { muu_tyo_kesto_h: '4', muu_tyo_tyoparin_kesto_h: '3' })).toBe(
+      '4',
+    );
+  });
+
   test('normalizeDefaultValue removes empty strings', () => {
     expect(normalizeDefaultValue('  ')).toBeUndefined();
     expect(normalizeDefaultValue('120')).toBe('120');

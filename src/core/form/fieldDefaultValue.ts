@@ -1,4 +1,5 @@
 import type { FieldType, FormField } from '@/src/core/form/types';
+import { legacyKeysForCurrentKey } from '@/src/core/form/systemFields';
 
 const DEFAULT_VALUE_FIELD_TYPES = new Set<FieldType>([
   'number',
@@ -23,6 +24,11 @@ export function resolveFieldRawValue(
 ): string {
   if (fieldHasUserValue(fieldValues, field.key)) {
     return fieldValues[field.key] ?? '';
+  }
+  for (const legacy of legacyKeysForCurrentKey(field.key)) {
+    if (fieldHasUserValue(fieldValues, legacy)) {
+      return fieldValues[legacy] ?? '';
+    }
   }
   return field.defaultValue?.trim() ?? '';
 }

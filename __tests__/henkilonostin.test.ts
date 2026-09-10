@@ -39,9 +39,9 @@ function baseValues(extra: Record<string, string> = {}): Record<string, string> 
 }
 
 describe('julkisivumaalaus henkilönostin', () => {
-  test('version 107 places lift fields after Maalit (ALV 0)', () => {
+  test('version 108 places lift fields after Maalit (ALV 0)', () => {
     const form = defaultForm();
-    expect(form.version).toBe(107);
+    expect(form.version).toBe(108);
     expect(form.id).toBe('julkisivumaalaus');
 
     const materials = form.pages.find((page) => page.id === 'page_materials');

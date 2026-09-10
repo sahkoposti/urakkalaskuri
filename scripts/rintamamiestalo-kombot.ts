@@ -126,7 +126,7 @@ function baseFieldValues(): Record<string, string> {
     toinen_savy: 'Sävy 2',
     alennus_prosentti: '0',
     muut_kulut_alv0: '0',
-    muu_tyo_tyoparin_kesto_h: '0',
+    muu_tyo_kesto_h: '0',
   };
 }
 

@@ -1,7 +1,7 @@
 {
   "id": "default",
   "name": "Peruslaskenta – modulaarinen",
-  "version": 124,
+  "version": 125,
   "pages": [
     {
       "id": "page_surfaces",
@@ -65,7 +65,7 @@
         "field_maalaus_valinta",
         "field_varinvaihto_valinta",
         "field_muu_tyo_kuvaus",
-        "field_muu_tyo_tyoparin_kesto"
+        "field_muu_tyo_kesto"
       ]
     },
     {
@@ -724,18 +724,18 @@
       "debugExampleValue": ""
     },
     {
-      "id": "field_muu_tyo_tyoparin_kesto",
-      "key": "muu_tyo_tyoparin_kesto_h",
+      "id": "field_muu_tyo_kesto",
+      "key": "muu_tyo_kesto_h",
       "label": "Muun työn kesto",
       "type": "number",
       "required": false,
       "showOnSummary": true,
       "showOnSummaryWhen": {
-        "fieldKey": "muu_tyo_tyoparin_kesto_h",
+        "fieldKey": "muu_tyo_kesto_h",
         "operator": "gt",
         "value": "0"
       },
-      "unit": "h (työpari)",
+      "unit": "h",
       "debugExampleValue": "0",
       "defaultValue": "0"
     },
@@ -1254,7 +1254,7 @@
       "showOnSummary": false,
       "allowManualOverride": false,
       "unit": "h",
-      "formula": "(seinamaalauksen_laskentapinta_ala_m2 * 0.11 * kaytettava_maali.tyokerroin * if(laudoitustyyppi == 0.3, 2, 1) + if(raystaanaluset_valinta == 1, (piiri_jm * raystastyyppi * (1 + varinvaihto_valinta) * 0.067375 * kaytettava_maali.tyokerroin + piiri_jm * (1 + varinvaihto_valinta) * 0.026795 * kaytettava_maali.tyokerroin) * if(savyjen_lkm == 1, 0.7, 1), 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * (1 + varinvaihto_valinta) * 0.33 * kaytettava_maali.tyokerroin, 0) + if(nurkkalaudat_valinta == 1, seinien_lkm * raystaskorkeus_m * (1 + varinvaihto_valinta) * 0.055 * kaytettava_maali.tyokerroin * if(savyjen_lkm == 1, 0.2, 1), 0) + if(listalaudat_valinta == 1, piiri_jm * (1 + varinvaihto_valinta) * 0.039285 * kaytettava_maali.tyokerroin * if(savyjen_lkm == 1, 0.2, 1), 0) + if(markahomepesu_valinta == 1, pesupinta_m2 * 0.033 + 1.65 * asetukset.tyoryhman_koko, 0) + if(homeenestokasittely_valinta == 1, 2.75 * asetukset.tyoryhman_koko, 0) + if(maalinpoisto_valinta == 1, laskenta_seinapinta_ala_m2 * maalinpoisto_seinien_lkm / seinien_lkm * 0.0572 * skrapauksen_vaativuus, 0) + if(pohjamaalaus_valinta == 1, laskenta_seinapinta_ala_m2 * pohjamaalaus_seinien_lkm / seinien_lkm * 0.066, 0)) * maaston_vaikeusaste * kohteen_korkeuskerroin + if(muu_tyo_tyoparin_kesto_h > 0, muu_tyo_tyoparin_kesto_h * 2, 0) + max(savyjen_lkm - 1, 0) * 1.1 + 4.4"
+      "formula": "(seinamaalauksen_laskentapinta_ala_m2 * 0.11 * kaytettava_maali.tyokerroin * if(laudoitustyyppi == 0.3, 2, 1) + if(raystaanaluset_valinta == 1, (piiri_jm * raystastyyppi * (1 + varinvaihto_valinta) * 0.067375 * kaytettava_maali.tyokerroin + piiri_jm * (1 + varinvaihto_valinta) * 0.026795 * kaytettava_maali.tyokerroin) * if(savyjen_lkm == 1, 0.7, 1), 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * (1 + varinvaihto_valinta) * 0.33 * kaytettava_maali.tyokerroin, 0) + if(nurkkalaudat_valinta == 1, seinien_lkm * raystaskorkeus_m * (1 + varinvaihto_valinta) * 0.055 * kaytettava_maali.tyokerroin * if(savyjen_lkm == 1, 0.2, 1), 0) + if(listalaudat_valinta == 1, piiri_jm * (1 + varinvaihto_valinta) * 0.039285 * kaytettava_maali.tyokerroin * if(savyjen_lkm == 1, 0.2, 1), 0) + if(markahomepesu_valinta == 1, pesupinta_m2 * 0.033 + 1.65 * asetukset.tyoryhman_koko, 0) + if(homeenestokasittely_valinta == 1, 2.75 * asetukset.tyoryhman_koko, 0) + if(maalinpoisto_valinta == 1, laskenta_seinapinta_ala_m2 * maalinpoisto_seinien_lkm / seinien_lkm * 0.0572 * skrapauksen_vaativuus, 0) + if(pohjamaalaus_valinta == 1, laskenta_seinapinta_ala_m2 * pohjamaalaus_seinien_lkm / seinien_lkm * 0.066, 0)) * maaston_vaikeusaste * kohteen_korkeuskerroin + muu_tyo_kesto_h + max(savyjen_lkm - 1, 0) * 1.1 + 4.4"
     },
     {
       "id": "field_ikkunanpokat_tyo_h",
