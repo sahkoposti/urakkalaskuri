@@ -1,10 +1,14 @@
-import { usePreventRemoveContext, useRoute } from '@react-navigation/native';
-import { router, useFocusEffect, useNavigation } from 'expo-router';
+import { useNavigation, usePreventRemoveContext, useRoute } from '@react-navigation/native';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useId, useInsertionEffect, useRef, useState } from 'react';
 import { BackHandler } from 'react-native';
 
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useSaveToast } from '@/src/context/SaveToastContext';
+import {
+  resolvePreventRemoveRouteKey,
+  safeSetPreventRemove,
+} from '@/src/hooks/safeSetPreventRemove';
 
 type UseUnsavedChangesGuardOptions = {
   isDirty: boolean;
@@ -37,6 +41,7 @@ export function useUnsavedChangesGuard({
   const onSaveRef = useRef(onSave);
   const onDiscardRef = useRef(onDiscard);
   const pendingExitRef = useRef<(() => void) | null>(null);
+  const registeredRouteKeyRef = useRef<string | undefined>(undefined);
   const [exitDialogVisible, setExitDialogVisible] = useState(false);
 
   isDirtyRef.current = isDirty;
@@ -45,12 +50,24 @@ export function useUnsavedChangesGuard({
 
   const shouldPrevent = isDirty && !allowExitRef.current;
 
+  const applyPreventRemove = useCallback(
+    (prevent: boolean) => {
+      const nextKey = prevent
+        ? resolvePreventRemoveRouteKey(navigation, routeKey)
+        : (registeredRouteKeyRef.current ?? resolvePreventRemoveRouteKey(navigation, routeKey));
+      if (!nextKey) return;
+      safeSetPreventRemove(setPreventRemove, preventId, nextKey, prevent);
+      registeredRouteKeyRef.current = prevent ? nextKey : undefined;
+    },
+    [navigation, preventId, routeKey, setPreventRemove],
+  );
+
   useInsertionEffect(() => {
-    setPreventRemove(preventId, routeKey, shouldPrevent);
+    applyPreventRemove(shouldPrevent);
     return () => {
-      setPreventRemove(preventId, routeKey, false);
+      applyPreventRemove(false);
     };
-  }, [preventId, routeKey, shouldPrevent, setPreventRemove]);
+  }, [applyPreventRemove, shouldPrevent]);
 
   useEffect(() => {
     notifyPreventRemove();
@@ -62,9 +79,9 @@ export function useUnsavedChangesGuard({
   useFocusEffect(
     useCallback(() => {
       allowExitRef.current = false;
-      setPreventRemove(preventId, routeKey, isDirtyRef.current);
+      applyPreventRemove(isDirtyRef.current);
       notifyPreventRemove();
-    }, [preventId, routeKey, setPreventRemove, notifyPreventRemove]),
+    }, [applyPreventRemove, notifyPreventRemove]),
   );
 
   const closeExitDialog = useCallback(() => {
@@ -79,9 +96,9 @@ export function useUnsavedChangesGuard({
 
   const markAllowExit = useCallback(() => {
     allowExitRef.current = true;
-    setPreventRemove(preventId, routeKey, false);
+    applyPreventRemove(false);
     notifyPreventRemove();
-  }, [preventId, routeKey, setPreventRemove, notifyPreventRemove]);
+  }, [applyPreventRemove, notifyPreventRemove]);
 
   const leaveWithoutSaving = useCallback(() => {
     void (async () => {
