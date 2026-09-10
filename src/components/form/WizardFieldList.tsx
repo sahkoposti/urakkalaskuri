@@ -109,6 +109,7 @@ export function WizardFieldList({
         if (isProductField(field)) {
           const selectedId = getSelectedProductId(fieldValues, field.key, field) ?? '';
           const selectedProduct = findProductById(products, selectedId);
+          const pickerValue = selectedProduct?.id ?? '';
           const consumption = selectedProduct
             ? productConsumption(selectedProduct.attributes)
             : undefined;
@@ -126,7 +127,7 @@ export function WizardFieldList({
                 <Text style={styles.hint}>Ei tuotteita tuoterekisterissä.</Text>
               ) : (
                 <AppPicker
-                  selectedValue={selectedId}
+                  selectedValue={pickerValue}
                   onValueChange={(value) => onChange(field.key, value)}
                   placeholder="Valitse tuote..."
                   allowEmpty

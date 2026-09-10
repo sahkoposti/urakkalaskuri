@@ -1,6 +1,7 @@
 import type { CalculationResult } from '@/src/core/calculation/calculationPipeline';
 import { previewFormContext } from '@/src/core/calculation/calculationPipeline';
 import { buildFormSnapshot, hasSummarySnapshotFields } from '@/src/core/form/formSummaryHelpers';
+import { productsForStructureForm } from '@/src/core/form/productFieldUtils';
 import type { FormDefinition } from '@/src/core/form/types';
 import type {
   AppSettings,
@@ -13,7 +14,6 @@ import type {
   WizardLineDraft,
 } from '@/src/core/models/types';
 import { serializeCustomerDetails } from '@/src/core/models/types';
-import { productBelongsToStructure } from '@/src/core/product/productStructures';
 import { aggregateStructureLines, withDerivedLinePricing } from '@/src/core/structure/linePricing';
 import type { ProductStructure } from '@/src/core/structure/types';
 
@@ -165,8 +165,10 @@ function withLineFormSnapshot(
   if (!structure) return line;
   const hasValues = Object.values(line.fieldValues ?? {}).some((value) => value.trim().length > 0);
   if (!hasValues && !line.formFilled) return line;
-  const structureProducts = input.products.filter((product) =>
-    productBelongsToStructure(product, line.structureId),
+  const structureProducts = productsForStructureForm(
+    structure.form,
+    input.products,
+    line.structureId,
   );
   const context = previewFormContext(
     structure.form,

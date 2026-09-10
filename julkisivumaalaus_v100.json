@@ -1,7 +1,7 @@
 {
   "id": "julkisivumaalaus",
   "name": "Julkisivumaalaus",
-  "version": 105,
+  "version": 106,
   "pages": [
     {
       "id": "page_surfaces",
@@ -65,6 +65,10 @@
         "field_mt9z8xvv_cgfi1m",
         "field_maalit_yhteensa_litraa",
         "field_maalit_alv0",
+        "field_henkilonostin_valinta",
+        "field_henkilonostin",
+        "field_henkilonostin_vuokrapaivat",
+        "field_henkilonostin_kustannus_alv0",
         "field_muut_materiaalikulut_alv0"
       ]
     },
@@ -923,7 +927,7 @@
       "showOnSummary": true,
       "allowManualOverride": true,
       "unit": "h",
-      "formula": "paatuote_tyo_h + alakatot_tyo_h"
+      "formula": "paatuote_tyo_h + alakatot_tyo_h + if(henkilonostin_valinta == 1, henkilonostin_vuokrapaivat, 0)"
     },
     {
       "id": "field_maalit_alv0",
@@ -935,6 +939,90 @@
       "allowManualOverride": true,
       "unit": "€",
       "formula": "maalit_yhteensa_litraa * kaytettava_maali.ostohinta"
+    },
+    {
+      "id": "field_henkilonostin_valinta",
+      "key": "henkilonostin_valinta",
+      "label": "Henkilönostin",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "henkilonostin_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "defaultValue": "false",
+      "debugExampleValue": "0",
+      "helpText": "Jos kyllä, valitse nostin ja vuokrapäivät. Laskentaan tulee päivät × päivähinta + 150 € ja 1 h työtä / vuokrapäivä."
+    },
+    {
+      "id": "field_henkilonostin",
+      "key": "henkilonostin",
+      "label": "Vuokrattava nostin",
+      "type": "product_select",
+      "required": true,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "henkilonostin_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "defaultValue": "Henkilönostin Dino180",
+      "debugExampleValue": "Henkilönostin Dino180",
+      "showWhen": {
+        "fieldKey": "henkilonostin_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "helpText": "Oletus: Henkilönostin Dino180. Päivähinta on tuotteen ostohinta."
+    },
+    {
+      "id": "field_henkilonostin_vuokrapaivat",
+      "key": "henkilonostin_vuokrapaivat",
+      "label": "Vuokra-aika",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "henkilonostin_vuokrapaivat",
+        "operator": "gt",
+        "value": "0"
+      },
+      "unit": "pv",
+      "debugExampleValue": "2",
+      "showWhen": {
+        "fieldKey": "henkilonostin_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_henkilonostin_kustannus_alv0",
+      "key": "henkilonostin_kustannus_alv0",
+      "label": "Henkilönostimen vuokra (ALV 0)",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "henkilonostin_kustannus_alv0",
+        "operator": "gt",
+        "value": "0"
+      },
+      "allowManualOverride": true,
+      "unit": "€",
+      "formula": "if(henkilonostin_valinta == 1, henkilonostin_vuokrapaivat * henkilonostin.ostohinta + 150, 0)",
+      "effects": [
+        {
+          "type": "add_material_fixed"
+        }
+      ],
+      "showWhen": {
+        "fieldKey": "henkilonostin_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "helpText": "Päivät × nostimen päivähinta + 150 €."
     },
     {
       "id": "field_muut_materiaalikulut_alv0",
@@ -1094,5 +1182,5 @@
       "formula": "kokonaishinta_alv0 - suorat_kustannukset_alv0 - myyntipalkkio"
     }
   ],
-  "updatedAt": 1788968910394
+  "updatedAt": 1789050000000
 }
