@@ -64,6 +64,42 @@ describe('applyFormToLine', () => {
     expect(next.contractPriceVat0).toBe(800);
   });
 
+  test('rakenteen oletushinnat yliajetaan lomakkeella kun korttia ei ole muokattu', () => {
+    const next = applyFormResultToLine(
+      line({
+        unitPriceVat0: 100,
+        materialsVat0: 10,
+        contractPriceVat0: 50,
+      }),
+      result,
+      { maali: 'x' },
+      7,
+    );
+    expect(next.unitPriceVat0).toBe(3393.52);
+    expect(next.materialsVat0).toBe(365);
+    expect(next.contractPriceVat0).toBe(800);
+    expect(next.overrides).toEqual([]);
+  });
+
+  test('yliajettua työn hintaa ei korvata', () => {
+    const overridden = patchStructureLine(line(), { contractPriceVat0: 123 });
+    const next = applyFormResultToLine(overridden, result, { maali: 'x' }, 7);
+    expect(next.contractPriceVat0).toBe(123);
+    expect(next.unitPriceVat0).toBe(3393.52);
+    expect(next.overrides).toContain('contractPrice');
+  });
+
+  test('lisätiedot säilyvät lomakkeen jälkeen', () => {
+    const next = applyFormResultToLine(line({ additionalInfo: 'Telineet' }), result, { maali: 'x' }, 7);
+    expect(next.additionalInfo).toBe('Telineet');
+  });
+
+  test('lisätietojen muokkaus ei aseta hintayliajoa', () => {
+    const next = patchStructureLine(line(), { additionalInfo: '  Huom  ' });
+    expect(next.additionalInfo).toBe('Huom');
+    expect(next.overrides).toEqual([]);
+  });
+
   test('keskeneräinen tallennus säilyttää kentät ilman että lomake merkitään valmiiksi', () => {
     const next = saveIncompleteFormToLine(line({ unitPriceVat0: 100 }), { pinta: '12' });
     expect(next.fieldValues).toEqual({ pinta: '12' });

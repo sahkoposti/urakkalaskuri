@@ -14,7 +14,7 @@ import {
   withDerivedLinePricing,
 } from '@/src/core/structure/linePricing';
 import type { StructureLine } from '@/src/core/models/types';
-import type { ProductStructure } from '@/src/core/structure/types';
+import { isManualStructureId, type ProductStructure } from '@/src/core/structure/types';
 import { vat0Tag, vatInclTag } from '@/src/core/utils/priceDisplay';
 import {
   formatCurrency,
@@ -45,7 +45,8 @@ export function StructureLineCard({
 }: StructureLineCardProps) {
   const styles = useThemedStyles(createStyles);
   const priced = withDerivedLinePricing(line);
-  const showGear = structure ? hasStructureFormPages(structure.form) : false;
+  const manual = isManualStructureId(priced.structureId);
+  const showGear = !manual && structure ? hasStructureFormPages(structure.form) : false;
   const formIncomplete = isStructureFormIncomplete(priced, structure);
   const includeVat = linePricesIncludeVat(priced);
   const vatPercent = priced.vatPercent;
@@ -56,11 +57,13 @@ export function StructureLineCard({
 
   return (
     <AppCard style={styles.card}>
-      <View style={styles.titleRow}>
-        <View style={styles.titleWrap}>
-          <Text style={styles.title}>{priced.name}</Text>
-          {formIncomplete ? <Text style={styles.incomplete}>Keskeneräinen lomake</Text> : null}
-        </View>
+      <View style={[styles.titleRow, manual && styles.titleRowManual]}>
+        {manual ? null : (
+          <View style={styles.titleWrap}>
+            <Text style={styles.title}>{priced.name}</Text>
+            {formIncomplete ? <Text style={styles.incomplete}>Keskeneräinen lomake</Text> : null}
+          </View>
+        )}
         {showGear && onOpenForm ? (
           <Pressable onPress={onOpenForm} hitSlop={8} accessibilityLabel="Avaa lomake">
             <ThemedIcon name="settings" size={22} />
@@ -70,6 +73,14 @@ export function StructureLineCard({
           <ThemedIcon name="trash" size={22} />
         </Pressable>
       </View>
+      {manual ? (
+        <AppInput
+          label="Nimi"
+          value={priced.name}
+          onChangeText={(value) => patch({ name: value })}
+          placeholder="Tuoterakenne"
+        />
+      ) : null}
 
       <View style={styles.fieldRow}>
         <View style={styles.fieldHalf}>
@@ -120,9 +131,25 @@ export function StructureLineCard({
       </View>
 
       <DecimalInput
+        label="Työn hinta €"
+        value={toCardAmount(priced.contractPriceVat0, includeVat, vatPercent)}
+        onChangeValue={(value) =>
+          patch({ contractPriceVat0: fromCardAmount(value, includeVat, vatPercent) })
+        }
+      />
+
+      <DecimalInput
         label="Ale %"
         value={priced.discountPercent}
         onChangeValue={(value) => patch({ discountPercent: value })}
+      />
+
+      <AppInput
+        label="Lisätiedot"
+        value={priced.additionalInfo ?? ''}
+        onChangeText={(value) => patch({ additionalInfo: value })}
+        multiline
+        placeholder="Valinnainen"
       />
 
       <View style={styles.metaRow}>
@@ -189,6 +216,9 @@ function createStyles(colors: AppColorPalette) {
       alignItems: 'flex-start' as const,
       gap: 8,
       marginBottom: 8,
+    },
+    titleRowManual: {
+      justifyContent: 'flex-end' as const,
     },
     titleWrap: {
       flex: 1,

@@ -25,7 +25,12 @@ import {
 import { customerFromInfo, customerSnapshotEquals } from '@/src/core/customer/customerRegister';
 import type { CustomerInfo, CustomerType, StructureLine } from '@/src/core/models/types';
 import { serializeCustomerDetails } from '@/src/core/models/types';
-import { emptyStructureLine, type ProductStructure } from '@/src/core/structure/types';
+import {
+  emptyManualStructureLine,
+  emptyStructureLine,
+  MANUAL_STRUCTURE_ID,
+  type ProductStructure,
+} from '@/src/core/structure/types';
 import { isStructureFormIncomplete } from '@/src/core/structure/formPages';
 import { createId } from '@/src/core/utils/id';
 import { buildCalculationRecordFromComposer } from '@/src/core/wizard/buildCalculationRecord';
@@ -415,9 +420,19 @@ export default function CalculationComposerScreen() {
   }
 
   function addStructure(structureId: string) {
+    setStructurePickerVisible(false);
+    if (structureId === MANUAL_STRUCTURE_ID) {
+      setStructureLines((current) => [
+        ...current,
+        emptyManualStructureLine({
+          id: createId(),
+          vatPercent: settings.vatPercent,
+        }),
+      ]);
+      return;
+    }
     const structure = structures.find((item) => item.id === structureId);
     if (!structure) return;
-    setStructurePickerVisible(false);
     setStructureLines((current) => [
       ...current,
       emptyStructureLine({
@@ -610,19 +625,26 @@ export default function CalculationComposerScreen() {
           <Pressable style={styles.modalDismiss} onPress={() => setStructurePickerVisible(false)} />
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Valitse tuoterakenne</Text>
+            <Pressable
+              onPress={() => addStructure(MANUAL_STRUCTURE_ID)}
+              style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
+            >
+              <Text style={styles.optionText}>Ei pohjaa</Text>
+            </Pressable>
+            {structures.map((structure) => (
+              <Pressable
+                key={structure.id}
+                onPress={() => addStructure(structure.id)}
+                style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
+              >
+                <Text style={styles.optionText}>{structure.name}</Text>
+              </Pressable>
+            ))}
             {structures.length === 0 ? (
-              <Text style={styles.modalHelp}>Ei tuoterakenteita. Lisää rakenne asetuksista.</Text>
-            ) : (
-              structures.map((structure) => (
-                <Pressable
-                  key={structure.id}
-                  onPress={() => addStructure(structure.id)}
-                  style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
-                >
-                  <Text style={styles.optionText}>{structure.name}</Text>
-                </Pressable>
-              ))
-            )}
+              <Text style={styles.modalHelp}>
+                Ei tuoterakenteita. Voit lisätä tyhjän rivin tai luoda rakenteen asetuksista.
+              </Text>
+            ) : null}
             <OutlinedButton title="Peruuta" onPress={() => setStructurePickerVisible(false)} />
           </View>
         </View>

@@ -221,7 +221,11 @@ async function migrateProductStructures(db: SQLite.SQLiteDatabase): Promise<void
       commission_percent REAL NOT NULL,
       sort_order INTEGER NOT NULL,
       created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
+      updated_at INTEGER NOT NULL,
+      default_additional_info TEXT,
+      default_unit_price_vat0 REAL,
+      default_contract_price_vat0 REAL,
+      default_materials_vat0 REAL
     );
     CREATE TABLE IF NOT EXISTS customers (
       id TEXT PRIMARY KEY NOT NULL,
@@ -306,6 +310,8 @@ async function migrateProductStructures(db: SQLite.SQLiteDatabase): Promise<void
     );
   }
 
+  await migrateProductStructureDefaults(db);
+
   await db.runAsync(
     `UPDATE products SET structure_id = ? WHERE structure_id IS NULL OR structure_id = ''`,
     DEFAULT_STRUCTURE_ID,
@@ -387,6 +393,23 @@ async function migrateProductStructures(db: SQLite.SQLiteDatabase): Promise<void
         row.id as string,
       );
     }
+  }
+}
+
+async function migrateProductStructureDefaults(db: SQLite.SQLiteDatabase): Promise<void> {
+  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(product_structures)');
+  const names = new Set(columns.map((column) => column.name));
+  if (!names.has('default_additional_info')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN default_additional_info TEXT');
+  }
+  if (!names.has('default_unit_price_vat0')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN default_unit_price_vat0 REAL');
+  }
+  if (!names.has('default_contract_price_vat0')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN default_contract_price_vat0 REAL');
+  }
+  if (!names.has('default_materials_vat0')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN default_materials_vat0 REAL');
   }
 }
 

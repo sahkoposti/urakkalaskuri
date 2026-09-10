@@ -487,13 +487,24 @@ export async function saveFieldsPageExpandedSetting(value: string): Promise<void
   );
 }
 
+function optionalDbNumber(value: unknown): number | undefined {
+  if (value == null || value === '') return undefined;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 function structureFromRow(row: Record<string, unknown>): ProductStructure {
+  const additionalInfo = ((row.default_additional_info as string | null) ?? '').trim();
   return {
     id: row.id as string,
     name: row.name as string,
     unit: (row.unit as string | null) ?? undefined,
     form: normalizeFormDefinition(JSON.parse(row.form_json as string)),
     commissionPercent: row.commission_percent as number,
+    defaultAdditionalInfo: additionalInfo || undefined,
+    defaultUnitPriceVat0: optionalDbNumber(row.default_unit_price_vat0),
+    defaultContractPriceVat0: optionalDbNumber(row.default_contract_price_vat0),
+    defaultMaterialsVat0: optionalDbNumber(row.default_materials_vat0),
     sortOrder: row.sort_order as number,
     createdAt: new Date(row.created_at as number),
     updatedAt: new Date(row.updated_at as number),
@@ -555,8 +566,9 @@ export async function upsertProductStructure(structure: ProductStructure): Promi
   const db = await getDb();
   await db.runAsync(
     `INSERT OR REPLACE INTO product_structures (
-      id, name, unit, form_json, commission_percent, sort_order, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, name, unit, form_json, commission_percent, sort_order, created_at, updated_at,
+      default_additional_info, default_unit_price_vat0, default_contract_price_vat0, default_materials_vat0
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     structure.id,
     structure.name,
     structure.unit ?? null,
@@ -565,6 +577,10 @@ export async function upsertProductStructure(structure: ProductStructure): Promi
     structure.sortOrder,
     structure.createdAt.getTime(),
     structure.updatedAt.getTime(),
+    structure.defaultAdditionalInfo?.trim() || null,
+    structure.defaultUnitPriceVat0 ?? null,
+    structure.defaultContractPriceVat0 ?? null,
+    structure.defaultMaterialsVat0 ?? null,
   );
 }
 

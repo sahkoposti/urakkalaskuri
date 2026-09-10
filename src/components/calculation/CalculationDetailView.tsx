@@ -245,6 +245,11 @@ function LineDetail({
           showDuration
         />
       ) : null}
+      {line.additionalInfo?.trim() ? (
+        <AppCard>
+          <ResultRow label="Lisätiedot" value={line.additionalInfo.trim()} />
+        </AppCard>
+      ) : null}
       <FormSummarySection
         form={structure?.form}
         fieldValues={line.fieldValues}

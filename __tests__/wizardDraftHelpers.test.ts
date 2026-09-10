@@ -283,6 +283,22 @@ describe('composer unsaved changes', () => {
     expect(composerHasUnsavedChanges(current, composerStateSignature(saved))).toBe(true);
   });
 
+  test('prompts when line additional info or work price changes', () => {
+    const saved = emptyForm({ structureLines: [sampleLine()] });
+    expect(
+      composerHasUnsavedChanges(
+        emptyForm({ structureLines: [sampleLine({ additionalInfo: 'Telineet' })] }),
+        composerStateSignature(saved),
+      ),
+    ).toBe(true);
+    expect(
+      composerHasUnsavedChanges(
+        emptyForm({ structureLines: [sampleLine({ contractPriceVat0: 10 })] }),
+        composerStateSignature(saved),
+      ),
+    ).toBe(true);
+  });
+
   test('does not prompt for an empty new calculation', () => {
     expect(composerHasUnsavedChanges(emptyForm(), null)).toBe(false);
   });

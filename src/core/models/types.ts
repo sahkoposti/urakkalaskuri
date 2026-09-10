@@ -139,7 +139,8 @@ export type StructureLineOverride =
   | 'materials'
   | 'discount'
   | 'quantity'
-  | 'unit';
+  | 'unit'
+  | 'contractPrice';
 
 export interface StructureLine {
   id: string;
@@ -159,6 +160,8 @@ export interface StructureLine {
   marginPercent: number;
   /** true = kortilla hinta/materiaalit ALV:llisina (oletus). */
   pricesIncludeVat?: boolean;
+  /** Rivin lisätiedot; tuoterakenne omistaa kentän, oletusteksti kopioidaan rakenteesta. */
+  additionalInfo?: string;
   fieldValues: Record<string, string>;
   formFilled: boolean;
   formVersion?: number;

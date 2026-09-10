@@ -26,7 +26,9 @@ export function applyFormResultToLine(
     discountPercent: overrides.has('discount')
       ? line.discountPercent
       : roundToCents(result.discountPercent),
-    contractPriceVat0: roundToCents(result.contractPriceVat0),
+    contractPriceVat0: overrides.has('contractPrice')
+      ? line.contractPriceVat0
+      : roundToCents(result.contractPriceVat0),
     workDurationDays: result.workDurationDays,
     commissionPercent,
   });
@@ -44,6 +46,8 @@ export function patchStructureLine(
       | 'discountPercent'
       | 'name'
       | 'pricesIncludeVat'
+      | 'additionalInfo'
+      | 'contractPriceVat0'
     >
   >,
 ): StructureLine {
@@ -53,6 +57,9 @@ export function patchStructureLine(
   if (patch.unitPriceVat0 !== undefined) overrides.add('unitPrice');
   if (patch.materialsVat0 !== undefined) overrides.add('materials');
   if (patch.discountPercent !== undefined) overrides.add('discount');
+  if (patch.contractPriceVat0 !== undefined) overrides.add('contractPrice');
+  const additionalInfo =
+    patch.additionalInfo === undefined ? undefined : patch.additionalInfo.trim() || undefined;
   const rounded = {
     ...patch,
     ...(patch.quantity !== undefined ? { quantity: roundToCents(patch.quantity) } : {}),
@@ -65,6 +72,10 @@ export function patchStructureLine(
     ...(patch.discountPercent !== undefined
       ? { discountPercent: roundToCents(patch.discountPercent) }
       : {}),
+    ...(patch.contractPriceVat0 !== undefined
+      ? { contractPriceVat0: roundToCents(patch.contractPriceVat0) }
+      : {}),
+    ...(patch.additionalInfo !== undefined ? { additionalInfo } : {}),
   };
   return withDerivedLinePricing({
     ...line,
