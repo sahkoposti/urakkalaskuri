@@ -89,6 +89,15 @@ describe('applyFormToLine', () => {
     expect(next.overrides).toContain('contractPrice');
   });
 
+  test('yliajettua keston näyttöarvoa ei korvata eikä laskentaa muuteta', () => {
+    const overridden = patchStructureLine(line({ workDurationDays: 4 }), { displayWorkDurationDays: 9 });
+    const next = applyFormResultToLine(overridden, result, { maali: 'x' }, 7);
+    expect(next.displayWorkDurationDays).toBe(9);
+    expect(next.workDurationDays).toBe(2);
+    expect(next.overrides).toContain('workDurationDisplay');
+    expect(next.contractPriceVat0).toBe(800);
+  });
+
   test('lisätiedot säilyvät lomakkeen jälkeen', () => {
     const next = applyFormResultToLine(line({ additionalInfo: 'Telineet' }), result, { maali: 'x' }, 7);
     expect(next.additionalInfo).toBe('Telineet');

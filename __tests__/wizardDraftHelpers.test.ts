@@ -340,7 +340,7 @@ describe('composer unsaved changes', () => {
     expect(composerHasUnsavedChanges(current, composerStateSignature(saved))).toBe(true);
   });
 
-  test('prompts when line additional info or work price changes', () => {
+  test('prompts when line additional info or displayed duration changes', () => {
     const saved = emptyForm({ structureLines: [sampleLine()] });
     expect(
       composerHasUnsavedChanges(
@@ -350,7 +350,7 @@ describe('composer unsaved changes', () => {
     ).toBe(true);
     expect(
       composerHasUnsavedChanges(
-        emptyForm({ structureLines: [sampleLine({ contractPriceVat0: 10 })] }),
+        emptyForm({ structureLines: [sampleLine({ displayWorkDurationDays: 9 })] }),
         composerStateSignature(saved),
       ),
     ).toBe(true);

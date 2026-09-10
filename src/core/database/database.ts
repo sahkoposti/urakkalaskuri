@@ -507,6 +507,7 @@ function structureFromRow(row: Record<string, unknown>): ProductStructure {
     defaultUnitPriceVat0: optionalDbNumber(row.default_unit_price_vat0),
     defaultContractPriceVat0: optionalDbNumber(row.default_contract_price_vat0),
     defaultMaterialsVat0: optionalDbNumber(row.default_materials_vat0),
+    defaultDisplayWorkDurationDays: optionalDbNumber(row.default_display_work_duration_days),
     sortOrder: row.sort_order as number,
     createdAt: new Date(row.created_at as number),
     updatedAt: new Date(row.updated_at as number),
@@ -570,8 +571,8 @@ export async function upsertProductStructure(structure: ProductStructure): Promi
     `INSERT OR REPLACE INTO product_structures (
       id, name, unit, form_json, commission_percent, sort_order, created_at, updated_at,
       default_additional_info, default_unit_price_vat0, default_contract_price_vat0, default_materials_vat0,
-      crew_size
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      default_display_work_duration_days, crew_size
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     structure.id,
     structure.name,
     structure.unit ?? null,
@@ -584,6 +585,7 @@ export async function upsertProductStructure(structure: ProductStructure): Promi
     structure.defaultUnitPriceVat0 ?? null,
     structure.defaultContractPriceVat0 ?? null,
     structure.defaultMaterialsVat0 ?? null,
+    structure.defaultDisplayWorkDurationDays ?? null,
     parseCrewSize(structure.crewSize),
   );
 }

@@ -20,6 +20,7 @@ import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import { parseCrewSize } from '@/src/core/structure/structureSettings';
+import { normalizeDisplayWorkDurationDays, WORK_DURATION_DISPLAY_LABEL } from '@/src/core/structure/workDurationDisplay';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -59,8 +60,8 @@ export default function ProductStructureDetailScreen() {
   const [defaultUnitPrice, setDefaultUnitPrice] = useState(
     isNew ? '' : optionalPriceText(structure?.defaultUnitPriceVat0),
   );
-  const [defaultContractPrice, setDefaultContractPrice] = useState(
-    isNew ? '' : optionalPriceText(structure?.defaultContractPriceVat0),
+  const [defaultDisplayWorkDuration, setDefaultDisplayWorkDuration] = useState(
+    isNew ? '' : optionalDaysText(structure?.defaultDisplayWorkDurationDays),
   );
   const [defaultMaterials, setDefaultMaterials] = useState(
     isNew ? '' : optionalPriceText(structure?.defaultMaterialsVat0),
@@ -77,7 +78,7 @@ export default function ProductStructureDetailScreen() {
       unit: unit.trim(),
       additionalInfo,
       defaultUnitPrice,
-      defaultContractPrice,
+      defaultDisplayWorkDuration,
       defaultMaterials,
     });
   }
@@ -90,7 +91,7 @@ export default function ProductStructureDetailScreen() {
     setUnit(structure.unit ?? '');
     setAdditionalInfo(structure.defaultAdditionalInfo ?? '');
     setDefaultUnitPrice(optionalPriceText(structure.defaultUnitPriceVat0));
-    setDefaultContractPrice(optionalPriceText(structure.defaultContractPriceVat0));
+    setDefaultDisplayWorkDuration(optionalDaysText(structure.defaultDisplayWorkDurationDays));
     setDefaultMaterials(optionalPriceText(structure.defaultMaterialsVat0));
     savedIdRef.current = structure.id;
     setSavedSnapshot(
@@ -101,7 +102,7 @@ export default function ProductStructureDetailScreen() {
         unit: structure.unit ?? '',
         additionalInfo: structure.defaultAdditionalInfo ?? '',
         defaultUnitPrice: optionalPriceText(structure.defaultUnitPriceVat0),
-        defaultContractPrice: optionalPriceText(structure.defaultContractPriceVat0),
+        defaultDisplayWorkDuration: optionalDaysText(structure.defaultDisplayWorkDurationDays),
         defaultMaterials: optionalPriceText(structure.defaultMaterialsVat0),
       }),
     );
@@ -119,7 +120,7 @@ export default function ProductStructureDetailScreen() {
     unit,
     additionalInfo,
     defaultUnitPrice,
-    defaultContractPrice,
+    defaultDisplayWorkDuration,
     defaultMaterials,
   ]);
 
@@ -139,14 +140,14 @@ export default function ProductStructureDetailScreen() {
       return false;
     }
     const unitPrice = parseOptionalPrice(defaultUnitPrice);
-    const contractPrice = parseOptionalPrice(defaultContractPrice);
+    const displayDuration = parseOptionalDays(defaultDisplayWorkDuration);
     const materials = parseOptionalPrice(defaultMaterials);
     if (unitPrice === 'invalid') {
       showAlert('Virhe', 'Virheellinen oletushinta');
       return false;
     }
-    if (contractPrice === 'invalid') {
-      showAlert('Virhe', 'Virheellinen oletus työn hinta');
+    if (displayDuration === 'invalid') {
+      showAlert('Virhe', 'Virheellinen työn arvioitu kesto');
       return false;
     }
     if (materials === 'invalid') {
@@ -174,8 +175,9 @@ export default function ProductStructureDetailScreen() {
       crewSize: parseCrewSize(parsedCrew),
       defaultAdditionalInfo: additionalInfo.trim() || undefined,
       defaultUnitPriceVat0: unitPrice,
-      defaultContractPriceVat0: contractPrice,
+      defaultContractPriceVat0: existing?.defaultContractPriceVat0,
       defaultMaterialsVat0: materials,
+      defaultDisplayWorkDurationDays: displayDuration,
       sortOrder: existing?.sortOrder ?? structures.length,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -189,7 +191,7 @@ export default function ProductStructureDetailScreen() {
         unit: unit.trim(),
         additionalInfo,
         defaultUnitPrice,
-        defaultContractPrice,
+        defaultDisplayWorkDuration,
         defaultMaterials,
       }),
     );
@@ -277,11 +279,11 @@ export default function ProductStructureDetailScreen() {
           placeholder="Valinnainen"
         />
         <AppInput
-          label="Oletus työn hinta alv0"
-          value={defaultContractPrice}
-          onChangeText={setDefaultContractPrice}
+          label={WORK_DURATION_DISPLAY_LABEL}
+          value={defaultDisplayWorkDuration}
+          onChangeText={setDefaultDisplayWorkDuration}
           keyboardType="decimal-pad"
-          placeholder="Valinnainen"
+          placeholder="Valinnainen, säävaraus mukana"
         />
         <AppInput
           label="Oletus materiaalit alv0"
@@ -313,6 +315,20 @@ export default function ProductStructureDetailScreen() {
       {exitDialog}
     </>
   );
+}
+
+function optionalDaysText(value: number | undefined): string {
+  const days = normalizeDisplayWorkDurationDays(value);
+  return days == null ? '' : String(days);
+}
+
+function parseOptionalDays(raw: string): number | undefined | 'invalid' {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  const parsed = parseNumber(trimmed);
+  if (parsed === null || parsed < 0) return 'invalid';
+  if (parsed === 0) return undefined;
+  return normalizeDisplayWorkDurationDays(parsed);
 }
 
 function optionalPriceText(value: number | undefined): string {

@@ -28,6 +28,8 @@ import {
   lineTotalVat0,
   withDerivedLinePricing,
 } from '@/src/core/structure/linePricing';
+import { estimateWorkDurationDays } from '@/src/core/utils/formatters';
+import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import { applyVat, isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import { useApp } from '@/src/context/AppContext';
@@ -56,7 +58,6 @@ function lineBreakdown(line: StructureLine, reverseVat: boolean) {
     vatPercent: priced.vatPercent,
     totalPriceVatBeforeDiscount: reverseVat ? list : applyVat(list, priced.vatPercent),
     totalPriceVat0BeforeDiscount: list,
-    workDurationDays: priced.workDurationDays,
   };
 }
 
@@ -73,8 +74,10 @@ export function CalculationDetailView({
   const privateCustomer = isPrivateCustomer(customer);
   const structureLines = ensureStructureLines(record);
   const showStructureSummaries = structureLines.length > 1;
-  const singleLineDuration =
-    structureLines.length === 1 ? structureLines[0].workDurationDays : undefined;
+  const singleLine = structureLines.length === 1 ? structureLines[0] : undefined;
+  const totalDisplayedDuration = singleLine
+    ? resolveDisplayedWorkDurationDays(singleLine, settings.weatherReserveFactor)
+    : estimateWorkDurationDays(record.workDurationDays, settings.weatherReserveFactor);
   const mismatchLine = structureLines.find((line) => {
     const structure = structures.find((item) => item.id === line.structureId);
     const snapshotVersion = line.formVersion ?? line.snapshot?.formVersion;
@@ -177,12 +180,9 @@ export function CalculationDetailView({
       ) : null}
 
       <PriceBreakdownCard
-        values={{
-          ...record,
-          workDurationDays: singleLineDuration ?? record.workDurationDays,
-        }}
+        values={record}
         customer={customer}
-        weatherReserveFactor={settings.weatherReserveFactor}
+        displayedWorkDurationDays={totalDisplayedDuration}
         showDuration={structureLines.length <= 1}
       />
 
@@ -234,6 +234,10 @@ function LineDetail({
       )
     : undefined;
   const snapshot = lineFormSnapshot(line, structure?.form, structureProducts, context);
+  const displayedWorkDurationDays = resolveDisplayedWorkDurationDays(
+    line,
+    weatherReserveFactor,
+  );
 
   return (
     <View>
@@ -242,7 +246,7 @@ function LineDetail({
         <PriceBreakdownCard
           values={lineBreakdown(line, reverseVat)}
           customer={customer}
-          weatherReserveFactor={weatherReserveFactor}
+          displayedWorkDurationDays={displayedWorkDurationDays}
           showDuration
         />
       ) : null}

@@ -32,6 +32,7 @@ describe('emptyStructureLine', () => {
         defaultUnitPriceVat0: 1200,
         defaultContractPriceVat0: 800,
         defaultMaterialsVat0: 150,
+        defaultDisplayWorkDurationDays: 10,
       }),
       vatPercent: 25.5,
     });
@@ -42,6 +43,7 @@ describe('emptyStructureLine', () => {
     expect(line.unitPriceVat0).toBe(1200);
     expect(line.contractPriceVat0).toBe(800);
     expect(line.materialsVat0).toBe(150);
+    expect(line.displayWorkDurationDays).toBe(10);
     expect(line.commissionPercent).toBe(7);
     expect(line.overrides).toEqual([]);
     expect(line.formFilled).toBe(false);
@@ -56,6 +58,7 @@ describe('emptyStructureLine', () => {
     expect(line.unitPriceVat0).toBe(0);
     expect(line.contractPriceVat0).toBe(0);
     expect(line.materialsVat0).toBe(0);
+    expect(line.displayWorkDurationDays).toBeUndefined();
     expect(line.additionalInfo).toBeUndefined();
   });
 });
@@ -69,6 +72,7 @@ describe('emptyManualStructureLine', () => {
     expect(line.unitPriceVat0).toBe(0);
     expect(line.contractPriceVat0).toBe(0);
     expect(line.materialsVat0).toBe(0);
+    expect(line.displayWorkDurationDays).toBeUndefined();
     expect(line.additionalInfo).toBeUndefined();
     expect(line.formFilled).toBe(false);
     expect(line.overrides).toEqual([]);

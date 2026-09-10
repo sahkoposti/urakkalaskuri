@@ -129,6 +129,8 @@ function structureLineSignature(line: StructureLine) {
     unitPriceVat0: line.unitPriceVat0,
     materialsVat0: line.materialsVat0,
     contractPriceVat0: line.contractPriceVat0,
+    displayWorkDurationDays: line.displayWorkDurationDays ?? null,
+    workDurationDisplayOverride: (line.overrides ?? []).includes('workDurationDisplay'),
     discountPercent: line.discountPercent,
     additionalInfo: (line.additionalInfo ?? '').trim(),
     formFilled: Boolean(line.formFilled),
