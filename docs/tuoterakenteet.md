@@ -5,7 +5,7 @@
 > **PDF myöhemmin:** [v1.3-suunnitelma.md](./v1.3-suunnitelma.md)  
 > **Edeltäjä:** [v1.2](./v1.2-suunnitelma.md)
 
-Laskelma = asiakas + toimitusajankohta + tuoterakennerivit. Lomake on rivin takana. Yhteenveto = kokonaissumma + rivikohtainen erittely. Ei PDF:ää.
+Laskelma = asiakas + toimitusajankohta + matka-aika yhteen suuntaan + tuoterakennerivit. Lomake on rivin takana. Yhteenveto = kokonaissumma + rivikohtainen erittely. Ei PDF:ää.
 
 Koodin jäämät (vanha istunto, kaksoiskirjoitus lomakkeelle): [yhtenaisyystarkistus.md](./yhtenaisyystarkistus.md).
 
@@ -17,6 +17,7 @@ Koodin jäämät (vanha istunto, kaksoiskirjoitus lomakkeelle): [yhtenaisyystark
 Laskentasivu (pysty, mobiili)
   ├── Asiakas          oma osio → syöttösivu + rekisteri
   ├── Toimitusajankohta   vapaateksti, rivien ulkopuolella
+  ├── Matka-aika          yhteen suuntaan (h), sama kaikille riveille (`laskelma.matka_aika_h`)
   ├── Tuoterakennerivit   summakortit (ei erillistä „valitse tuote” -vaihetta)
   └── Yhteenveto        → tallennus + erittely
 ```
@@ -277,6 +278,7 @@ interface CalculationRecord {
   customerId: string;
   customer: CustomerInfo;      // snapshot
   deliveryScheduleText: string;
+  travelTimeHours: string;    // yhteen suuntaan, h; kaavassa laskelma.matka_aika_h
   structureLines: StructureLine[];
   // aggregaatit kokonaissummakorttiin
 }

@@ -229,6 +229,12 @@ Yleiset asetukset (ALV, kate, tuntihinta…) tulevat automaattisesti kaavakontek
 
 Vanhat `settings.*`-muodot toimivat vielä aliasina.
 
+Laskelmatason arvot (samat kaikille tuoterakenteille, eivät lomakekenttiä):
+
+| Muuttuja | Lähde |
+|----------|-------|
+| `laskelma.matka_aika_h` | Matka-aika yhteen suuntaan (h). Tyhjä = 0. Meno–paluu = `laskelma.matka_aika_h * 2`. |
+
 **Liukuva myyntihinta (alv0)** suorista kustannuksista:
 
 ```text

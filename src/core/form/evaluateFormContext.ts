@@ -17,6 +17,7 @@ import {
   getSelectedProductId,
   isProductField,
 } from '@/src/core/form/productFieldUtils';
+import { buildCalculationFormulaContext, type CalculationFormulaValues } from '@/src/core/form/calculationFormulaContext';
 import { buildSettingsFormulaContext } from '@/src/core/form/settingsFormulaContext';
 import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
 import { isMaterialsSystemField, isSystemField, MATERIALS_CONTEXT_KEY } from '@/src/core/form/systemFields';
@@ -50,6 +51,7 @@ export interface EvaluateFormContextOptions {
   /** Kerää debug-jälki (soft errors). */
   collectTrace?: boolean;
   reverseVat?: boolean;
+  calculation?: CalculationFormulaValues;
 }
 
 export interface EvaluateFormContextResult {
@@ -123,11 +125,13 @@ export function evaluateFormContext(options: EvaluateFormContextOptions): Evalua
     strictSystemFields = false,
     collectTrace = false,
     reverseVat = false,
+    calculation,
   } = options;
 
   const context: Record<string, number> = {
     [MATERIALS_CONTEXT_KEY]: materialsTotal,
     ...buildSettingsFormulaContext(settings),
+    ...buildCalculationFormulaContext(calculation),
   };
   // Syötekentät alkavat nollasta, jotta tyhjä kytkin/numero ei kaada live-kaavaa.
   // Computed-kenttiä ei siemennetä, jotta debug voi edelleen raportoida puuttuvat riippuvuudet.

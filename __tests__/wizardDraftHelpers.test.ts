@@ -282,6 +282,12 @@ describe('composer unsaved changes', () => {
     expect(composerHasUnsavedChanges(current, composerStateSignature(saved))).toBe(true);
   });
 
+  test('prompts when travel time changes', () => {
+    const saved = emptyForm({ customerName: 'Matti', travelTimeHours: '0,5' });
+    const current = emptyForm({ customerName: 'Matti', travelTimeHours: '0,75' });
+    expect(composerHasUnsavedChanges(current, composerStateSignature(saved))).toBe(true);
+  });
+
   test('does not prompt for an empty new calculation', () => {
     expect(composerHasUnsavedChanges(emptyForm(), null)).toBe(false);
   });

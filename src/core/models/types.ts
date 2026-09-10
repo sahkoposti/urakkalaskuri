@@ -130,6 +130,8 @@ export interface CalculationRecord {
   lines: CalculationLine[];
   customerId?: string;
   deliveryScheduleText?: string;
+  /** Matka-aika yhteen suuntaan (h), raakateksti. Tyhjä = 0 kaavoissa. */
+  travelTimeHours?: string;
   structureLines?: StructureLine[];
 }
 
@@ -262,5 +264,7 @@ export interface PersistedWizardDraft {
   editFormVersion?: number;
   customerId?: string;
   deliveryScheduleText?: string;
+  /** Matka-aika yhteen suuntaan (h), raakateksti. Tyhjä = 0 kaavoissa. */
+  travelTimeHours?: string;
   structureLines?: StructureLine[];
 }

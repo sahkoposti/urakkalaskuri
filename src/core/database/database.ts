@@ -109,6 +109,7 @@ function calculationFromRow(
     lines,
     customerId: (row.customer_id as string | null) ?? undefined,
     deliveryScheduleText: (row.delivery_schedule_text as string | null) ?? undefined,
+    travelTimeHours: (row.travel_time_hours as string | null) ?? undefined,
     structureLines: parseStructureLines(row.structure_lines),
   };
 }
@@ -293,8 +294,8 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
         margin_eur, commission_eur, total_price_vat0, vat_percent, vat_amount, total_price_vat,
         work_duration_days, discount_percent, discount_eur,
         total_price_vat_before_discount, total_price_vat0_before_discount,
-        created_at, form_snapshot, customer_id, delivery_schedule_text, structure_lines
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        created_at, form_snapshot, customer_id, delivery_schedule_text, travel_time_hours, structure_lines
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       record.id,
       record.projectName,
       record.customer ?? null,
@@ -320,6 +321,7 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.formSnapshot ? JSON.stringify(record.formSnapshot) : null,
       record.customerId ?? null,
       record.deliveryScheduleText ?? null,
+      record.travelTimeHours ?? null,
       record.structureLines ? JSON.stringify(record.structureLines) : null,
     );
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', record.id);

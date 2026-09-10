@@ -1,3 +1,4 @@
+import { resolveTravelTimeHours } from '@/src/core/form/calculationFormulaContext';
 import type { CalculationRecord, Product, WizardDraft, WizardLineDraft } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
@@ -47,6 +48,11 @@ export function calculationToFormState(
     lines,
     customerId: record.customerId,
     deliveryScheduleText: record.deliveryScheduleText ?? '',
+    travelTimeHours: resolveTravelTimeHours({
+      travelTimeHours: record.travelTimeHours,
+      fieldValues: fieldValues,
+      structureLines: record.structureLines,
+    }),
     structureLines: ensureStructureLines(record),
   };
 

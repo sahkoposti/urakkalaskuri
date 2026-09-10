@@ -124,6 +124,7 @@ describe('buildCalculationRecordFromComposer', () => {
       id: 'c1',
       customer: { ...emptyCustomerInfo(), name: 'Jaana' },
       deliveryScheduleText: 'viikko 42',
+      travelTimeHours: '0,75',
       structureLines: [line],
       settings,
       products: [],
@@ -132,6 +133,7 @@ describe('buildCalculationRecordFromComposer', () => {
     });
     expect(record.projectName).toBe('Jaana');
     expect(record.deliveryScheduleText).toBe('viikko 42');
+    expect(record.travelTimeHours).toBe('0,75');
     expect(record.totalPriceVat0).toBe(200);
     expect(record.workDurationDays).toBe(0);
     expect(record.structureLines).toHaveLength(1);

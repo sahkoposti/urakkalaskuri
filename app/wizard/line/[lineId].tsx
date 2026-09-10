@@ -16,6 +16,7 @@ import {
   runFormCalculation,
 } from '@/src/core/calculation/calculationPipeline';
 import { applyFieldValueChange, resetComputedFieldOverride } from '@/src/core/form/applyFieldValueChange';
+import { calculationFromTravelTime } from '@/src/core/form/calculationFormulaContext';
 import { wizardFieldsForPage } from '@/src/core/form/formDefinitionHelpers';
 import { buildFormSnapshot } from '@/src/core/form/formSummaryHelpers';
 import { productsForStructureForm } from '@/src/core/form/productFieldUtils';
@@ -79,6 +80,10 @@ export default function StructureLineFormScreen() {
     ? wizardFieldsForPage(structure.form, currentPage.id)
     : [];
   const reverseVat = Boolean(draftState?.reverseVat);
+  const calculation = useMemo(
+    () => calculationFromTravelTime(draftState?.travelTimeHours),
+    [draftState?.travelTimeHours],
+  );
   const computedValues = useLiveFormContext({
     form: structure?.form ?? { id: '', name: '', version: 0, pages: [], fields: [], updatedAt: 0 },
     fieldValues,
@@ -86,10 +91,20 @@ export default function StructureLineFormScreen() {
     products: structureProducts,
     settings,
     reverseVat,
+    calculation,
   });
 
   const numericContext = structure
-    ? previewFormContext(structure.form, fieldValues, [], structureProducts, settings, undefined, reverseVat)
+    ? previewFormContext(
+        structure.form,
+        fieldValues,
+        [],
+        structureProducts,
+        settings,
+        undefined,
+        reverseVat,
+        calculation,
+      )
     : undefined;
   const formComplete = Boolean(
     structure &&
@@ -145,6 +160,7 @@ export default function StructureLineFormScreen() {
         products: structureProducts,
         settings: lineSettings,
         reverseVat,
+        calculation,
       });
       const snapshot = buildFormSnapshot(
         structure.form,
@@ -202,7 +218,16 @@ export default function StructureLineFormScreen() {
       fieldValues,
       '',
       structureProducts,
-      previewFormContext(structure.form, fieldValues, [], structureProducts, settings, undefined, reverseVat),
+      previewFormContext(
+        structure.form,
+        fieldValues,
+        [],
+        structureProducts,
+        settings,
+        undefined,
+        reverseVat,
+        calculation,
+      ),
       [],
       { requireCustomerName: false },
     );

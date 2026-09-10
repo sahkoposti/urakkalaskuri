@@ -12,6 +12,7 @@ import {
   SectionTitle,
 } from '@/src/components/common';
 import { previewFormContext } from '@/src/core/calculation/calculationPipeline';
+import { calculationFromTravelTime } from '@/src/core/form/calculationFormulaContext';
 import { lineFormSnapshot } from '@/src/core/form/formSummaryHelpers';
 import {
   formVersionMismatchMessage,
@@ -160,9 +161,17 @@ export function CalculationDetailView({
         />
       </AppCard>
 
-      {record.deliveryScheduleText?.trim() ? (
+      {(record.deliveryScheduleText?.trim() || record.travelTimeHours?.trim()) ? (
         <AppCard style={styles.card}>
-          <ResultRow label="Toimitusajankohta" value={record.deliveryScheduleText.trim()} />
+          {record.deliveryScheduleText?.trim() ? (
+            <ResultRow label="Toimitusajankohta" value={record.deliveryScheduleText.trim()} />
+          ) : null}
+          {record.travelTimeHours?.trim() ? (
+            <ResultRow
+              label="Matka-aika yhteen suuntaan"
+              value={`${record.travelTimeHours.trim()} h`}
+            />
+          ) : null}
         </AppCard>
       ) : null}
 
@@ -183,6 +192,7 @@ export function CalculationDetailView({
           customer={customer}
           weatherReserveFactor={settings.weatherReserveFactor}
           showPriceSummary={showStructureSummaries}
+          travelTimeHours={record.travelTimeHours}
         />
       ))}
 
@@ -196,11 +206,13 @@ function LineDetail({
   customer,
   weatherReserveFactor,
   showPriceSummary,
+  travelTimeHours,
 }: {
   line: StructureLine;
   customer: CustomerInfo;
   weatherReserveFactor: number;
   showPriceSummary: boolean;
+  travelTimeHours?: string;
 }) {
   const { products, structures, settings } = useApp();
   const reverseVat = Boolean(customer.reverseVat);
@@ -208,6 +220,7 @@ function LineDetail({
   const structureProducts = structure
     ? productsForStructureForm(structure.form, products, line.structureId)
     : [];
+  const calculation = calculationFromTravelTime(travelTimeHours);
   const context = structure
     ? previewFormContext(
         structure.form,
@@ -217,6 +230,7 @@ function LineDetail({
         settings,
         undefined,
         reverseVat,
+        calculation,
       )
     : undefined;
   const snapshot = lineFormSnapshot(line, structure?.form, structureProducts, context);

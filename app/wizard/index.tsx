@@ -78,6 +78,7 @@ export default function CalculationComposerScreen() {
   const [customerPostalLocality, setCustomerPostalLocality] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
   const [deliveryScheduleText, setDeliveryScheduleText] = useState('');
+  const [travelTimeHours, setTravelTimeHours] = useState('');
   const [structureLines, setStructureLines] = useState<StructureLine[]>([]);
   const [structurePickerVisible, setStructurePickerVisible] = useState(false);
   const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
@@ -125,6 +126,7 @@ export default function CalculationComposerScreen() {
       lines: [],
       customerId,
       deliveryScheduleText,
+      travelTimeHours,
       structureLines,
     };
   }
@@ -200,6 +202,7 @@ export default function CalculationComposerScreen() {
     setCustomerNotes(form.customerNotes);
     setCustomerId(form.customerId);
     setDeliveryScheduleText(form.deliveryScheduleText ?? '');
+    setTravelTimeHours(form.travelTimeHours ?? '');
     const lines = hydrateLines(form, structures, settings.vatPercent);
     setStructureLines(lines);
     markComposerSaved({ ...form, structureLines: lines });
@@ -440,6 +443,7 @@ export default function CalculationComposerScreen() {
         customer: info,
         customerId: savedCustomerId,
         deliveryScheduleText,
+        travelTimeHours,
         structureLines,
         settings,
         products,
@@ -501,6 +505,13 @@ export default function CalculationComposerScreen() {
             value={deliveryScheduleText}
             onChangeText={setDeliveryScheduleText}
             placeholder="Esim. viikko 42"
+          />
+          <AppInput
+            label="Matka-aika yhteen suuntaan (h)"
+            value={travelTimeHours}
+            onChangeText={setTravelTimeHours}
+            keyboardType="decimal-pad"
+            placeholder="Esim. 0,75"
           />
 
           <SectionTitle title="Tuoterakenteet" />

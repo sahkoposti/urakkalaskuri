@@ -103,7 +103,6 @@ function bool(value: boolean): string {
 
 function baseFieldValues(): Record<string, string> {
   return {
-    etaisyys: '0.25',
     julkisivupinnat_valinta: 'true',
     raystassivun_pituus_m: '10',
     raystaskorkeus_m: '4.5',
@@ -394,6 +393,7 @@ function main(): void {
       materialLines: [],
       products: [PAINT_PRODUCT],
       settings: defaultSettings,
+      calculation: { matkaAikaH: 0.25 },
     });
 
     results.push({

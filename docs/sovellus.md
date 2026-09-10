@@ -15,7 +15,7 @@ Composer-malli on tuotantopolku. Yhtenäisyystarkistuksen siivous: [yhtenaisyyst
 | Polku | Mitä se tekee |
 |-------|----------------|
 | Koti | Uusi laskenta, historia, tuotteet, asiakkaat, asetukset |
-| Laskenta (`/wizard`) | Asiakas, toimitusajankohta, tuoterakennerivit. **Yhteenveto** tallentaa laskelman |
+| Laskenta (`/wizard`) | Asiakas, toimitusajankohta, matka-aika yhteen suuntaan, tuoterakennerivit. **Yhteenveto** tallentaa laskelman |
 | Asiakas (`/wizard/customer`) | Yhteystiedot ja rekisterihaku (nimi *) |
 | Rivin lomake (`/wizard/line/…`) | Tuoterakenteen lomakesivut. **Valmis** laskee rivin hinnat |
 | Laskelman tiedot | Yhteinen näkymä yhteenvedon jälkeen ja historiasta. Roskakori poistaa laskelman. Kopiointi vain asiakastiedoista. **Sulje** → historia |
@@ -77,7 +77,7 @@ Yhteenvedossa kopiointinappi on vain asiakkaan yhteystiedoissa.
 
 ## Yhteenveto (erittely)
 
-1. Asiakkaan tiedot ja toimitusajankohta.
+1. Asiakkaan tiedot, toimitusajankohta ja matka-aika yhteen suuntaan.
 2. **Kokonaissumma:** materiaalit, työ, alennus (jos > 0 %), kokonaishinnat (alv0 / ALV / sis. ALV). Yksityinen: korostus sis. ALV. Yritys: korostus alv0; käänteinen ALV tarvittaessa.
 3. **Yksi rivi:** työn arvioitu kesto näytetään kokonaissummassa (säävarauskerroin + tasapäiviin ylöspäin). Päiviä ei summata riveiltä.
 4. **Useita rivejä:** jokaisella tuoterakenteella oma otsikko, hintakortti (kesto tälle riville) ja **Lomaketiedot**.

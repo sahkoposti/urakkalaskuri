@@ -1,5 +1,9 @@
 import type { CalculationResult } from '@/src/core/calculation/calculationPipeline';
-import { previewFormContext } from '@/src/core/calculation/calculationPipeline';
+import {
+  previewFormContext,
+  runFormCalculation,
+} from '@/src/core/calculation/calculationPipeline';
+import { calculationFromTravelTime } from '@/src/core/form/calculationFormulaContext';
 import { buildFormSnapshot, hasSummarySnapshotFields } from '@/src/core/form/formSummaryHelpers';
 import { productsForStructureForm } from '@/src/core/form/productFieldUtils';
 import type { FormDefinition } from '@/src/core/form/types';
@@ -14,6 +18,7 @@ import type {
   WizardLineDraft,
 } from '@/src/core/models/types';
 import { serializeCustomerDetails } from '@/src/core/models/types';
+import { applyFormResultToLine } from '@/src/core/structure/applyFormToLine';
 import { aggregateStructureLines, withDerivedLinePricing } from '@/src/core/structure/linePricing';
 import type { ProductStructure } from '@/src/core/structure/types';
 
@@ -101,6 +106,7 @@ export type BuildComposerRecordInput = {
   customer: CustomerInfo;
   customerId?: string;
   deliveryScheduleText?: string;
+  travelTimeHours?: string;
   structureLines: StructureLine[];
   settings: AppSettings;
   products: Product[];
@@ -131,6 +137,7 @@ export function buildCalculationRecordFromComposer(
     customer: serializeCustomerDetails(input.customer),
     customerId: input.customerId,
     deliveryScheduleText: input.deliveryScheduleText?.trim() || undefined,
+    travelTimeHours: input.travelTimeHours?.trim() || undefined,
     groupDurationHours: 0,
     crewSize: input.settings.defaultCrewSize,
     hourlyRate: input.settings.defaultHourlyRate,
@@ -158,9 +165,11 @@ export function buildCalculationRecordFromComposer(
 
 function withLineFormSnapshot(
   line: StructureLine,
-  input: Pick<BuildComposerRecordInput, 'structures' | 'products' | 'settings' | 'customer'>,
+  input: Pick<
+    BuildComposerRecordInput,
+    'structures' | 'products' | 'settings' | 'customer' | 'travelTimeHours'
+  >,
 ): StructureLine {
-  if (hasSummarySnapshotFields(line.snapshot)) return line;
   const structure = input.structures.find((item) => item.id === line.structureId);
   if (!structure) return line;
   const hasValues = Object.values(line.fieldValues ?? {}).some((value) => value.trim().length > 0);
@@ -170,6 +179,45 @@ function withLineFormSnapshot(
     input.products,
     line.structureId,
   );
+  const reverseVat = Boolean(input.customer.reverseVat);
+  const calculation = calculationFromTravelTime(input.travelTimeHours);
+  const lineSettings = {
+    ...input.settings,
+    defaultCommissionPercent: structure.commissionPercent,
+  };
+
+  if (line.formFilled) {
+    try {
+      const { context, result } = runFormCalculation({
+        form: structure.form,
+        fieldValues: line.fieldValues ?? {},
+        materialLines: [],
+        products: structureProducts,
+        settings: lineSettings,
+        reverseVat,
+        calculation,
+      });
+      return applyFormResultToLine(
+        line,
+        result,
+        line.fieldValues ?? {},
+        structure.commissionPercent,
+        {
+          formVersion: structure.form.version,
+          snapshot: buildFormSnapshot(
+            structure.form,
+            line.fieldValues ?? {},
+            context,
+            structureProducts,
+          ),
+        },
+      );
+    } catch {
+      // Keskeneräinen kesto tms. – säilytä rivin hinta, päivitä snapshot jos puuttuu.
+    }
+  }
+
+  if (hasSummarySnapshotFields(line.snapshot)) return line;
   const context = previewFormContext(
     structure.form,
     line.fieldValues ?? {},
@@ -177,7 +225,8 @@ function withLineFormSnapshot(
     structureProducts,
     input.settings,
     undefined,
-    Boolean(input.customer.reverseVat),
+    reverseVat,
+    calculation,
   );
   return {
     ...line,

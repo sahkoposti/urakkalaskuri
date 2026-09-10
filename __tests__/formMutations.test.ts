@@ -572,6 +572,15 @@ describe('formMutations', () => {
     expect(unknown).toHaveLength(0);
   });
 
+  test('unknownFormulaIdentifiers allows laskelma prefix', () => {
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
+    const unknown = unknownFormulaIdentifiers(
+      form,
+      'laskelma.matka_aika_h * 2 * tyoryhma_kesto_pv * asetukset.tyoryhman_koko',
+    );
+    expect(unknown).toHaveLength(0);
+  });
+
   test('unknownFormulaIdentifiers allows product list attributes', () => {
     const form = addField(normalizeFormDefinition(createMinimalFormDefinition()), 'product_select');
     const created = form.fields.at(-1)!;

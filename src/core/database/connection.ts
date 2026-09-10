@@ -255,6 +255,9 @@ async function migrateProductStructures(db: SQLite.SQLiteDatabase): Promise<void
   if (!calculationColumns.some((column) => column.name === 'delivery_schedule_text')) {
     await db.execAsync('ALTER TABLE calculations ADD COLUMN delivery_schedule_text TEXT');
   }
+  if (!calculationColumns.some((column) => column.name === 'travel_time_hours')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN travel_time_hours TEXT');
+  }
   if (!calculationColumns.some((column) => column.name === 'structure_lines')) {
     await db.execAsync('ALTER TABLE calculations ADD COLUMN structure_lines TEXT');
   }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { previewFormContext } from '@/src/core/calculation/calculationPipeline';
+import type { CalculationFormulaValues } from '@/src/core/form/calculationFormulaContext';
 import type { FormDefinition } from '@/src/core/form/types';
 import type { AppSettings, Product, WizardLineDraft } from '@/src/core/models/types';
 
@@ -15,6 +16,7 @@ type LiveFormContextInput = {
   settings: AppSettings;
   legacyDuration?: string;
   reverseVat?: boolean;
+  calculation?: CalculationFormulaValues;
 };
 
 export function useLiveFormContext({
@@ -25,6 +27,7 @@ export function useLiveFormContext({
   settings,
   legacyDuration,
   reverseVat = false,
+  calculation,
 }: LiveFormContextInput): Record<string, number> {
   const [computedValues, setComputedValues] = useState<Record<string, number>>({});
 
@@ -39,11 +42,21 @@ export function useLiveFormContext({
           settings,
           legacyDuration,
           reverseVat,
+          calculation,
         ),
       );
     }, LIVE_FORM_CONTEXT_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [form, fieldValues, materialLines, products, settings, legacyDuration, reverseVat]);
+  }, [
+    form,
+    fieldValues,
+    materialLines,
+    products,
+    settings,
+    legacyDuration,
+    reverseVat,
+    calculation,
+  ]);
 
   return computedValues;
 }
