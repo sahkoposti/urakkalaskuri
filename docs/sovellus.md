@@ -137,7 +137,7 @@ Kaava: `liukuva_myyntihinta(suorat_kustannukset_alv0)` → myyntihinta alv0.
 - **Kentät**-asetuksissa sivut ovat oletuksena suljettu; avaus muistetaan (`fields_page_expanded`).
 - Lasketun kentän manuaalinen arvo: teemavärinen reset-nuoli palauttaa kaavan tuloksen.
 
-JSON-tuonti: **Asetukset → Tuoterakenteet → [rakenne] → Lomake → Tuo JSON…**
+JSON-tuonti: **Asetukset → Tuoterakenteet → [rakenne] → Lomake → Tuo JSON…** Onnistunut tuonti näyttää nimen, version ja edellisen version.
 
 ---
 

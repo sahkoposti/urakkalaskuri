@@ -76,11 +76,12 @@ export default function CalculationSettingsScreen() {
 
   async function handleImport() {
     try {
+      const previousVersion = form.version;
       const imported = parseImportedFormDefinition(importText);
       await persistForm(imported, { preserveVersion: true });
       setImportVisible(false);
       resetImportField();
-      showAlert('Lomakepohja tuotu', importedFormSummary(imported));
+      showAlert('Lomakepohja tuotu', importedFormSummary(imported, previousVersion));
     } catch (error) {
       const message =
         error instanceof FormDefinitionImportError
@@ -119,7 +120,6 @@ export default function CalculationSettingsScreen() {
         />
 
         <SectionTitle title="Lomakepohja" />
-        <OutlinedButton title="Vie JSON (leikepöytä)" onPress={() => void handleExport()} />
         <OutlinedButton
           title="Tuo JSON…"
           onPress={() => {
@@ -127,6 +127,7 @@ export default function CalculationSettingsScreen() {
             setImportVisible(true);
           }}
         />
+        <OutlinedButton title="Vie JSON (leikepöytä)" onPress={() => void handleExport()} />
         <OutlinedButton title="Palauta oletuslomake…" onPress={() => setResetVisible(true)} />
       </ScrollView>
 

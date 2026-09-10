@@ -30,9 +30,11 @@ Polku: **Asetukset → Tuoterakenteet → [rakenne] → Lomake** (näytön otsik
 
 | Toiminto | Painike |
 |----------|---------|
-| Vie nykyinen pohja | **Vie JSON (leikepöytä)** |
 | Tuo uusi pohja | **Tuo JSON…** |
+| Vie nykyinen pohja | **Vie JSON (leikepöytä)** |
 | Palauta tehdas oletus | **Palauta oletuslomake** |
+
+Onnistunut tuonti näyttää lomakkeen nimen, version ja edellisen version, esim. `Julkisivumaalaus. Versio 108 (edellinen versio: 107).`
 
 Tuonti korvaa **tämän rakenteen** lomakkeen, ei muiden rakenteiden pohjia. Sovellus **normalisoi** pohjan: lisää järjestelmäkentät, korjaa vanhat avaimet, hylkää `alv_maara` / `kokonaishinta`-kaavat ja siivoaa sivujen kenttäviittaukset.
 
