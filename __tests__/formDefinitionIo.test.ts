@@ -61,6 +61,23 @@ describe('formDefinitionIo', () => {
     expect(() => parseImportedFormDefinition('{"name":"x"}')).toThrow(FormDefinitionImportError);
   });
 
+  test('summarizes imported name, version and previous version', () => {
+    const imported = parseImportedFormDefinition(
+      JSON.stringify({
+        id: 'imported',
+        name: 'Julkisivumaalaus',
+        version: 108,
+        pages: [],
+        fields: [],
+        updatedAt: 1,
+      }),
+    );
+    expect(importedFormSummary(imported)).toBe('Julkisivumaalaus. Versio 108.');
+    expect(importedFormSummary(imported, 107)).toBe(
+      'Julkisivumaalaus. Versio 108 (edellinen versio: 107).',
+    );
+  });
+
   test('does not inject an Asiakas page when the JSON omits it', () => {
     const imported = parseImportedFormDefinition(
       JSON.stringify({
@@ -84,7 +101,9 @@ describe('formDefinitionIo', () => {
       false,
     );
     expect(imported.pages[0]?.id).toBe('page_surfaces');
-    expect(importedFormSummary(imported)).toBe('Versio 119.');
+    expect(importedFormSummary(imported, 107)).toBe(
+      'Peruslaskenta. Versio 119 (edellinen versio: 107).',
+    );
   });
 
   test('moves Asiakas page fields onto the first remaining page', () => {

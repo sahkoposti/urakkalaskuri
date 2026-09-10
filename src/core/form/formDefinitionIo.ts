@@ -48,7 +48,13 @@ export function parseImportedFormDefinition(raw: string): FormDefinition {
   });
 }
 
-/** Lyhyt kuvaus tuonnin jälkeen. */
-export function importedFormSummary(form: FormDefinition): string {
-  return `Versio ${form.version}.`;
+/** Lyhyt kuvaus onnistuneen tuonnin jälkeen. */
+export function importedFormSummary(form: FormDefinition, previousVersion?: number): string {
+  const name = form.name.trim();
+  const previous =
+    typeof previousVersion === 'number' && Number.isFinite(previousVersion)
+      ? ` (edellinen versio: ${previousVersion})`
+      : '';
+  const version = `Versio ${form.version}${previous}.`;
+  return name ? `${name}. ${version}` : version;
 }
