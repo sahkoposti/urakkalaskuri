@@ -1,9 +1,11 @@
 import {
   buildPersistedWizardDraft,
+  cloneStructureLine,
   composerHasUnsavedChanges,
   composerStateSignature,
   fieldValuesEqual,
   firstNonEmptyId,
+  lineFormNeedsExitPrompt,
   mergeWizardDraftEditMeta,
   persistedDraftToFormState,
   serializeFieldValues,
@@ -255,6 +257,61 @@ describe('serializeFieldValues', () => {
       serializeFieldValues({ a: '1', b: '2' }),
     );
     expect(fieldValuesEqual({ pinta: '12', extra: '' }, { pinta: '12' })).toBe(true);
+  });
+});
+
+describe('lineFormNeedsExitPrompt', () => {
+  test('does not prompt when values match and the saved form is already incomplete', () => {
+    expect(
+      lineFormNeedsExitPrompt({
+        currentValues: { pinta: '12' },
+        savedValues: { pinta: '12' },
+        formComplete: false,
+        savedFormFilled: false,
+      }),
+    ).toBe(false);
+  });
+
+  test('prompts when the working copy differs from the last save', () => {
+    expect(
+      lineFormNeedsExitPrompt({
+        currentValues: { pinta: '8' },
+        savedValues: { pinta: '12' },
+        formComplete: false,
+        savedFormFilled: true,
+      }),
+    ).toBe(true);
+  });
+
+  test('prompts when a previously completed form is now incomplete', () => {
+    expect(
+      lineFormNeedsExitPrompt({
+        currentValues: { pinta: '12' },
+        savedValues: { pinta: '12' },
+        formComplete: false,
+        savedFormFilled: true,
+      }),
+    ).toBe(true);
+  });
+
+  test('does not prompt when a completed form is unchanged', () => {
+    expect(
+      lineFormNeedsExitPrompt({
+        currentValues: { pinta: '12' },
+        savedValues: { pinta: '12' },
+        formComplete: true,
+        savedFormFilled: true,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('cloneStructureLine', () => {
+  test('copies fieldValues so later edits do not mutate the snapshot', () => {
+    const line = sampleLine({ fieldValues: { pinta: '12' } });
+    const cloned = cloneStructureLine(line);
+    cloned.fieldValues.pinta = '1';
+    expect(line.fieldValues.pinta).toBe('12');
   });
 });
 

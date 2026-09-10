@@ -96,6 +96,29 @@ export function fieldValuesEqual(
   return serializeFieldValues(a) === serializeFieldValues(b);
 }
 
+/** Kopio rivistä, jotta lomakkeen paikallinen tila ei jaa draftin objekteja. */
+export function cloneStructureLine(line: StructureLine): StructureLine {
+  return {
+    ...line,
+    fieldValues: { ...(line.fieldValues ?? {}) },
+    overrides: [...(line.overrides ?? [])],
+  };
+}
+
+/**
+ * Kysy poistumisvahvistus, jos kentät erosivat viimeisestä tallennuksesta
+ * tai aiemmin valmis lomake on nyt keskeneräinen.
+ */
+export function lineFormNeedsExitPrompt(input: {
+  currentValues: Record<string, string>;
+  savedValues: Record<string, string>;
+  formComplete: boolean;
+  savedFormFilled: boolean;
+}): boolean {
+  if (!fieldValuesEqual(input.currentValues, input.savedValues)) return true;
+  return input.savedFormFilled && !input.formComplete;
+}
+
 function structureLineSignature(line: StructureLine) {
   return {
     id: line.id,

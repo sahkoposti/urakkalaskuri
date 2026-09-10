@@ -183,7 +183,7 @@ Poisto: roskakori kortin kulmassa, vahvistus.
 
 Avaa rakenteen sivut, mukaan lukien Asiakas-sivu **jos sillä on lisäkenttiä**. Järjestelmän yhteystietoja ei näytetä. Tuotelistakenttä (`product_select`) käyttää **vain tämän rakenteen** tuotteita. Ei `MaterialsStep`-vaihetta.
 
-**Valmis** (tai poistumisen **Tallenna**, jos lomake on täynnä): ajaa laskennan ja kirjoittaa riviin hinnan, mater. €, urakan/työn hinnan, keston, palkkion ja alennuksen jos lomakkeessa on `alennus_prosentti` (ei yliajettu). Rakenteen oletushinnat yliajetaan, jos lomake tuottaa hintapäivityksiä. **Tallenna keskeneräisenä** tallentaa kentät ilman hinnoittelua (`formFilled: false`). Paluu laskentasivulle.
+**Valmis** (tai poistumisen **Tallenna**, jos lomake on täynnä): ajaa laskennan ja kirjoittaa riviin hinnan, mater. €, urakan/työn hinnan, keston, palkkion ja alennuksen jos lomakkeessa on `alennus_prosentti` (ei yliajettu). Rakenteen oletushinnat yliajetaan, jos lomake tuottaa hintapäivityksiä. Jos lomake on keskeneräinen, poistuminen kysyy: **Tallenna keskeneräisenä** (kentät ilman hinnoittelua, `formFilled: false`) tai **Sulje tallentamatta** (edellinen tallennettu lomake palautetaan). Keskeneräistä ei tallenneta kysymättä. Paluu laskentasivulle.
 
 Yliajo: muokattu solun lippu; lomakkeen uusinta-ajo ei ylikirjoita sitä. Mater. € yliajo **ei** tyhjennä `product_select`-arvoa `fieldValues`:ssa. Lisätiedot ovat rivin omia; lomake ei koske niihin.
 
