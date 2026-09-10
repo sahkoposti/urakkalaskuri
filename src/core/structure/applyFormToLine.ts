@@ -31,7 +31,6 @@ export function applyFormResultToLine(
       ? line.contractPriceVat0
       : roundToCents(result.contractPriceVat0),
     workDurationDays: result.workDurationDays,
-    displayWorkDurationDays: line.displayWorkDurationDays,
     commissionPercent,
   });
 }

@@ -10,7 +10,11 @@ import {
   vatInclTag,
   workPriceVat0,
 } from '@/src/core/utils/priceDisplay';
-import { formatCurrency, formatPercent, formatWorkDurationDays } from '@/src/core/utils/formatters';
+import { formatCurrency, formatPercent } from '@/src/core/utils/formatters';
+import {
+  formatDurationDisplayValue,
+  WORK_DURATION_DISPLAY_LABEL,
+} from '@/src/core/structure/workDurationDisplay';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -23,13 +27,11 @@ export type PriceBreakdownValues = {
   vatPercent: number;
   totalPriceVatBeforeDiscount: number;
   totalPriceVat0BeforeDiscount: number;
-  workDurationDays?: number;
 };
 
 type PriceBreakdownCardProps = {
   values: PriceBreakdownValues;
   customer: CustomerInfo;
-  weatherReserveFactor?: number;
   /** Jo säävarauksen sisältävä kokonaisluku; ei kerrota uudelleen. */
   displayedWorkDurationDays?: number;
   showDuration?: boolean;
@@ -38,7 +40,6 @@ type PriceBreakdownCardProps = {
 export function PriceBreakdownCard({
   values,
   customer,
-  weatherReserveFactor = 1,
   displayedWorkDurationDays,
   showDuration = false,
 }: PriceBreakdownCardProps) {
@@ -52,17 +53,12 @@ export function PriceBreakdownCard({
   const priceAfterDiscount = includeVat ? values.totalPriceVat : values.totalPriceVat0;
   const discountAmount = Math.max(0, priceBeforeDiscount - priceAfterDiscount);
   const showDiscount = values.discountPercent > 0 && discountAmount > 0;
-  const durationText =
-    displayedWorkDurationDays != null && displayedWorkDurationDays > 0
-      ? String(displayedWorkDurationDays)
-      : values.workDurationDays != null && values.workDurationDays > 0
-        ? formatWorkDurationDays(values.workDurationDays, weatherReserveFactor)
-        : undefined;
+  const durationText = formatDurationDisplayValue(displayedWorkDurationDays);
 
   return (
     <AppCard style={styles.card}>
       {showDuration && durationText ? (
-        <ResultRow label="Työn arvioitu kesto (pv)" value={durationText} />
+        <ResultRow label={WORK_DURATION_DISPLAY_LABEL} value={durationText} />
       ) : null}
       <ResultRow
         label={labeledWithVatMode('Materiaalit', includeVat, vatRate)}

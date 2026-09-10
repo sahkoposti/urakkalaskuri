@@ -20,7 +20,7 @@ import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import { parseCrewSize } from '@/src/core/structure/structureSettings';
-import { normalizeDisplayWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
+import { normalizeDisplayWorkDurationDays, WORK_DURATION_DISPLAY_LABEL } from '@/src/core/structure/workDurationDisplay';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -279,7 +279,7 @@ export default function ProductStructureDetailScreen() {
           placeholder="Valinnainen"
         />
         <AppInput
-          label="Työn arvioitu kesto (pv)"
+          label={WORK_DURATION_DISPLAY_LABEL}
           value={defaultDisplayWorkDuration}
           onChangeText={setDefaultDisplayWorkDuration}
           keyboardType="decimal-pad"

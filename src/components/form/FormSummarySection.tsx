@@ -26,8 +26,6 @@ type FormSummarySectionProps = {
   snapshot?: FormSnapshot;
   workDurationDays?: number;
   weatherReserveFactor?: number;
-  /** Jo säävarauksen sisältävä kokonaisluku; ei kerrota uudelleen. */
-  displayedWorkDurationDays?: number;
   title?: string;
   fieldKeyPrefix?: string;
 };
@@ -40,7 +38,6 @@ export function FormSummarySection({
   snapshot,
   workDurationDays,
   weatherReserveFactor = 1,
-  displayedWorkDurationDays,
   title = 'Lomaketiedot',
   fieldKeyPrefix = '',
 }: FormSummarySectionProps) {
@@ -69,12 +66,7 @@ export function FormSummarySection({
                 {showPageTitle ? <Text style={styles.pageTitle}>{pageTitle}</Text> : null}
                 <ResultRow
                   label={displayWorkDurationText(field.label)}
-                  value={displaySnapshotFieldValue(
-                    field,
-                    workDurationDays,
-                    weatherReserveFactor,
-                    displayedWorkDurationDays,
-                  )}
+                  value={displaySnapshotFieldValue(field, workDurationDays, weatherReserveFactor)}
                 />
               </View>
             );
@@ -109,16 +101,7 @@ export function FormSummarySection({
                   {showPageTitle ? <Text style={styles.pageTitle}>{pageTitle}</Text> : null}
                   <ResultRow
                     label={displayWorkDurationText(field.label)}
-                    value={
-                      isWorkDurationDaysKey(field.key) || field.systemKey === 'tyoryhma_kesto_pv'
-                        ? formatDurationSummaryValue(
-                            field.unit,
-                            context?.[field.key],
-                            weatherReserveFactor,
-                            displayedWorkDurationDays,
-                          )
-                        : formatFieldSummaryValue(field, fieldValues, context ?? {}, products)
-                    }
+                    value={formatFieldSummaryValue(field, fieldValues, context ?? {}, products)}
                   />
                 </View>
               );
@@ -129,32 +112,12 @@ export function FormSummarySection({
   );
 }
 
-function formatDurationSummaryValue(
-  unit: string | undefined,
-  rawDays: number | undefined,
-  weatherReserveFactor: number,
-  displayedWorkDurationDays?: number,
-): string {
-  if (displayedWorkDurationDays != null && displayedWorkDurationDays > 0) {
-    const formatted = String(displayedWorkDurationDays);
-    return unit ? `${formatted} ${unit}` : formatted;
-  }
-  if (rawDays === undefined || !Number.isFinite(rawDays)) return '–';
-  const formatted = formatWorkDurationDays(rawDays, weatherReserveFactor);
-  return unit ? `${formatted} ${unit}` : formatted;
-}
-
 function displaySnapshotFieldValue(
   field: FormSnapshotField,
   workDurationDays?: number,
   weatherReserveFactor = 1,
-  displayedWorkDurationDays?: number,
 ): string {
   if (!isWorkDurationDaysKey(field.key)) return field.value;
-  if (displayedWorkDurationDays != null && displayedWorkDurationDays > 0) {
-    const formatted = String(displayedWorkDurationDays);
-    return field.unit ? `${formatted} ${field.unit}` : formatted;
-  }
   const days =
     workDurationDays !== undefined && Number.isFinite(workDurationDays)
       ? workDurationDays

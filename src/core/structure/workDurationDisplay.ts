@@ -1,6 +1,8 @@
 import type { StructureLine } from '@/src/core/models/types';
 import { ceilWorkDurationDays, estimateWorkDurationDays } from '@/src/core/utils/formatters';
 
+export const WORK_DURATION_DISPLAY_LABEL = 'Työn arvioitu kesto (pv)';
+
 export type WorkDurationDisplayLine = Pick<
   StructureLine,
   'overrides' | 'displayWorkDurationDays' | 'workDurationDays'
@@ -14,8 +16,13 @@ export function normalizeDisplayWorkDurationDays(
   return ceilWorkDurationDays(value);
 }
 
+export function formatDurationDisplayValue(days: number | undefined): string | undefined {
+  const normalized = normalizeDisplayWorkDurationDays(days);
+  return normalized == null ? undefined : String(normalized);
+}
+
 /**
- * Lomakkeella ja yhteenvedossa näytettävä työn arvioitu kesto (pv).
+ * Rivikortilla ja yhteenvedossa näytettävä työn arvioitu kesto (pv).
  * Kortin yliajo on jo säävarauksen jälkeinen kokonaisluku eikä muuta laskentaa.
  */
 export function resolveDisplayedWorkDurationDays(

@@ -26,7 +26,7 @@ Pakettiversio **v1.2.4** (`app.json` / `package.json`). Laskelma = asiakas + toi
 - **Kaavat:** `min`, `max`, `round`, `if`, `sqrt`, `liukuva_myyntihinta`. Puuttuva muuttuja ja jako nollalla = `0`
 - **Liukuva kate** (alaraja/yläraja € ja %)
 - **Alennus %** rivillä ja lomakkeella; kate on alennuksen jälkeinen
-- Työn arvioitu kesto yhteenvedossa: säävarauskerroin (oletus 1,3) ennen pyöristystä ylöspäin
+- Työn arvioitu kesto: säävarauskerroin (oletus 1,3) ennen pyöristystä ylöspäin. Sama luku rivikortilla ja yhteenvedossa; kortin muokkaus yliajaa vain näytön
 - Tuotteet: ostohinta, myyntihinta, kate, menekki, työkerroin; tuote voi kuulua useaan rakenteeseen; järjestys ↑↓ (sama tuotelistakentässä)
 - Asetukset: ALV, kate, palkkio, tuntihinta, työryhmä, työpäivä, säävaraus, teema
 - Paikallinen SQLite

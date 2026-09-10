@@ -2,6 +2,7 @@ import { applyFormResultToLine, patchStructureLine } from '../src/core/structure
 import type { CalculationResult } from '../src/core/calculation/calculationPipeline';
 import type { StructureLine } from '../src/core/models/types';
 import {
+  formatDurationDisplayValue,
   normalizeDisplayWorkDurationDays,
   resolveDisplayedWorkDurationDays,
 } from '../src/core/structure/workDurationDisplay';
@@ -82,6 +83,12 @@ describe('resolveDisplayedWorkDurationDays', () => {
     expect(normalizeDisplayWorkDurationDays(8.2)).toBe(9);
     expect(normalizeDisplayWorkDurationDays(0)).toBeUndefined();
     expect(normalizeDisplayWorkDurationDays(-1)).toBeUndefined();
+  });
+
+  test('formatDurationDisplayValue omits empty values', () => {
+    expect(formatDurationDisplayValue(7)).toBe('7');
+    expect(formatDurationDisplayValue(0)).toBeUndefined();
+    expect(formatDurationDisplayValue(undefined)).toBeUndefined();
   });
 });
 

@@ -28,6 +28,7 @@ import {
   lineTotalVat0,
   withDerivedLinePricing,
 } from '@/src/core/structure/linePricing';
+import { estimateWorkDurationDays } from '@/src/core/utils/formatters';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import { applyVat, isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
@@ -57,7 +58,6 @@ function lineBreakdown(line: StructureLine, reverseVat: boolean) {
     vatPercent: priced.vatPercent,
     totalPriceVatBeforeDiscount: reverseVat ? list : applyVat(list, priced.vatPercent),
     totalPriceVat0BeforeDiscount: list,
-    workDurationDays: priced.workDurationDays,
   };
 }
 
@@ -75,10 +75,9 @@ export function CalculationDetailView({
   const structureLines = ensureStructureLines(record);
   const showStructureSummaries = structureLines.length > 1;
   const singleLine = structureLines.length === 1 ? structureLines[0] : undefined;
-  const singleLineDuration = singleLine?.workDurationDays;
-  const singleDisplayedDuration = singleLine
+  const totalDisplayedDuration = singleLine
     ? resolveDisplayedWorkDurationDays(singleLine, settings.weatherReserveFactor)
-    : undefined;
+    : estimateWorkDurationDays(record.workDurationDays, settings.weatherReserveFactor);
   const mismatchLine = structureLines.find((line) => {
     const structure = structures.find((item) => item.id === line.structureId);
     const snapshotVersion = line.formVersion ?? line.snapshot?.formVersion;
@@ -181,13 +180,9 @@ export function CalculationDetailView({
       ) : null}
 
       <PriceBreakdownCard
-        values={{
-          ...record,
-          workDurationDays: singleLineDuration ?? record.workDurationDays,
-        }}
+        values={record}
         customer={customer}
-        weatherReserveFactor={settings.weatherReserveFactor}
-        displayedWorkDurationDays={singleDisplayedDuration}
+        displayedWorkDurationDays={totalDisplayedDuration}
         showDuration={structureLines.length <= 1}
       />
 
@@ -251,7 +246,6 @@ function LineDetail({
         <PriceBreakdownCard
           values={lineBreakdown(line, reverseVat)}
           customer={customer}
-          weatherReserveFactor={weatherReserveFactor}
           displayedWorkDurationDays={displayedWorkDurationDays}
           showDuration
         />
@@ -268,7 +262,6 @@ function LineDetail({
         products={structureProducts}
         snapshot={snapshot}
         workDurationDays={line.workDurationDays}
-        displayedWorkDurationDays={displayedWorkDurationDays}
         weatherReserveFactor={weatherReserveFactor}
         fieldKeyPrefix={`${line.id}:`}
       />

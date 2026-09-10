@@ -24,13 +24,13 @@ export interface ProductStructure {
   defaultAdditionalInfo?: string;
   /** Rivin Hinta € (alv0) valittaessa. Lomake yliajaa, ellei kortilla ole muokattu. */
   defaultUnitPriceVat0?: number;
-  /** Rivin työn hinta / urakka (alv0) valittaessa. Ei näytetä kortilla. */
+  /** Putken urakka (alv0). Ei kortilla; vanhoissa rakenteissa voi yhä olla tallennettu. */
   defaultContractPriceVat0?: number;
   /** Rivin Materiaalit € (alv0) valittaessa. Lomake yliajaa, ellei kortilla ole muokattu. */
   defaultMaterialsVat0?: number;
   /**
-   * Yhteenvedon työn arvioitu kesto (pv), säävaraus mukana.
-   * Näkyy rivillä kun laskentaa ei vielä ole; lomake yliajaa, ellei kortilla ole muokattu.
+   * Rivikortin ja yhteenvedon työn arvioitu kesto (pv), säävaraus mukana.
+   * Näkyy kun laskentaa ei vielä ole; lomakkeen jälkeen näytetään laskettu arvio, ellei kortilla ole muokattu.
    */
   defaultDisplayWorkDurationDays?: number;
   sortOrder: number;

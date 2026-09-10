@@ -16,7 +16,11 @@ import {
 import type { StructureLine } from '@/src/core/models/types';
 import { isManualStructureId, type ProductStructure } from '@/src/core/structure/types';
 import { vat0Tag, vatInclTag } from '@/src/core/utils/priceDisplay';
-import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
+import {
+  normalizeDisplayWorkDurationDays,
+  resolveDisplayedWorkDurationDays,
+  WORK_DURATION_DISPLAY_LABEL,
+} from '@/src/core/structure/workDurationDisplay';
 import {
   formatCurrency,
   formatFixed2,
@@ -31,7 +35,6 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 type StructureLineCardProps = {
   line: StructureLine;
   structure?: ProductStructure;
-  reverseVat: boolean;
   weatherReserveFactor?: number;
   onChange: (line: StructureLine) => void;
   onOpenForm?: () => void;
@@ -131,7 +134,7 @@ export function StructureLineCard({
       </View>
 
       <DaysInput
-        label="Työn arvioitu kesto (pv)"
+        label={WORK_DURATION_DISPLAY_LABEL}
         value={displayedWorkDurationDays}
         onChangeValue={(value) => patch({ displayWorkDurationDays: value })}
       />
@@ -203,12 +206,12 @@ function DaysInput({
         }
         const parsed = parseNumber(next);
         if (parsed === null) return;
-        if (parsed <= 0) {
+        const days = normalizeDisplayWorkDurationDays(parsed);
+        if (days == null) {
           lastSent.current = 0;
           onChangeValue(null);
           return;
         }
-        const days = Math.max(1, Math.ceil(parsed - 1e-9));
         lastSent.current = days;
         onChangeValue(days);
       }}

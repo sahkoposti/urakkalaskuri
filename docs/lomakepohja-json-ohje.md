@@ -92,7 +92,7 @@ Jokainen wizard-vaihe on yksi sivu. Kentät **eivät** kuulu sivuun upotettuna �
 
 - **`system: "customer"`** – Rakenteen Asiakas-sivu **lisäkentille**. Nimi, puhelin, osoite, tyyppi ja käänteinen ALV ovat laskennan omalla asiakassivulla, eivät tällä sivulla. Jos `fieldIds` on tyhjä, sivu piilotetaan rivin lomakkeesta. Sivua ei voi poistaa asetuksista.
 - **`system: "materials"`** – Tuote+määrä -rivi-editori. **Rivin lomake ei näytä tätä sivua.** Tuote valitaan `product_select`-kentästä. Älä lisää sivua, jos lasket materiaalit kaavoilla ja `add_material_fixed`-efekteillä.
-- **Työn kesto** – Lisää sivulle `field_system_tyoryhma_kesto_pv` (kaava-avain `tyoryhma_kesto_pv`). Lomakkeella arvo on tarkka kesto. Yhteenvedon **Työn arvioitu kesto** kertoo säävarauskertoimen (Asetukset → Yleinen, ei kaavamuuttuja) ja pyöristää ylöspäin.
+- **Työn kesto** – Lisää sivulle `field_system_tyoryhma_kesto_pv` (kaava-avain `tyoryhma_kesto_pv`). Lomakkeella arvo on tarkka kesto (hinnoittelu). Rivikortin ja yhteenvedon **Työn arvioitu kesto** kertoo säävarauskertoimen (Asetukset → Yleinen, ei kaavamuuttuja) ja pyöristää ylöspäin. Kortin muokkaus yliajaa vain näytettävän luvun.
 - **Alennus %** – Lisää sivulle `field_system_alennus_prosentti` (kaava-avain `alennus_prosentti`). Oletus `0`. Sama ale on myös rivikortissa.
 - **Hinnat** – Tehdasoletuksessa sivu `page_prices`: urakka, materiaalit, palkkio, myyntihinta alv0 ja kokonaishinta (sis. ALV). Voit yliajaa arvot lomakkeella.
 
@@ -299,7 +299,7 @@ Nämä **eivät kuulu JSON-tiedostoon**. Ne ovat rakenteen omia asetuksia ja tul
 
 Esimerkki: julkisivumaalaus 2 hlö, katto 3 hlö – sama kaava `henkilotyotunnit / asetukset.tyoryhman_koko` käyttää kummankin rakenteen omaa kokoa.
 
-**Ei kaavamuuttujia** (vain rivikortti / yhteenveto): lisätiedot, oletushinta alv0, työn arvioitu kesto (pv, säävaraus mukana), oletus materiaalit alv0. Lomake yliajaa oletushinnat, jos se tuottaa hintapäivityksiä. Kortin kesto-yliajo muuttaa vain yhteenvedossa näytettävää lukua.
+**Ei kaavamuuttujia** (vain rivikortti / yhteenveto): lisätiedot, oletushinta alv0, työn arvioitu kesto (pv, säävaraus mukana), oletus materiaalit alv0. Lomake yliajaa oletushinnat, jos se tuottaa hintapäivityksiä. Kortin kesto-yliajo muuttaa vain rivikortissa ja yhteenvedon hintakortissa näytettävää lukua, ei kaavoja.
 
 ### Matka-aika kohteelle
 
@@ -384,7 +384,7 @@ Sovellus lisää järjestelmäkentät tuonnissa. Sivuille viitataan id:llä. Kaa
 
 | `id` (sivuille) | `key` (kaavoissa) | Rooli |
 |-----------------|-------------------|--------|
-| `field_system_tyoryhma_kesto_pv` | `tyoryhma_kesto_pv` | Kesto (pv), syöte tai kaava. Wizardissa tarkka arvo; yhteenvedossa arvioitu kesto + säävaraus. |
+| `field_system_tyoryhma_kesto_pv` | `tyoryhma_kesto_pv` | Kesto (pv), syöte tai kaava. Wizardissa tarkka arvo; rivikortissa ja yhteenvedossa arvioitu kesto + säävaraus. |
 | `field_system_tyoryhma_kesto_h` | `tyoryhma_kesto_h` | Kesto (h) ilman säävarausta. Näkyy wizardissa jos sivulla. |
 | `field_system_alennus_prosentti` | `alennus_prosentti` | Alennus % (0–100). Näkyy wizardissa. |
 | `field_system_urakka` | `urakka_hinta_alv0` | Vie urakka; wizardissa yliajettavissa |
@@ -635,7 +635,7 @@ Tai erillinen computed-kenttä, joka **lisää tunteja** efektillä (esim. laske
 
 `effects` ilman `value` → kentän laskema arvo (tunnit) lisätään kestoon.
 
-**Huom:** Sijoita `field_system_tyoryhma_kesto_pv` jollekin sivulle `fieldIds`-listassa, jotta kesto näkyy wizardissa. `showOnSummary` ei vie järjestelmäkenttää Lomaketietoihin. JSON-`label` voi olla „Työn kesto”; yhteenveto näyttää „Työn arvioitu kesto” ja kertoo säävarauskertoimen ennen ylöspäin pyöristystä.
+**Huom:** Sijoita `field_system_tyoryhma_kesto_pv` jollekin sivulle `fieldIds`-listassa, jotta kesto näkyy wizardissa. `showOnSummary` ei vie järjestelmäkenttää Lomaketietoihin. JSON-`label` voi olla „Työn kesto”; rivikortti ja yhteenveto näyttävät „Työn arvioitu kesto” ja kertovat säävarauskertoimen ennen ylöspäin pyöristystä. Kortilla näytettävää lukua voi yliajaa; se ei muuta kaavoja.
 
 ---
 
