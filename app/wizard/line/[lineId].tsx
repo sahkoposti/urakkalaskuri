@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -25,10 +25,11 @@ import { structureFormPages } from '@/src/core/structure/formPages';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import {
   buildPersistedWizardDraft,
+  cloneStructureLine,
   firstNonEmptyId,
+  lineFormNeedsExitPrompt,
   mergeWizardDraftEditMeta,
   persistedDraftToFormState,
-  serializeFieldValues,
 } from '@/src/core/wizard/wizardDraftHelpers';
 import {
   isStructureFormFullyFilled,
@@ -64,13 +65,13 @@ export default function StructureLineFormScreen() {
 
   const [step, setStep] = useState(0);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
-  const [baseline, setBaseline] = useState<string | null>(null);
+  const savedLineRef = useRef<NonNullable<typeof line> | null>(null);
 
   useEffect(() => {
     if (!line) return;
-    const values = line.fieldValues ?? {};
-    setFieldValues(values);
-    setBaseline(serializeFieldValues(values));
+    const snapshot = cloneStructureLine(line);
+    savedLineRef.current = snapshot;
+    setFieldValues({ ...snapshot.fieldValues });
   }, [line?.id]);
 
   const structureProducts = products.filter(
@@ -118,8 +119,17 @@ export default function StructureLineFormScreen() {
     structure &&
       isStructureFormFullyFilled(structure.form, fieldValues, structureProducts, numericContext),
   );
-  const isDirty =
-    Boolean(line) && baseline != null && serializeFieldValues(fieldValues) !== baseline;
+  const savedLine = savedLineRef.current;
+  const isDirty = Boolean(
+    line &&
+      savedLine &&
+      lineFormNeedsExitPrompt({
+        currentValues: fieldValues,
+        savedValues: savedLine.fieldValues,
+        formComplete,
+        savedFormFilled: savedLine.formFilled,
+      }),
+  );
 
   function showError(message: string) {
     showAlert('Virhe', message);
@@ -151,7 +161,10 @@ export default function StructureLineFormScreen() {
 
   async function persistIncomplete(): Promise<boolean> {
     if (!line) return false;
-    return writeLineToDraft(saveIncompleteFormToLine(line, fieldValues));
+    const next = saveIncompleteFormToLine(line, fieldValues);
+    const saved = await writeLineToDraft(next);
+    if (saved) savedLineRef.current = cloneStructureLine(next);
+    return saved;
   }
 
   async function persistComplete(): Promise<boolean> {
@@ -190,13 +203,20 @@ export default function StructureLineFormScreen() {
     }
   }
 
-  const { allowExit, exitDialog } = useUnsavedChangesGuard({
+  async function restoreSavedLine(): Promise<void> {
+    const saved = savedLineRef.current;
+    if (!saved) return;
+    await writeLineToDraft(cloneStructureLine(saved));
+  }
+
+  const { allowExit, requestExit, exitDialog } = useUnsavedChangesGuard({
     isDirty,
     onSave: formComplete ? persistComplete : persistIncomplete,
+    onDiscard: restoreSavedLine,
     title: formComplete ? 'Tallentamattomia muutoksia' : 'Keskeneräinen lomake',
     message: formComplete
       ? 'Haluatko tallentaa lomakkeen?'
-      : 'Haluatko tallentaa lomakkeen keskeneräisenä?',
+      : 'Haluatko tallentaa lomakkeen keskeneräisenä? Sulje tallentamatta palauttaa edellisen tallennetun lomakkeen.',
     discardTitle: 'Sulje tallentamatta',
     saveTitle: formComplete ? 'Tallenna' : 'Tallenna keskeneräisenä',
   });
@@ -251,7 +271,12 @@ export default function StructureLineFormScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: `${structure.name} (${step + 1}/${Math.max(stepCount, 1)})` }} />
+      <Stack.Screen
+        options={{
+          title: `${structure.name} (${step + 1}/${Math.max(stepCount, 1)})`,
+          headerBackButtonMenuEnabled: false,
+        }}
+      />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -265,7 +290,7 @@ export default function StructureLineFormScreen() {
               </View>
             ) : (
               <View style={styles.actionButton}>
-                <OutlinedButton title="Takaisin" onPress={() => router.back()} />
+                <OutlinedButton title="Takaisin" onPress={requestExit} />
               </View>
             )}
             <View style={styles.actionButton}>

@@ -1,5 +1,6 @@
+import { usePreventRemoveContext, useRoute } from '@react-navigation/native';
 import { router, useFocusEffect, useNavigation } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useInsertionEffect, useRef, useState } from 'react';
 import { BackHandler } from 'react-native';
 
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
@@ -8,6 +9,7 @@ import { useSaveToast } from '@/src/context/SaveToastContext';
 type UseUnsavedChangesGuardOptions = {
   isDirty: boolean;
   onSave?: () => void | Promise<void | boolean>;
+  onDiscard?: () => void | Promise<void>;
   title?: string;
   message?: string;
   cancelTitle?: string;
@@ -18,6 +20,7 @@ type UseUnsavedChangesGuardOptions = {
 export function useUnsavedChangesGuard({
   isDirty,
   onSave,
+  onDiscard,
   title = 'Tallentamattomia muutoksia',
   message = 'Haluatko tallentaa muutokset ennen poistumista?',
   cancelTitle = 'Peruuta',
@@ -25,10 +28,44 @@ export function useUnsavedChangesGuard({
   saveTitle = 'Tallenna',
 }: UseUnsavedChangesGuardOptions) {
   const navigation = useNavigation();
+  const { key: routeKey } = useRoute();
+  const { setPreventRemove, notifyPreventRemove } = usePreventRemoveContext();
+  const preventId = useId();
   const { showSaved } = useSaveToast();
   const allowExitRef = useRef(false);
+  const isDirtyRef = useRef(isDirty);
+  const onSaveRef = useRef(onSave);
+  const onDiscardRef = useRef(onDiscard);
   const pendingExitRef = useRef<(() => void) | null>(null);
   const [exitDialogVisible, setExitDialogVisible] = useState(false);
+
+  isDirtyRef.current = isDirty;
+  onSaveRef.current = onSave;
+  onDiscardRef.current = onDiscard;
+
+  const shouldPrevent = isDirty && !allowExitRef.current;
+
+  useInsertionEffect(() => {
+    setPreventRemove(preventId, routeKey, shouldPrevent);
+    return () => {
+      setPreventRemove(preventId, routeKey, false);
+    };
+  }, [preventId, routeKey, shouldPrevent, setPreventRemove]);
+
+  useEffect(() => {
+    notifyPreventRemove();
+    return () => {
+      notifyPreventRemove();
+    };
+  }, [preventId, routeKey, shouldPrevent, notifyPreventRemove]);
+
+  useFocusEffect(
+    useCallback(() => {
+      allowExitRef.current = false;
+      setPreventRemove(preventId, routeKey, isDirtyRef.current);
+      notifyPreventRemove();
+    }, [preventId, routeKey, setPreventRemove, notifyPreventRemove]),
+  );
 
   const closeExitDialog = useCallback(() => {
     setExitDialogVisible(false);
@@ -40,33 +77,42 @@ export function useUnsavedChangesGuard({
     setExitDialogVisible(true);
   }, []);
 
-  const leaveWithoutSaving = useCallback(() => {
+  const markAllowExit = useCallback(() => {
     allowExitRef.current = true;
-    const action = pendingExitRef.current;
-    closeExitDialog();
-    action?.();
-  }, [closeExitDialog]);
+    setPreventRemove(preventId, routeKey, false);
+    notifyPreventRemove();
+  }, [preventId, routeKey, setPreventRemove, notifyPreventRemove]);
+
+  const leaveWithoutSaving = useCallback(() => {
+    void (async () => {
+      await onDiscardRef.current?.();
+      markAllowExit();
+      const action = pendingExitRef.current;
+      closeExitDialog();
+      action?.();
+    })();
+  }, [closeExitDialog, markAllowExit]);
 
   const save = useCallback(async (): Promise<boolean> => {
-    if (!onSave) return false;
-    const result = await onSave();
+    if (!onSaveRef.current) return false;
+    const result = await onSaveRef.current();
     if (result === false) return false;
     showSaved();
     return true;
-  }, [onSave, showSaved]);
+  }, [showSaved]);
 
   const saveAndExit = useCallback(async () => {
     const saved = await save();
     if (!saved) return;
-    allowExitRef.current = true;
+    markAllowExit();
     const action = pendingExitRef.current;
     closeExitDialog();
     action?.();
-  }, [closeExitDialog, save]);
+  }, [closeExitDialog, markAllowExit, save]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowExitRef.current || !isDirty) {
+      if (allowExitRef.current || !isDirtyRef.current) {
         return;
       }
 
@@ -75,28 +121,40 @@ export function useUnsavedChangesGuard({
     });
 
     return unsubscribe;
-  }, [navigation, isDirty, confirmExit]);
+  }, [navigation, confirmExit]);
 
   useFocusEffect(
     useCallback(() => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (allowExitRef.current || !isDirty) {
+        if (allowExitRef.current || !isDirtyRef.current) {
           return false;
         }
 
         confirmExit(() => {
-          allowExitRef.current = true;
+          markAllowExit();
           router.back();
         });
         return true;
       });
 
       return () => subscription.remove();
-    }, [isDirty, confirmExit]),
+    }, [confirmExit, markAllowExit]),
   );
 
   function allowExit() {
-    allowExitRef.current = true;
+    markAllowExit();
+  }
+
+  function requestExit() {
+    if (allowExitRef.current || !isDirtyRef.current) {
+      markAllowExit();
+      router.back();
+      return;
+    }
+    confirmExit(() => {
+      markAllowExit();
+      router.back();
+    });
   }
 
   const exitDialog = (
@@ -127,5 +185,5 @@ export function useUnsavedChangesGuard({
     />
   );
 
-  return { allowExit, exitDialog, save };
+  return { allowExit, requestExit, exitDialog, save };
 }
