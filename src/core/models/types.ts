@@ -130,6 +130,7 @@ export interface CalculationRecord {
   lines: CalculationLine[];
   customerId?: string;
   deliveryScheduleText?: string;
+  travelTimeHoursOneWay?: number;
   structureLines?: StructureLine[];
 }
 
@@ -262,5 +263,6 @@ export interface PersistedWizardDraft {
   editFormVersion?: number;
   customerId?: string;
   deliveryScheduleText?: string;
+  travelTimeOneWay?: string;
   structureLines?: StructureLine[];
 }

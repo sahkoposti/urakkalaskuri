@@ -24,6 +24,7 @@ export type WizardFormState = {
   lines: WizardLineDraft[];
   customerId?: string;
   deliveryScheduleText?: string;
+  travelTimeOneWay?: string;
   structureLines?: StructureLine[];
 };
 
@@ -125,6 +126,7 @@ export function composerStateSignature(state: WizardFormState): string {
     customerPostalLocality: (state.customerPostalLocality ?? '').trim(),
     customerNotes: state.customerNotes.trim(),
     deliveryScheduleText: (state.deliveryScheduleText ?? '').trim(),
+    travelTimeOneWay: (state.travelTimeOneWay ?? '').trim(),
     structureLines: (state.structureLines ?? []).map(structureLineSignature),
   });
 }
@@ -144,6 +146,7 @@ export function hasWizardDraftContent(state: WizardFormState): boolean {
     state.lines.length > 0 ||
     Boolean(state.customerId) ||
     Boolean(state.deliveryScheduleText?.trim()) ||
+    Boolean(state.travelTimeOneWay?.trim()) ||
     (state.structureLines?.length ?? 0) > 0
   );
 }
@@ -198,6 +201,7 @@ export function buildPersistedWizardDraft(
     ...(state.deliveryScheduleText != null
       ? { deliveryScheduleText: state.deliveryScheduleText }
       : {}),
+    ...(state.travelTimeOneWay != null ? { travelTimeOneWay: state.travelTimeOneWay } : {}),
     ...(state.structureLines ? { structureLines: state.structureLines } : {}),
   };
 }
@@ -242,6 +246,7 @@ export function persistedDraftToFormState(
     lines,
     customerId: draft.customerId,
     deliveryScheduleText: draft.deliveryScheduleText ?? '',
+    travelTimeOneWay: draft.travelTimeOneWay ?? '',
     structureLines: draft.structureLines,
   };
   const wizardDraft: WizardDraft = {

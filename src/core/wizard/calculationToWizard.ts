@@ -1,6 +1,7 @@
 import type { CalculationRecord, Product, WizardDraft, WizardLineDraft } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
+import { formatTravelTimeHoursOneWay } from '@/src/core/form/calculationFormulaContext';
 import type { WizardFormState } from '@/src/core/wizard/wizardDraftHelpers';
 
 /** Palauttaa tallennetun laskelman wizard-tilaksi (asiakas, rivit, fieldValues). */
@@ -47,6 +48,7 @@ export function calculationToFormState(
     lines,
     customerId: record.customerId,
     deliveryScheduleText: record.deliveryScheduleText ?? '',
+    travelTimeOneWay: formatTravelTimeHoursOneWay(record.travelTimeHoursOneWay),
     structureLines: ensureStructureLines(record),
   };
 

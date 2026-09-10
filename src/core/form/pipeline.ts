@@ -14,6 +14,7 @@ export type DebugStep = FormContextStep;
 export interface DebugPipelineOptions {
   settings?: AppSettings;
   products?: Product[];
+  extraContext?: Record<string, number>;
 }
 
 /** Syötekenttien arvot debug-esimerkeistä (kaavadetut lasketaan kaavalla). */
@@ -141,6 +142,7 @@ export function runDebugPipeline(
     settings,
     strict: false,
     collectTrace: true,
+    extraContext: options.extraContext,
   });
 
   const validationErrors = collectMissingDebugExampleErrors(form, focusFieldKey);

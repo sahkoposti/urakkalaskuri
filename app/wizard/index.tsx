@@ -78,6 +78,7 @@ export default function CalculationComposerScreen() {
   const [customerPostalLocality, setCustomerPostalLocality] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
   const [deliveryScheduleText, setDeliveryScheduleText] = useState('');
+  const [travelTimeOneWay, setTravelTimeOneWay] = useState('');
   const [structureLines, setStructureLines] = useState<StructureLine[]>([]);
   const [structurePickerVisible, setStructurePickerVisible] = useState(false);
   const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
@@ -125,6 +126,7 @@ export default function CalculationComposerScreen() {
       lines: [],
       customerId,
       deliveryScheduleText,
+      travelTimeOneWay,
       structureLines,
     };
   }
@@ -200,6 +202,7 @@ export default function CalculationComposerScreen() {
     setCustomerNotes(form.customerNotes);
     setCustomerId(form.customerId);
     setDeliveryScheduleText(form.deliveryScheduleText ?? '');
+    setTravelTimeOneWay(form.travelTimeOneWay ?? '');
     const lines = hydrateLines(form, structures, settings.vatPercent);
     setStructureLines(lines);
     markComposerSaved({ ...form, structureLines: lines });
@@ -440,6 +443,7 @@ export default function CalculationComposerScreen() {
         customer: info,
         customerId: savedCustomerId,
         deliveryScheduleText,
+        travelTimeOneWay,
         structureLines,
         settings,
         products,
@@ -501,6 +505,14 @@ export default function CalculationComposerScreen() {
             value={deliveryScheduleText}
             onChangeText={setDeliveryScheduleText}
             placeholder="Esim. viikko 42"
+          />
+          <AppInput
+            label="Matka-aika yhteen suuntaan"
+            value={travelTimeOneWay}
+            onChangeText={setTravelTimeOneWay}
+            keyboardType="decimal-pad"
+            placeholder="Esim. 0,75"
+            trailing={<Text style={styles.unitHint}>h</Text>}
           />
 
           <SectionTitle title="Tuoterakenteet" />
@@ -667,6 +679,12 @@ function createStyles(colors: AppColorPalette) {
     chevron: {
       fontSize: 22,
       color: colors.accent,
+    },
+    unitHint: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 15,
+      color: colors.text,
+      paddingRight: 12,
     },
     incompleteHint: {
       fontFamily: 'IBMPlexSans_400Regular',
