@@ -46,8 +46,9 @@ Yhteenveto          tallentaa SQLite-laskelman
 
 ### Poistuminen
 
-- **Laskenta:** jos tila on sama kuin tallennettu luonnos tai avattu laskelma, tallennusta ei kysytä. Muuten: Peruuta / Tallenna keskeneräisenä / Poistu tallentamatta. Valmiin laskelman avaaminen muokkaukseen ei jätä **Jatka laskentaa** -luonnosta, jos mitään ei muutettu.
-- **Rivin lomake:** ei kysytä, jos kentät ovat samat kuin tallennetut. Muuten **Sulje tallentamatta** palauttaa edellisen tallennetun lomakkeen, tai **Tallenna keskeneräisenä**. Jos kaikki pakolliset kentät on täytetty, poistumisen **Tallenna** ajaa laskennan riville kuten Valmis. Keskeneräistä ei tallenneta kysymättä.
+- **Laskenta:** jos tila on sama kuin tallennettu luonnos tai avattu laskelma, tallennusta ei kysytä. Muuten: Peruuta / Tallenna keskeneräisenä / Poistu tallentamatta. Kysymys tulee **kaikista poistumisteistä**: otsikon Takaisin, Android-paluunäppäin, pyyhkäisyele ja JS-navigointi. Valmiin laskelman avaaminen muokkaukseen ei jätä **Jatka laskentaa** -luonnosta, jos mitään ei muutettu.
+- **Rivin lomake:** ei kysytä, jos kentät ovat samat kuin tallennetut. Muuten **Sulje tallentamatta** palauttaa edellisen tallennetun lomakkeen, tai **Tallenna keskeneräisenä**. Sama dialogi otsikon Takaisin-, ele-, laitteistopaluu- ja **Takaisin**-napista. Jos kaikki pakolliset kentät on täytetty, poistumisen **Tallenna** ajaa laskennan riville kuten Valmis. Keskeneräistä ei tallenneta kysymättä.
+- **Asiakas-sivu:** tallentamattomat asiakasmuutokset kysytään ennen poistumista.
 
 ### Tallennus
 

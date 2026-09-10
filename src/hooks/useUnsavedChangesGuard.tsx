@@ -1,14 +1,12 @@
-import { useNavigation, usePreventRemoveContext, useRoute } from '@react-navigation/native';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useId, useInsertionEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BackHandler } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useSaveToast } from '@/src/context/SaveToastContext';
-import {
-  resolvePreventRemoveRouteKey,
-  safeSetPreventRemove,
-} from '@/src/hooks/safeSetPreventRemove';
+import { exitStackScreenOptions } from '@/src/hooks/exitStackScreenOptions';
+import { useNativeRemovePrevention } from '@/src/hooks/useNativeRemovePrevention';
 
 type UseUnsavedChangesGuardOptions = {
   isDirty: boolean;
@@ -32,16 +30,12 @@ export function useUnsavedChangesGuard({
   saveTitle = 'Tallenna',
 }: UseUnsavedChangesGuardOptions) {
   const navigation = useNavigation();
-  const { key: routeKey } = useRoute();
-  const { setPreventRemove, notifyPreventRemove } = usePreventRemoveContext();
-  const preventId = useId();
   const { showSaved } = useSaveToast();
   const allowExitRef = useRef(false);
   const isDirtyRef = useRef(isDirty);
   const onSaveRef = useRef(onSave);
   const onDiscardRef = useRef(onDiscard);
   const pendingExitRef = useRef<(() => void) | null>(null);
-  const registeredRouteKeyRef = useRef<string | undefined>(undefined);
   const [exitDialogVisible, setExitDialogVisible] = useState(false);
 
   isDirtyRef.current = isDirty;
@@ -49,39 +43,12 @@ export function useUnsavedChangesGuard({
   onDiscardRef.current = onDiscard;
 
   const shouldPrevent = isDirty && !allowExitRef.current;
-
-  const applyPreventRemove = useCallback(
-    (prevent: boolean) => {
-      const nextKey = prevent
-        ? resolvePreventRemoveRouteKey(navigation, routeKey)
-        : (registeredRouteKeyRef.current ?? resolvePreventRemoveRouteKey(navigation, routeKey));
-      if (!nextKey) return;
-      safeSetPreventRemove(setPreventRemove, preventId, nextKey, prevent);
-      registeredRouteKeyRef.current = prevent ? nextKey : undefined;
-    },
-    [navigation, preventId, routeKey, setPreventRemove],
-  );
-
-  useInsertionEffect(() => {
-    applyPreventRemove(shouldPrevent);
-    return () => {
-      applyPreventRemove(false);
-    };
-  }, [applyPreventRemove, shouldPrevent]);
-
-  useEffect(() => {
-    notifyPreventRemove();
-    return () => {
-      notifyPreventRemove();
-    };
-  }, [preventId, routeKey, shouldPrevent, notifyPreventRemove]);
+  const applyPreventRemove = useNativeRemovePrevention(shouldPrevent);
 
   useFocusEffect(
     useCallback(() => {
       allowExitRef.current = false;
-      applyPreventRemove(isDirtyRef.current);
-      notifyPreventRemove();
-    }, [applyPreventRemove, notifyPreventRemove]),
+    }, []),
   );
 
   const closeExitDialog = useCallback(() => {
@@ -97,8 +64,7 @@ export function useUnsavedChangesGuard({
   const markAllowExit = useCallback(() => {
     allowExitRef.current = true;
     applyPreventRemove(false);
-    notifyPreventRemove();
-  }, [applyPreventRemove, notifyPreventRemove]);
+  }, [applyPreventRemove]);
 
   const leaveWithoutSaving = useCallback(() => {
     void (async () => {
@@ -158,11 +124,11 @@ export function useUnsavedChangesGuard({
     }, [confirmExit, markAllowExit]),
   );
 
-  function allowExit() {
+  const allowExit = useCallback(() => {
     markAllowExit();
-  }
+  }, [markAllowExit]);
 
-  function requestExit() {
+  const requestExit = useCallback(() => {
     if (allowExitRef.current || !isDirtyRef.current) {
       markAllowExit();
       router.back();
@@ -172,7 +138,13 @@ export function useUnsavedChangesGuard({
       markAllowExit();
       router.back();
     });
-  }
+  }, [confirmExit, markAllowExit]);
+
+  const stackScreenOptions = exitStackScreenOptions(requestExit, shouldPrevent);
+
+  useLayoutEffect(() => {
+    navigation.setOptions(stackScreenOptions);
+  }, [navigation, stackScreenOptions]);
 
   const exitDialog = (
     <ConfirmDialog
@@ -202,5 +174,5 @@ export function useUnsavedChangesGuard({
     />
   );
 
-  return { allowExit, requestExit, exitDialog, save };
+  return { allowExit, requestExit, exitDialog, save, shouldPrevent, stackScreenOptions };
 }

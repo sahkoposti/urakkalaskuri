@@ -10,7 +10,10 @@ import {
   customerSnapshotEquals,
   searchCustomersByName,
 } from '@/src/core/customer/customerRegister';
-import { serializeCustomerDetails } from '@/src/core/models/types';
+import {
+  serializeCustomerDetails,
+  type CustomerInfo,
+} from '@/src/core/models/types';
 import { createId } from '@/src/core/utils/id';
 import {
   buildPersistedWizardDraft,
@@ -21,8 +24,24 @@ import {
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useCustomerFormState } from '@/src/hooks/useCustomerFormState';
+import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
+
+function customerEditorSignature(info: CustomerInfo, id?: string) {
+  return JSON.stringify({
+    id: id ?? '',
+    name: info.name,
+    customerType: info.customerType ?? 'private',
+    reverseVat: Boolean(info.reverseVat),
+    phone: info.phone ?? '',
+    email: info.email ?? '',
+    address: info.address ?? '',
+    postalCode: info.postalCode ?? '',
+    postalLocality: info.postalLocality ?? '',
+    notes: info.notes ?? '',
+  });
+}
 
 export default function WizardCustomerScreen() {
   const styles = useThemedStyles(createStyles);
@@ -52,6 +71,21 @@ export default function WizardCustomerScreen() {
     notes: initial?.customerNotes,
   });
   const [updateVisible, setUpdateVisible] = useState(false);
+  const savedSignature = customerEditorSignature(
+    {
+      name: (initial?.customerName ?? '').trim(),
+      customerType: initial?.customerType ?? 'private',
+      reverseVat: Boolean(initial?.reverseVat),
+      phone: initial?.customerPhone?.trim() || undefined,
+      email: initial?.customerEmail?.trim() || undefined,
+      address: initial?.customerAddress?.trim() || undefined,
+      postalCode: initial?.customerPostalCode?.trim() || undefined,
+      postalLocality: initial?.customerPostalLocality?.trim() || undefined,
+      notes: initial?.customerNotes?.trim() || undefined,
+    },
+    initial?.customerId,
+  );
+  const isDirty = customerEditorSignature(buildInfo(), customerId) !== savedSignature;
 
   const matches = useMemo(
     () => searchCustomersByName(customers, customerStepProps.name),
@@ -91,18 +125,18 @@ export default function WizardCustomerScreen() {
     await refreshWizardDraft();
   }
 
-  async function persistAndClose(updateOldCalculations = false, prompted = false) {
+  async function persistCustomer(updateOldCalculations = false, prompted = false): Promise<boolean> {
     const info = buildInfo();
     if (!info.name) {
       showAlert('Virhe', 'Anna asiakkaan nimi.');
-      return;
+      return false;
     }
 
     if (customerId && !prompted) {
       const existing = customers.find((item) => item.id === customerId);
       if (existing && !customerSnapshotEquals(existing, info)) {
         setUpdateVisible(true);
-        return;
+        return false;
       }
     }
 
@@ -123,12 +157,28 @@ export default function WizardCustomerScreen() {
     }
     await refreshCustomers();
     await writeDraft(nextId);
+    return true;
+  }
+
+  const { allowExit, exitDialog, save, stackScreenOptions } = useUnsavedChangesGuard({
+    isDirty,
+    onSave: () => persistCustomer(),
+    title: 'Tallentamattomia muutoksia',
+    message: 'Haluatko tallentaa asiakastiedot ennen poistumista?',
+    discardTitle: 'Sulje tallentamatta',
+    saveTitle: 'Tallenna',
+  });
+
+  async function persistAndClose(updateOldCalculations = false, prompted = false) {
+    const saved = await persistCustomer(updateOldCalculations, prompted);
+    if (!saved) return;
+    allowExit();
     router.back();
   }
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Asiakas' }} />
+      <Stack.Screen options={{ title: 'Asiakas', ...stackScreenOptions }} />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -139,10 +189,21 @@ export default function WizardCustomerScreen() {
             nameMatches={matches}
             onPickCustomer={applyCustomer}
           />
-          <PrimaryButton title="Valmis" onPress={() => void persistAndClose()} />
+          <PrimaryButton
+            title="Valmis"
+            onPress={() => {
+              void (async () => {
+                const saved = await save();
+                if (!saved) return;
+                allowExit();
+                router.back();
+              })();
+            }}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {exitDialog}
       <UpdateOldCalculationsDialog
         visible={updateVisible}
         onClose={() => setUpdateVisible(false)}

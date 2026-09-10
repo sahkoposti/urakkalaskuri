@@ -1,5 +1,7 @@
 import {
+  collectPreventRemoveRouteKeys,
   navigationHasRouteKey,
+  registerPreventRemove,
   resolvePreventRemoveRouteKey,
   safeSetPreventRemove,
 } from '../src/hooks/safeSetPreventRemove';
@@ -40,8 +42,60 @@ describe('resolvePreventRemoveRouteKey', () => {
     );
   });
 
-  test('returns undefined when navigation has no routes', () => {
-    expect(resolvePreventRemoveRouteKey({ getState: () => undefined }, 'x')).toBeUndefined();
+  test('returns the useRoute key when navigation has no routes', () => {
+    expect(resolvePreventRemoveRouteKey({ getState: () => undefined }, 'x')).toBe('x');
+  });
+});
+
+describe('collectPreventRemoveRouteKeys', () => {
+  test('lists useRoute key first, then focused and sibling routes from ancestors', () => {
+    const parent = {
+      getState: () => ({
+        index: 1,
+        routes: [{ key: 'home' }, { key: 'wizard-stack' }],
+      }),
+    };
+    const child = {
+      getState: () => ({
+        index: 0,
+        routes: [{ key: 'line-native' }, { key: 'other' }],
+      }),
+      getParent: () => parent,
+    };
+
+    expect(collectPreventRemoveRouteKeys(child, 'expo-leaf')).toEqual([
+      'expo-leaf',
+      'line-native',
+      'other',
+      'wizard-stack',
+      'home',
+    ]);
+  });
+});
+
+describe('registerPreventRemove', () => {
+  test('tries the next candidate when the provider rejects the first key', () => {
+    const setPreventRemove = jest.fn((_id: string, routeKey: string) => {
+      if (routeKey === 'expo-leaf') {
+        throw new Error(
+          "Couldn't find a route with the key expo-leaf. Is your component inside NavigationContent?",
+        );
+      }
+    });
+
+    expect(
+      registerPreventRemove(setPreventRemove, 'id-1', ['expo-leaf', 'line-native'], true),
+    ).toBe('line-native');
+    expect(setPreventRemove).toHaveBeenCalledWith('id-1', 'expo-leaf', true);
+    expect(setPreventRemove).toHaveBeenCalledWith('id-1', 'line-native', true);
+  });
+
+  test('clears the previously registered key', () => {
+    const setPreventRemove = jest.fn();
+    expect(
+      registerPreventRemove(setPreventRemove, 'id-1', ['line-native'], false, 'line-native'),
+    ).toBeUndefined();
+    expect(setPreventRemove).toHaveBeenCalledWith('id-1', 'line-native', false);
   });
 });
 
@@ -64,7 +118,7 @@ describe('safeSetPreventRemove', () => {
         "Couldn't find a route with the key products/[id]-abc. Is your component inside NavigationContent?",
       );
     });
-    expect(() => safeSetPreventRemove(setPreventRemove, 'id-1', 'products/[id]-abc', true)).not.toThrow();
+    expect(safeSetPreventRemove(setPreventRemove, 'id-1', 'products/[id]-abc', true)).toBe(false);
   });
 
   test('rethrows unrelated errors', () => {
