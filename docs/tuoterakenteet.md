@@ -134,11 +134,12 @@ Jos sivulla ei ole lisäkenttiä, se voidaan piilottaa rivin lomakewizardista (t
 
 Idea on sama kuin leveässä taulukossa: **nimike + summat**. Ei tuote-erittelyä. Kate ei ole ale.
 
-Yksi kortti, kentät kahdessa palstassa jossa se on luettavaa; muuten allekkain. Hammasratas otsikon oikealla (lomake).
+Yksi kortti, kentät kahdessa palstassa jossa se on luettavaa; muuten allekkain. Hammasratas ja roskakori oikeassa yläkulmassa (lomake / poisto).
 
 ```
 ┌──────────────────────────────────────────┐
-│ Ulkoverhoilun maalaus              ⚙  🗑 │
+│                                    ⚙  🗑 │
+│ Nimi             [Ulkoverhoilun maalaus] │  ← muokattava; ei muuta asetusten rakennetta
 │ Keskeneräinen lomake                     │  ← jos lomake avattu mutta ei täytetty
 │                                          │
 │ Määrä            [1,00]                  │
@@ -154,7 +155,8 @@ Yksi kortti, kentät kahdessa palstassa jossa se on luettavaa; muuten allekkain.
 └──────────────────────────────────────────┘
 ```
 
-Muokattavat: määrä, yksikkö, hinta, materiaalit, työn hinta, ale-%, ALV-tila, lisätiedot. **Ei pohjaa** -rivillä myös nimi.  
+Muokattavat: nimi, määrä, yksikkö, hinta, materiaalit, työn hinta, ale-%, ALV-tila, lisätiedot.  
+Nimi on rivikohtainen (oletus rakenteen nimestä); lomake ei yliaja sitä. Asetusten tuoterakennetta ei nimetä uudelleen.  
 Lasketut: kate €, kate %, yhteensä. Hinta/materiaalit/työn hinta/yhteensä noudattavat kortin alv0 / sis. ALV -valintaa.
 
 **Kaavat (alv0, ale kuten nykyinen alennus):**

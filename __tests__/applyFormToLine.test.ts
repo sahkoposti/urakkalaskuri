@@ -100,6 +100,15 @@ describe('applyFormToLine', () => {
     expect(next.overrides).toEqual([]);
   });
 
+  test('nimen muokkaus säilyy lomakkeen jälkeen ilman yliajoa', () => {
+    const renamed = patchStructureLine(line(), { name: 'Pihan maalaus' });
+    expect(renamed.name).toBe('Pihan maalaus');
+    expect(renamed.overrides).toEqual([]);
+    const next = applyFormResultToLine(renamed, result, { maali: 'x' }, 7);
+    expect(next.name).toBe('Pihan maalaus');
+    expect(next.unitPriceVat0).toBe(3393.52);
+  });
+
   test('keskeneräinen tallennus säilyttää kentät ilman että lomake merkitään valmiiksi', () => {
     const next = saveIncompleteFormToLine(line({ unitPriceVat0: 100 }), { pinta: '12' });
     expect(next.fieldValues).toEqual({ pinta: '12' });

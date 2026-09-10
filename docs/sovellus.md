@@ -36,7 +36,7 @@ Laskentasivulla ei ole enää yhtä globaalia wizardia. Rakenne:
 Asiakas          → oma sivu (rekisteri)
 Toimitusajankohta   vapaateksti
 Matka-aika yhteen suuntaan   tunteina (kaava: `laskelma.matka_aika_h`)
-Tuoterakennerivit   kortti per rivi (määrä, yksikkö, alv0/sis. ALV, hinta, materiaalit, työn hinta, ale %, lisätiedot, kate)
+Tuoterakennerivit   kortti per rivi (nimi, määrä, yksikkö, alv0/sis. ALV, hinta, materiaalit, työn hinta, ale %, lisätiedot, kate)
 Yhteenveto          tallentaa SQLite-laskelman
 ```
 

@@ -57,13 +57,7 @@ export function StructureLineCard({
 
   return (
     <AppCard style={styles.card}>
-      <View style={[styles.titleRow, manual && styles.titleRowManual]}>
-        {manual ? null : (
-          <View style={styles.titleWrap}>
-            <Text style={styles.title}>{priced.name}</Text>
-            {formIncomplete ? <Text style={styles.incomplete}>Keskeneräinen lomake</Text> : null}
-          </View>
-        )}
+      <View style={styles.titleRow}>
         {showGear && onOpenForm ? (
           <Pressable onPress={onOpenForm} hitSlop={8} accessibilityLabel="Avaa lomake">
             <ThemedIcon name="settings" size={22} />
@@ -73,14 +67,13 @@ export function StructureLineCard({
           <ThemedIcon name="trash" size={22} />
         </Pressable>
       </View>
-      {manual ? (
-        <AppInput
-          label="Nimi"
-          value={priced.name}
-          onChangeText={(value) => patch({ name: value })}
-          placeholder="Tuoterakenne"
-        />
-      ) : null}
+      <AppInput
+        label="Nimi"
+        value={priced.name}
+        onChangeText={(value) => patch({ name: value })}
+        placeholder="Tuoterakenne"
+      />
+      {formIncomplete ? <Text style={styles.incomplete}>Keskeneräinen lomake</Text> : null}
 
       <View style={styles.fieldRow}>
         <View style={styles.fieldHalf}>
@@ -214,22 +207,13 @@ function createStyles(colors: AppColorPalette) {
     titleRow: {
       flexDirection: 'row' as const,
       alignItems: 'flex-start' as const,
+      justifyContent: 'flex-end' as const,
       gap: 8,
       marginBottom: 8,
     },
-    titleRowManual: {
-      justifyContent: 'flex-end' as const,
-    },
-    titleWrap: {
-      flex: 1,
-    },
-    title: {
-      fontFamily: 'IBMPlexSans_700Bold',
-      fontSize: 16,
-      color: colors.primary,
-    },
     incomplete: {
       marginTop: 2,
+      marginBottom: 6,
       fontFamily: 'IBMPlexSans_400Regular',
       fontSize: 13,
       color: colors.accent,
