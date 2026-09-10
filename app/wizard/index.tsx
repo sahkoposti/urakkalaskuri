@@ -50,6 +50,8 @@ import { hasFieldValueContent } from '@/src/core/wizard/wizardPageHelpers';
 import { resetToHistoryDetail } from '@/src/core/navigation/appStack';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
+import { exitStackScreenOptions } from '@/src/hooks/exitStackScreenOptions';
+import { useNativeRemovePrevention } from '@/src/hooks/useNativeRemovePrevention';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -169,6 +171,16 @@ export default function CalculationComposerScreen() {
       currentSignature: formSignature(state),
       originSignature: originSignatureRef.current,
     });
+  }
+
+  const composerDirty = composerHasUnsavedChanges(getFormState(), savedSignatureRef.current);
+  const applyPreventRemove = useNativeRemovePrevention(
+    composerDirty || Boolean(wizardDraft && !shouldKeepResumeDraft()),
+  );
+
+  function allowComposerExit() {
+    allowExitRef.current = true;
+    applyPreventRemove(false);
   }
 
   function bindExistingCalculation(
@@ -333,7 +345,7 @@ export default function CalculationComposerScreen() {
   async function discardDraftAndExit() {
     await db.clearWizardDraft();
     await refreshWizardDraft();
-    allowExitRef.current = true;
+    allowComposerExit();
     const action = pendingExitRef.current;
     closeExitDialog();
     action?.();
@@ -341,7 +353,7 @@ export default function CalculationComposerScreen() {
 
   async function saveDraftAndExit() {
     await persistDraft();
-    allowExitRef.current = true;
+    allowComposerExit();
     const action = pendingExitRef.current;
     closeExitDialog();
     action?.();
@@ -352,7 +364,7 @@ export default function CalculationComposerScreen() {
       await db.clearWizardDraft();
       await refreshWizardDraft();
     }
-    allowExitRef.current = true;
+    allowComposerExit();
     onLeave();
   }
 
@@ -381,7 +393,7 @@ export default function CalculationComposerScreen() {
         if (allowExitRef.current) return false;
         if (isComposerDirty(getFormStateRef.current())) {
           confirmExit(() => {
-            allowExitRef.current = true;
+            allowComposerExit();
             router.back();
           });
           return true;
@@ -524,7 +536,7 @@ export default function CalculationComposerScreen() {
       await refreshCalculations();
       await refreshWizardDraft();
       hydratedRef.current = false;
-      allowExitRef.current = true;
+      allowComposerExit();
       resetToHistoryDetail(navigation, savedId);
     } catch (error) {
       console.error(error);
@@ -541,6 +553,25 @@ export default function CalculationComposerScreen() {
     ),
   );
 
+  function handleComposerBack() {
+    if (allowExitRef.current) {
+      router.back();
+      return;
+    }
+    if (isComposerDirty(getFormStateRef.current())) {
+      confirmExit(() => {
+        allowComposerExit();
+        router.back();
+      });
+      return;
+    }
+    if (shouldKeepResumeDraft(getFormStateRef.current()) || !wizardDraftRef.current) {
+      router.back();
+      return;
+    }
+    void leaveWithoutResumeDraft(() => router.back());
+  }
+
   const customerSummary = customerName.trim()
     ? `${customerName.trim()}${customerPostalLocality.trim() ? `\n${customerPostalLocality.trim()}` : ''}`
     : 'Lisää asiakas';
@@ -553,6 +584,7 @@ export default function CalculationComposerScreen() {
             routeEditId || boundCalculationIdRef.current || editCalculationId
               ? 'Muokkaa laskelmaa'
               : 'Laskenta',
+          ...exitStackScreenOptions(handleComposerBack, composerDirty),
         }}
       />
       <KeyboardAvoidingView

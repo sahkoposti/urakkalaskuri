@@ -64,8 +64,12 @@ export default function StructureLineFormScreen() {
   );
 
   const [step, setStep] = useState(0);
-  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
-  const savedLineRef = useRef<NonNullable<typeof line> | null>(null);
+  const savedLineRef = useRef<NonNullable<typeof line> | null>(
+    line ? cloneStructureLine(line) : null,
+  );
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>(
+    () => ({ ...(line?.fieldValues ?? {}) }),
+  );
 
   useEffect(() => {
     if (!line) return;
@@ -209,7 +213,7 @@ export default function StructureLineFormScreen() {
     await writeLineToDraft(cloneStructureLine(saved));
   }
 
-  const { allowExit, requestExit, exitDialog } = useUnsavedChangesGuard({
+  const { allowExit, requestExit, exitDialog, stackScreenOptions } = useUnsavedChangesGuard({
     isDirty,
     onSave: formComplete ? persistComplete : persistIncomplete,
     onDiscard: restoreSavedLine,
@@ -224,7 +228,7 @@ export default function StructureLineFormScreen() {
   if (!line || !structure) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Lomake' }} />
+        <Stack.Screen options={{ title: 'Lomake', ...stackScreenOptions }} />
         <ScreenMessage message="Riviä ei löytynyt." />
         {exitDialog}
       </>
@@ -274,7 +278,7 @@ export default function StructureLineFormScreen() {
       <Stack.Screen
         options={{
           title: `${structure.name} (${step + 1}/${Math.max(stepCount, 1)})`,
-          headerBackButtonMenuEnabled: false,
+          ...stackScreenOptions,
         }}
       />
       <KeyboardAvoidingView
