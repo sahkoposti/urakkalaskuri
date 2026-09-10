@@ -156,6 +156,20 @@ export function composerHasUnsavedChanges(
   return composerStateSignature(state) !== savedSignature;
 }
 
+/**
+ * Pidä kotisivun "Jatka laskentaa" -luonnos vain jos sessio oli jo kesken
+ * tai sisältö eroaa avatusta valmiista laskelmasta / tyhjästä uudesta laskennasta.
+ */
+export function shouldKeepResumeDraftOnLeave(options: {
+  resumedIncompleteDraft: boolean;
+  currentSignature: string;
+  originSignature: string | null;
+}): boolean {
+  if (options.resumedIncompleteDraft) return true;
+  if (options.originSignature == null) return false;
+  return options.currentSignature !== options.originSignature;
+}
+
 export function buildPersistedWizardDraft(
   state: WizardFormState,
   edit?: WizardDraftEditMeta | null,
