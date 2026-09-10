@@ -623,6 +623,7 @@ export default function CalculationComposerScreen() {
               line={line}
               structure={structures.find((item) => item.id === line.structureId)}
               reverseVat={customerType === 'business' ? reverseVat : false}
+              weatherReserveFactor={settings.weatherReserveFactor}
               onChange={(next) =>
                 setStructureLines((current) =>
                   current.map((item) => (item.id === next.id ? next : item)),

@@ -1,6 +1,7 @@
 import type { CalculationResult } from '@/src/core/calculation/calculationPipeline';
 import type { FormSnapshot, StructureLine, StructureLineOverride } from '@/src/core/models/types';
 import { withDerivedLinePricing } from '@/src/core/structure/linePricing';
+import { normalizeDisplayWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import { roundToCents } from '@/src/core/utils/formatters';
 
 export function applyFormResultToLine(
@@ -30,6 +31,7 @@ export function applyFormResultToLine(
       ? line.contractPriceVat0
       : roundToCents(result.contractPriceVat0),
     workDurationDays: result.workDurationDays,
+    displayWorkDurationDays: line.displayWorkDurationDays,
     commissionPercent,
   });
 }
@@ -49,7 +51,7 @@ export function patchStructureLine(
       | 'additionalInfo'
       | 'contractPriceVat0'
     >
-  >,
+  > & { displayWorkDurationDays?: number | null },
 ): StructureLine {
   const overrides = new Set<StructureLineOverride>(line.overrides);
   if (patch.quantity !== undefined) overrides.add('quantity');
@@ -58,6 +60,17 @@ export function patchStructureLine(
   if (patch.materialsVat0 !== undefined) overrides.add('materials');
   if (patch.discountPercent !== undefined) overrides.add('discount');
   if (patch.contractPriceVat0 !== undefined) overrides.add('contractPrice');
+  let displayWorkDurationDays = line.displayWorkDurationDays;
+  if (patch.displayWorkDurationDays !== undefined) {
+    const normalized = normalizeDisplayWorkDurationDays(patch.displayWorkDurationDays);
+    if (normalized == null) {
+      overrides.delete('workDurationDisplay');
+      displayWorkDurationDays = undefined;
+    } else {
+      overrides.add('workDurationDisplay');
+      displayWorkDurationDays = normalized;
+    }
+  }
   const additionalInfo =
     patch.additionalInfo === undefined ? undefined : patch.additionalInfo.trim() || undefined;
   const rounded = {
@@ -76,6 +89,7 @@ export function patchStructureLine(
       ? { contractPriceVat0: roundToCents(patch.contractPriceVat0) }
       : {}),
     ...(patch.additionalInfo !== undefined ? { additionalInfo } : {}),
+    displayWorkDurationDays,
   };
   return withDerivedLinePricing({
     ...line,

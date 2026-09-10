@@ -30,6 +30,8 @@ type PriceBreakdownCardProps = {
   values: PriceBreakdownValues;
   customer: CustomerInfo;
   weatherReserveFactor?: number;
+  /** Jo säävarauksen sisältävä kokonaisluku; ei kerrota uudelleen. */
+  displayedWorkDurationDays?: number;
   showDuration?: boolean;
 };
 
@@ -37,6 +39,7 @@ export function PriceBreakdownCard({
   values,
   customer,
   weatherReserveFactor = 1,
+  displayedWorkDurationDays,
   showDuration = false,
 }: PriceBreakdownCardProps) {
   const styles = useThemedStyles(createStyles);
@@ -49,14 +52,17 @@ export function PriceBreakdownCard({
   const priceAfterDiscount = includeVat ? values.totalPriceVat : values.totalPriceVat0;
   const discountAmount = Math.max(0, priceBeforeDiscount - priceAfterDiscount);
   const showDiscount = values.discountPercent > 0 && discountAmount > 0;
+  const durationText =
+    displayedWorkDurationDays != null && displayedWorkDurationDays > 0
+      ? String(displayedWorkDurationDays)
+      : values.workDurationDays != null && values.workDurationDays > 0
+        ? formatWorkDurationDays(values.workDurationDays, weatherReserveFactor)
+        : undefined;
 
   return (
     <AppCard style={styles.card}>
-      {showDuration && values.workDurationDays != null ? (
-        <ResultRow
-          label="Työn arvioitu kesto (pv)"
-          value={formatWorkDurationDays(values.workDurationDays, weatherReserveFactor)}
-        />
+      {showDuration && durationText ? (
+        <ResultRow label="Työn arvioitu kesto (pv)" value={durationText} />
       ) : null}
       <ResultRow
         label={labeledWithVatMode('Materiaalit', includeVat, vatRate)}

@@ -28,6 +28,7 @@ import {
   lineTotalVat0,
   withDerivedLinePricing,
 } from '@/src/core/structure/linePricing';
+import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import { applyVat, isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import { useApp } from '@/src/context/AppContext';
@@ -73,8 +74,11 @@ export function CalculationDetailView({
   const privateCustomer = isPrivateCustomer(customer);
   const structureLines = ensureStructureLines(record);
   const showStructureSummaries = structureLines.length > 1;
-  const singleLineDuration =
-    structureLines.length === 1 ? structureLines[0].workDurationDays : undefined;
+  const singleLine = structureLines.length === 1 ? structureLines[0] : undefined;
+  const singleLineDuration = singleLine?.workDurationDays;
+  const singleDisplayedDuration = singleLine
+    ? resolveDisplayedWorkDurationDays(singleLine, settings.weatherReserveFactor)
+    : undefined;
   const mismatchLine = structureLines.find((line) => {
     const structure = structures.find((item) => item.id === line.structureId);
     const snapshotVersion = line.formVersion ?? line.snapshot?.formVersion;
@@ -183,6 +187,7 @@ export function CalculationDetailView({
         }}
         customer={customer}
         weatherReserveFactor={settings.weatherReserveFactor}
+        displayedWorkDurationDays={singleDisplayedDuration}
         showDuration={structureLines.length <= 1}
       />
 
@@ -234,6 +239,10 @@ function LineDetail({
       )
     : undefined;
   const snapshot = lineFormSnapshot(line, structure?.form, structureProducts, context);
+  const displayedWorkDurationDays = resolveDisplayedWorkDurationDays(
+    line,
+    weatherReserveFactor,
+  );
 
   return (
     <View>
@@ -243,6 +252,7 @@ function LineDetail({
           values={lineBreakdown(line, reverseVat)}
           customer={customer}
           weatherReserveFactor={weatherReserveFactor}
+          displayedWorkDurationDays={displayedWorkDurationDays}
           showDuration
         />
       ) : null}
@@ -258,6 +268,7 @@ function LineDetail({
         products={structureProducts}
         snapshot={snapshot}
         workDurationDays={line.workDurationDays}
+        displayedWorkDurationDays={displayedWorkDurationDays}
         weatherReserveFactor={weatherReserveFactor}
         fieldKeyPrefix={`${line.id}:`}
       />

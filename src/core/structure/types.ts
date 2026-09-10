@@ -24,10 +24,15 @@ export interface ProductStructure {
   defaultAdditionalInfo?: string;
   /** Rivin Hinta € (alv0) valittaessa. Lomake yliajaa, ellei kortilla ole muokattu. */
   defaultUnitPriceVat0?: number;
-  /** Rivin työn hinta / urakka (alv0) valittaessa. Lomake yliajaa, ellei kortilla ole muokattu. */
+  /** Rivin työn hinta / urakka (alv0) valittaessa. Ei näytetä kortilla. */
   defaultContractPriceVat0?: number;
   /** Rivin Materiaalit € (alv0) valittaessa. Lomake yliajaa, ellei kortilla ole muokattu. */
   defaultMaterialsVat0?: number;
+  /**
+   * Yhteenvedon työn arvioitu kesto (pv), säävaraus mukana.
+   * Näkyy rivillä kun laskentaa ei vielä ole; lomake yliajaa, ellei kortilla ole muokattu.
+   */
+  defaultDisplayWorkDurationDays?: number;
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
@@ -61,6 +66,7 @@ function emptyLineBase(input: {
   unitPriceVat0?: number;
   materialsVat0?: number;
   contractPriceVat0?: number;
+  displayWorkDurationDays?: number;
   additionalInfo?: string;
 }): StructureLine {
   const additionalInfo = input.additionalInfo?.trim();
@@ -76,6 +82,7 @@ function emptyLineBase(input: {
     vatPercent: input.vatPercent,
     contractPriceVat0: input.contractPriceVat0 ?? 0,
     workDurationDays: 0,
+    displayWorkDurationDays: input.displayWorkDurationDays,
     commissionPercent: input.commissionPercent,
     commissionEur: 0,
     marginEur: 0,
@@ -103,6 +110,7 @@ export function emptyStructureLine(input: {
     unitPriceVat0: input.structure.defaultUnitPriceVat0,
     materialsVat0: input.structure.defaultMaterialsVat0,
     contractPriceVat0: input.structure.defaultContractPriceVat0,
+    displayWorkDurationDays: input.structure.defaultDisplayWorkDurationDays,
     additionalInfo: input.structure.defaultAdditionalInfo,
   });
 }

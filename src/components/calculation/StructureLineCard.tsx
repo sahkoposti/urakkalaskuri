@@ -16,6 +16,7 @@ import {
 import type { StructureLine } from '@/src/core/models/types';
 import { isManualStructureId, type ProductStructure } from '@/src/core/structure/types';
 import { vat0Tag, vatInclTag } from '@/src/core/utils/priceDisplay';
+import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import {
   formatCurrency,
   formatFixed2,
@@ -31,6 +32,7 @@ type StructureLineCardProps = {
   line: StructureLine;
   structure?: ProductStructure;
   reverseVat: boolean;
+  weatherReserveFactor?: number;
   onChange: (line: StructureLine) => void;
   onOpenForm?: () => void;
   onDelete: () => void;
@@ -39,6 +41,7 @@ type StructureLineCardProps = {
 export function StructureLineCard({
   line,
   structure,
+  weatherReserveFactor = 1,
   onChange,
   onOpenForm,
   onDelete,
@@ -50,6 +53,10 @@ export function StructureLineCard({
   const formIncomplete = isStructureFormIncomplete(priced, structure);
   const includeVat = linePricesIncludeVat(priced);
   const vatPercent = priced.vatPercent;
+  const displayedWorkDurationDays = resolveDisplayedWorkDurationDays(
+    priced,
+    weatherReserveFactor,
+  );
 
   function patch(next: Parameters<typeof patchStructureLine>[1]) {
     onChange(patchStructureLine(priced, next));
@@ -123,12 +130,10 @@ export function StructureLineCard({
         </View>
       </View>
 
-      <DecimalInput
-        label="Työn hinta €"
-        value={toCardAmount(priced.contractPriceVat0, includeVat, vatPercent)}
-        onChangeValue={(value) =>
-          patch({ contractPriceVat0: fromCardAmount(value, includeVat, vatPercent) })
-        }
+      <DaysInput
+        label="Työn arvioitu kesto (pv)"
+        value={displayedWorkDurationDays}
+        onChangeValue={(value) => patch({ displayWorkDurationDays: value })}
       />
 
       <DecimalInput
@@ -158,6 +163,56 @@ export function StructureLineCard({
         </Text>
       </View>
     </AppCard>
+  );
+}
+
+function DaysInput({
+  label,
+  value,
+  onChangeValue,
+}: {
+  label: string;
+  value: number | undefined;
+  onChangeValue: (value: number | null) => void;
+}) {
+  const display = value != null && value > 0 ? String(value) : '';
+  const [text, setText] = useState(display);
+  const lastSent = useRef(value != null && value > 0 ? value : 0);
+
+  useEffect(() => {
+    const next = value != null && value > 0 ? value : 0;
+    if (next !== lastSent.current) {
+      lastSent.current = next;
+      setText(next > 0 ? String(next) : '');
+    }
+  }, [value]);
+
+  return (
+    <AppInput
+      label={label}
+      value={text}
+      keyboardType="decimal-pad"
+      placeholder="Valinnainen"
+      onChangeText={(raw) => {
+        const next = limitDecimalInput(raw, 0);
+        setText(next);
+        if (!next.trim()) {
+          lastSent.current = 0;
+          onChangeValue(null);
+          return;
+        }
+        const parsed = parseNumber(next);
+        if (parsed === null) return;
+        if (parsed <= 0) {
+          lastSent.current = 0;
+          onChangeValue(null);
+          return;
+        }
+        const days = Math.max(1, Math.ceil(parsed - 1e-9));
+        lastSent.current = days;
+        onChangeValue(days);
+      }}
+    />
   );
 }
 

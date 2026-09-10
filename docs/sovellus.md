@@ -36,11 +36,11 @@ Laskentasivulla ei ole enää yhtä globaalia wizardia. Rakenne:
 Asiakas          → oma sivu (rekisteri)
 Toimitusajankohta   vapaateksti
 Matka-aika yhteen suuntaan   tunteina (kaava: `laskelma.matka_aika_h`)
-Tuoterakennerivit   kortti per rivi (nimi, määrä, yksikkö, alv0/sis. ALV, hinta, materiaalit, työn hinta, ale %, lisätiedot, kate)
+Tuoterakennerivit   kortti per rivi (nimi, määrä, yksikkö, alv0/sis. ALV, hinta, materiaalit, työn arvioitu kesto, ale %, lisätiedot, kate)
 Yhteenveto          tallentaa SQLite-laskelman
 ```
 
-**Lisää tuoterakenne** valitsee mallipohjan tai **Ei pohjaa** (tyhjä rivi ilman lomaketta). Mallipohjan oletushinnat ja lisätiedot tulevat rakenteen asetuksista. Hammasratas avaa rakenteen lomakkeen; lomake yliajaa oletushinnat, ellei niitä ole muokattu kortilla.
+**Lisää tuoterakenne** valitsee mallipohjan tai **Ei pohjaa** (tyhjä rivi ilman lomaketta). Mallipohjan oletushinnat, arvioitu kesto ja lisätiedot tulevat rakenteen asetuksista. Hammasratas avaa rakenteen lomakkeen; lomake yliajaa oletushinnat, ellei niitä ole muokattu kortilla. Arvioidun keston muokkaus kortilla yliajaa vain yhteenvedossa näytettävän luvun (säävaraus mukana), ei laskennan tuloksia.
 
 **Yhteenveto** on pois käytöstä, kun jollain rivillä on keskeneräinen lomake.
 
@@ -81,7 +81,7 @@ Yhteenvedossa kopiointinappi on vain asiakkaan yhteystiedoissa.
 
 1. Asiakkaan tiedot, toimitusajankohta ja matka-aika yhteen suuntaan.
 2. **Kokonaissumma:** materiaalit, työ, alennus (jos > 0 %), kokonaishinnat (alv0 / ALV / sis. ALV). Yksityinen: korostus sis. ALV. Yritys: korostus alv0; käänteinen ALV tarvittaessa.
-3. **Yksi rivi:** työn arvioitu kesto näytetään kokonaissummassa (säävarauskerroin + tasapäiviin ylöspäin). Päiviä ei summata riveiltä.
+3. **Yksi rivi:** työn arvioitu kesto näytetään kokonaissummassa (säävarauskerroin + tasapäiviin ylöspäin). Kortilla voi yliajaa näytettävän luvun; yliajo ei muuta hintoja. Päiviä ei summata riveiltä.
 4. **Useita rivejä:** jokaisella tuoterakenteella oma otsikko, hintakortti (kesto tälle riville), **Lisätiedot** (jos täytetty) ja **Lomaketiedot**. Yhdellä rivillä Lisätiedot (jos täytetty) ja Lomaketiedot (hinnat ovat jo kokonaissummassa).
 
 Lomaketiedot tulevat rivin snapshotista tai täytetyistä kentistä. Jokainen täytetty rivi näyttää omat speksinsä.
@@ -92,7 +92,7 @@ Lomakepohjan `version` kasvaa tallennettaessa. Vanhaa laskelmaa muokatessa näyt
 
 ## Tuoterakenteet
 
-Asetukset → **Tuoterakenteet**: nimi, valinnainen yksikkö, myyntipalkkio-%, työryhmän koko, lisätiedot (oletusteksti), oletushinta / työn hinta / materiaalit alv0, **Lomake** (sivut, kentät, JSON, debug).
+Asetukset → **Tuoterakenteet**: nimi, valinnainen yksikkö, myyntipalkkio-%, työryhmän koko, lisätiedot (oletusteksti), oletushinta / työn arvioitu kesto (pv, säävaraus mukana) / materiaalit alv0, **Lomake** (sivut, kentät, JSON, debug).
 
 Jokaisella rakenteella on oma `FormDefinition`. Tuotteet eivät ole rakenteen asetuksissa; ne liitetään tuotteelta (yksi tuote voi kuulua useaan rakenteeseen).
 

@@ -299,7 +299,7 @@ Nämä **eivät kuulu JSON-tiedostoon**. Ne ovat rakenteen omia asetuksia ja tul
 
 Esimerkki: julkisivumaalaus 2 hlö, katto 3 hlö – sama kaava `henkilotyotunnit / asetukset.tyoryhman_koko` käyttää kummankin rakenteen omaa kokoa.
 
-**Ei kaavamuuttujia** (vain rivikortti / yhteenveto): lisätiedot, oletushinta alv0, oletus työn hinta alv0, oletus materiaalit alv0. Lomake yliajaa oletushinnat, jos se tuottaa hintapäivityksiä.
+**Ei kaavamuuttujia** (vain rivikortti / yhteenveto): lisätiedot, oletushinta alv0, työn arvioitu kesto (pv, säävaraus mukana), oletus materiaalit alv0. Lomake yliajaa oletushinnat, jos se tuottaa hintapäivityksiä. Kortin kesto-yliajo muuttaa vain yhteenvedossa näytettävää lukua.
 
 ### Matka-aika kohteelle
 

@@ -226,6 +226,7 @@ async function migrateProductStructures(db: SQLite.SQLiteDatabase): Promise<void
       default_unit_price_vat0 REAL,
       default_contract_price_vat0 REAL,
       default_materials_vat0 REAL,
+      default_display_work_duration_days INTEGER,
       crew_size REAL
     );
     CREATE TABLE IF NOT EXISTS customers (
@@ -411,6 +412,11 @@ async function migrateProductStructureDefaults(db: SQLite.SQLiteDatabase): Promi
   }
   if (!names.has('default_materials_vat0')) {
     await db.execAsync('ALTER TABLE product_structures ADD COLUMN default_materials_vat0 REAL');
+  }
+  if (!names.has('default_display_work_duration_days')) {
+    await db.execAsync(
+      'ALTER TABLE product_structures ADD COLUMN default_display_work_duration_days INTEGER',
+    );
   }
   if (!names.has('crew_size')) {
     await db.execAsync('ALTER TABLE product_structures ADD COLUMN crew_size REAL');

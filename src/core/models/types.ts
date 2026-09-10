@@ -141,7 +141,8 @@ export type StructureLineOverride =
   | 'discount'
   | 'quantity'
   | 'unit'
-  | 'contractPrice';
+  | 'contractPrice'
+  | 'workDurationDisplay';
 
 export interface StructureLine {
   id: string;
@@ -155,6 +156,11 @@ export interface StructureLine {
   vatPercent: number;
   contractPriceVat0: number;
   workDurationDays: number;
+  /**
+   * Yhteenvedossa näytettävä kesto (pv), säävaraus jo mukana.
+   * Yliajo (`workDurationDisplay`) ei muuta laskentaa.
+   */
+  displayWorkDurationDays?: number;
   commissionPercent: number;
   commissionEur: number;
   marginEur: number;
