@@ -34,13 +34,14 @@ function baseValues(extra: Record<string, string> = {}): Record<string, string> 
 describe('julkisivumaalaus kattolyhdyt', () => {
   test('places kattolyhdyt after alakatot', () => {
     const form = defaultForm();
-    expect(form.version).toBe(110);
+    expect(form.version).toBe(111);
 
     const surfaces = form.pages.find((page) => page.id === 'page_surfaces');
     const ids = surfaces?.fieldIds ?? [];
     const alakatot = ids.indexOf('field_alakatot_m2');
-    expect(ids.slice(alakatot, alakatot + 4)).toEqual([
+    expect(ids.slice(alakatot, alakatot + 5)).toEqual([
       'field_alakatot_m2',
+      'field_alakatot_kattotuolit_valinta',
       'field_kattolyhdyt_valinta',
       'field_kattolyhdyt_lkm',
       'field_kattolyhdyt_m2',

@@ -46,7 +46,7 @@ function run(values: Record<string, string>) {
 describe('julkisivumaalaus veranta ja lisäseinät', () => {
   test('version 110 places veranta before lisäseinät', () => {
     const form = defaultForm();
-    expect(form.version).toBe(110);
+    expect(form.version).toBe(111);
 
     const surfaces = form.pages.find((page) => page.id === 'page_surfaces');
     const ids = surfaces?.fieldIds ?? [];

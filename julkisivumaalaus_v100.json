@@ -1,7 +1,7 @@
 {
   "id": "julkisivumaalaus",
   "name": "Julkisivumaalaus",
-  "version": 110,
+  "version": 111,
   "pages": [
     {
       "id": "page_surfaces",
@@ -33,9 +33,13 @@
         "field_listalaudat_valinta",
         "field_alakatot_valinta",
         "field_alakatot_m2",
+        "field_alakatot_kattotuolit_valinta",
         "field_kattolyhdyt_valinta",
         "field_kattolyhdyt_lkm",
         "field_kattolyhdyt_m2",
+        "field_terassitolpat_valinta",
+        "field_terassitolpat_lkm",
+        "field_terassitolpat_kunto",
         "field_muuta"
       ]
     },
@@ -87,6 +91,7 @@
         "field_tyo_alakatot_h",
         "field_kattolyhdyt_tyo_h",
         "field_veranta_tyo_h",
+        "field_terassitolpat_tyo_h",
         "field_system_henkilotyotunnit",
         "field_matka_henkilotyotunnit",
         "field_system_tyoryhma_kesto_h",
@@ -373,6 +378,26 @@
       "defaultValue": "25"
     },
     {
+      "id": "field_alakatot_kattotuolit_valinta",
+      "key": "alakatot_kattotuolit_valinta",
+      "label": "Kattotuoleilla",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "alakatot_kattotuolit_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "false",
+      "showWhen": {
+        "fieldKey": "alakatot_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
       "id": "field_kattolyhdyt_valinta",
       "key": "kattolyhdyt_valinta",
       "label": "Kattolyhdyt",
@@ -426,6 +451,71 @@
         "value": "true"
       },
       "debugExampleValue": "10"
+    },
+    {
+      "id": "field_terassitolpat_valinta",
+      "key": "terassitolpat_valinta",
+      "label": "Terassien tolpat",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "terassitolpat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_terassitolpat_lkm",
+      "key": "terassitolpat_lkm",
+      "label": "Terassitolppien lukumäärä",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "terassitolpat_lkm",
+        "operator": "gt",
+        "value": "0"
+      },
+      "unit": "kpl",
+      "showWhen": {
+        "fieldKey": "terassitolpat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "6"
+    },
+    {
+      "id": "field_terassitolpat_kunto",
+      "key": "terassitolpat_kunto",
+      "label": "Terassitolppien kunto",
+      "type": "select",
+      "required": true,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "terassitolpat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "defaultValue": "0",
+      "debugExampleValue": "0",
+      "showWhen": {
+        "fieldKey": "terassitolpat_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "options": [
+        {
+          "label": "Ei skrapattavaa",
+          "value": "0"
+        },
+        {
+          "label": "Skrapattavaa",
+          "value": "1"
+        }
+      ]
     },
     {
       "id": "field_listalaudat_valinta",
@@ -1045,7 +1135,7 @@
       "showOnSummary": false,
       "allowManualOverride": false,
       "unit": "h",
-      "formula": "if(alakatot_valinta == 1, (alakatot_m2 * (1 + 0.6 * varinvaihto_valinta) * 0.132 * kaytettava_maali.tyokerroin + if(markahomepesu_valinta == 1, alakatot_m2 * 0.033, 0)) * maaston_vaikeusaste * kohteen_korkeuskerroin, 0)",
+      "formula": "if(alakatot_valinta == 1, (alakatot_m2 * (1 + 0.6 * varinvaihto_valinta) * 0.132 * kaytettava_maali.tyokerroin + if(markahomepesu_valinta == 1, alakatot_m2 * 0.033, 0)) * maaston_vaikeusaste * kohteen_korkeuskerroin * if(alakatot_kattotuolit_valinta == 1, 2, 1), 0)",
       "showWhen": {
         "fieldKey": "alakatot_valinta",
         "operator": "eq",
@@ -1085,6 +1175,22 @@
       }
     },
     {
+      "id": "field_terassitolpat_tyo_h",
+      "key": "terassitolpat_tyo_h",
+      "label": "Terassitolppien työ",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "if(terassitolpat_valinta == 1, terassitolpat_lkm * if(terassitolpat_kunto == 1, 1, 20 / 60), 0)",
+      "showWhen": {
+        "fieldKey": "terassitolpat_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
       "id": "field_system_henkilotyotunnit",
       "key": "henkilotyotunnit",
       "label": "Urakan työ yhteensä ilman matkoja",
@@ -1093,7 +1199,7 @@
       "showOnSummary": true,
       "allowManualOverride": true,
       "unit": "h",
-      "formula": "paatuote_tyo_h + alakatot_tyo_h + kattolyhdyt_tyo_h + veranta_tyo_h + if(henkilonostin_valinta == 1, henkilonostin_vuokrapaivat, 0)"
+      "formula": "paatuote_tyo_h + alakatot_tyo_h + kattolyhdyt_tyo_h + veranta_tyo_h + terassitolpat_tyo_h + if(henkilonostin_valinta == 1, henkilonostin_vuokrapaivat, 0)"
     },
     {
       "id": "field_maalit_alv0",

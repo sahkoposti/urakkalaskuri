@@ -71,7 +71,7 @@ describe('resolveTravelTimeHours', () => {
 describe('julkisivumaalaus matka-aika', () => {
   test('default form has no etaisyys question and uses laskelma.matka_aika_h', () => {
     const form = defaultForm();
-    expect(form.version).toBe(110);
+    expect(form.version).toBe(111);
     expect(form.fields.some((field) => field.key === 'etaisyys')).toBe(false);
     expect(form.pages[0]?.fieldIds).not.toContain('field_mt9uscef_aizypl');
 
