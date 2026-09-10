@@ -18,7 +18,7 @@ import {
 import { applyFieldValueChange, resetComputedFieldOverride } from '@/src/core/form/applyFieldValueChange';
 import { wizardFieldsForPage } from '@/src/core/form/formDefinitionHelpers';
 import { buildFormSnapshot } from '@/src/core/form/formSummaryHelpers';
-import { productBelongsToStructure } from '@/src/core/product/productStructures';
+import { productsForStructureForm } from '@/src/core/form/productFieldUtils';
 import { applyFormResultToLine, saveIncompleteFormToLine } from '@/src/core/structure/applyFormToLine';
 import { structureFormPages } from '@/src/core/structure/formPages';
 import {
@@ -71,9 +71,9 @@ export default function StructureLineFormScreen() {
     setBaseline(serializeFieldValues(values));
   }, [line?.id]);
 
-  const structureProducts = products.filter(
-    (product) => !line || productBelongsToStructure(product, line.structureId),
-  );
+  const structureProducts = structure
+    ? productsForStructureForm(structure.form, products, line?.structureId)
+    : products;
   const currentPage = pages[step] ?? pages[0];
   const pageFields = currentPage && structure
     ? wizardFieldsForPage(structure.form, currentPage.id)

@@ -20,7 +20,7 @@ import {
 import type { FormDefinition } from '@/src/core/form/types';
 import type { CalculationRecord, CustomerInfo, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
-import { productBelongsToStructure } from '@/src/core/product/productStructures';
+import { productsForStructureForm } from '@/src/core/form/productFieldUtils';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import {
   lineListPriceVat0,
@@ -205,9 +205,9 @@ function LineDetail({
   const { products, structures, settings } = useApp();
   const reverseVat = Boolean(customer.reverseVat);
   const structure = structures.find((item) => item.id === line.structureId);
-  const structureProducts = products.filter((product) =>
-    productBelongsToStructure(product, line.structureId),
-  );
+  const structureProducts = structure
+    ? productsForStructureForm(structure.form, products, line.structureId)
+    : [];
   const context = structure
     ? previewFormContext(
         structure.form,
