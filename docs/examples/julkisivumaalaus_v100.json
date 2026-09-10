@@ -1,7 +1,7 @@
 {
   "id": "julkisivumaalaus",
   "name": "Julkisivumaalaus",
-  "version": 108,
+  "version": 109,
   "pages": [
     {
       "id": "page_surfaces",
@@ -30,6 +30,9 @@
         "field_listalaudat_valinta",
         "field_alakatot_valinta",
         "field_alakatot_m2",
+        "field_kattolyhdyt_valinta",
+        "field_kattolyhdyt_lkm",
+        "field_kattolyhdyt_m2",
         "field_muuta"
       ]
     },
@@ -79,6 +82,7 @@
         "field_section_tuotekohtainen_tyo",
         "field_paatuote_tyo_h",
         "field_tyo_alakatot_h",
+        "field_kattolyhdyt_tyo_h",
         "field_system_henkilotyotunnit",
         "field_matka_henkilotyotunnit",
         "field_system_tyoryhma_kesto_h",
@@ -363,6 +367,61 @@
       },
       "debugExampleValue": "0",
       "defaultValue": "25"
+    },
+    {
+      "id": "field_kattolyhdyt_valinta",
+      "key": "kattolyhdyt_valinta",
+      "label": "Kattolyhdyt",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "kattolyhdyt_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "false"
+    },
+    {
+      "id": "field_kattolyhdyt_lkm",
+      "key": "kattolyhdyt_lkm",
+      "label": "Kattolyhtyjen lukumäärä",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "kattolyhdyt_lkm",
+        "operator": "gt",
+        "value": "0"
+      },
+      "unit": "kpl",
+      "showWhen": {
+        "fieldKey": "kattolyhdyt_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "2"
+    },
+    {
+      "id": "field_kattolyhdyt_m2",
+      "key": "kattolyhdyt_m2",
+      "label": "Kattolyhtyjen maalattava pinta-ala",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "kattolyhdyt_m2",
+        "operator": "gt",
+        "value": "0"
+      },
+      "unit": "m²",
+      "showWhen": {
+        "fieldKey": "kattolyhdyt_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "10"
     },
     {
       "id": "field_listalaudat_valinta",
@@ -791,6 +850,16 @@
       "formula": "julkisivupinnat_valinta"
     },
     {
+      "id": "field_seinapinta_nakyy",
+      "key": "seinapinta_nakyy",
+      "label": "Seinäpinta näkyy",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "formula": "julkisivupinnat_valinta + kattolyhdyt_valinta"
+    },
+    {
       "id": "field_seinien_lkm",
       "key": "seinien_lkm",
       "label": "Seinien lukumäärä",
@@ -810,11 +879,11 @@
       "showOnSummary": true,
       "allowManualOverride": true,
       "unit": "m²",
-      "formula": "julkisivupinnat_valinta * max(0, (2 * raystassivun_pituus_m * raystaskorkeus_m + 2 * ((raystaskorkeus_m + harjakorkeus_m) / 2 * paadyn_leveys_m) + if(lisaseinien_lkm > 0, lisaseinien_pituus_m * lisaseinien_keskikorkeus_m, 0) - ikkunat_lkm * 1.5 - ovet_lkm * 2) * laudoitustyyppi)",
+      "formula": "julkisivupinnat_valinta * max(0, (2 * raystassivun_pituus_m * raystaskorkeus_m + 2 * ((raystaskorkeus_m + harjakorkeus_m) / 2 * paadyn_leveys_m) + if(lisaseinien_lkm > 0, lisaseinien_pituus_m * lisaseinien_keskikorkeus_m, 0) - ikkunat_lkm * 1.5 - ovet_lkm * 2) * laudoitustyyppi) + if(kattolyhdyt_valinta == 1, kattolyhdyt_m2, 0)",
       "showWhen": {
-        "fieldKey": "julkisivupinnat_valinta",
-        "operator": "eq",
-        "value": "true"
+        "fieldKey": "seinapinta_nakyy",
+        "operator": "gt",
+        "value": "0"
       }
     },
     {
@@ -826,7 +895,7 @@
       "showOnSummary": false,
       "allowManualOverride": false,
       "unit": "m²",
-      "formula": "laskenta_seinapinta_ala_m2 * (1 + 0.6 * varinvaihto_valinta * (1 - 0.3 * if(pohjamaalaus_valinta == 1, min(pohjamaalaus_seinien_lkm, seinien_lkm) / seinien_lkm, 0)) + 0.7 * if(pohjamaalaus_valinta == 1, min(pohjamaalaus_seinien_lkm, seinien_lkm) / seinien_lkm, 0))"
+      "formula": "max(0, laskenta_seinapinta_ala_m2 - if(kattolyhdyt_valinta == 1, kattolyhdyt_m2, 0)) * (1 + 0.6 * varinvaihto_valinta * (1 - 0.3 * if(pohjamaalaus_valinta == 1, min(pohjamaalaus_seinien_lkm, seinien_lkm) / seinien_lkm, 0)) + 0.7 * if(pohjamaalaus_valinta == 1, min(pohjamaalaus_seinien_lkm, seinien_lkm) / seinien_lkm, 0))"
     },
     {
       "id": "field_pesupinta_m2",
@@ -907,6 +976,22 @@
       }
     },
     {
+      "id": "field_kattolyhdyt_tyo_h",
+      "key": "kattolyhdyt_tyo_h",
+      "label": "Kattolyhtyjen työ",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "if(kattolyhdyt_valinta == 1, kattolyhdyt_lkm * 2 + kattolyhdyt_m2 / 5, 0)",
+      "showWhen": {
+        "fieldKey": "kattolyhdyt_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
       "id": "field_system_henkilotyotunnit",
       "key": "henkilotyotunnit",
       "label": "Urakan työ yhteensä ilman matkoja",
@@ -915,7 +1000,7 @@
       "showOnSummary": true,
       "allowManualOverride": true,
       "unit": "h",
-      "formula": "paatuote_tyo_h + alakatot_tyo_h + if(henkilonostin_valinta == 1, henkilonostin_vuokrapaivat, 0)"
+      "formula": "paatuote_tyo_h + alakatot_tyo_h + kattolyhdyt_tyo_h + if(henkilonostin_valinta == 1, henkilonostin_vuokrapaivat, 0)"
     },
     {
       "id": "field_maalit_alv0",
