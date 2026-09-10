@@ -36,11 +36,11 @@ Laskentasivulla ei ole enää yhtä globaalia wizardia. Rakenne:
 Asiakas          → oma sivu (rekisteri)
 Toimitusajankohta   vapaateksti
 Matka-aika yhteen suuntaan   tunteina (kaava: `laskelma.matka_aika_h`)
-Tuoterakennerivit   kortti per rivi (määrä, yksikkö, alv0/sis. ALV, hinta, materiaalit, ale %, kate)
+Tuoterakennerivit   kortti per rivi (määrä, yksikkö, alv0/sis. ALV, hinta, materiaalit, työn hinta, ale %, lisätiedot, kate)
 Yhteenveto          tallentaa SQLite-laskelman
 ```
 
-**Lisää tuoterakenne** valitsee mallipohjan. Hammasratas avaa rakenteen lomakkeen. Ilman lomaketta urakka/hinta on 0 kunnes se kirjoitetaan korttiin.
+**Lisää tuoterakenne** valitsee mallipohjan tai **Ei pohjaa** (tyhjä rivi ilman lomaketta). Mallipohjan oletushinnat ja lisätiedot tulevat rakenteen asetuksista. Hammasratas avaa rakenteen lomakkeen; lomake yliajaa oletushinnat, ellei niitä ole muokattu kortilla.
 
 **Yhteenveto** on pois käytöstä, kun jollain rivillä on keskeneräinen lomake.
 
@@ -81,7 +81,7 @@ Yhteenvedossa kopiointinappi on vain asiakkaan yhteystiedoissa.
 1. Asiakkaan tiedot, toimitusajankohta ja matka-aika yhteen suuntaan.
 2. **Kokonaissumma:** materiaalit, työ, alennus (jos > 0 %), kokonaishinnat (alv0 / ALV / sis. ALV). Yksityinen: korostus sis. ALV. Yritys: korostus alv0; käänteinen ALV tarvittaessa.
 3. **Yksi rivi:** työn arvioitu kesto näytetään kokonaissummassa (säävarauskerroin + tasapäiviin ylöspäin). Päiviä ei summata riveiltä.
-4. **Useita rivejä:** jokaisella tuoterakenteella oma otsikko, hintakortti (kesto tälle riville) ja **Lomaketiedot**.
+4. **Useita rivejä:** jokaisella tuoterakenteella oma otsikko, hintakortti (kesto tälle riville), **Lisätiedot** (jos täytetty) ja **Lomaketiedot**. Yhdellä rivillä Lisätiedot (jos täytetty) ja Lomaketiedot (hinnat ovat jo kokonaissummassa).
 
 Lomaketiedot tulevat rivin snapshotista tai täytetyistä kentistä. Jokainen täytetty rivi näyttää omat speksinsä.
 
@@ -91,7 +91,7 @@ Lomakepohjan `version` kasvaa tallennettaessa. Vanhaa laskelmaa muokatessa näyt
 
 ## Tuoterakenteet
 
-Asetukset → **Tuoterakenteet**: nimi, valinnainen yksikkö, myyntipalkkio-%, **Lomake** (sivut, kentät, JSON, debug).
+Asetukset → **Tuoterakenteet**: nimi, valinnainen yksikkö, myyntipalkkio-%, lisätiedot (oletusteksti), oletushinta / työn hinta / materiaalit alv0, **Lomake** (sivut, kentät, JSON, debug).
 
 Jokaisella rakenteella on oma `FormDefinition`. Tuotteet eivät ole rakenteen asetuksissa; ne liitetään tuotteelta (yksi tuote voi kuulua useaan rakenteeseen).
 
@@ -143,7 +143,7 @@ JSON-tuonti: **Asetukset → Tuoterakenteet → [rakenne] → Lomake → Tuo JSO
 
 ## Tietokanta (paikallinen SQLite)
 
-- `product_structures` (lomakepohja JSON:na, palkkio-%)
+- `product_structures` (lomakepohja JSON:na, palkkio-%, lisätietojen oletus, oletushinnat alv0)
 - `products` (ostohinta, myyntihinta, attribuutit, `structure_ids`, `sort_order`)
 - `customers`
 - `calculations` (`structure_lines`, `form_snapshot` yhteensopivuutta varten, asiakas-snapshot)

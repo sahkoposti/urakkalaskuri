@@ -41,7 +41,7 @@ Laskentasivu (pysty, mobiili)
 | Valitse tuote          | JSON:sta irrallinen materiaalivaihe (`system: "materials"`) ei ole käytössä. Tuote valitaan lomakkeen tuotelistakentästä.    |
 | Asiakas (yhteystiedot) | Oma osio laskentasivulta (`CustomerStep`: nimi, puh, osoite…). **Poistuvat** lomakkeen Asiakas-sivulta.                      |
 | Lomakkeen Asiakas-sivu | **Jää rakenteeseen** lisäkentille. Järjestelmän yhteystietokysymyksiä ei siellä enää ole.                                    |
-| Urakka ilman lomaketta | **0.** Manuaalinen kirjaus **urakkakorttia luodessa** (ei rivilistassa).                                                     |
+| Urakka ilman lomaketta | **Ei pohjaa** pickerissä: tyhjä rivi ilman lomaketta. Hinnat ja työn hinta kirjoitetaan korttiin. |
 | Rekisteri              | Asiakas **aina** rekisteriin. Sama nimi saa esiintyä kahdesti.                                                               |
 | Nimi-kenttä            | Samalla haku: osumat alle; valinta täyttää tiedot; ei valintaa → uusi asiakas.                                               |
 | Rekisterin muutos      | Kysytään: päivitetäänkö vanhat laskelmat. Ei → vain rekisteririvi.                                                           |
@@ -86,7 +86,7 @@ Tuoterakenteet
 
 **Toimitusajankohta:** `AppInput`, ei validointia, ei kalenteria v1.3. Tyhjä sallittu. Näkyy yhteenvedossa asiakkaan alla.
 
-**Lisää tuoterakenne:** picker mallipohjista → uusi kortti, määrä 1, ale 0, ALV asetuksista.
+**Lisää tuoterakenne:** picker mallipohjista tai **Ei pohjaa** → tyhjä rivi ilman lomaketta. Mallipohjasta: määrä 1, ale 0, ALV asetuksista, oletushinnat ja lisätiedot rakenteen asetuksista.
 
 **Tarjous / urakkakirja:** ei tässä versiossa (PDF myöhemmin). **Yhteenveto** vaatii nimen ja vähintään yhden rivin; keskeneräiset lomakkeet pitää täyttää ensin.
 
@@ -146,14 +146,16 @@ Yksi kortti, kentät kahdessa palstassa jossa se on luettavaa; muuten allekkain.
 │ Hinnat           [ alv0 | sis. ALV ]     │
 │ Hinta €          [3 393,52]              │
 │ Materiaalit €    [  365,00]              │
+│ Työn hinta €     [  800,00]              │
 │ Ale %            [    5,00]              │
+│ Lisätiedot       [ …                   ] │  ← valinnainen; oletus rakenteesta
 │ Kate (alv0)        1 234,00 € · 28,5 %   │  ← vain näyttö
 │ Yhteensä           3 223,84 €            │  ← laskettu
 └──────────────────────────────────────────┘
 ```
 
-Muokattavat: määrä, yksikkö, hinta, materiaalit, ale-%, ALV-tila.  
-Lasketut: kate €, kate %, yhteensä. Hinta/materiaalit/yhteensä noudattavat kortin alv0 / sis. ALV -valintaa.
+Muokattavat: määrä, yksikkö, hinta, materiaalit, työn hinta, ale-%, ALV-tila, lisätiedot. **Ei pohjaa** -rivillä myös nimi.  
+Lasketut: kate €, kate %, yhteensä. Hinta/materiaalit/työn hinta/yhteensä noudattavat kortin alv0 / sis. ALV -valintaa.
 
 **Kaavat (alv0, ale kuten nykyinen alennus):**
 
@@ -165,11 +167,11 @@ Hinta on **yksikköhinta** (lomake täyttää sen koko työnä kun määrä on 1
 
 Kate rivillä = nykyinen jäännöskate tälle riville (myyntihinta aleen jälkeen − urakka − materiaalit − palkkio), sekä € että %. Palkkio ei näy kortissa (rakenteen ominaisuus).
 
-**Urakka:** lomake täyttää sen putkesta. Ilman lomaketta urakka on **0**. Sitä ei muokata rivilistassa; manuaalinen arvo annetaan **urakkakorttia luodessa** (seuraava versio, PDF). Siihen asti yhteenvedossa urakka on 0 ellei lomake ole laskenut sitä.
+**Urakka / työn hinta:** lomake täyttää sen putkesta ja **yliajaa** rakenteen oletuksen, ellei kenttää ole muokattu kortilla. Ilman lomaketta arvo on rakenteen oletus tai 0 (**Ei pohjaa**).
 
 Poisto: roskakori kortin kulmassa, vahvistus.
 
-⚙ piilotetaan vain jos rakenteella ei ole yhtään lomakesivua (vain asiakassivu ilman kenttiä = ei sivuja).
+⚙ piilotetaan jos rakenteella ei ole yhtään lomakesivua (vain asiakassivu ilman kenttiä = ei sivuja) tai rivi on **Ei pohjaa**.
 
 ---
 
@@ -179,9 +181,9 @@ Poisto: roskakori kortin kulmassa, vahvistus.
 
 Avaa rakenteen sivut, mukaan lukien Asiakas-sivu **jos sillä on lisäkenttiä**. Järjestelmän yhteystietoja ei näytetä. Tuotelistakenttä (`product_select`) käyttää **vain tämän rakenteen** tuotteita. Ei `MaterialsStep`-vaihetta.
 
-**Valmis** (tai poistumisen **Tallenna**, jos lomake on täynnä): ajaa laskennan ja kirjoittaa riviin hinnan, mater. €, urakan, keston, palkkion ja alennuksen jos lomakkeessa on `alennus_prosentti` (ei yliajettu). **Tallenna keskeneräisenä** tallentaa kentät ilman hinnoittelua (`formFilled: false`). Paluu laskentasivulle.
+**Valmis** (tai poistumisen **Tallenna**, jos lomake on täynnä): ajaa laskennan ja kirjoittaa riviin hinnan, mater. €, urakan/työn hinnan, keston, palkkion ja alennuksen jos lomakkeessa on `alennus_prosentti` (ei yliajettu). Rakenteen oletushinnat yliajetaan, jos lomake tuottaa hintapäivityksiä. **Tallenna keskeneräisenä** tallentaa kentät ilman hinnoittelua (`formFilled: false`). Paluu laskentasivulle.
 
-Yliajo: muokattu solun lippu; lomakkeen uusinta-ajo ei ylikirjoita sitä. Mater. € yliajo **ei** tyhjennä `product_select`-arvoa `fieldValues`:ssa.
+Yliajo: muokattu solun lippu; lomakkeen uusinta-ajo ei ylikirjoita sitä. Mater. € yliajo **ei** tyhjennä `product_select`-arvoa `fieldValues`:ssa. Lisätiedot ovat rivin omia; lomake ei koske niihin.
 
 ---
 
@@ -194,7 +196,7 @@ Järjestys:
 1. Asiakas (kopiointi yhteystiedoista)
 2. Toimitusajankohta (jos ei tyhjä)
 3. **Kokonaissumma** — materiaalit, työ, alennus (jos > 0 %), kokonaishinnat (alv0 / ALV / sis. ALV). **Yksi rivi:** työn arvioitu kesto tässä kortissa. **Useita rivejä:** kestoa ei näytetä kokonaissummassa.
-4. **Erittely** — useilla riveillä jokaiselle tuoterakenteelle otsikko + sama hintakortti (kesto tälle riville) + **Lomaketiedot**. Yhdellä rivillä vain Lomaketiedot (hinnat ovat jo kokonaissummassa).
+4. **Erittely** — useilla riveillä jokaiselle tuoterakenteelle otsikko + sama hintakortti (kesto tälle riville) + **Lisätiedot** (jos täytetty) + **Lomaketiedot**. Yhdellä rivillä vain Lisätiedot (jos täytetty) ja Lomaketiedot (hinnat ovat jo kokonaissummassa).
   - lomakespeksit (`showOnSummary`) rivin omasta snapshotista, ml. valittu tuote vaikka mater. € olisi 0
 
 Muokkaa → laskentasivu.
@@ -208,8 +210,10 @@ Muokkaa → laskentasivu.
 ```
 Asetukset → Tuoterakenteet
   [Ulkoverhoilun maalaus]
+    Nimi, yksikkö, myyntipalkkio-%
+    Lisätiedot (oletusteksti riville)
+    Oletushinta alv0, oletus työn hinta alv0, oletus materiaalit alv0
     Lomake (sivut, kentät, JSON, debug) — Asiakas-sivu saa olla, ilman CustomerStep-kenttiä
-    Myyntipalkkio-%
 ```
 
 Koti → Tuotteet: ostohinta, myyntihinta, kate; valitse miltä rakenteille tuote kuuluu (useita sallittu); kopiointi; järjestys ↑↓ (sama järjestys tuotelistakentässä, suodatettuna rakenteen mukaan).  
@@ -230,6 +234,10 @@ interface ProductStructure {
   unit?: string;
   form: FormDefinition;
   commissionPercent: number;
+  defaultAdditionalInfo?: string;
+  defaultUnitPriceVat0?: number;
+  defaultContractPriceVat0?: number;
+  defaultMaterialsVat0?: number;
 }
 
 interface Product {
@@ -271,11 +279,12 @@ interface StructureLine {
   marginEur: number;
   marginPercent: number;
   pricesIncludeVat?: boolean;  // kortin alv0 / sis. ALV
+  additionalInfo?: string;     // rivin lisätiedot (oletus rakenteesta)
   fieldValues: Record<string, string>;
   formFilled: boolean;
   formVersion?: number;
   snapshot?: FormSnapshot;     // rivin Lomaketiedot
-  overrides: Array<'unitPrice' | 'materials' | 'discount' | 'quantity' | 'unit'>;
+  overrides: Array<'unitPrice' | 'materials' | 'discount' | 'quantity' | 'unit' | 'contractPrice'>;
 }
 
 interface CalculationRecord {
@@ -308,7 +317,7 @@ Vaiheet A–F on tehty sovelluksessa. PDF ei kuulu tähän dokumenttiin.
 | Ei tässä versiossa               |                                                                     |
 | -------------------------------- | ------------------------------------------------------------------- |
 | Tarjous-PDF                      | [v1.3-suunnitelma.md](./v1.3-suunnitelma.md)                        |
-| Urakkakortti-PDF                 | sama; manuaalinen urakka jos lomaketta ei käytetty                  |
+| Urakkakortti-PDF                 | sama                                                              |
 | Toimitusajankohdan kalenteri     | vain teksti                                                         |
 | Irrallinen materiaalivaihe       | poistettu rivin lomakkeesta                                         |
 
@@ -321,7 +330,7 @@ Vaiheet A–F on tehty sovelluksessa. PDF ei kuulu tähän dokumenttiin.
 
 1. **Hinta × määrä × (1 − ale)** = rivin yhteensä (alv0). Lomake täyttää Hinnan määrälle 1; määrä 2 kaksinkertaistaa yhteensä-luvun, ei materiaalikenttää.
 2. **Kate** rivilistassa = sama kaava kuin yhteenvedon myyntikate tälle riville (ei ale).
-3. **Ilman lomaketta urakka = 0.** Manuaalinen urakka vain urakkakorttia luodessa.
+3. **Ilman lomaketta** työn hinta on rakenteen oletus tai korttiin kirjoitettu arvo (**Ei pohjaa**: 0 kunnes täytetään).
 4. **Yhteenveto** vaatii nimen ja vähintään yhden rivin; lomakkeet täytettyinä.
 5. **Asiakas-kortti** laskentasivulla on tiivis; täysi yhteystietolomake omalla sivullaan.
 

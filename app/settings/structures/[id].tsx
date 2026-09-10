@@ -14,7 +14,7 @@ import { SettingsNavCard } from '@/src/components/SettingsNavCard';
 import { createDefaultFormDefinition } from '@/src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '@/src/core/form/formDefinitionHelpers';
 import { calculationSettingsHref } from '@/src/core/navigation/calculationSettings';
-import { parseNumber } from '@/src/core/utils/formatters';
+import { parseNumber, formatFixed2 } from '@/src/core/utils/formatters';
 import { createId } from '@/src/core/utils/id';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
@@ -45,6 +45,18 @@ export default function ProductStructureDetailScreen() {
         : '',
   );
   const [unit, setUnit] = useState(isNew ? '' : (structure?.unit ?? ''));
+  const [additionalInfo, setAdditionalInfo] = useState(
+    isNew ? '' : (structure?.defaultAdditionalInfo ?? ''),
+  );
+  const [defaultUnitPrice, setDefaultUnitPrice] = useState(
+    isNew ? '' : optionalPriceText(structure?.defaultUnitPriceVat0),
+  );
+  const [defaultContractPrice, setDefaultContractPrice] = useState(
+    isNew ? '' : optionalPriceText(structure?.defaultContractPriceVat0),
+  );
+  const [defaultMaterials, setDefaultMaterials] = useState(
+    isNew ? '' : optionalPriceText(structure?.defaultMaterialsVat0),
+  );
   const [deleteVisible, setDeleteVisible] = useState(false);
   const savedIdRef = useRef<string | null>(isNew ? null : structureId ?? null);
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
@@ -54,6 +66,10 @@ export default function ProductStructureDetailScreen() {
       name: name.trim(),
       commission,
       unit: unit.trim(),
+      additionalInfo,
+      defaultUnitPrice,
+      defaultContractPrice,
+      defaultMaterials,
     });
   }
 
@@ -62,12 +78,20 @@ export default function ProductStructureDetailScreen() {
     setName(structure.name);
     setCommission(String(structure.commissionPercent).replace('.', ','));
     setUnit(structure.unit ?? '');
+    setAdditionalInfo(structure.defaultAdditionalInfo ?? '');
+    setDefaultUnitPrice(optionalPriceText(structure.defaultUnitPriceVat0));
+    setDefaultContractPrice(optionalPriceText(structure.defaultContractPriceVat0));
+    setDefaultMaterials(optionalPriceText(structure.defaultMaterialsVat0));
     savedIdRef.current = structure.id;
     setSavedSnapshot(
       JSON.stringify({
         name: structure.name,
         commission: String(structure.commissionPercent).replace('.', ','),
         unit: structure.unit ?? '',
+        additionalInfo: structure.defaultAdditionalInfo ?? '',
+        defaultUnitPrice: optionalPriceText(structure.defaultUnitPriceVat0),
+        defaultContractPrice: optionalPriceText(structure.defaultContractPriceVat0),
+        defaultMaterials: optionalPriceText(structure.defaultMaterialsVat0),
       }),
     );
   }, [isNew, structure?.id]);
@@ -75,7 +99,17 @@ export default function ProductStructureDetailScreen() {
   const isDirty = useMemo(() => {
     if (savedSnapshot == null) return isNew;
     return currentSnapshot() !== savedSnapshot;
-  }, [isNew, savedSnapshot, name, commission, unit]);
+  }, [
+    isNew,
+    savedSnapshot,
+    name,
+    commission,
+    unit,
+    additionalInfo,
+    defaultUnitPrice,
+    defaultContractPrice,
+    defaultMaterials,
+  ]);
 
   async function persistStructure(): Promise<boolean> {
     const parsed = parseNumber(commission);
@@ -85,6 +119,21 @@ export default function ProductStructureDetailScreen() {
     }
     if (parsed === null || parsed < 0) {
       showAlert('Virhe', 'Virheellinen palkkio');
+      return false;
+    }
+    const unitPrice = parseOptionalPrice(defaultUnitPrice);
+    const contractPrice = parseOptionalPrice(defaultContractPrice);
+    const materials = parseOptionalPrice(defaultMaterials);
+    if (unitPrice === 'invalid') {
+      showAlert('Virhe', 'Virheellinen oletushinta');
+      return false;
+    }
+    if (contractPrice === 'invalid') {
+      showAlert('Virhe', 'Virheellinen oletus työn hinta');
+      return false;
+    }
+    if (materials === 'invalid') {
+      showAlert('Virhe', 'Virheellinen oletus materiaalit');
       return false;
     }
 
@@ -105,6 +154,10 @@ export default function ProductStructureDetailScreen() {
       unit: unit.trim() || undefined,
       form,
       commissionPercent: parsed,
+      defaultAdditionalInfo: additionalInfo.trim() || undefined,
+      defaultUnitPriceVat0: unitPrice,
+      defaultContractPriceVat0: contractPrice,
+      defaultMaterialsVat0: materials,
       sortOrder: existing?.sortOrder ?? structures.length,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -115,6 +168,10 @@ export default function ProductStructureDetailScreen() {
         name: name.trim(),
         commission,
         unit: unit.trim(),
+        additionalInfo,
+        defaultUnitPrice,
+        defaultContractPrice,
+        defaultMaterials,
       }),
     );
     await refreshStructures();
@@ -179,6 +236,34 @@ export default function ProductStructureDetailScreen() {
           onChangeText={setCommission}
           keyboardType="decimal-pad"
         />
+        <AppInput
+          label="Lisätiedot"
+          value={additionalInfo}
+          onChangeText={setAdditionalInfo}
+          multiline
+          placeholder="Oletusteksti riville (valinnainen)"
+        />
+        <AppInput
+          label="Oletushinta alv0"
+          value={defaultUnitPrice}
+          onChangeText={setDefaultUnitPrice}
+          keyboardType="decimal-pad"
+          placeholder="Valinnainen"
+        />
+        <AppInput
+          label="Oletus työn hinta alv0"
+          value={defaultContractPrice}
+          onChangeText={setDefaultContractPrice}
+          keyboardType="decimal-pad"
+          placeholder="Valinnainen"
+        />
+        <AppInput
+          label="Oletus materiaalit alv0"
+          value={defaultMaterials}
+          onChangeText={setDefaultMaterials}
+          keyboardType="decimal-pad"
+          placeholder="Valinnainen"
+        />
         <PrimaryButton title="Tallenna" onPress={() => void handleSave()} />
         <SettingsNavCard
           title="Lomake"
@@ -202,6 +287,19 @@ export default function ProductStructureDetailScreen() {
       {exitDialog}
     </>
   );
+}
+
+function optionalPriceText(value: number | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '';
+  return formatFixed2(value);
+}
+
+function parseOptionalPrice(raw: string): number | undefined | 'invalid' {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  const parsed = parseNumber(trimmed);
+  if (parsed === null || parsed < 0) return 'invalid';
+  return parsed;
 }
 
 function createStyles(_colors: AppColorPalette) {

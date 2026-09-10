@@ -1,6 +1,7 @@
 import { createDefaultFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
 import { hasStructureFormPages, isStructureFormIncomplete, structureFormPages } from '../src/core/structure/formPages';
+import { MANUAL_STRUCTURE_ID } from '../src/core/structure/types';
 
 describe('structureFormPages', () => {
   test('ohittaa tyhjän asiakassivun ja näyttää sisältösivut', () => {
@@ -25,11 +26,11 @@ describe('structureFormPages', () => {
 
   test('keskeneräinen lomake vaatii sivuja ja formFilled=false', () => {
     const form = normalizeFormDefinition(createDefaultFormDefinition());
-    expect(isStructureFormIncomplete({ formFilled: false }, { form })).toBe(true);
-    expect(isStructureFormIncomplete({ formFilled: true }, { form })).toBe(false);
+    expect(isStructureFormIncomplete({ formFilled: false, structureId: 's1' }, { form })).toBe(true);
+    expect(isStructureFormIncomplete({ formFilled: true, structureId: 's1' }, { form })).toBe(false);
     expect(
       isStructureFormIncomplete(
-        { formFilled: false },
+        { formFilled: false, structureId: 's1' },
         {
           form: normalizeFormDefinition({
             id: 'empty',
@@ -43,6 +44,9 @@ describe('structureFormPages', () => {
           }),
         },
       ),
+    ).toBe(false);
+    expect(
+      isStructureFormIncomplete({ formFilled: false, structureId: MANUAL_STRUCTURE_ID }, { form }),
     ).toBe(false);
   });
 });
