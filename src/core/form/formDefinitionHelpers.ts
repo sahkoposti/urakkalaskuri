@@ -172,6 +172,8 @@ function normalizeFieldKeys(fields: FormField[]): FormField[] {
       effects: effects && effects.length > 0 ? effects : undefined,
       showWhen,
       showOnSummaryWhen,
+      sameRowAsPrevious:
+        type !== 'section' && field.sameRowAsPrevious === true ? true : undefined,
     };
   });
 }

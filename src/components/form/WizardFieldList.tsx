@@ -6,6 +6,7 @@ import { AppInput, AppSwitch, SectionTitle } from '@/src/components/common';
 import { isComputedFieldOverridden } from '@/src/core/form/applyFieldValueChange';
 import { visibleHelpText } from '@/src/core/form/fieldHelpText';
 import { resolveFieldRawValue } from '@/src/core/form/fieldDefaultValue';
+import { groupFieldsIntoRows } from '@/src/core/form/fieldRowLayout';
 import { filterVisibleFields } from '@/src/core/form/fieldVisibility';
 import {
   findProductById,
@@ -40,169 +41,182 @@ export function WizardFieldList({
   onResetOverride,
 }: WizardFieldListProps) {
   const styles = useThemedStyles(createStyles);
-  const visibleFields = filterVisibleFields(fields, fieldValues, form, computedValues);
+  const visibleFields = filterVisibleFields(fields, fieldValues, form, computedValues).filter(
+    (field) => !(isSystemField(field) && field.type !== 'number'),
+  );
+  const rows = groupFieldsIntoRows(visibleFields);
+
+  function renderField(field: FormField, sharedRow: boolean) {
+    const cellStyle = sharedRow ? styles.rowCell : undefined;
+
+    if (field.type === 'section') {
+      return <SectionTitle key={field.id} title={field.label} />;
+    }
+
+    const help = visibleHelpText(field.helpText);
+
+    if (field.type === 'computed') {
+      const computed = computedValues[field.key];
+      const canOverride = field.allowManualOverride !== false;
+      const computedText =
+        computed !== undefined && Number.isFinite(computed) ? formatDecimal(computed) : '';
+      const overrideRaw = fieldValues[field.key];
+      const isOverridden = isComputedFieldOverridden(form, fieldValues, field.key);
+
+      if (canOverride) {
+        const label = `${field.label}${field.unit ? ` (${field.unit})` : ''}`;
+        return (
+          <View key={field.id} style={cellStyle}>
+            <AppInput
+              label={label}
+              value={isOverridden ? overrideRaw ?? '' : computedText}
+              onChangeText={(value) => onChange(field.key, value)}
+              keyboardType="decimal-pad"
+              placeholder={computedText || 'Esim. 5'}
+              trailing={
+                isOverridden ? (
+                  <Pressable
+                    onPress={() => onResetOverride(field.key)}
+                    style={({ pressed }) => [
+                      styles.resetButton,
+                      pressed && styles.resetButtonPressed,
+                    ]}
+                    accessibilityLabel="Palauta laskettu arvo"
+                    hitSlop={8}
+                  >
+                    <ThemedIcon name="reset" size={22} />
+                  </Pressable>
+                ) : null
+              }
+            />
+            {help ? <Text style={styles.hint}>{help}</Text> : null}
+          </View>
+        );
+      }
+
+      const display = computed !== undefined && Number.isFinite(computed)
+        ? field.unit === '€'
+          ? formatCurrency(computed)
+          : `${computedText}${field.unit ? ` ${field.unit}` : ''}`
+        : '–';
+      return (
+        <View key={field.id} style={[styles.readOnlyField, cellStyle]}>
+          <Text style={styles.inputLabel}>{field.label}</Text>
+          <Text style={styles.readOnlyValue}>{display}</Text>
+          {help ? <Text style={styles.hint}>{help}</Text> : null}
+        </View>
+      );
+    }
+
+    if (isProductField(field)) {
+      const selectedId = getSelectedProductId(fieldValues, field.key, field) ?? '';
+      const selectedProduct = findProductById(products, selectedId);
+      const consumption = selectedProduct
+        ? productConsumption(selectedProduct.attributes)
+        : undefined;
+      const workFactor = selectedProduct
+        ? productWorkFactor(selectedProduct.attributes)
+        : undefined;
+
+      return (
+        <View key={field.id} style={cellStyle}>
+          <Text style={styles.inputLabel}>
+            {field.label}
+            {field.required ? ' *' : ''}
+          </Text>
+          {products.length === 0 ? (
+            <Text style={styles.hint}>Ei tuotteita tuoterekisterissä.</Text>
+          ) : (
+            <AppPicker
+              selectedValue={selectedId}
+              onValueChange={(value) => onChange(field.key, value)}
+              placeholder="Valitse tuote..."
+              allowEmpty
+              items={products.map((product) => ({
+                value: product.id,
+                label: `${product.name} (${formatCurrency(product.unitPriceVat0)}/${product.unit})`,
+              }))}
+            />
+          )}
+          {selectedProduct ? (
+            <Text style={styles.productMeta}>
+              {selectedProduct.name}
+              {' · '}
+              {formatCurrency(selectedProduct.unitPriceVat0)}/{selectedProduct.unit}
+              {consumption !== undefined ? ` · menekki ${formatDecimal(consumption)}` : ''}
+              {` · työkerroin ${formatDecimal(workFactor ?? 1)}`}
+            </Text>
+          ) : null}
+          {help ? <Text style={styles.hint}>{help}</Text> : null}
+        </View>
+      );
+    }
+
+    if (field.type === 'select') {
+      return (
+        <View key={field.id} style={cellStyle}>
+          <Text style={styles.inputLabel}>
+            {field.label}
+            {field.required ? ' *' : ''}
+          </Text>
+          <AppPicker
+            selectedValue={resolveFieldRawValue(field, fieldValues)}
+            onValueChange={(value) => onChange(field.key, value)}
+            placeholder="Valitse..."
+            allowEmpty
+            items={(field.options ?? []).map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+          />
+          {help ? <Text style={styles.hint}>{help}</Text> : null}
+        </View>
+      );
+    }
+
+    if (field.type === 'boolean') {
+      const checked = resolveFieldRawValue(field, fieldValues) === 'true';
+      return (
+        <View key={field.id} style={cellStyle}>
+          <View style={styles.switchRow}>
+            <Text style={[styles.inputLabel, styles.switchLabel]}>{field.label}</Text>
+            <AppSwitch
+              value={checked}
+              onValueChange={(value) => onChange(field.key, value ? 'true' : 'false')}
+            />
+          </View>
+          {help ? <Text style={styles.hint}>{help}</Text> : null}
+        </View>
+      );
+    }
+
+    const label = `${field.label}${field.required ? ' *' : ''}${field.unit ? ` (${field.unit})` : ''}`;
+    return (
+      <View key={field.id} style={cellStyle}>
+        <AppInput
+          label={label}
+          value={resolveFieldRawValue(field, fieldValues)}
+          onChangeText={(value) => onChange(field.key, value)}
+          keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
+          placeholder={
+            field.type === 'number' ? (field.unit === '%' ? 'Esim. 0' : 'Esim. 120') : undefined
+          }
+          multiline={field.type === 'text'}
+        />
+        {help ? <Text style={styles.hint}>{help}</Text> : null}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrap}>
-      {visibleFields.map((field) => {
-        if (field.type === 'section') {
-          return <SectionTitle key={field.id} title={field.label} />;
-        }
-
-        const help = visibleHelpText(field.helpText);
-
-        if (field.type === 'computed') {
-          const computed = computedValues[field.key];
-          const canOverride = field.allowManualOverride !== false;
-          const computedText =
-            computed !== undefined && Number.isFinite(computed) ? formatDecimal(computed) : '';
-          const overrideRaw = fieldValues[field.key];
-          const isOverridden = isComputedFieldOverridden(form, fieldValues, field.key);
-
-          if (canOverride) {
-            const label = `${field.label}${field.unit ? ` (${field.unit})` : ''}`;
-            return (
-              <View key={field.id}>
-                <AppInput
-                  label={label}
-                  value={isOverridden ? overrideRaw ?? '' : computedText}
-                  onChangeText={(value) => onChange(field.key, value)}
-                  keyboardType="decimal-pad"
-                  placeholder={computedText || 'Esim. 5'}
-                  trailing={
-                    isOverridden ? (
-                      <Pressable
-                        onPress={() => onResetOverride(field.key)}
-                        style={({ pressed }) => [
-                          styles.resetButton,
-                          pressed && styles.resetButtonPressed,
-                        ]}
-                        accessibilityLabel="Palauta laskettu arvo"
-                        hitSlop={8}
-                      >
-                        <ThemedIcon name="reset" size={22} />
-                      </Pressable>
-                    ) : null
-                  }
-                />
-                {help ? <Text style={styles.hint}>{help}</Text> : null}
-              </View>
-            );
-          }
-
-          const display = computed !== undefined && Number.isFinite(computed)
-            ? field.unit === '€'
-              ? formatCurrency(computed)
-              : `${computedText}${field.unit ? ` ${field.unit}` : ''}`
-            : '–';
-          return (
-            <View key={field.id} style={styles.readOnlyField}>
-              <Text style={styles.inputLabel}>{field.label}</Text>
-              <Text style={styles.readOnlyValue}>{display}</Text>
-              {help ? <Text style={styles.hint}>{help}</Text> : null}
-            </View>
-          );
-        }
-
-        if (isSystemField(field) && field.type !== 'number') return null;
-
-        if (isProductField(field)) {
-          const selectedId = getSelectedProductId(fieldValues, field.key, field) ?? '';
-          const selectedProduct = findProductById(products, selectedId);
-          const pickerValue = selectedProduct?.id ?? '';
-          const consumption = selectedProduct
-            ? productConsumption(selectedProduct.attributes)
-            : undefined;
-          const workFactor = selectedProduct
-            ? productWorkFactor(selectedProduct.attributes)
-            : undefined;
-
-          return (
-            <View key={field.id}>
-              <Text style={styles.inputLabel}>
-                {field.label}
-                {field.required ? ' *' : ''}
-              </Text>
-              {products.length === 0 ? (
-                <Text style={styles.hint}>Ei tuotteita tuoterekisterissä.</Text>
-              ) : (
-                <AppPicker
-                  selectedValue={pickerValue}
-                  onValueChange={(value) => onChange(field.key, value)}
-                  placeholder="Valitse tuote..."
-                  allowEmpty
-                  items={products.map((product) => ({
-                    value: product.id,
-                    label: `${product.name} (${formatCurrency(product.unitPriceVat0)}/${product.unit})`,
-                  }))}
-                />
-              )}
-              {selectedProduct ? (
-                <Text style={styles.productMeta}>
-                  {selectedProduct.name}
-                  {' · '}
-                  {formatCurrency(selectedProduct.unitPriceVat0)}/{selectedProduct.unit}
-                  {consumption !== undefined ? ` · menekki ${formatDecimal(consumption)}` : ''}
-                  {` · työkerroin ${formatDecimal(workFactor ?? 1)}`}
-                </Text>
-              ) : null}
-              {help ? <Text style={styles.hint}>{help}</Text> : null}
-            </View>
-          );
-        }
-
-        if (field.type === 'select') {
-          return (
-            <View key={field.id}>
-              <Text style={styles.inputLabel}>
-                {field.label}
-                {field.required ? ' *' : ''}
-              </Text>
-              <AppPicker
-                selectedValue={resolveFieldRawValue(field, fieldValues)}
-                onValueChange={(value) => onChange(field.key, value)}
-                placeholder="Valitse..."
-                allowEmpty
-                items={(field.options ?? []).map((option) => ({
-                  value: option.value,
-                  label: option.label,
-                }))}
-              />
-              {help ? <Text style={styles.hint}>{help}</Text> : null}
-            </View>
-          );
-        }
-
-        if (field.type === 'boolean') {
-          const checked = resolveFieldRawValue(field, fieldValues) === 'true';
-          return (
-            <View key={field.id}>
-              <View style={styles.switchRow}>
-                <Text style={styles.inputLabel}>{field.label}</Text>
-                <AppSwitch
-                  value={checked}
-                  onValueChange={(value) => onChange(field.key, value ? 'true' : 'false')}
-                />
-              </View>
-              {help ? <Text style={styles.hint}>{help}</Text> : null}
-            </View>
-          );
-        }
-
-        const label = `${field.label}${field.required ? ' *' : ''}${field.unit ? ` (${field.unit})` : ''}`;
+      {rows.map((row) => {
+        const sharedRow = row.length > 1;
+        const rendered = row.map((field) => renderField(field, sharedRow));
+        if (!sharedRow) return rendered[0];
         return (
-          <View key={field.id}>
-            <AppInput
-              label={label}
-              value={resolveFieldRawValue(field, fieldValues)}
-              onChangeText={(value) => onChange(field.key, value)}
-              keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
-              placeholder={
-                field.type === 'number' ? (field.unit === '%' ? 'Esim. 0' : 'Esim. 120') : undefined
-              }
-              multiline={field.type === 'text'}
-            />
-            {help ? <Text style={styles.hint}>{help}</Text> : null}
+          <View key={`row-${row[0]!.id}`} style={styles.fieldRow}>
+            {rendered}
           </View>
         );
       })}
@@ -215,10 +229,25 @@ function createStyles(colors: AppColorPalette) {
     wrap: {
       gap: 4,
     },
+    fieldRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'flex-start' as const,
+      gap: 8,
+    },
+    rowCell: {
+      flexGrow: 1,
+      flexShrink: 1,
+      flexBasis: 0,
+      minWidth: 0,
+    },
     inputLabel: {
       marginBottom: 6,
       fontFamily: 'IBMPlexSans_600SemiBold',
       color: colors.text,
+    },
+    switchLabel: {
+      flex: 1,
+      marginRight: 8,
     },
     hint: {
       marginBottom: 12,

@@ -49,7 +49,7 @@ function run(values: Record<string, string>) {
 describe('julkisivumaalaus terassitolpat ja kattotuolit', () => {
   test('version 111 places posts after kattolyhdyt and kattotuolit after alakatot', () => {
     const form = defaultForm();
-    expect(form.version).toBe(111);
+    expect(form.version).toBe(112);
 
     const surfaces = form.pages.find((page) => page.id === 'page_surfaces');
     const ids = surfaces?.fieldIds ?? [];

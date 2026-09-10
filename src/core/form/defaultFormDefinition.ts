@@ -94,7 +94,7 @@ export function createMinimalFormDefinition(): FormDefinition {
   };
 }
 
-/** Oletuslomake (Julkisivumaalaus v111). */
+/** Oletuslomake (Julkisivumaalaus v112). */
 export function createDefaultFormDefinition(): FormDefinition {
   return JSON.parse(JSON.stringify(julkisivumaalausV100)) as FormDefinition;
 }

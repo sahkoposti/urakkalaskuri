@@ -22,7 +22,7 @@ function defaultForm() {
 describe('muun työn kesto henkilötunteina', () => {
   test('default form uses Muun työn kesto (h) without työpari', () => {
     const form = defaultForm();
-    expect(form.version).toBe(111);
+    expect(form.version).toBe(112);
     expect(form.fields.some((field) => field.key === 'muu_tyo_tyoparin_kesto_h')).toBe(false);
 
     const field = form.fields.find((item) => item.key === 'muu_tyo_kesto_h');

@@ -1,7 +1,7 @@
 {
   "id": "julkisivumaalaus",
   "name": "Julkisivumaalaus",
-  "version": 111,
+  "version": 112,
   "pages": [
     {
       "id": "page_surfaces",
@@ -160,6 +160,7 @@
       "type": "select",
       "required": true,
       "showOnSummary": true,
+      "sameRowAsPrevious": true,
       "defaultValue": "1",
       "debugExampleValue": "1",
       "options": [
@@ -286,6 +287,7 @@
       "type": "number",
       "required": true,
       "showOnSummary": false,
+      "sameRowAsPrevious": true,
       "unit": "kpl",
       "showWhen": {
         "fieldKey": "julkisivupinnat_valinta",
@@ -327,6 +329,7 @@
       "type": "computed",
       "required": false,
       "showOnSummary": true,
+      "sameRowAsPrevious": true,
       "showOnSummaryWhen": {
         "fieldKey": "raystaanaluset_jm",
         "operator": "gt",
@@ -824,6 +827,7 @@
       "type": "number",
       "required": true,
       "showOnSummary": false,
+      "sameRowAsPrevious": true,
       "unit": "m",
       "debugExampleValue": "3.5",
       "showWhen": {
@@ -854,6 +858,7 @@
       "type": "number",
       "required": true,
       "showOnSummary": false,
+      "sameRowAsPrevious": true,
       "unit": "m",
       "debugExampleValue": "6.5",
       "showWhen": {
@@ -958,10 +963,11 @@
     {
       "id": "field_lisaseinien_keskikorkeus",
       "key": "lisaseinien_keskikorkeus_m",
-      "label": "Lisäseinien keskikorkeus",
+      "label": "Lisäseinien korkeus",
       "type": "number",
       "required": true,
       "showOnSummary": false,
+      "sameRowAsPrevious": true,
       "unit": "m",
       "debugExampleValue": "2.2",
       "showWhen": {
@@ -1208,6 +1214,7 @@
       "type": "computed",
       "required": false,
       "showOnSummary": false,
+      "sameRowAsPrevious": true,
       "allowManualOverride": true,
       "unit": "€",
       "formula": "maalit_yhteensa_litraa * kaytettava_maali.ostohinta"

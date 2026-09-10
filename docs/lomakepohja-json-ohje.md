@@ -131,9 +131,62 @@ Jokaisella kentällä on globaali määrittely. Sivu valitsee vain mitkä kentä
 | `allowManualOverride` | `computed`: käyttäjä saa ylikirjoittaa tuloksen (oletus `true`). Hintakortin avaimilla `false`. |
 | `showWhen` | Wizardin näkyvyysehto (katso kohta 10) |
 | `showOnSummaryWhen` | Yhteenvedon näkyvyysehto (katso kohta 10) |
+| `sameRowAsPrevious` | `true` = näytä samalla wizard-rivillä kuin edellinen näkyvä kenttä (katso kohta 5.1) |
 | `effects` | Vaikutukset laskentaan (katso kohta 11) |
 | `debugExampleValue` | Debug-tilan esimerkkiarvo |
 | `systemKey` | Järjestelmäkentän tunnus. **Älä keksi omia** – tuonti liittää rungon kentät. |
+
+### 5.1 Samalle riville (`sameRowAsPrevious`)
+
+Oletus (puuttuu tai `false`): kenttä on omalla täysilevyisellä rivillään.
+
+`"sameRowAsPrevious": true` **tällä kentällä** tarkoittaa: näytä se samalla rivillä kuin **edellinen näkyvä** kenttä samalla sivulla (`pages[].fieldIds`-järjestys, `showWhen` huomioidaan).
+
+| Peräkkäiset kentät | Leveys |
+|--------------------|--------|
+| A, B (`true`) | 50 % / 50 % |
+| A, B (`true`), C (`true`) | ⅓ / ⅓ / ⅓ |
+| neljäs `true` samassa ketjussa | 25 % kukin, jne. |
+
+Uusi rivi alkaa, kun kentällä **ei** ole lippua, se on sivun ensimmäinen näkyvä kenttä, tai edellinen näkyvä kenttä on otsikko (`type: "section"`). Otsikko ei koskaan jaa riviä; tuonti poistaa lipun osioilta.
+
+```json
+[
+  {
+    "id": "field_leveys",
+    "key": "leveys_m",
+    "label": "Leveys",
+    "type": "number",
+    "required": true,
+    "showOnSummary": true,
+    "unit": "m"
+  },
+  {
+    "id": "field_korkeus",
+    "key": "korkeus_m",
+    "label": "Korkeus",
+    "type": "number",
+    "required": true,
+    "showOnSummary": true,
+    "unit": "m",
+    "sameRowAsPrevious": true
+  },
+  {
+    "id": "field_syvyys",
+    "key": "syvyys_m",
+    "label": "Syvyys",
+    "type": "number",
+    "required": false,
+    "showOnSummary": true,
+    "unit": "m",
+    "sameRowAsPrevious": true
+  }
+]
+```
+
+Yllä Leveys, Korkeus ja Syvyys ovat **yhdellä rivillä** (⅓ kukin). Jätä `sameRowAsPrevious` pois, kun haluat seuraavan kysymyksen omalle rivilleen.
+
+Asetuksissa: **Kenttä → Rivitä edelliselle riville**. Sama asetus kopioituu kentän kopioinnin mukana.
 
 ---
 
@@ -887,6 +940,7 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 - [ ] `select`-kentillä on vähintään yksi `option`
 - [ ] Kaavoissa käytetyt muuttujat ovat olemassa (tai tarkoituksella puuttuvia → 0)
 - [ ] `showWhen.fieldKey` ja `showOnSummaryWhen.fieldKey` viittaavat olemassa olevaan kenttään
+- [ ] `sameRowAsPrevious` vain kentillä, jotka haluat samalle wizard-riville kuin edellinen (`fieldIds`-järjestys)
 - [ ] `defaultValue` on merkkijono (numerot lainausmerkeissä)
 - [ ] `product_select`-oletusarvo on olemassa oleva tuote-id
 - [ ] `kokonaishinta_alv0` on listahinta (ei alennusta kaavassa)
@@ -932,6 +986,7 @@ Muista lisätä näiden `id`-arvot haluamallesi sivulle `fieldIds`-listaan.
 | `src/core/form/types.ts` | Tyypit (`FormField`, `FormPage`, …) |
 | `src/core/form/formDefinitionIo.ts` | Tuonti / vienti |
 | `src/core/form/formDefinitionHelpers.ts` | Normalisointi ja wizard-näyttö |
+| `src/core/form/fieldRowLayout.ts` | Wizard-rivit (`sameRowAsPrevious`) |
 | `src/core/form/systemFields.ts` | Vientiavaimet, merge, rungon ALV-kaavat |
 | `src/core/calculation/pricingSkeleton.ts` | ALV ja sis. ALV `kokonaishinta_alv0`:sta |
 | `src/core/calculation/discount.ts` | Alennus listahinnan jälkeen |
