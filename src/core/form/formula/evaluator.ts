@@ -17,6 +17,7 @@ export const FORMULA_FUNCTIONS = new Set([
   'round',
   'if',
   'sqrt',
+  'cos',
   'liukuva_myyntihinta',
 ]);
 
@@ -213,6 +214,12 @@ function callFormulaFunction(
         throw new FormulaEvaluationError('sqrt() ei salli negatiivista lukua');
       }
       return Math.sqrt(value);
+    }
+    case 'cos': {
+      if (args.length !== 1) {
+        throw new FormulaEvaluationError('cos() ottaa yhden argumentin (asteina)');
+      }
+      return Math.cos((args[0]! * Math.PI) / 180);
     }
     case 'liukuva_myyntihinta': {
       if (args.length !== 1) {

@@ -31,6 +31,8 @@ describe('evaluateFormula', () => {
     expect(evaluateFormula('if(kaytossa, 15, 0)', { kaytossa: 0 })).toBe(0);
     expect(evaluateFormula('sqrt(9)', {})).toBe(3);
     expect(evaluateFormula('sqrt(0.25)', {})).toBeCloseTo(0.5, 5);
+    expect(evaluateFormula('cos(0)', {})).toBeCloseTo(1, 5);
+    expect(evaluateFormula('cos(20)', {})).toBeCloseTo(Math.cos((20 * Math.PI) / 180), 5);
   });
 
   test('evaluates the same formula twice from the token cache', () => {

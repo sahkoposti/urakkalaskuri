@@ -32,9 +32,9 @@ function baseValues(extra: Record<string, string> = {}): Record<string, string> 
 }
 
 describe('julkisivumaalaus kattolyhdyt', () => {
-  test('version 109 places kattolyhdyt after alakatot', () => {
+  test('places kattolyhdyt after alakatot', () => {
     const form = defaultForm();
-    expect(form.version).toBe(109);
+    expect(form.version).toBe(110);
 
     const surfaces = form.pages.find((page) => page.id === 'page_surfaces');
     const ids = surfaces?.fieldIds ?? [];

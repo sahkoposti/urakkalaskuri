@@ -1,7 +1,7 @@
 {
   "id": "julkisivumaalaus",
   "name": "Julkisivumaalaus",
-  "version": 109,
+  "version": 110,
   "pages": [
     {
       "id": "page_surfaces",
@@ -15,6 +15,9 @@
         "field_raystaskorkeus",
         "field_paadyn_leveys",
         "field_harjakorkeus",
+        "field_veranta_valinta",
+        "field_veranta_pituus",
+        "field_veranta_korkeus",
         "field_lisaseinien_lkm",
         "field_lisaseinien_pituus",
         "field_lisaseinien_keskikorkeus",
@@ -83,6 +86,7 @@
         "field_paatuote_tyo_h",
         "field_tyo_alakatot_h",
         "field_kattolyhdyt_tyo_h",
+        "field_veranta_tyo_h",
         "field_system_henkilotyotunnit",
         "field_matka_henkilotyotunnit",
         "field_system_tyoryhma_kesto_h",
@@ -325,7 +329,7 @@
       },
       "allowManualOverride": true,
       "unit": "jm",
-      "formula": "piiri_jm",
+      "formula": "if(julkisivupinnat_valinta == 1, 2 * (raystassivun_pituus_m + 0.7) + 2 * (paadyn_leveys_m + 0.7) / cos(20), 0) + if(veranta_valinta == 1, veranta_pituus_m + 0.7, 0) + if(lisaseinien_lkm > 0, lisaseinien_pituus_m * 2 / 3 + lisaseinien_lkm * 0.7, 0)",
       "showWhen": {
         "fieldKey": "raystaanaluset_valinta",
         "operator": "eq",
@@ -769,6 +773,67 @@
       }
     },
     {
+      "id": "field_veranta_valinta",
+      "key": "veranta_valinta",
+      "label": "Veranta",
+      "type": "boolean",
+      "required": false,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "veranta_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "0",
+      "defaultValue": "false",
+      "helpText": "Taloa matalampi uloke.",
+      "showWhen": {
+        "fieldKey": "julkisivupinnat_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
+      "id": "field_veranta_pituus",
+      "key": "veranta_pituus_m",
+      "label": "Verannan pituus",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "veranta_pituus_m",
+        "operator": "gt",
+        "value": "0"
+      },
+      "unit": "m",
+      "showWhen": {
+        "fieldKey": "veranta_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "4"
+    },
+    {
+      "id": "field_veranta_korkeus",
+      "key": "veranta_korkeus_m",
+      "label": "Verannan korkeus",
+      "type": "number",
+      "required": true,
+      "showOnSummary": true,
+      "showOnSummaryWhen": {
+        "fieldKey": "veranta_korkeus_m",
+        "operator": "gt",
+        "value": "0"
+      },
+      "unit": "m",
+      "showWhen": {
+        "fieldKey": "veranta_valinta",
+        "operator": "eq",
+        "value": "true"
+      },
+      "debugExampleValue": "2.5"
+    },
+    {
       "id": "field_lisaseinien_lkm",
       "key": "lisaseinien_lkm",
       "label": "Lisäseinien lukumäärä",
@@ -778,6 +843,7 @@
       "unit": "kpl",
       "defaultValue": "0",
       "debugExampleValue": "3",
+      "helpText": "Talon korkuisia seiniä.",
       "showWhen": {
         "fieldKey": "julkisivupinnat_valinta",
         "operator": "eq",
@@ -837,7 +903,7 @@
       "showOnSummary": false,
       "allowManualOverride": false,
       "unit": "jm",
-      "formula": "2 * raystassivun_pituus_m + 2 * paadyn_leveys_m + if(lisaseinien_lkm > 0, lisaseinien_pituus_m, 0)"
+      "formula": "2 * raystassivun_pituus_m + 2 * paadyn_leveys_m + if(veranta_valinta == 1, veranta_pituus_m, 0) + if(lisaseinien_lkm > 0, lisaseinien_pituus_m * 2 / 3, 0)"
     },
     {
       "id": "field_pohjamitat_tarvitaan",
@@ -871,6 +937,17 @@
       "formula": "max(4 + lisaseinien_lkm, 1)"
     },
     {
+      "id": "field_nurkkalaudat_jm",
+      "key": "nurkkalaudat_jm",
+      "label": "Nurkkalautojen pituus",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "jm",
+      "formula": "seinien_lkm * raystaskorkeus_m + if(veranta_valinta == 1, 2 * veranta_korkeus_m, 0)"
+    },
+    {
       "id": "field_laskenta_seinapinta",
       "key": "laskenta_seinapinta_ala_m2",
       "label": "Seinäpinta-ala (laskenta)",
@@ -879,7 +956,7 @@
       "showOnSummary": true,
       "allowManualOverride": true,
       "unit": "m²",
-      "formula": "julkisivupinnat_valinta * max(0, (2 * raystassivun_pituus_m * raystaskorkeus_m + 2 * ((raystaskorkeus_m + harjakorkeus_m) / 2 * paadyn_leveys_m) + if(lisaseinien_lkm > 0, lisaseinien_pituus_m * lisaseinien_keskikorkeus_m, 0) - ikkunat_lkm * 1.5 - ovet_lkm * 2) * laudoitustyyppi) + if(kattolyhdyt_valinta == 1, kattolyhdyt_m2, 0)",
+      "formula": "julkisivupinnat_valinta * max(0, (2 * raystassivun_pituus_m * raystaskorkeus_m + 2 * ((raystaskorkeus_m + harjakorkeus_m) / 2 * paadyn_leveys_m) + if(veranta_valinta == 1, veranta_pituus_m * veranta_korkeus_m * 2 / 3, 0) + if(lisaseinien_lkm > 0, lisaseinien_pituus_m * lisaseinien_keskikorkeus_m * 2 / 3, 0) - ikkunat_lkm * 1.5 - ovet_lkm * 2) * laudoitustyyppi) + if(kattolyhdyt_valinta == 1, kattolyhdyt_m2, 0)",
       "showWhen": {
         "fieldKey": "seinapinta_nakyy",
         "operator": "gt",
@@ -906,7 +983,7 @@
       "showOnSummary": false,
       "allowManualOverride": false,
       "unit": "m²",
-      "formula": "laskenta_seinapinta_ala_m2 + if(raystaanaluset_valinta == 1, piiri_jm * (1 + 2 * (raystastyyppi - 1)) * 0.4 + piiri_jm * 0.2, 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * 0.8, 0) + if(nurkkalaudat_valinta == 1, seinien_lkm * raystaskorkeus_m * 0.2, 0) + if(listalaudat_valinta == 1, piiri_jm * 0.2, 0)"
+      "formula": "laskenta_seinapinta_ala_m2 + if(raystaanaluset_valinta == 1, raystaanaluset_jm * (1 + 2 * (raystastyyppi - 1)) * 0.4 + raystaanaluset_jm * 0.2, 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * 0.8, 0) + if(nurkkalaudat_valinta == 1, nurkkalaudat_jm * 0.2, 0) + if(listalaudat_valinta == 1, piiri_jm * 0.2, 0)"
     },
     {
       "id": "field_maalit_ennen_hukkaa",
@@ -917,7 +994,7 @@
       "showOnSummary": false,
       "allowManualOverride": false,
       "unit": "litraa",
-      "formula": "(laskenta_seinapinta_ala_m2 * (1 + varinvaihto_valinta + if(pohjamaalaus_valinta == 1, min(pohjamaalaus_seinien_lkm, seinien_lkm) / seinien_lkm, 0)) / kaytettava_maali.menekki + if(raystaanaluset_valinta == 1, piiri_jm * raystastyyppi * 0.1 * (1 + varinvaihto_valinta) + piiri_jm * 0.025 * (1 + varinvaihto_valinta), 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * 0.1 * (1 + varinvaihto_valinta), 0) + if(nurkkalaudat_valinta == 1, seinien_lkm * raystaskorkeus_m * 0.025 * (1 + varinvaihto_valinta), 0) + if(listalaudat_valinta == 1, piiri_jm * 0.025 * (1 + varinvaihto_valinta), 0)) + if(alakatot_valinta == 1, alakatot_m2 * (1 + varinvaihto_valinta) / kaytettava_maali.menekki, 0)"
+      "formula": "(laskenta_seinapinta_ala_m2 * (1 + varinvaihto_valinta + if(pohjamaalaus_valinta == 1, min(pohjamaalaus_seinien_lkm, seinien_lkm) / seinien_lkm, 0)) / kaytettava_maali.menekki + if(raystaanaluset_valinta == 1, raystaanaluset_jm * raystastyyppi * 0.1 * (1 + varinvaihto_valinta) + raystaanaluset_jm * 0.025 * (1 + varinvaihto_valinta), 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * 0.1 * (1 + varinvaihto_valinta), 0) + if(nurkkalaudat_valinta == 1, nurkkalaudat_jm * 0.025 * (1 + varinvaihto_valinta), 0) + if(listalaudat_valinta == 1, piiri_jm * 0.025 * (1 + varinvaihto_valinta), 0)) + if(alakatot_valinta == 1, alakatot_m2 * (1 + varinvaihto_valinta) / kaytettava_maali.menekki, 0)"
     },
     {
       "id": "field_maalihukka_kerroin",
@@ -957,7 +1034,7 @@
       "showOnSummary": false,
       "allowManualOverride": false,
       "unit": "h",
-      "formula": "(seinamaalauksen_laskentapinta_ala_m2 * 0.11 * kaytettava_maali.tyokerroin * if(laudoitustyyppi == 0.3, 2, 1) + if(raystaanaluset_valinta == 1, (piiri_jm * (1 + 2 * (raystastyyppi - 1)) * (1 + 0.6 * varinvaihto_valinta) * 0.067375 * kaytettava_maali.tyokerroin + piiri_jm * (1 + 0.6 * varinvaihto_valinta) * 0.026795 * kaytettava_maali.tyokerroin) * if(savyjen_lkm == 1, 0.7, 1), 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * (1 + 0.6 * varinvaihto_valinta) * 0.33 * kaytettava_maali.tyokerroin, 0) + if(nurkkalaudat_valinta == 1, seinien_lkm * raystaskorkeus_m * (1 + 0.6 * varinvaihto_valinta) * 0.055 * kaytettava_maali.tyokerroin * if(savyjen_lkm == 1, 0.2, 1), 0) + if(listalaudat_valinta == 1, piiri_jm * (1 + 0.6 * varinvaihto_valinta) * 0.039285 * kaytettava_maali.tyokerroin * if(savyjen_lkm == 1, 0.2, 1), 0) + if(markahomepesu_valinta == 1, pesupinta_m2 * 0.033 + 1.65 * asetukset.tyoryhman_koko, 0) + if(homeenestokasittely_valinta == 1, 2.0625 * asetukset.tyoryhman_koko, 0) + if(maalinpoisto_valinta == 1, laskenta_seinapinta_ala_m2 * maalinpoisto_seinien_lkm / seinien_lkm * 0.0572 * skrapauksen_vaativuus, 0) + if(pohjamaalaus_valinta == 1, laskenta_seinapinta_ala_m2 * pohjamaalaus_seinien_lkm / seinien_lkm * 0.0462, 0)) * maaston_vaikeusaste * kohteen_korkeuskerroin + muu_tyo_kesto_h + max(savyjen_lkm - 1, 0) * 1.1 + 4.4"
+      "formula": "(seinamaalauksen_laskentapinta_ala_m2 * 0.11 * kaytettava_maali.tyokerroin * if(laudoitustyyppi == 0.3, 2, 1) + if(raystaanaluset_valinta == 1, (raystaanaluset_jm * (1 + 2 * (raystastyyppi - 1)) * (1 + 0.6 * varinvaihto_valinta) * 0.067375 * kaytettava_maali.tyokerroin + raystaanaluset_jm * (1 + 0.6 * varinvaihto_valinta) * 0.026795 * kaytettava_maali.tyokerroin) * if(savyjen_lkm == 1, 0.7, 1), 0) + if(pieluslaudat_valinta == 1, (ikkunat_lkm + ovet_lkm) * (1 + 0.6 * varinvaihto_valinta) * 0.33 * kaytettava_maali.tyokerroin, 0) + if(nurkkalaudat_valinta == 1, nurkkalaudat_jm * (1 + 0.6 * varinvaihto_valinta) * 0.055 * kaytettava_maali.tyokerroin * if(savyjen_lkm == 1, 0.2, 1), 0) + if(listalaudat_valinta == 1, piiri_jm * (1 + 0.6 * varinvaihto_valinta) * 0.039285 * kaytettava_maali.tyokerroin * if(savyjen_lkm == 1, 0.2, 1), 0) + if(markahomepesu_valinta == 1, pesupinta_m2 * 0.033 + 1.65 * asetukset.tyoryhman_koko, 0) + if(homeenestokasittely_valinta == 1, 2.0625 * asetukset.tyoryhman_koko, 0) + if(maalinpoisto_valinta == 1, laskenta_seinapinta_ala_m2 * maalinpoisto_seinien_lkm / seinien_lkm * 0.0572 * skrapauksen_vaativuus, 0) + if(pohjamaalaus_valinta == 1, laskenta_seinapinta_ala_m2 * pohjamaalaus_seinien_lkm / seinien_lkm * 0.0462, 0)) * maaston_vaikeusaste * kohteen_korkeuskerroin + muu_tyo_kesto_h + max(savyjen_lkm - 1, 0) * 1.1 + 4.4"
     },
     {
       "id": "field_tyo_alakatot_h",
@@ -992,6 +1069,22 @@
       }
     },
     {
+      "id": "field_veranta_tyo_h",
+      "key": "veranta_tyo_h",
+      "label": "Verannan työ",
+      "type": "computed",
+      "required": false,
+      "showOnSummary": false,
+      "allowManualOverride": false,
+      "unit": "h",
+      "formula": "if(veranta_valinta == 1, 2, 0)",
+      "showWhen": {
+        "fieldKey": "veranta_valinta",
+        "operator": "eq",
+        "value": "true"
+      }
+    },
+    {
       "id": "field_system_henkilotyotunnit",
       "key": "henkilotyotunnit",
       "label": "Urakan työ yhteensä ilman matkoja",
@@ -1000,7 +1093,7 @@
       "showOnSummary": true,
       "allowManualOverride": true,
       "unit": "h",
-      "formula": "paatuote_tyo_h + alakatot_tyo_h + kattolyhdyt_tyo_h + if(henkilonostin_valinta == 1, henkilonostin_vuokrapaivat, 0)"
+      "formula": "paatuote_tyo_h + alakatot_tyo_h + kattolyhdyt_tyo_h + veranta_tyo_h + if(henkilonostin_valinta == 1, henkilonostin_vuokrapaivat, 0)"
     },
     {
       "id": "field_maalit_alv0",
