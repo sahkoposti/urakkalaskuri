@@ -45,7 +45,7 @@ Yhteenveto          tallentaa SQLite-laskelman
 
 ### Poistuminen
 
-- **Laskenta:** jos tila on sama kuin tallennettu luonnos tai avattu laskelma, tallennusta ei kysytä. Muuten: Peruuta / Tallenna keskeneräisenä / Poistu tallentamatta.
+- **Laskenta:** jos tila on sama kuin tallennettu luonnos tai avattu laskelma, tallennusta ei kysytä. Muuten: Peruuta / Tallenna keskeneräisenä / Poistu tallentamatta. Valmiin laskelman avaaminen muokkaukseen ei jätä **Jatka laskentaa** -luonnosta, jos mitään ei muutettu.
 - **Rivin lomake:** ei kysytä, jos kentät ovat samat kuin tallennetut. Muuten Sulje tallentamatta + **Tallenna keskeneräisenä**, tai **Tallenna** jos kaikki pakolliset kentät on täytetty (ajaa laskennan riville kuten Valmis).
 
 ### Tallennus
@@ -57,7 +57,7 @@ Yhteenveto          tallentaa SQLite-laskelman
 | **Jatka laskentaa** kesken jääneestä muokkauksesta | Sama `id` kuin muokattavalla rivillä |
 | **Jatka laskentaa** uudesta luonnoksesta | Uusi rivi ensimmäisellä yhteenvedolla |
 
-Luonnos (`wizard_drafts`) sisältää tarvittaessa `editCalculationId`. Historia-muokkaus kirjoittaa luonnosta, jotta **Jatka laskentaa** ei luo toista riviä.
+Luonnos (`wizard_drafts`) sisältää tarvittaessa `editCalculationId`. Historia-muokkaus ei kirjoita luonnosta heti avattaessa: luonnos syntyy vasta kun sisältö eroaa avatusta laskelmasta tai käyttäjä tallentaa keskeneräisenä. `editCalculationId` varmistaa, että jatko päivittää samaa riviä.
 
 **Sulje** erittelyssä tyhjentää luonnosta ja vie historiaan.
 

@@ -37,6 +37,7 @@ import {
   firstNonEmptyId,
   mergeWizardDraftEditMeta,
   persistedDraftToFormState,
+  shouldKeepResumeDraftOnLeave,
   type WizardDraftEditMeta,
   type WizardFormState,
 } from '@/src/core/wizard/wizardDraftHelpers';
@@ -93,6 +94,10 @@ export default function CalculationComposerScreen() {
   const originalCreatedAtRef = useRef<Date | null>(null);
   const savingRef = useRef(false);
   const savedSignatureRef = useRef<string | null>(null);
+  const originSignatureRef = useRef<string | null>(null);
+  const resumedIncompleteDraftRef = useRef(false);
+  const wizardDraftRef = useRef(wizardDraft);
+  wizardDraftRef.current = wizardDraft;
 
   function buildCustomerInfo(): CustomerInfo {
     return {
@@ -138,6 +143,25 @@ export default function CalculationComposerScreen() {
 
   function isComposerDirty(state = getFormState()): boolean {
     return composerHasUnsavedChanges(state, savedSignatureRef.current);
+  }
+
+  function formSignature(state: WizardFormState): string {
+    return composerStateSignature({
+      ...state,
+      structureLines: hydrateLines(state, structures, settings.vatPercent),
+    });
+  }
+
+  function rememberOrigin(state: WizardFormState) {
+    originSignatureRef.current = formSignature(state);
+  }
+
+  function shouldKeepResumeDraft(state = getFormState()): boolean {
+    return shouldKeepResumeDraftOnLeave({
+      resumedIncompleteDraft: resumedIncompleteDraftRef.current,
+      currentSignature: formSignature(state),
+      originSignature: originSignatureRef.current,
+    });
   }
 
   function bindExistingCalculation(
@@ -205,11 +229,15 @@ export default function CalculationComposerScreen() {
     markComposerSaved({ ...form, structureLines: lines });
   }
 
-  function restoreDraftForm(draft: NonNullable<typeof wizardDraft>) {
+  function restoreDraftForm(draft: NonNullable<typeof wizardDraft>, resumedIncomplete: boolean) {
     lastDraftUpdatedAtRef.current = draft.updatedAt;
     const { form } = persistedDraftToFormState(draft, products);
     bindExistingCalculation(draft.editCalculationId, draft.originalCreatedAt, draft.editFormVersion);
     applyFormState(form);
+    resumedIncompleteDraftRef.current = resumedIncomplete;
+    if (resumedIncomplete) {
+      rememberOrigin(form);
+    }
   }
 
   useFocusEffect(
@@ -225,7 +253,7 @@ export default function CalculationComposerScreen() {
 
         if (wizardDraft?.editCalculationId === routeEditId) {
           hydratedRef.current = true;
-          restoreDraftForm(wizardDraft);
+          restoreDraftForm(wizardDraft, true);
           return;
         }
 
@@ -234,6 +262,7 @@ export default function CalculationComposerScreen() {
           const record = await db.getCalculation(routeEditId);
           if (!active || !record) return;
           hydratedRef.current = true;
+          resumedIncompleteDraftRef.current = false;
           const { form } = calculationToFormState(record, products);
           bindExistingCalculation(
             record.id,
@@ -241,17 +270,10 @@ export default function CalculationComposerScreen() {
             record.formSnapshot?.formVersion ?? null,
           );
           applyFormState(form);
-          await persistDraft(
-            {
-              ...form,
-              structureLines: hydrateLines(form, structures, settings.vatPercent),
-            },
-            {
-              editCalculationId: record.id,
-              originalCreatedAt: record.createdAt,
-              editFormVersion: record.formSnapshot?.formVersion ?? null,
-            },
-          );
+          rememberOrigin({
+            ...form,
+            structureLines: hydrateLines(form, structures, settings.vatPercent),
+          });
         })();
         return () => {
           active = false;
@@ -262,13 +284,23 @@ export default function CalculationComposerScreen() {
 
       if (wizardDraft) {
         hydratedRef.current = true;
-        restoreDraftForm(wizardDraft);
+        restoreDraftForm(wizardDraft, true);
+        return;
+      }
+
+      if (!hydratedRef.current) {
+        resumedIncompleteDraftRef.current = false;
+        rememberOrigin(getFormStateRef.current());
+        hydratedRef.current = true;
       }
     }, [routeEditId, products, settings.vatPercent, structures]),
   );
 
   useEffect(() => {
     if (!wizardDraft) return;
+    if (routeEditId && firstNonEmptyId(wizardDraft.editCalculationId) !== routeEditId) {
+      return;
+    }
     if (lastDraftUpdatedAtRef.current === wizardDraft.updatedAt) return;
     lastDraftUpdatedAtRef.current = wizardDraft.updatedAt;
     const { form } = persistedDraftToFormState(wizardDraft, products);
@@ -278,7 +310,7 @@ export default function CalculationComposerScreen() {
       wizardDraft.editFormVersion,
     );
     applyFormState(form);
-  }, [wizardDraft?.updatedAt, products]);
+  }, [wizardDraft?.updatedAt, products, routeEditId]);
 
   function closeExitDialog() {
     setExitDialogVisible(false);
@@ -307,13 +339,30 @@ export default function CalculationComposerScreen() {
     action?.();
   }
 
+  async function leaveWithoutResumeDraft(onLeave: () => void) {
+    if (!shouldKeepResumeDraft(getFormStateRef.current())) {
+      await db.clearWizardDraft();
+      await refreshWizardDraft();
+    }
+    allowExitRef.current = true;
+    onLeave();
+  }
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowExitRef.current || !isComposerDirty()) {
+      if (allowExitRef.current) {
+        return;
+      }
+      if (isComposerDirty()) {
+        event.preventDefault();
+        confirmExit(() => navigation.dispatch(event.data.action));
+        return;
+      }
+      if (shouldKeepResumeDraft() || !wizardDraftRef.current) {
         return;
       }
       event.preventDefault();
-      confirmExit(() => navigation.dispatch(event.data.action));
+      void leaveWithoutResumeDraft(() => navigation.dispatch(event.data.action));
     });
     return unsubscribe;
   });
@@ -321,11 +370,16 @@ export default function CalculationComposerScreen() {
   useFocusEffect(
     useCallback(() => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (allowExitRef.current || !isComposerDirty(getFormStateRef.current())) return false;
-        confirmExit(() => {
-          allowExitRef.current = true;
-          router.back();
-        });
+        if (allowExitRef.current) return false;
+        if (isComposerDirty(getFormStateRef.current())) {
+          confirmExit(() => {
+            allowExitRef.current = true;
+            router.back();
+          });
+          return true;
+        }
+        if (shouldKeepResumeDraft(getFormStateRef.current()) || !wizardDraftRef.current) return false;
+        void leaveWithoutResumeDraft(() => router.back());
         return true;
       });
       return () => subscription.remove();

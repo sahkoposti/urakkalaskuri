@@ -7,6 +7,7 @@ import {
   mergeWizardDraftEditMeta,
   persistedDraftToFormState,
   serializeFieldValues,
+  shouldKeepResumeDraftOnLeave,
 } from '../src/core/wizard/wizardDraftHelpers';
 import type { Product } from '../src/core/models/types';
 
@@ -288,5 +289,61 @@ describe('composer unsaved changes', () => {
 
   test('prompts for unsaved content before the first snapshot', () => {
     expect(composerHasUnsavedChanges(emptyForm({ customerName: 'Matti' }), null)).toBe(true);
+  });
+});
+
+describe('shouldKeepResumeDraftOnLeave', () => {
+  test('drops the resume banner when a completed calculation was opened without edits', () => {
+    const opened = emptyForm({
+      customerName: 'Matti',
+      deliveryScheduleText: 'vko 42',
+      structureLines: [sampleLine()],
+    });
+    const origin = composerStateSignature(opened);
+    expect(
+      shouldKeepResumeDraftOnLeave({
+        resumedIncompleteDraft: false,
+        currentSignature: composerStateSignature(opened),
+        originSignature: origin,
+      }),
+    ).toBe(false);
+  });
+
+  test('keeps the resume banner when a completed calculation was edited', () => {
+    const opened = emptyForm({ customerName: 'Matti', structureLines: [sampleLine()] });
+    const edited = emptyForm({
+      customerName: 'Matti',
+      deliveryScheduleText: 'huomenna',
+      structureLines: [sampleLine()],
+    });
+    expect(
+      shouldKeepResumeDraftOnLeave({
+        resumedIncompleteDraft: false,
+        currentSignature: composerStateSignature(edited),
+        originSignature: composerStateSignature(opened),
+      }),
+    ).toBe(true);
+  });
+
+  test('keeps an originally incomplete draft even without further edits', () => {
+    const draft = emptyForm({ customerName: 'Kesken', structureLines: [sampleLine()] });
+    expect(
+      shouldKeepResumeDraftOnLeave({
+        resumedIncompleteDraft: true,
+        currentSignature: composerStateSignature(draft),
+        originSignature: composerStateSignature(draft),
+      }),
+    ).toBe(true);
+  });
+
+  test('drops an empty new calculation', () => {
+    const empty = emptyForm();
+    expect(
+      shouldKeepResumeDraftOnLeave({
+        resumedIncompleteDraft: false,
+        currentSignature: composerStateSignature(empty),
+        originSignature: composerStateSignature(empty),
+      }),
+    ).toBe(false);
   });
 });
