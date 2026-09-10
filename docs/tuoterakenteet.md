@@ -17,6 +17,7 @@ Koodin jäämät (vanha istunto, kaksoiskirjoitus lomakkeelle): [yhtenaisyystark
 Laskentasivu (pysty, mobiili)
   ├── Asiakas          oma osio → syöttösivu + rekisteri
   ├── Toimitusajankohta   vapaateksti, rivien ulkopuolella
+  ├── Matka-aika yhteen suuntaan   tunteina, rivien ulkopuolella (`laskelma.matka_aika_h`)
   ├── Tuoterakennerivit   summakortit (ei erillistä „valitse tuote” -vaihetta)
   └── Yhteenveto        → tallennus + erittely
 ```
@@ -49,6 +50,7 @@ Laskentasivu (pysty, mobiili)
 | Palkkio                | Tuoterakenteen ominaisuus. Ei rivilistassa. Yhteenvedon erittelyssä per rivi.                                                |
 | UI                     | Mobiili **pysty**. Kortti per rivi, tarvittaessa useampi rivi kortin sisällä.                                                |
 | Toimitusajankohta      | Vapaamuotoinen teksti, **rivien ulkopuolella** (laskelmataso).                                                               |
+| Matka-aika yhteen suuntaan | Tunnit, **rivien ulkopuolella**. JSON: `laskelma.matka_aika_h`.                                                          |
 
 
 ---
@@ -67,6 +69,9 @@ Pysty, yksi ScrollView. Ei vaakataulukkoa.
 
 Toimitusajankohta
 [ esim. viikko 42 / syksy 2026          ]
+
+Matka-aika yhteen suuntaan
+[ 0,75                               h  ]
 
 Tuoterakenteet
 ┌ rivikortti 1 ─┐

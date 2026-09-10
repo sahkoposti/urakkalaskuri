@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { runFormCalculation } from '../src/core/calculation/calculationPipeline';
+import { buildCalculationFormulaContext } from '../src/core/form/calculationFormulaContext';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
 import { defaultSettings, type Product } from '../src/core/models/types';
 import { formatCurrency, formatDecimal } from '../src/core/utils/formatters';
@@ -103,7 +104,6 @@ function bool(value: boolean): string {
 
 function baseFieldValues(): Record<string, string> {
   return {
-    etaisyys: '0.25',
     julkisivupinnat_valinta: 'true',
     raystassivun_pituus_m: '10',
     raystaskorkeus_m: '4.5',
@@ -394,6 +394,7 @@ function main(): void {
       materialLines: [],
       products: [PAINT_PRODUCT],
       settings: defaultSettings,
+      extraContext: buildCalculationFormulaContext({ travelTimeHoursOneWay: 0.25 }),
     });
 
     results.push({

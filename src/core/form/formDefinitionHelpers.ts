@@ -31,6 +31,7 @@ export function collectKnownFormulaIdentifiers(form: FormDefinition): Set<string
 function isKnownFormulaIdentifier(ident: string, known: Set<string>): boolean {
   if (FORMULA_FUNCTIONS.has(ident)) return true;
   if (ident.startsWith('asetukset.') || ident.startsWith('settings.')) return true;
+  if (ident.startsWith('laskelma.')) return true;
   if (ALLOWED_FORMULA_IDENTIFIERS.has(ident)) return true;
   if (known.has(ident)) return true;
   const base = ident.split('.')[0];

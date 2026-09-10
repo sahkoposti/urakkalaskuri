@@ -12,6 +12,7 @@ import {
   SectionTitle,
 } from '@/src/components/common';
 import { previewFormContext } from '@/src/core/calculation/calculationPipeline';
+import { buildCalculationFormulaContext, formatTravelTimeHoursOneWay } from '@/src/core/form/calculationFormulaContext';
 import { lineFormSnapshot } from '@/src/core/form/formSummaryHelpers';
 import {
   formVersionMismatchMessage,
@@ -160,9 +161,17 @@ export function CalculationDetailView({
         />
       </AppCard>
 
-      {record.deliveryScheduleText?.trim() ? (
+      {record.deliveryScheduleText?.trim() || record.travelTimeHoursOneWay ? (
         <AppCard style={styles.card}>
-          <ResultRow label="Toimitusajankohta" value={record.deliveryScheduleText.trim()} />
+          {record.deliveryScheduleText?.trim() ? (
+            <ResultRow label="Toimitusajankohta" value={record.deliveryScheduleText.trim()} />
+          ) : null}
+          {record.travelTimeHoursOneWay ? (
+            <ResultRow
+              label="Matka-aika yhteen suuntaan"
+              value={`${formatTravelTimeHoursOneWay(record.travelTimeHoursOneWay)} h`}
+            />
+          ) : null}
         </AppCard>
       ) : null}
 
@@ -183,6 +192,7 @@ export function CalculationDetailView({
           customer={customer}
           weatherReserveFactor={settings.weatherReserveFactor}
           showPriceSummary={showStructureSummaries}
+          travelTimeHoursOneWay={record.travelTimeHoursOneWay}
         />
       ))}
 
@@ -196,11 +206,13 @@ function LineDetail({
   customer,
   weatherReserveFactor,
   showPriceSummary,
+  travelTimeHoursOneWay,
 }: {
   line: StructureLine;
   customer: CustomerInfo;
   weatherReserveFactor: number;
   showPriceSummary: boolean;
+  travelTimeHoursOneWay?: number;
 }) {
   const { products, structures, settings } = useApp();
   const reverseVat = Boolean(customer.reverseVat);
@@ -217,6 +229,7 @@ function LineDetail({
         settings,
         undefined,
         reverseVat,
+        buildCalculationFormulaContext({ travelTimeHoursOneWay }),
       )
     : undefined;
   const snapshot = lineFormSnapshot(line, structure?.form, structureProducts, context);

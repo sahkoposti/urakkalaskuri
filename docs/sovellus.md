@@ -1,6 +1,6 @@
 # Urakkalaskuri – sovelluksen kuvaus
 
-ColoRajatonin tarjouslaskuri (Expo / React Native, Android). Pakettiversio **v1.2.4**. Laskelma = asiakas + toimitusajankohta + tuoterakennerivit.
+ColoRajatonin tarjouslaskuri (Expo / React Native, Android). Pakettiversio **v1.2.4**. Laskelma = asiakas + toimitusajankohta + matka-aika yhteen suuntaan + tuoterakennerivit.
 
 Tämä sivu kuvaa **miten sovellus toimii nyt**. JSON-kentät ja kaavat: [lomakepohja-json-ohje.md](./lomakepohja-json-ohje.md). Tuoterakenteiden malli: [tuoterakenteet.md](./tuoterakenteet.md). Kehitysympäristö: [README.md](../README.md).
 
@@ -35,6 +35,7 @@ Laskentasivulla ei ole enää yhtä globaalia wizardia. Rakenne:
 ```
 Asiakas          → oma sivu (rekisteri)
 Toimitusajankohta   vapaateksti
+Matka-aika yhteen suuntaan   tunteina (kaava: `laskelma.matka_aika_h`)
 Tuoterakennerivit   kortti per rivi (määrä, yksikkö, alv0/sis. ALV, hinta, materiaalit, ale %, kate)
 Yhteenveto          tallentaa SQLite-laskelman
 ```
@@ -77,7 +78,7 @@ Yhteenvedossa kopiointinappi on vain asiakkaan yhteystiedoissa.
 
 ## Yhteenveto (erittely)
 
-1. Asiakkaan tiedot ja toimitusajankohta.
+1. Asiakkaan tiedot, toimitusajankohta ja matka-aika yhteen suuntaan.
 2. **Kokonaissumma:** materiaalit, työ, alennus (jos > 0 %), kokonaishinnat (alv0 / ALV / sis. ALV). Yksityinen: korostus sis. ALV. Yritys: korostus alv0; käänteinen ALV tarvittaessa.
 3. **Yksi rivi:** työn arvioitu kesto näytetään kokonaissummassa (säävarauskerroin + tasapäiviin ylöspäin). Päiviä ei summata riveiltä.
 4. **Useita rivejä:** jokaisella tuoterakenteella oma otsikko, hintakortti (kesto tälle riville) ja **Lomaketiedot**.

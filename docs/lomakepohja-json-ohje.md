@@ -229,6 +229,33 @@ Yleiset asetukset (ALV, kate, tuntihinta…) tulevat automaattisesti kaavakontek
 
 Vanhat `settings.*`-muodot toimivat vielä aliasina.
 
+### Matka-aika kohteelle
+
+Matka-aika **yhteen suuntaan** syötetään laskentasivulla (Toimitusajankohta-kentän alla), ei tuoterakenteen lomakkeessa. Sama arvo näkyy kaikille riveille. Yksikkö on tunti (`h`). Tyhjä = `0`.
+
+Nouda kaavassa muuttujalla `laskelma.matka_aika_h`:
+
+```json
+{
+  "id": "field_matka_henkilotyotunnit",
+  "key": "matka_henkilotyotunnit",
+  "label": "Matka-aika yhteensä",
+  "type": "computed",
+  "required": false,
+  "showOnSummary": true,
+  "unit": "h",
+  "formula": "laskelma.matka_aika_h * 2 * tyoryhma_kesto_pv * asetukset.tyoryhman_koko"
+}
+```
+
+| Muuttuja | Merkitys |
+|----------|----------|
+| `laskelma.matka_aika_h` | Matka-aika kohteelle, yhteen suuntaan (h) |
+
+Meno–paluu on `laskelma.matka_aika_h * 2`. Älä lisää lomakkeelle erillistä `etaisyys`-kenttää samaan tarkoitukseen – käyttäjä täyttää ajan laskentasivulla.
+
+Lomakkeen debug (Asetukset → Debug) käyttää `0`, koska siellä ei ole avointa laskelmaa.
+
 **Liukuva myyntihinta (alv0)** suorista kustannuksista:
 
 ```text

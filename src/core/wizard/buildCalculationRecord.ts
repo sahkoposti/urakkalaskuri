@@ -1,4 +1,8 @@
 import type { CalculationResult } from '@/src/core/calculation/calculationPipeline';
+import {
+  buildCalculationFormulaContext,
+  parseTravelTimeHoursOneWay,
+} from '@/src/core/form/calculationFormulaContext';
 import { previewFormContext } from '@/src/core/calculation/calculationPipeline';
 import { buildFormSnapshot, hasSummarySnapshotFields } from '@/src/core/form/formSummaryHelpers';
 import type { FormDefinition } from '@/src/core/form/types';
@@ -101,6 +105,7 @@ export type BuildComposerRecordInput = {
   customer: CustomerInfo;
   customerId?: string;
   deliveryScheduleText?: string;
+  travelTimeOneWay?: string;
   structureLines: StructureLine[];
   settings: AppSettings;
   products: Product[];
@@ -131,6 +136,7 @@ export function buildCalculationRecordFromComposer(
     customer: serializeCustomerDetails(input.customer),
     customerId: input.customerId,
     deliveryScheduleText: input.deliveryScheduleText?.trim() || undefined,
+    travelTimeHoursOneWay: parseTravelTimeHoursOneWay(input.travelTimeOneWay) || undefined,
     groupDurationHours: 0,
     crewSize: input.settings.defaultCrewSize,
     hourlyRate: input.settings.defaultHourlyRate,
@@ -158,7 +164,10 @@ export function buildCalculationRecordFromComposer(
 
 function withLineFormSnapshot(
   line: StructureLine,
-  input: Pick<BuildComposerRecordInput, 'structures' | 'products' | 'settings' | 'customer'>,
+  input: Pick<
+    BuildComposerRecordInput,
+    'structures' | 'products' | 'settings' | 'customer' | 'travelTimeOneWay'
+  >,
 ): StructureLine {
   if (hasSummarySnapshotFields(line.snapshot)) return line;
   const structure = input.structures.find((item) => item.id === line.structureId);
@@ -176,6 +185,7 @@ function withLineFormSnapshot(
     input.settings,
     undefined,
     Boolean(input.customer.reverseVat),
+    buildCalculationFormulaContext({ travelTimeHoursOneWay: input.travelTimeOneWay }),
   );
   return {
     ...line,

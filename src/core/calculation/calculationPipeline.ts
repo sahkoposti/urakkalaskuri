@@ -41,6 +41,7 @@ export interface FormCalculationInput {
   products: Product[];
   settings: AppSettings;
   reverseVat?: boolean;
+  extraContext?: Record<string, number>;
   legacyDuration?: string;
 }
 
@@ -57,7 +58,7 @@ export function evaluateProductionPipeline(
   materialsTotal: number,
   settings: AppSettings,
   products: Product[] = [],
-  options: { strictSystemFields?: boolean; collectTrace?: boolean; reverseVat?: boolean } = {},
+  options: { strictSystemFields?: boolean; collectTrace?: boolean; reverseVat?: boolean; extraContext?: Record<string, number> } = {},
 ): EvaluateFormContextResult {
   const strictSystemFields = options.strictSystemFields ?? true;
   const collectTrace = options.collectTrace ?? false;
@@ -71,6 +72,7 @@ export function evaluateProductionPipeline(
       strictSystemFields,
       collectTrace,
       reverseVat: options.reverseVat,
+      extraContext: options.extraContext,
     });
   } catch (error) {
     if (error instanceof CalculationValidationError) throw error;
@@ -86,7 +88,7 @@ export function runProductionPipeline(
   materialsTotal: number,
   settings: AppSettings,
   products: Product[] = [],
-  options: { strictSystemFields?: boolean; reverseVat?: boolean } = {},
+  options: { strictSystemFields?: boolean; reverseVat?: boolean; extraContext?: Record<string, number> } = {},
 ): Record<string, number> {
   return evaluateProductionPipeline(form, fieldValues, materialsTotal, settings, products, options)
     .context;
@@ -202,6 +204,7 @@ export interface ResolveFormContextInput {
   /** Kerää kaavavälivaiheet (debug). */
   collectTrace?: boolean;
   reverseVat?: boolean;
+  extraContext?: Record<string, number>;
 }
 
 export interface ResolveFormContextOutput {
@@ -233,7 +236,7 @@ export function resolveFormContextWithEffects(
     baseMaterialsVat0,
     input.settings,
     input.products,
-    { strictSystemFields: strict, reverseVat: input.reverseVat },
+    { strictSystemFields: strict, reverseVat: input.reverseVat, extraContext: input.extraContext },
   );
 
   // 2) Kerää loppuvaikutukset
@@ -263,7 +266,7 @@ export function resolveFormContextWithEffects(
     materialsVat0,
     input.settings,
     input.products,
-    { strictSystemFields: strict, collectTrace, reverseVat: input.reverseVat },
+    { strictSystemFields: strict, collectTrace, reverseVat: input.reverseVat, extraContext: input.extraContext },
   );
   const context = finalPipeline.context;
   const steps = collectTrace ? finalPipeline.steps : [];
@@ -316,6 +319,7 @@ export function previewFormContextDetailed(
         strictSystemFields: false,
         collectTrace,
         reverseVat: input.reverseVat,
+        extraContext: input.extraContext,
       });
       return {
         context: result.context,
@@ -344,7 +348,7 @@ export function previewFormContextDetailed(
       materialLinesTotal(input.materialLines),
       input.settings,
       input.products,
-      { strictSystemFields: false, collectTrace, reverseVat: input.reverseVat },
+      { strictSystemFields: false, collectTrace, reverseVat: input.reverseVat, extraContext: input.extraContext },
     );
     return {
       context: result.context,
@@ -365,6 +369,7 @@ export function previewFormContext(
   settings: AppSettings,
   legacyDuration?: string,
   reverseVat = false,
+  extraContext?: Record<string, number>,
 ): Record<string, number> {
   return previewFormContextDetailed({
     form,
@@ -374,6 +379,7 @@ export function previewFormContext(
     settings,
     legacyDuration,
     reverseVat,
+    extraContext,
   }).context;
 }
 
@@ -389,6 +395,7 @@ export function runFormCalculation(input: FormCalculationInput): FormCalculation
     settings: input.settings,
     legacyDuration: input.legacyDuration,
     reverseVat: input.reverseVat,
+    extraContext: input.extraContext,
     strict: true,
   });
 

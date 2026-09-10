@@ -96,6 +96,13 @@ describe('calculationToFormState', () => {
     expect(wizardDraft.customer.postalLocality).toBe('Kaarina');
   });
 
+  test('restores one-way travel time hours', () => {
+    const record = sampleRecord();
+    record.travelTimeHoursOneWay = 0.75;
+    const { form } = calculationToFormState(record, [product]);
+    expect(form.travelTimeOneWay).toBe('0,75');
+  });
+
   test('falls back to workDurationDays when snapshot has no fieldValues', () => {
     const { form } = calculationToFormState(sampleRecord(undefined), [product]);
     expect(form.fieldValues.tyoryhma_kesto_pv).toBe('5');

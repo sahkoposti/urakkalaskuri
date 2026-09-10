@@ -1,14 +1,13 @@
 {
   "id": "julkisivumaalaus",
   "name": "Julkisivumaalaus",
-  "version": 105,
+  "version": 106,
   "pages": [
     {
       "id": "page_surfaces",
       "title": "Maalattavat osa-alueet ja mitat",
       "sortOrder": 0,
       "fieldIds": [
-        "field_mt9uscef_aizypl",
         "field_maaston_vaikeusaste",
         "field_kohteen_korkeus",
         "field_julkisivupinnat_valinta",
@@ -102,17 +101,6 @@
     }
   ],
   "fields": [
-    {
-      "id": "field_mt9uscef_aizypl",
-      "key": "etaisyys",
-      "label": "Matka-aika yhteen suuntaan",
-      "type": "number",
-      "required": false,
-      "showOnSummary": false,
-      "unit": "h",
-      "debugExampleValue": "0.75",
-      "defaultValue": "0.25"
-    },
     {
       "id": "field_system_alennus_prosentti",
       "key": "alennus_prosentti",
@@ -1023,7 +1011,7 @@
       "showOnSummary": true,
       "allowManualOverride": false,
       "unit": "h",
-      "formula": "etaisyys * 2 * tyoryhma_kesto_pv * asetukset.tyoryhman_koko"
+      "formula": "laskelma.matka_aika_h * 2 * tyoryhma_kesto_pv * asetukset.tyoryhman_koko"
     },
     {
       "id": "field_matkakustannus_alv0",

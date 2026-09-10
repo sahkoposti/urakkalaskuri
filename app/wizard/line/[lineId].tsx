@@ -16,6 +16,7 @@ import {
   runFormCalculation,
 } from '@/src/core/calculation/calculationPipeline';
 import { applyFieldValueChange, resetComputedFieldOverride } from '@/src/core/form/applyFieldValueChange';
+import { buildCalculationFormulaContext } from '@/src/core/form/calculationFormulaContext';
 import { wizardFieldsForPage } from '@/src/core/form/formDefinitionHelpers';
 import { buildFormSnapshot } from '@/src/core/form/formSummaryHelpers';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
@@ -79,6 +80,13 @@ export default function StructureLineFormScreen() {
     ? wizardFieldsForPage(structure.form, currentPage.id)
     : [];
   const reverseVat = Boolean(draftState?.reverseVat);
+  const extraContext = useMemo(
+    () =>
+      buildCalculationFormulaContext({
+        travelTimeHoursOneWay: draftState?.travelTimeOneWay,
+      }),
+    [draftState?.travelTimeOneWay],
+  );
   const computedValues = useLiveFormContext({
     form: structure?.form ?? { id: '', name: '', version: 0, pages: [], fields: [], updatedAt: 0 },
     fieldValues,
@@ -86,10 +94,20 @@ export default function StructureLineFormScreen() {
     products: structureProducts,
     settings,
     reverseVat,
+    extraContext,
   });
 
   const numericContext = structure
-    ? previewFormContext(structure.form, fieldValues, [], structureProducts, settings, undefined, reverseVat)
+    ? previewFormContext(
+        structure.form,
+        fieldValues,
+        [],
+        structureProducts,
+        settings,
+        undefined,
+        reverseVat,
+        extraContext,
+      )
     : undefined;
   const formComplete = Boolean(
     structure &&
@@ -145,6 +163,7 @@ export default function StructureLineFormScreen() {
         products: structureProducts,
         settings: lineSettings,
         reverseVat,
+        extraContext,
       });
       const snapshot = buildFormSnapshot(
         structure.form,
