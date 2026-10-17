@@ -421,6 +421,18 @@ async function migrateProductStructureDefaults(db: SQLite.SQLiteDatabase): Promi
   if (!names.has('crew_size')) {
     await db.execAsync('ALTER TABLE product_structures ADD COLUMN crew_size REAL');
   }
+  if (!names.has('margin_low_amount')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN margin_low_amount REAL');
+  }
+  if (!names.has('margin_low_percent')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN margin_low_percent REAL');
+  }
+  if (!names.has('margin_high_amount')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN margin_high_amount REAL');
+  }
+  if (!names.has('margin_high_percent')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN margin_high_percent REAL');
+  }
   const crewFallback = Number.parseFloat(String(defaultSettings.defaultCrewSize));
   const settingsCrew = await db.getFirstAsync<{ value: string }>(
     'SELECT value FROM settings WHERE key = ? LIMIT 1',
@@ -437,6 +449,57 @@ async function migrateProductStructureDefaults(db: SQLite.SQLiteDatabase): Promi
     'UPDATE product_structures SET crew_size = ? WHERE crew_size IS NULL OR crew_size <= 0',
     crewSize,
   );
+
+  const marginLowAmount = await readSettingNumber(
+    db,
+    'margin_low_amount',
+    defaultSettings.marginLowAmount,
+  );
+  const marginLowPercent = await readSettingNumber(
+    db,
+    'margin_low_percent',
+    defaultSettings.marginLowPercent,
+  );
+  const marginHighAmount = await readSettingNumber(
+    db,
+    'margin_high_amount',
+    defaultSettings.marginHighAmount,
+  );
+  const marginHighPercent = await readSettingNumber(
+    db,
+    'margin_high_percent',
+    defaultSettings.marginHighPercent,
+  );
+  await db.runAsync(
+    `UPDATE product_structures
+     SET margin_low_amount = ?,
+         margin_low_percent = ?,
+         margin_high_amount = ?,
+         margin_high_percent = ?
+     WHERE margin_low_amount IS NULL
+        OR margin_low_amount <= 0
+        OR margin_low_percent IS NULL
+        OR margin_high_amount IS NULL
+        OR margin_high_amount <= 0
+        OR margin_high_percent IS NULL`,
+    marginLowAmount,
+    marginLowPercent,
+    marginHighAmount,
+    marginHighPercent,
+  );
+}
+
+async function readSettingNumber(
+  db: SQLite.SQLiteDatabase,
+  key: string,
+  fallback: number,
+): Promise<number> {
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    key,
+  );
+  const parsed = Number.parseFloat(row?.value ?? '');
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function rawFormHasCustomerPage(raw: unknown): boolean {

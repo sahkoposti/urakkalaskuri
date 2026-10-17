@@ -47,6 +47,17 @@ describe('emptyStructureLine', () => {
     expect(line.commissionPercent).toBe(7);
     expect(line.overrides).toEqual([]);
     expect(line.formFilled).toBe(false);
+    expect(line.pricesIncludeVat).toBe(true);
+  });
+
+  test('yritysasiakkaan rivi on ALV 0', () => {
+    const line = emptyStructureLine({
+      id: 'l1',
+      structure: structure(),
+      vatPercent: 25.5,
+      pricesIncludeVat: false,
+    });
+    expect(line.pricesIncludeVat).toBe(false);
   });
 
   test('ilman oletuksia hinnat ovat nollia ja lisätiedot puuttuvat', () => {
@@ -76,5 +87,6 @@ describe('emptyManualStructureLine', () => {
     expect(line.additionalInfo).toBeUndefined();
     expect(line.formFilled).toBe(false);
     expect(line.overrides).toEqual([]);
+    expect(line.pricesIncludeVat).toBe(true);
   });
 });

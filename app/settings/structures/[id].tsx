@@ -1,10 +1,11 @@
 import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import {
   AppInput,
+  AppPercentSlider,
   OutlinedButton,
   PrimaryButton,
   ScreenLoading,
@@ -19,7 +20,12 @@ import { createId } from '@/src/core/utils/id';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
-import { parseCrewSize } from '@/src/core/structure/structureSettings';
+import {
+  maxMarginPercent,
+  parseCrewSize,
+  resolvedStructureMargin,
+  structureMarginFromSettings,
+} from '@/src/core/structure/structureSettings';
 import { normalizeDisplayWorkDurationDays, WORK_DURATION_DISPLAY_LABEL } from '@/src/core/structure/workDurationDisplay';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -53,6 +59,15 @@ export default function ProductStructureDetailScreen() {
         ? String(structure.crewSize)
         : '',
   );
+  const initialMargin = isNew
+    ? structureMarginFromSettings(settings)
+    : structure
+      ? resolvedStructureMargin(structure, settings)
+      : structureMarginFromSettings(settings);
+  const [marginLowAmount, setMarginLowAmount] = useState(String(initialMargin.marginLowAmount));
+  const [marginLowPercent, setMarginLowPercent] = useState(initialMargin.marginLowPercent);
+  const [marginHighAmount, setMarginHighAmount] = useState(String(initialMargin.marginHighAmount));
+  const [marginHighPercent, setMarginHighPercent] = useState(initialMargin.marginHighPercent);
   const [unit, setUnit] = useState(isNew ? '' : (structure?.unit ?? ''));
   const [additionalInfo, setAdditionalInfo] = useState(
     isNew ? '' : (structure?.defaultAdditionalInfo ?? ''),
@@ -75,6 +90,10 @@ export default function ProductStructureDetailScreen() {
       name: name.trim(),
       commission,
       crewSize,
+      marginLowAmount,
+      marginLowPercent,
+      marginHighAmount,
+      marginHighPercent,
       unit: unit.trim(),
       additionalInfo,
       defaultUnitPrice,
@@ -88,6 +107,11 @@ export default function ProductStructureDetailScreen() {
     setName(structure.name);
     setCommission(String(structure.commissionPercent).replace('.', ','));
     setCrewSize(String(structure.crewSize));
+    const margin = resolvedStructureMargin(structure, settings);
+    setMarginLowAmount(String(margin.marginLowAmount));
+    setMarginLowPercent(margin.marginLowPercent);
+    setMarginHighAmount(String(margin.marginHighAmount));
+    setMarginHighPercent(margin.marginHighPercent);
     setUnit(structure.unit ?? '');
     setAdditionalInfo(structure.defaultAdditionalInfo ?? '');
     setDefaultUnitPrice(optionalPriceText(structure.defaultUnitPriceVat0));
@@ -99,6 +123,10 @@ export default function ProductStructureDetailScreen() {
         name: structure.name,
         commission: String(structure.commissionPercent).replace('.', ','),
         crewSize: String(structure.crewSize),
+        marginLowAmount: String(margin.marginLowAmount),
+        marginLowPercent: margin.marginLowPercent,
+        marginHighAmount: String(margin.marginHighAmount),
+        marginHighPercent: margin.marginHighPercent,
         unit: structure.unit ?? '',
         additionalInfo: structure.defaultAdditionalInfo ?? '',
         defaultUnitPrice: optionalPriceText(structure.defaultUnitPriceVat0),
@@ -117,12 +145,25 @@ export default function ProductStructureDetailScreen() {
     name,
     commission,
     crewSize,
+    marginLowAmount,
+    marginLowPercent,
+    marginHighAmount,
+    marginHighPercent,
     unit,
     additionalInfo,
     defaultUnitPrice,
     defaultDisplayWorkDuration,
     defaultMaterials,
   ]);
+
+  const commissionValue =
+    parseNumber(commission) ?? structure?.commissionPercent ?? settings.defaultCommissionPercent;
+  const marginMax = maxMarginPercent(commissionValue);
+
+  useEffect(() => {
+    setMarginLowPercent((current) => Math.min(current, marginMax));
+    setMarginHighPercent((current) => Math.min(current, marginMax));
+  }, [marginMax]);
 
   async function persistStructure(): Promise<boolean> {
     const parsed = parseNumber(commission);
@@ -154,6 +195,25 @@ export default function ProductStructureDetailScreen() {
       showAlert('Virhe', 'Virheellinen oletus materiaalit');
       return false;
     }
+    const parsedLowAmount = parseNumber(marginLowAmount);
+    const parsedHighAmount = parseNumber(marginHighAmount);
+    if (
+      parsedLowAmount === null ||
+      parsedHighAmount === null ||
+      !Number.isFinite(marginLowPercent) ||
+      !Number.isFinite(marginHighPercent)
+    ) {
+      showAlert('Virhe', 'Anna kelvolliset katearvot.');
+      return false;
+    }
+    if (!(parsedLowAmount > 0) || !(parsedHighAmount > parsedLowAmount)) {
+      showAlert('Virhe', 'Suuren urakan rajan on oltava suurempi kuin pienen urakan raja.');
+      return false;
+    }
+    if (marginLowPercent + parsed >= 100 || marginHighPercent + parsed >= 100) {
+      showAlert('Virhe', 'Myyntikate ja myyntipalkkio yhteensä on oltava alle 100 %.');
+      return false;
+    }
 
     const now = new Date();
     const nextId = savedIdRef.current ?? createId();
@@ -173,6 +233,10 @@ export default function ProductStructureDetailScreen() {
       form,
       commissionPercent: parsed,
       crewSize: parseCrewSize(parsedCrew),
+      marginLowAmount: parsedLowAmount,
+      marginLowPercent,
+      marginHighAmount: parsedHighAmount,
+      marginHighPercent,
       defaultAdditionalInfo: additionalInfo.trim() || undefined,
       defaultUnitPriceVat0: unitPrice,
       defaultContractPriceVat0: existing?.defaultContractPriceVat0,
@@ -188,6 +252,10 @@ export default function ProductStructureDetailScreen() {
         name: name.trim(),
         commission,
         crewSize,
+        marginLowAmount,
+        marginLowPercent,
+        marginHighAmount,
+        marginHighPercent,
         unit: unit.trim(),
         additionalInfo,
         defaultUnitPrice,
@@ -256,6 +324,39 @@ export default function ProductStructureDetailScreen() {
           value={commission}
           onChangeText={setCommission}
           keyboardType="decimal-pad"
+        />
+        <Text style={styles.sectionHint}>
+          Kate on yrityksen osuus myyntihinnasta (ALV 0). Palkkio tulee lisäksi. Kate liukuu
+          lineaarisesti pienen ja suuren urakan rajan välillä. Jokaisella tuoterakenteella on oma
+          kate.
+        </Text>
+        <AppInput
+          label="Pienen urakan raja (€, ALV 0)"
+          value={marginLowAmount}
+          onChangeText={setMarginLowAmount}
+          keyboardType="decimal-pad"
+        />
+        <AppPercentSlider
+          label="Kate pienellä urakalla (%)"
+          value={Math.min(marginLowPercent, marginMax)}
+          onChange={setMarginLowPercent}
+          min={0}
+          max={marginMax}
+          step={1}
+        />
+        <AppInput
+          label="Suuren urakan raja (€, ALV 0)"
+          value={marginHighAmount}
+          onChangeText={setMarginHighAmount}
+          keyboardType="decimal-pad"
+        />
+        <AppPercentSlider
+          label="Kate suurella urakalla (%)"
+          value={Math.min(marginHighPercent, marginMax)}
+          onChange={setMarginHighPercent}
+          min={0}
+          max={marginMax}
+          step={1}
         />
         <AppInput
           label="Työryhmän koko"
@@ -344,12 +445,20 @@ function parseOptionalPrice(raw: string): number | undefined | 'invalid' {
   return parsed;
 }
 
-function createStyles(_colors: AppColorPalette) {
+function createStyles(colors: AppColorPalette) {
   return {
     content: {
       padding: 20,
       paddingBottom: 40,
       gap: 10,
+    },
+    sectionHint: {
+      marginTop: 4,
+      marginBottom: 4,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      lineHeight: 20,
+      color: colors.text,
     },
   };
 }

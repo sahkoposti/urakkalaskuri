@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Text, View, Pressable } from 'react-native';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
 
@@ -67,27 +68,13 @@ export function WizardFieldList({
         const label = `${field.label}${field.unit ? ` (${field.unit})` : ''}`;
         return (
           <View key={field.id} style={cellStyle}>
-            <AppInput
+            <ComputedOverrideInput
               label={label}
-              value={isOverridden ? overrideRaw ?? '' : computedText}
-              onChangeText={(value) => onChange(field.key, value)}
-              keyboardType="decimal-pad"
-              placeholder={computedText || 'Esim. 5'}
-              trailing={
-                isOverridden ? (
-                  <Pressable
-                    onPress={() => onResetOverride(field.key)}
-                    style={({ pressed }) => [
-                      styles.resetButton,
-                      pressed && styles.resetButtonPressed,
-                    ]}
-                    accessibilityLabel="Palauta laskettu arvo"
-                    hitSlop={8}
-                  >
-                    <ThemedIcon name="reset" size={22} />
-                  </Pressable>
-                ) : null
-              }
+              computedText={computedText}
+              isOverridden={isOverridden}
+              overrideRaw={overrideRaw}
+              onChange={(value) => onChange(field.key, value)}
+              onReset={() => onResetOverride(field.key)}
             />
             {help ? <Text style={styles.hint}>{help}</Text> : null}
           </View>
@@ -224,6 +211,68 @@ export function WizardFieldList({
   );
 }
 
+function ComputedOverrideInput({
+  label,
+  computedText,
+  isOverridden,
+  overrideRaw,
+  onChange,
+  onReset,
+}: {
+  label: string;
+  computedText: string;
+  isOverridden: boolean;
+  overrideRaw?: string;
+  onChange: (value: string) => void;
+  onReset: () => void;
+}) {
+  const styles = useThemedStyles(createStyles);
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState('');
+  const display = isOverridden ? overrideRaw ?? '' : computedText;
+  const value = focused ? draft : display;
+
+  return (
+    <AppInput
+      label={label}
+      value={value}
+      onChangeText={(next) => {
+        setDraft(next);
+        onChange(next);
+      }}
+      onFocus={() => {
+        setDraft(display);
+        setFocused(true);
+      }}
+      onBlur={() => setFocused(false)}
+      keyboardType="decimal-pad"
+      placeholder={isOverridden ? 'Esim. 5' : computedText || 'Esim. 5'}
+      trailing={
+        <Pressable
+          onPress={() => {
+            setDraft(computedText);
+            setFocused(false);
+            onReset();
+          }}
+          disabled={!isOverridden}
+          pointerEvents={isOverridden ? 'auto' : 'none'}
+          style={({ pressed }) => [
+            styles.resetButton,
+            !isOverridden && styles.resetButtonHidden,
+            pressed && isOverridden && styles.resetButtonPressed,
+          ]}
+          accessibilityLabel="Palauta laskettu arvo"
+          accessibilityElementsHidden={!isOverridden}
+          importantForAccessibility={isOverridden ? 'auto' : 'no'}
+          hitSlop={8}
+        >
+          <ThemedIcon name="reset" size={22} />
+        </Pressable>
+      }
+    />
+  );
+}
+
 function createStyles(colors: AppColorPalette) {
   return {
     wrap: {
@@ -263,6 +312,9 @@ function createStyles(colors: AppColorPalette) {
     },
     resetButtonPressed: {
       opacity: 0.85,
+    },
+    resetButtonHidden: {
+      opacity: 0,
     },
     productMeta: {
       marginTop: -4,

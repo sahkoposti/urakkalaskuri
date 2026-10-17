@@ -65,6 +65,18 @@ describe('linePricing', () => {
     expect(totals.totalPriceVat).toBe(totals.totalPriceVat0);
   });
 
+  test('aggregaatti säilyttää listahinnan alennuksen erittelyyn', () => {
+    const totals = aggregateStructureLines(
+      [line({ unitPriceVat0: 1000, quantity: 1, discountPercent: 10, materialsVat0: 200, commissionPercent: 0 })],
+      25.5,
+      false,
+    );
+    expect(totals.totalPriceVat0BeforeDiscount).toBe(1000);
+    expect(totals.totalPriceVat0).toBe(900);
+    expect(totals.materialsVat0).toBe(200);
+    expect(totals.discountPercent).toBeCloseTo(10, 10);
+  });
+
   test('kortin ALV-valinta muuntaa hinnan näytön ja syötteen välillä', () => {
     expect(toCardAmount(100, false, 25.5)).toBe(100);
     expect(toCardAmount(100, true, 25.5)).toBe(125.5);

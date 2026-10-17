@@ -1,6 +1,6 @@
 # Urakkalaskuri – sovelluksen kuvaus
 
-ColoRajatonin tarjouslaskuri (Expo / React Native, Android). Pakettiversio **v1.2.4**. Laskelma = asiakas + toimitusajankohta + matka-aika yhteen suuntaan + tuoterakennerivit.
+ColoRajatonin tarjouslaskuri (Expo / React Native, Android). Pakettiversio **v1.2.5**. Laskelma = asiakas + toimitusajankohta + matka-aika yhteen suuntaan + tuoterakennerivit.
 
 Tämä sivu kuvaa **miten sovellus toimii nyt**. JSON-kentät ja kaavat: [lomakepohja-json-ohje.md](./lomakepohja-json-ohje.md). Tuoterakenteiden malli: [tuoterakenteet.md](./tuoterakenteet.md). Kehitysympäristö: [README.md](../README.md).
 
@@ -36,7 +36,7 @@ Laskentasivulla ei ole enää yhtä globaalia wizardia. Rakenne:
 Asiakas          → oma sivu (rekisteri)
 Toimitusajankohta   vapaateksti
 Matka-aika yhteen suuntaan   tunteina (kaava: `laskelma.matka_aika_h`)
-Tuoterakennerivit   kortti per rivi (nimi, määrä, yksikkö, alv0/sis. ALV, hinta, materiaalit, työn arvioitu kesto, ale %, lisätiedot, kate)
+Tuoterakennerivit   kortti per rivi (nimi, määrä, yksikkö, alv0/sis. ALV yksityisasiakkaalla, hinta, materiaalit, työn arvioitu kesto, ale %, lisätiedot, kate)
 Yhteenveto          tallentaa SQLite-laskelman
 ```
 
@@ -100,7 +100,7 @@ Rivikortin tai rakenteen oletuksen muokkaus vaihtaa **vain tätä näytettävä�
 
 ## Tuoterakenteet
 
-Asetukset → **Tuoterakenteet**: nimi, valinnainen yksikkö, myyntipalkkio-%, työryhmän koko, lisätiedot (oletusteksti), oletushinta / työn arvioitu kesto (pv) / materiaalit alv0, **Lomake** (sivut, kentät, JSON, debug).
+Asetukset → **Tuoterakenteet**: nimi, valinnainen yksikkö, myyntipalkkio-%, **liukuva kate** (alaraja/yläraja € ja %), työryhmän koko, lisätiedot (oletusteksti), oletushinta / työn arvioitu kesto (pv) / materiaalit alv0, **Lomake** (sivut, kentät, JSON, debug).
 
 Jokaisella rakenteella on oma `FormDefinition`. Tuotteet eivät ole rakenteen asetuksissa; ne liitetään tuotteelta (yksi tuote voi kuulua useaan rakenteeseen).
 
@@ -124,16 +124,24 @@ Järjestelmäkenttä `alennus_prosentti` (0–100 %). Rivikortissa **Ale %**.
 
 - Kaavat laskevat ensin listahinnan.
 - Sovellus vähentää alennuksen myyntihinnasta; kate on jäännös kustannusten ja palkkion jälkeen.
+- Rivikortin **Yhteensä** on hinta aleen jälkeen. Yhteenvedossa **Työ** = listahinta − materiaalit, **Alennus** erillisenä rivinä, sitten kokonaishinta. Rivit täsmäävät korttiin.
 - **Älä** kerro alennusta `kokonaishinta` / `liukuva_myyntihinta`-kaavaan.
 - JSON: lisää sivulle `"field_system_alennus_prosentti"`.
 
 ---
 
+## ALV
+
+- **Yksityisasiakas:** rivikortilla valinta ALV 0 / sis. ALV (oletus sis. ALV). Yhteenveto noudattaa samaa tilaa.
+- **Yritysasiakas:** hinnat ovat automaattisesti ALV 0 (valintaa ei näytetä). Yhteenveto näyttää vain ALV 0 -hinnat; sis. ALV -kokonaissummaa ei näytetä. Käänteinen ALV merkitään tarvittaessa.
+
+---
+
 ## Liukuva kate
 
-Asetukset → Yleinen: alaraja € / kate %, yläraja € / kate %.
+Asetukset → Tuoterakenteet → [rakenne]: alaraja € / kate %, yläraja € / kate %. Jokaisella rakenteella oma kate. Uusi rakenne kopioi oletuksen aiemmista yleisistä arvoista.
 
-Kaava: `liukuva_myyntihinta(suorat_kustannukset_alv0)` → myyntihinta alv0.
+Kaava: `liukuva_myyntihinta(suorat_kustannukset_alv0)` → myyntihinta alv0. Muuttujat `asetukset.myyntikate_*` tulevat **tästä tuoterakenteesta**.
 
 ---
 
@@ -144,7 +152,7 @@ Kaava: `liukuva_myyntihinta(suorat_kustannukset_alv0)` → myyntihinta alv0.
 - **Materiaalirivit** (`system: "materials"`) eivät ole rivin lomakkeessa. Tuote valitaan `product_select`-kentästä.
 - Järjestelmäkentät lisätään tuonnissa. Lomakkeella voi yliajaa keston, alennus-%:n, urakan, materiaalit, palkkion ja kokonaishinnat. Kate, ALV € ja alennus € ovat laskennan tulosta, eivät Lomaketiedot-osiossa.
 - **Kentät**-asetuksissa sivut ovat oletuksena suljettu; avaus muistetaan (`fields_page_expanded`).
-- Lasketun kentän manuaalinen arvo: teemavärinen reset-nuoli palauttaa kaavan tuloksen.
+- Lasketun kentän manuaalinen arvo: voi pyyhkiä lasketun luvun ja kirjoittaa uuden. Teemavärinen reset-nuoli palauttaa kaavan tuloksen.
 
 JSON-tuonti: **Asetukset → Tuoterakenteet → [rakenne] → Lomake → Tuo JSON…** Onnistunut tuonti näyttää nimen, version ja edellisen version.
 
@@ -152,7 +160,7 @@ JSON-tuonti: **Asetukset → Tuoterakenteet → [rakenne] → Lomake → Tuo JSO
 
 ## Tietokanta (paikallinen SQLite)
 
-- `product_structures` (lomakepohja JSON:na, palkkio-%, työryhmän koko, lisätietojen oletus, oletushinta / materiaalit alv0, arvioitu kesto pv)
+- `product_structures` (lomakepohja JSON:na, palkkio-%, liukuva kate, työryhmän koko, lisätietojen oletus, oletushinta / materiaalit alv0, arvioitu kesto pv)
 - `products` (ostohinta, myyntihinta, attribuutit, `structure_ids`, `sort_order`)
 - `customers`
 - `calculations` (`structure_lines`, `form_snapshot` yhteensopivuutta varten, asiakas-snapshot)

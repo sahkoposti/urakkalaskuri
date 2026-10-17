@@ -36,6 +36,8 @@ type StructureLineCardProps = {
   line: StructureLine;
   structure?: ProductStructure;
   weatherReserveFactor?: number;
+  /** Yritysasiakas: hinnat aina ALV 0, valintaa ei näytetä. */
+  forceVat0?: boolean;
   onChange: (line: StructureLine) => void;
   onOpenForm?: () => void;
   onDelete: () => void;
@@ -45,6 +47,7 @@ export function StructureLineCard({
   line,
   structure,
   weatherReserveFactor = 1,
+  forceVat0 = false,
   onChange,
   onOpenForm,
   onDelete,
@@ -54,7 +57,7 @@ export function StructureLineCard({
   const manual = isManualStructureId(priced.structureId);
   const showGear = !manual && structure ? hasStructureFormPages(structure.form) : false;
   const formIncomplete = isStructureFormIncomplete(priced, structure);
-  const includeVat = linePricesIncludeVat(priced);
+  const includeVat = forceVat0 ? false : linePricesIncludeVat(priced);
   const vatPercent = priced.vatPercent;
   const displayedWorkDurationDays = resolveDisplayedWorkDurationDays(
     priced,
@@ -102,15 +105,17 @@ export function StructureLineCard({
         </View>
       </View>
 
-      <ChoiceToggle
-        label="Hinnat"
-        value={includeVat}
-        options={[
-          { value: false, label: vat0Tag() },
-          { value: true, label: vatInclTag(vatPercent) },
-        ]}
-        onChange={(next) => patch({ pricesIncludeVat: next })}
-      />
+      {forceVat0 ? null : (
+        <ChoiceToggle
+          label="Hinnat"
+          value={includeVat}
+          options={[
+            { value: false, label: vat0Tag() },
+            { value: true, label: vatInclTag(vatPercent) },
+          ]}
+          onChange={(next) => patch({ pricesIncludeVat: next })}
+        />
+      )}
 
       <View style={styles.fieldRow}>
         <View style={styles.fieldHalf}>

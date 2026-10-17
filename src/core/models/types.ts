@@ -1,12 +1,14 @@
 export interface AppSettings {
   vatPercent: number;
+  /** Uuden tuoterakenteen kate-%-oletus (liukuvan katteen alaraja). */
   defaultMarginPercent: number;
-  /** Myyntihinta (alv0), jossa kate on marginLowPercent. */
+  /** Uuden tuoterakenteen oletus: myyntihinta (alv0), jossa kate on marginLowPercent. */
   marginLowAmount: number;
   marginLowPercent: number;
-  /** Myyntihinta (alv0), jossa kate on marginHighPercent. */
+  /** Uuden tuoterakenteen oletus: myyntihinta (alv0), jossa kate on marginHighPercent. */
   marginHighAmount: number;
   marginHighPercent: number;
+  /** Uuden tuoterakenteen myyntipalkkio-%. */
   defaultCommissionPercent: number;
   defaultHourlyRate: number;
   /** Uuden tuoterakenteen oletus. Kaavat käyttävät rakenteen `crewSize`-arvoa. */

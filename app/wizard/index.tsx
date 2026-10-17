@@ -32,6 +32,7 @@ import {
   type ProductStructure,
 } from '@/src/core/structure/types';
 import { isStructureFormIncomplete } from '@/src/core/structure/formPages';
+import { customerSeesVatInclusive, defaultPricesIncludeVat } from '@/src/core/utils/priceDisplay';
 import { createId } from '@/src/core/utils/id';
 import { buildCalculationRecordFromComposer } from '@/src/core/wizard/buildCalculationRecord';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
@@ -144,6 +145,8 @@ export default function CalculationComposerScreen() {
   }
   const getFormStateRef = useRef(getFormState);
   getFormStateRef.current = getFormState;
+  const pricesIncludeVat = defaultPricesIncludeVat(buildCustomerInfo());
+  const forceVat0 = !customerSeesVatInclusive(buildCustomerInfo());
 
   function markComposerSaved(state: WizardFormState) {
     const lines = hydrateLines(state, structures, settings.vatPercent);
@@ -439,6 +442,7 @@ export default function CalculationComposerScreen() {
         emptyManualStructureLine({
           id: createId(),
           vatPercent: settings.vatPercent,
+          pricesIncludeVat,
         }),
       ]);
       return;
@@ -451,6 +455,7 @@ export default function CalculationComposerScreen() {
         id: createId(),
         structure,
         vatPercent: settings.vatPercent,
+        pricesIncludeVat,
       }),
     ]);
   }
@@ -623,6 +628,7 @@ export default function CalculationComposerScreen() {
               line={line}
               structure={structures.find((item) => item.id === line.structureId)}
               weatherReserveFactor={settings.weatherReserveFactor}
+              forceVat0={forceVat0}
               onChange={(next) =>
                 setStructureLines((current) =>
                   current.map((item) => (item.id === next.id ? next : item)),

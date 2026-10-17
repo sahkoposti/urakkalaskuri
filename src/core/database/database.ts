@@ -503,6 +503,10 @@ function structureFromRow(row: Record<string, unknown>): ProductStructure {
     form: normalizeFormDefinition(JSON.parse(row.form_json as string)),
     commissionPercent: row.commission_percent as number,
     crewSize: parseCrewSize(row.crew_size),
+    marginLowAmount: optionalDbNumber(row.margin_low_amount),
+    marginLowPercent: optionalDbNumber(row.margin_low_percent),
+    marginHighAmount: optionalDbNumber(row.margin_high_amount),
+    marginHighPercent: optionalDbNumber(row.margin_high_percent),
     defaultAdditionalInfo: additionalInfo || undefined,
     defaultUnitPriceVat0: optionalDbNumber(row.default_unit_price_vat0),
     defaultContractPriceVat0: optionalDbNumber(row.default_contract_price_vat0),
@@ -571,8 +575,9 @@ export async function upsertProductStructure(structure: ProductStructure): Promi
     `INSERT OR REPLACE INTO product_structures (
       id, name, unit, form_json, commission_percent, sort_order, created_at, updated_at,
       default_additional_info, default_unit_price_vat0, default_contract_price_vat0, default_materials_vat0,
-      default_display_work_duration_days, crew_size
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      default_display_work_duration_days, crew_size,
+      margin_low_amount, margin_low_percent, margin_high_amount, margin_high_percent
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     structure.id,
     structure.name,
     structure.unit ?? null,
@@ -587,6 +592,10 @@ export async function upsertProductStructure(structure: ProductStructure): Promi
     structure.defaultMaterialsVat0 ?? null,
     structure.defaultDisplayWorkDurationDays ?? null,
     parseCrewSize(structure.crewSize),
+    structure.marginLowAmount ?? null,
+    structure.marginLowPercent ?? null,
+    structure.marginHighAmount ?? null,
+    structure.marginHighPercent ?? null,
   );
 }
 

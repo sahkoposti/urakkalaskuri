@@ -1,6 +1,9 @@
 import {
   customerSeesVatInclusive,
+  defaultPricesIncludeVat,
   labeledWithVatMode,
+  priceBreakdownParts,
+  summaryShowsVatInclusive,
   vat0Tag,
   vatInclTag,
   workPriceVat0,
@@ -24,5 +27,38 @@ describe('vat labels', () => {
     expect(
       customerSeesVatInclusive({ name: 'C', customerType: 'business', reverseVat: true }),
     ).toBe(false);
+    expect(defaultPricesIncludeVat({ name: 'A', customerType: 'private' })).toBe(true);
+    expect(defaultPricesIncludeVat({ name: 'B', customerType: 'business' })).toBe(false);
+  });
+
+  test('yhteenveto on ALV 0 yritysasiakkaalla ja kun rivit ovat ALV 0', () => {
+    const privateCustomer = { name: 'A', customerType: 'private' as const };
+    const business = { name: 'B', customerType: 'business' as const };
+    expect(summaryShowsVatInclusive(business, [{ pricesIncludeVat: true }])).toBe(false);
+    expect(summaryShowsVatInclusive(privateCustomer, [{ pricesIncludeVat: true }])).toBe(true);
+    expect(
+      summaryShowsVatInclusive(privateCustomer, [
+        { pricesIncludeVat: false },
+        { pricesIncludeVat: false },
+      ]),
+    ).toBe(false);
+  });
+
+  test('alennus ei vähennä työtä kahteen kertaan', () => {
+    const parts = priceBreakdownParts(
+      {
+        materialsVat0: 200,
+        discountPercent: 10,
+        totalPriceVat0: 900,
+        totalPriceVat: 1129.5,
+        vatAmount: 229.5,
+        vatPercent: 25.5,
+        totalPriceVat0BeforeDiscount: 1000,
+        totalPriceVatBeforeDiscount: 1255,
+      },
+      true,
+    );
+    expect(parts.work).toBeCloseTo(800 * 1.255, 10);
+    expect(parts.materials + parts.work - parts.discountAmount).toBeCloseTo(parts.priceAfterDiscount, 10);
   });
 });

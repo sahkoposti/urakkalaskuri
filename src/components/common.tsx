@@ -8,6 +8,7 @@ import {
   View,
   type StyleProp,
   type SwitchProps,
+  type TextInputProps,
   type ViewStyle,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -253,6 +254,8 @@ type AppInputProps = {
   placeholder?: string;
   compact?: boolean;
   trailing?: ReactNode;
+  onFocus?: TextInputProps['onFocus'];
+  onBlur?: TextInputProps['onBlur'];
 };
 
 export function AppInput({
@@ -264,6 +267,8 @@ export function AppInput({
   placeholder,
   compact = false,
   trailing,
+  onFocus,
+  onBlur,
 }: AppInputProps) {
   const styles = useThemedStyles(createCommonStyles);
   const inputStyle = [
@@ -284,6 +289,8 @@ export function AppInput({
       placeholder={placeholder}
       placeholderTextColor="#999"
       style={inputStyle}
+      onFocus={onFocus}
+      onBlur={onBlur}
     />
   );
 

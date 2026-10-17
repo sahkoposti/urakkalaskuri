@@ -12,12 +12,12 @@ export default function SettingsScreen() {
         <SectionTitle title="Asetukset" />
         <SettingsNavCard
           title="Yleinen"
-          subtitle="ALV, kate, palkkio, tuntihinta, työryhmä"
+          subtitle="ALV, palkkio-oletus, tuntihinta, säävaraus"
           onPress={() => router.push('/settings/general')}
         />
         <SettingsNavCard
           title="Tuoterakenteet"
-          subtitle="Lomakkeet ja myyntipalkkio"
+          subtitle="Lomakkeet, kate, palkkio ja työryhmä"
           onPress={() => router.push('/settings/structures' as Href)}
         />
         <SettingsNavCard

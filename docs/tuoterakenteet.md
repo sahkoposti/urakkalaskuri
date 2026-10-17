@@ -22,7 +22,7 @@ Laskentasivu (pysty, mobiili)
   └── Yhteenveto        → tallennus + erittely
 ```
 
-**Tuoterakenne** = mallipohja (nimi, lomake, tuotteet, myyntipalkkio-%).  
+**Tuoterakenne** = mallipohja (nimi, lomake, tuotteet, myyntipalkkio-%, liukuva kate).  
 **Rivi** = esiintymä tällä laskelmalla. Summat voi kirjoittaa korttiin tai laskea lomakkeella (⚙).
 
 ---
@@ -157,7 +157,7 @@ Yksi kortti, kentät kahdessa palstassa jossa se on luettavaa; muuten allekkain.
 
 Muokattavat: nimi, määrä, yksikkö, hinta, materiaalit, työn arvioitu kesto (pv), ale-%, ALV-tila, lisätiedot.  
 Nimi on rivikohtainen (oletus rakenteen nimestä); lomake ei yliaja sitä. Asetusten tuoterakennetta ei nimetä uudelleen.  
-Lasketut: kate €, kate %, yhteensä. Hinta/materiaalit/yhteensä noudattavat kortin alv0 / sis. ALV -valintaa.
+Lasketut: kate €, kate %, yhteensä. Hinta/materiaalit/yhteensä noudattavat kortin alv0 / sis. ALV -valintaa. Yritysasiakkaalla hinnat ovat automaattisesti ALV 0 (valintaa ei näytetä).
 
 **Kaavat (alv0, ale kuten nykyinen alennus):**
 
@@ -197,7 +197,7 @@ Järjestys:
 
 1. Asiakas (kopiointi yhteystiedoista)
 2. Toimitusajankohta (jos ei tyhjä)
-3. **Kokonaissumma** — materiaalit, työ, alennus (jos > 0 %), kokonaishinnat (alv0 / ALV / sis. ALV). **Yksi rivi:** työn arvioitu kesto tässä kortissa. **Useita rivejä:** kestoa ei näytetä kokonaissummassa.
+3. **Kokonaissumma** — materiaalit, työ (listahinta − materiaalit), alennus (jos > 0 %), kokonaishinta. Yritysasiakkaalla ja ALV 0 -tilassa vain ALV 0; yksityisasiakkaalla myös ALV ja sis. ALV. **Yksi rivi:** työn arvioitu kesto tässä kortissa. **Useita rivejä:** kestoa ei näytetä kokonaissummassa.
 4. **Erittely** — useilla riveillä jokaiselle tuoterakenteelle otsikko + sama hintakortti (kesto tälle riville) + **Lisätiedot** (jos täytetty) + **Lomaketiedot**. Yhdellä rivillä vain Lisätiedot (jos täytetty) ja Lomaketiedot (hinnat ovat jo kokonaissummassa).
   - lomakespeksit (`showOnSummary`) rivin omasta snapshotista, ml. valittu tuote vaikka mater. € olisi 0
 

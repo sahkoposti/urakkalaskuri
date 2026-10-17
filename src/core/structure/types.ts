@@ -20,6 +20,14 @@ export interface ProductStructure {
   commissionPercent: number;
   /** Henkilöiden määrä. Kaava: `asetukset.tyoryhman_koko`. */
   crewSize: number;
+  /** Liukuvan katteen alaraja € (alv0). Kaava: `asetukset.myyntikate_alaraja_eur`. */
+  marginLowAmount?: number;
+  /** Kate % alarajalla. Kaava: `asetukset.myyntikate_alaraja_prosentti`. */
+  marginLowPercent?: number;
+  /** Liukuvan katteen yläraja € (alv0). Kaava: `asetukset.myyntikate_ylaraja_eur`. */
+  marginHighAmount?: number;
+  /** Kate % ylärajalla. Kaava: `asetukset.myyntikate_ylaraja_prosentti`. */
+  marginHighPercent?: number;
   /** Kopioidaan riville valittaessa. Valinnainen. */
   defaultAdditionalInfo?: string;
   /** Rivin Hinta € (alv0) valittaessa. Lomake yliajaa, ellei kortilla ole muokattu. */
@@ -68,6 +76,7 @@ function emptyLineBase(input: {
   contractPriceVat0?: number;
   displayWorkDurationDays?: number;
   additionalInfo?: string;
+  pricesIncludeVat?: boolean;
 }): StructureLine {
   const additionalInfo = input.additionalInfo?.trim();
   return {
@@ -87,7 +96,7 @@ function emptyLineBase(input: {
     commissionEur: 0,
     marginEur: 0,
     marginPercent: 0,
-    pricesIncludeVat: true,
+    pricesIncludeVat: input.pricesIncludeVat !== false,
     additionalInfo: additionalInfo || undefined,
     fieldValues: {},
     formFilled: false,
@@ -99,6 +108,7 @@ export function emptyStructureLine(input: {
   id: string;
   structure: ProductStructure;
   vatPercent: number;
+  pricesIncludeVat?: boolean;
 }): StructureLine {
   return emptyLineBase({
     id: input.id,
@@ -112,6 +122,7 @@ export function emptyStructureLine(input: {
     contractPriceVat0: input.structure.defaultContractPriceVat0,
     displayWorkDurationDays: input.structure.defaultDisplayWorkDurationDays,
     additionalInfo: input.structure.defaultAdditionalInfo,
+    pricesIncludeVat: input.pricesIncludeVat,
   });
 }
 
@@ -119,6 +130,7 @@ export function emptyStructureLine(input: {
 export function emptyManualStructureLine(input: {
   id: string;
   vatPercent: number;
+  pricesIncludeVat?: boolean;
 }): StructureLine {
   return emptyLineBase({
     id: input.id,
@@ -126,6 +138,7 @@ export function emptyManualStructureLine(input: {
     name: 'Tuoterakenne',
     vatPercent: input.vatPercent,
     commissionPercent: 0,
+    pricesIncludeVat: input.pricesIncludeVat,
   });
 }
 

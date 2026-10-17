@@ -182,6 +182,7 @@ export function CalculationDetailView({
       <PriceBreakdownCard
         values={record}
         customer={customer}
+        lines={structureLines}
         displayedWorkDurationDays={totalDisplayedDuration}
         showDuration={structureLines.length <= 1}
       />
@@ -246,6 +247,7 @@ function LineDetail({
         <PriceBreakdownCard
           values={lineBreakdown(line, reverseVat)}
           customer={customer}
+          lines={[line]}
           displayedWorkDurationDays={displayedWorkDurationDays}
           showDuration
         />
