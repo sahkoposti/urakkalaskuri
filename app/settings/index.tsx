@@ -21,8 +21,13 @@ export default function SettingsScreen() {
           onPress={() => router.push('/settings/structures' as Href)}
         />
         <SettingsNavCard
+          title="Yritys"
+          subtitle="Yhteystiedot, Y-tunnus, logo"
+          onPress={() => router.push('/settings/company' as Href)}
+        />
+        <SettingsNavCard
           title="Teema"
-          subtitle="Logo, värit, taustakuva"
+          subtitle="Värit, taustakuva"
           onPress={() => router.push('/settings/theme')}
         />
       </ScrollView>
