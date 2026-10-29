@@ -20,6 +20,16 @@ import { bumpFormVersion } from '../form/formVersion';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
 import { parseStoredCompanyProfile } from '../company/defaultCompany';
 import { COMPANY_PROFILE_SETTINGS_KEY, type CompanyProfile } from '../company/types';
+import {
+  parseStoredOfferCompanySettings,
+  parseStoredOfferStructureSettings,
+} from '../pdf/defaultOfferSettings';
+import {
+  OFFER_COMPANY_SETTINGS_KEY,
+  offerStructureSettingsKey,
+  type OfferCompanySettings,
+  type OfferStructureSettings,
+} from '../pdf/types';
 import { defaultFormDebugSettings } from '../form/types';
 import {
   DEFAULT_STRUCTURE_ID,
@@ -488,6 +498,41 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<void>
   );
 }
 
+async function readSettingValue(key: string): Promise<string | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    key,
+  );
+  return row?.value ?? null;
+}
+
+async function writeSettingValue(key: string, value: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value);
+}
+
+/** Yrityskohtaiset tarjousasetukset (voimassaolo, numerointi, KHV). */
+export async function getOfferCompanySettings(): Promise<OfferCompanySettings> {
+  return parseStoredOfferCompanySettings(await readSettingValue(OFFER_COMPANY_SETTINGS_KEY));
+}
+
+export async function saveOfferCompanySettings(settings: OfferCompanySettings): Promise<void> {
+  await writeSettingValue(OFFER_COMPANY_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+/** Rakennekohtaiset tarjousasetukset (Lisätiedot, sivuvalinnat). Paikallinen, ei lomakepohjassa. */
+export async function getOfferStructureSettings(structureId: string): Promise<OfferStructureSettings> {
+  return parseStoredOfferStructureSettings(await readSettingValue(offerStructureSettingsKey(structureId)));
+}
+
+export async function saveOfferStructureSettings(
+  structureId: string,
+  settings: OfferStructureSettings,
+): Promise<void> {
+  await writeSettingValue(offerStructureSettingsKey(structureId), JSON.stringify(settings));
+}
+
 const FIELDS_PAGE_EXPANDED_KEY = 'fields_page_expanded';
 
 export async function getFieldsPageExpandedSetting(): Promise<string | null> {
@@ -642,6 +687,7 @@ export async function deleteProductStructure(id: string): Promise<void> {
     });
   }
   await db.runAsync('DELETE FROM product_structures WHERE id = ?', id);
+  await db.runAsync('DELETE FROM settings WHERE key = ?', offerStructureSettingsKey(id));
   const activeId = await getActiveStructureId();
   if (activeId === id) {
     await setActiveStructureId(fallback.id);
