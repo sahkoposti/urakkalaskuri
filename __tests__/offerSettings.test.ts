@@ -38,6 +38,7 @@ describe('offer company settings', () => {
       offerNumberStart: 20000,
       ktv: { ratePercent: 35, deductibleEur: 100, capEur: 1600 },
       ktvFootnoteText: 'Oma huomautus',
+      additionalInfoText: '',
     });
   });
 

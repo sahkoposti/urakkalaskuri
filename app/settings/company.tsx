@@ -17,7 +17,12 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 type TextKey = Exclude<keyof CompanyProfile, 'logoUri'>;
 
-const FIELDS: { key: TextKey; label: string; keyboardType?: 'default' | 'phone-pad' | 'email-address' | 'numeric' }[] = [
+const FIELDS: {
+  key: TextKey;
+  label: string;
+  keyboardType?: 'default' | 'phone-pad' | 'email-address' | 'numeric';
+  placeholder?: string;
+}[] = [
   { key: 'companyName', label: 'Yrityksen nimi' },
   { key: 'address', label: 'Katuosoite' },
   { key: 'postalCode', label: 'Postinumero', keyboardType: 'numeric' },
@@ -27,6 +32,18 @@ const FIELDS: { key: TextKey; label: string; keyboardType?: 'default' | 'phone-p
   { key: 'businessId', label: 'Y-tunnus' },
   { key: 'phone', label: 'Puhelin', keyboardType: 'phone-pad' },
   { key: 'sellerName', label: 'Myyjän nimi' },
+  {
+    key: 'sellerPhone',
+    label: 'Myyjän puhelin',
+    keyboardType: 'phone-pad',
+    placeholder: 'Tyhjä = yrityksen puhelin/sähköposti',
+  },
+  {
+    key: 'sellerEmail',
+    label: 'Myyjän sähköposti',
+    keyboardType: 'email-address',
+    placeholder: 'Tyhjä = yrityksen puhelin/sähköposti',
+  },
 ];
 
 export default function CompanySettingsScreen() {
@@ -99,10 +116,10 @@ export default function CompanySettingsScreen() {
           <AppInput
             key={field.key}
             label={field.label}
-            value={draft[field.key]}
+            value={draft[field.key] ?? ''}
             keyboardType={field.keyboardType}
             onChangeText={(value) => setDraft((prev) => ({ ...prev, [field.key]: value }))}
-            placeholder="Valinnainen"
+            placeholder={field.placeholder ?? 'Valinnainen'}
           />
         ))}
         <Text style={styles.note}>Tyhjä kenttä jätetään pois PDF:n alatunnisteesta.</Text>

@@ -12,6 +12,10 @@ export interface CompanyProfile {
   phone: string;
   /** Myyjän nimi (ei footer-pohjassa) */
   sellerName: string;
+  /** Myyjän puhelin. Tyhjä = yrityksen puhelin. */
+  sellerPhone?: string;
+  /** Myyjän sähköposti. Tyhjä = yrityksen sähköposti. */
+  sellerEmail?: string;
   /** Ylätunnisteen logo; tyhjä = paketoitu ColoRajaton-oletus. Oma tiedosto ei kuulu v1.3:een. */
   logoUri?: string;
 }

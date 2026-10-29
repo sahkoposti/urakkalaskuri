@@ -1,4 +1,5 @@
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
+import { defaultOfferCompanySettings } from '../src/core/pdf/defaultOfferSettings';
 import { escapeHtml, escapeMultiline } from '../src/core/pdf/escapeHtml';
 import { pageNumberContent } from '../src/core/pdf/pdfStyles';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
@@ -19,17 +20,23 @@ describe('escapeHtml', () => {
 });
 
 describe('renderTarjousHtml', () => {
-  it('private customer with two cards side by side', () => {
+  it('private customer: rows table and one section per structure', () => {
     const ctx = buildPdfContext(
-      input(record({}, { structureLines: [line('l1', 's1', 'Ulkomaalaus'), line('l2', 's2', 'Sokkeli', '30')] })),
+      input(record({}, { structureLines: [line('l1', 's1', 'Ulkomaalaus'), line('l2', 's2', 'Sokkeli', '30')] }), {
+        offerCompany: { ...defaultOfferCompanySettings, additionalInfoText: 'Maksuehto kuvitteellinen.' },
+      }),
     );
     const html = renderTarjousHtml(ctx, { logoDataUri: LOGO });
-    expect(html).toContain('<div class="spec-grid">');
-    expect((html.match(/class="spec-card"/g) ?? []).length).toBe(2);
-    expect(html).not.toContain('spec-card full');
+    expect(html).toContain('class="offer-rows"');
+    expect((html.match(/class="offer-section"/g) ?? []).length).toBe(2);
+    expect(html).not.toContain('class="spec-grid"');
+    expect(html).not.toContain('class="spec-card');
     expect(html).toContain('Hinta alv0');
     expect(html).toContain('Loppusumma');
     expect(html).toContain('Lisätiedot:');
+    expect(html).toContain('Maksuehto kuvitteellinen.');
+    expect(html).toContain('Sisältää telineet.');
+    expect(html).toContain('Toinen teksti');
     expect(html).toContain('"Sivu " counter(page) "/" counter(pages)');
     expect(html).toMatchSnapshot();
   });
@@ -37,22 +44,25 @@ describe('renderTarjousHtml', () => {
   it('business customer: only alv0, no reverse VAT text, no margin/commission', () => {
     const ctx = buildPdfContext(input(record({ customerType: 'business', reverseVat: true })));
     const html = renderTarjousHtml(ctx, { logoDataUri: LOGO });
-    expect(html).toContain('spec-card full');
+    expect(html).toContain('A-hinta (alv 0 %)');
     const content = html.replace(/<style>[\s\S]*?<\/style>/, '');
-    expect(content).not.toMatch(/Hinta alv<|ALV \d|Käänteinen|Kate|Palkkio|margin|commission/i);
+    expect(content).not.toContain('spec-card');
+    expect(content).not.toMatch(/Hinta alv<|ALV \d{2}|Käänteinen|Kate|Palkkio|margin|commission/i);
     expect(content).not.toMatch(/333,33|77,77/);
+    expect(content).not.toContain('25,5');
     expect(html).toMatchSnapshot();
   });
 
-  it('0 cards: prices directly under the header, Lisätiedot omitted when empty', () => {
+  it('empty company Lisätiedot is omitted; offer page switches do not remove the section', () => {
     const ctx = buildPdfContext(
       input(record({}), {
         offerStructureSettings: { s1: { additionalInfoText: '  ', offerPages: [{ pageId: 'page_surfaces', enabled: false }] } },
       }),
     );
     const html = renderTarjousHtml(ctx);
-    expect(html).not.toContain('<div class="spec-grid">');
-    expect(html).toMatch(/<tbody><tr><td>\n<div class="price-block">/);
+    expect(html).toContain('class="offer-rows"');
+    expect(html).toContain('class="offer-section"');
+    expect(html).not.toContain('class="spec-grid"');
     expect(html).not.toContain('Lisätiedot:');
     expect(html).not.toContain('<img');
     expect(html).toMatchSnapshot();
@@ -66,6 +76,7 @@ describe('renderTarjousHtml', () => {
     const html = renderTarjousHtml(ctx);
     expect(html).not.toContain('<script>');
     expect(html).not.toContain('<img src=x');
+    expect(html).toContain('x &lt;img src=x onerror=1&gt;');
     expect(html).toContain('A &amp; &lt;B&gt;');
   });
 

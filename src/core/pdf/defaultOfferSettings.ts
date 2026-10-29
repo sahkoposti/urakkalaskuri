@@ -21,6 +21,7 @@ export const defaultOfferCompanySettings: Readonly<OfferCompanySettings> = Objec
   offerNumberStart: DEFAULT_OFFER_NUMBER_START,
   ktv: DEFAULT_KTV_SETTINGS,
   ktvFootnoteText: '',
+  additionalInfoText: '',
 });
 
 function toNumber(value: unknown): number | undefined {
@@ -63,6 +64,7 @@ export function normalizeOfferCompanySettings(raw: unknown): OfferCompanySetting
     offerNumberStart: positiveInteger(src.offerNumberStart, DEFAULT_OFFER_NUMBER_START),
     ktv: normalizeKtvSettings(src.ktv),
     ktvFootnoteText: typeof src.ktvFootnoteText === 'string' ? src.ktvFootnoteText : '',
+    additionalInfoText: typeof src.additionalInfoText === 'string' ? src.additionalInfoText : '',
   };
 }
 

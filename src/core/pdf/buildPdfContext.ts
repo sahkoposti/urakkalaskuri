@@ -1,14 +1,19 @@
 import type { CompanyProfile } from '@/src/core/company/types';
 import type { AppSettings, CalculationRecord, CustomerInfo, Product } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
-import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { formatCurrency, formatPercent } from '@/src/core/utils/formatters';
 import { applyVat, customerSeesVatInclusive, isPrivateCustomer } from '@/src/core/utils/priceDisplay';
 
-import { filterOfferCards, lineSpecSnapshot, specCardsFromSnapshot, type SpecCard } from './offerPageSpecs';
-import { specGridLayout, type SpecGridLayout } from './specGridLayout';
-import { enabledOfferPageIds } from './syncOfferPages';
+import {
+  buildOfferRows,
+  buildOfferSections,
+  offerVatSummary,
+  sellerContactLines,
+  type OfferRow,
+  type OfferSection,
+  type OfferVatSummaryRow,
+} from './offerDocument';
 import type { KtvSettings, OfferCompanySettings, OfferStructureSettings } from './types';
 import { formatFinnishDate, validUntil } from './validUntil';
 
@@ -21,9 +26,19 @@ export type TarjousPdfContext = {
   logoUri?: string;
   customerLines: string[];
   offerInfo: PriceRow[];
-  specGrid: SpecGridLayout;
+  /** Rivitaulukko tallennetussa järjestyksessä (rakenteet ja manuaalirivit). */
+  rows: OfferRow[];
+  /** Rakennekohtaiset osiot taulukon jälkeen. Manuaalirivillä ei ole osiota. */
+  sections: OfferSection[];
+  /** Laskelman toimitusajankohta. Tyhjä = ei tulosteta. */
+  deliveryScheduleText: string;
+  /** ALV-erittely maksun jälkeen. Yritys ja käänteinen ALV: tyhjä. */
+  vatSummary: OfferVatSummaryRow[];
   price: { includesVat: boolean; left: PriceRow[]; right: PriceRow[] };
+  /** Yrityksen Lisätiedot-teksti. Tyhjä = osio pois. */
   additionalInfo: string;
+  /** Myyjän yhteystiedot. Tyhjä = lohko pois. */
+  sellerLines: string[];
   footer: PdfFooter;
   /** Kotitalousvähennyssivu: vain yksityisasiakas ilman käänteistä ALV:ta. */
   ktv?: {
@@ -114,44 +129,6 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
   };
 }
 
-/**
- * Lisätiedot-teksti (Eemil 29.10.2026): rakennekohtainen; usean rakenteen laskelmassa ENSIMMÄISEN rakenteen teksti.
- * Lähde (Eemil 29.10.2026 klo 17.14 #1): rakenteen Tarjous-asetusten teksti (T4). AINOA paikka, jossa lähde valitaan.
- */
-export function offerAdditionalInfo(
-  record: CalculationRecord,
-  offerStructureSettings: BuildPdfContextInput['offerStructureSettings'],
-): string {
-  const first = ensureStructureLines(record)[0];
-  if (!first) return '';
-  return offerStructureSettings[first.structureId]?.additionalInfoText?.trim() ?? '';
-}
-
-export function offerSpecCards(input: BuildPdfContextInput): SpecCard[] {
-  const customer = customerFromRecord(input.record);
-  const lines = ensureStructureLines(input.record);
-  const perLine = lines.map((line) => {
-    const structure = input.structures.find((item) => item.id === line.structureId);
-    const snapshot = lineSpecSnapshot(
-      line,
-      structure,
-      input.products,
-      input.settings,
-      Boolean(customer.reverseVat),
-      input.record.travelTimeHoursOneWay,
-    );
-    const cards = specCardsFromSnapshot(snapshot, structure?.form);
-    const enabled = structure
-      ? new Set(enabledOfferPageIds(structure.form, input.offerStructureSettings[line.structureId]))
-      : new Set<string>();
-    return { line, cards: filterOfferCards(cards, enabled) };
-  });
-  const linesWithCards = perLine.filter((item) => item.cards.length > 0).length;
-  return perLine.flatMap(({ line, cards }) =>
-    linesWithCards > 1 ? cards.map((card) => ({ ...card, title: `${line.name}: ${card.title}` })) : cards,
-  );
-}
-
 export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext {
   const { record, company, offerCompany, generatedAt } = input;
   const customer = customerFromRecord(record);
@@ -166,9 +143,13 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     logoUri: company.logoUri,
     customerLines: customerHeaderLines(customer),
     offerInfo,
-    specGrid: specGridLayout(offerSpecCards(input)),
+    rows: buildOfferRows(input),
+    sections: buildOfferSections(input),
+    deliveryScheduleText: record.deliveryScheduleText?.trim() ?? '',
+    vatSummary: offerVatSummary(record, customer),
     price: offerPriceBlock(record, customer),
-    additionalInfo: offerAdditionalInfo(record, input.offerStructureSettings),
+    additionalInfo: typeof offerCompany.additionalInfoText === 'string' ? offerCompany.additionalInfoText : '',
+    sellerLines: sellerContactLines(company),
     footer: buildFooter(company),
     ktv: ktvApplicable
       ? {

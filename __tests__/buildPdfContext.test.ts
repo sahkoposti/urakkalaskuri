@@ -66,8 +66,16 @@ describe('buildPdfContext', () => {
       { label: 'Päiväys', value: '10.10.2026' },
       { label: 'Voimassa', value: '10.11.2026' },
     ]);
-    expect(ctx.additionalInfo).toBe('Sisältää telineet.');
-    expect(ctx.specGrid.mode).toBe('single');
+    expect(ctx.additionalInfo).toBe('');
+    expect(ctx.sections).toHaveLength(1);
+    expect(ctx.sections[0].title).toBe('Ulkomaalaus');
+    expect(ctx.sections[0].notes).toEqual(['Sisältää telineet.']);
+    expect(ctx.sections[0].workDuration).toBe('Työn arvioitu kesto 4 työpäivää');
+    expect(ctx.rows.map((row) => row.name)).toEqual(['Ulkomaalaus']);
+    expect(ctx.deliveryScheduleText).toBe('');
+    expect(ctx.vatSummary).toEqual([{ vatPercent: 25.5, net: 2000, vat: 510, gross: 2510 }]);
+    expect(ctx.sellerLines).toEqual(['Puh. +358 40 938 9403', 'info@colorajaton.fi']);
+    expect(ctx).not.toHaveProperty('specGrid');
     expect(ctx.footer.left).toEqual(['ColoRajaton Oy', 'Toivonlinnantie 350', '21500 Piikkiö']);
     expect(ctx.footer.right).toEqual(['Y-tunnus: 3224017-2', 'Puh. +358 40 938 9403']);
   });
@@ -113,6 +121,7 @@ describe('buildPdfContext', () => {
     expect(labels([...ctx.price.left, ...ctx.price.right])).toEqual(['Hinta alv0', 'Loppusumma']);
     expect(JSON.stringify(ctx)).not.toMatch(/Käänteinen|ALV \d/);
     expect(ctx.ktv).toBeUndefined();
+    expect(ctx.vatSummary).toEqual([]);
   });
 
   it('reverse VAT: alv0 only and no KTV page', () => {
@@ -123,28 +132,31 @@ describe('buildPdfContext', () => {
     expect(JSON.stringify(ctx)).not.toContain('Käänteinen');
   });
 
-  it('legacy record without snapshot: spec grid is none, no offer number row when not assigned', () => {
+  it('legacy record without snapshot: manual row, no section, no offer number row when not assigned', () => {
     const ctx = buildPdfContext(
       input(record({}, { structureLines: undefined, formSnapshot: undefined }), {
         offerNumber: undefined,
         structures: [],
       }),
     );
-    expect(ctx.specGrid).toEqual({ mode: 'none', cards: [] });
+    expect(ctx.sections).toEqual([]);
+    expect(ctx.rows.map((row) => row.name)).toEqual(['Laskenta']);
+    expect(ctx).not.toHaveProperty('specGrid');
     expect(labels(ctx.offerInfo)).toEqual(['Päiväys', 'Voimassa']);
     expect(ctx.additionalInfo).toBe('');
   });
 
-  it('multi-structure: cards prefixed with line names, Lisätiedot from the FIRST structure', () => {
+  it('multi-structure: each structure section gets its own Tarjous text', () => {
     const ctx = buildPdfContext(
       input(record({}, { structureLines: [line('l2', 's2', 'Sokkeli', '30'), line('l1', 's1', 'Ulkomaalaus')] })),
     );
-    expect(ctx.specGrid.mode).toBe('grid');
-    expect(ctx.specGrid.cards.map((c) => c.title)).toEqual(['Sokkeli: Pinta-alat', 'Ulkomaalaus: Pinta-alat']);
-    expect(ctx.additionalInfo).toBe('Toinen teksti');
+    expect(ctx.rows.map((row) => row.name)).toEqual(['Sokkeli', 'Ulkomaalaus']);
+    expect(ctx.sections.map((section) => section.title)).toEqual(['Sokkeli', 'Ulkomaalaus']);
+    expect(ctx.sections.map((section) => section.notes)).toEqual([['Toinen teksti'], ['Sisältää telineet.']]);
+    expect(ctx.additionalInfo).toBe('');
   });
 
-  it('respects per-structure page selection', () => {
+  it('ignores stored offer page switches', () => {
     const ctx = buildPdfContext(
       input(record({}), {
         offerStructureSettings: {
@@ -152,7 +164,8 @@ describe('buildPdfContext', () => {
         },
       }),
     );
-    expect(ctx.specGrid.mode).toBe('none');
+    expect(ctx.sections).toHaveLength(1);
+    expect(ctx.sections[0].facts.some((fact) => fact.includes('120,0'))).toBe(true);
   });
 
   it('never contains margin or commission data', () => {

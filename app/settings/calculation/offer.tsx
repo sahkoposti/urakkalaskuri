@@ -1,16 +1,8 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 
-import {
-  AppCard,
-  AppInput,
-  AppSwitch,
-  PrimaryButton,
-  ScreenLoading,
-  ScreenMessage,
-  SectionTitle,
-} from '@/src/components/common';
+import { AppInput, PrimaryButton, ScreenLoading, ScreenMessage, SectionTitle } from '@/src/components/common';
 import { db } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import {
@@ -33,6 +25,7 @@ type CompanyDraft = {
   ktvDeductibleEur: string;
   ktvCapEur: string;
   ktvFootnoteText: string;
+  additionalInfoText: string;
 };
 
 function toDraft(s: OfferCompanySettings): CompanyDraft {
@@ -44,6 +37,7 @@ function toDraft(s: OfferCompanySettings): CompanyDraft {
     ktvDeductibleEur: n(s.ktv.deductibleEur),
     ktvCapEur: n(s.ktv.capEur),
     ktvFootnoteText: s.ktvFootnoteText,
+    additionalInfoText: s.additionalInfoText,
   };
 }
 
@@ -53,6 +47,7 @@ function fromDraft(d: CompanyDraft): OfferCompanySettings {
     offerValidDays: d.offerValidDays,
     ktv: { ratePercent: d.ktvRatePercent, deductibleEur: d.ktvDeductibleEur, capEur: d.ktvCapEur },
     ktvFootnoteText: d.ktvFootnoteText.trim(),
+    additionalInfoText: d.additionalInfoText,
   });
 }
 
@@ -157,26 +152,7 @@ export default function OfferSettingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <SectionTitle title={structure?.name ? `Tämä rakenne: ${structure.name}` : 'Tämä rakenne'} />
         <AppInput label="Lisätiedot" value={info} onChangeText={setInfo} multiline placeholder="Valinnainen" />
-        <Text style={styles.note}>
-          Tulostuu tarjouksen Lisätiedot-osioon. Tyhjä = osio jätetään pois. Usean rakenteen laskelmassa
-          käytetään ensimmäisen rakenteen tekstiä.
-        </Text>
-
-        <Text style={styles.sectionLabel}>Lomakesivut tarjouksessa</Text>
-        {pages.length === 0 ? <Text style={styles.note}>Lomakkeella ei ole sivuja.</Text> : null}
-        {pages.map((page) => (
-          <AppCard key={page.pageId}>
-            <View style={styles.row}>
-              <Text style={styles.rowTitle}>{page.title}</Text>
-              <AppSwitch
-                value={page.enabled}
-                onValueChange={(enabled) =>
-                  setPages((prev) => prev.map((p) => (p.pageId === page.pageId ? { ...p, enabled } : p)))
-                }
-              />
-            </View>
-          </AppCard>
-        ))}
+        <Text style={styles.note}>Tulostuu tämän rakenteen osioon tarjouksessa (Muuta).</Text>
 
         <SectionTitle title="Yhteiset (kaikki tuoterakenteet)" />
         <AppInput
@@ -193,6 +169,16 @@ export default function OfferSettingsScreen() {
           keyboardType="numeric"
         />
         <Text style={styles.note}>Päättymispäivä lasketaan tarjouksen päiväyksestä.</Text>
+        <AppInput
+          label="Lisätiedot (kaikki tarjoukset)"
+          value={company.additionalInfoText}
+          onChangeText={setField('additionalInfoText')}
+          multiline
+          placeholder="Valinnainen"
+        />
+        <Text style={styles.note}>
+          Tulostuu tarjouksen Lisätiedot-osioon sellaisenaan (esim. maksuehto, takuu).
+        </Text>
 
         <Text style={styles.sectionLabel}>Kotitalousvähennys (vain yksityisasiakas)</Text>
         <AppInput
@@ -245,17 +231,6 @@ function createStyles(colors: AppColorPalette) {
       fontFamily: 'IBMPlexSans_700Bold',
       fontSize: 16,
       color: colors.primary,
-    },
-    row: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: 12,
-    },
-    rowTitle: {
-      flex: 1,
-      fontFamily: 'IBMPlexSans_400Regular',
-      fontSize: 15,
-      color: colors.text,
     },
     note: {
       marginBottom: 4,
