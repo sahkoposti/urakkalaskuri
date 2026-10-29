@@ -26,10 +26,10 @@ export type TarjousPdfContext = {
   additionalInfo: string;
   footer: PdfFooter;
   /** Kotitalousvähennyssivu: vain yksityisasiakas ilman käänteistä ALV:ta. */
-  khv?: {
+  ktv?: {
     /** Kokonaishinta sis. ALV alennuksen jälkeen. */
     totalPriceVat: number;
-    /** Materiaalit sis. ALV sellaisenaan (ks. kotitalousDeduction.khvWorkShareVatIncluded). */
+    /** Materiaalit sis. ALV sellaisenaan (ks. kotitalousDeduction.ktvWorkShareVatIncluded). */
     materialsVat: number;
   };
 };
@@ -156,7 +156,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     { label: 'Päiväys', value: formatFinnishDate(generatedAt) },
     { label: 'Voimassa', value: formatFinnishDate(validUntil(generatedAt, offerCompany.offerValidDays)) },
   ];
-  const khvApplicable = isPrivateCustomer(customer) && !customer.reverseVat;
+  const ktvApplicable = isPrivateCustomer(customer) && !customer.reverseVat;
   return {
     kind: 'tarjous',
     logoUri: company.logoUri,
@@ -166,7 +166,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     price: offerPriceBlock(record, customer),
     additionalInfo: offerAdditionalInfo(record, input.offerStructureSettings),
     footer: buildFooter(company),
-    khv: khvApplicable
+    ktv: ktvApplicable
       ? {
           totalPriceVat: record.totalPriceVat,
           materialsVat: Math.round(applyVat(record.materialsVat0, record.vatPercent) * 100) / 100,
