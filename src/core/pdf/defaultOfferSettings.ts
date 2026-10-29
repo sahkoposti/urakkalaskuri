@@ -1,4 +1,4 @@
-import type { KhvSettings, OfferCompanySettings, OfferPageInclusion, OfferStructureSettings } from './types';
+import type { KtvSettings, OfferCompanySettings, OfferPageInclusion, OfferStructureSettings } from './types';
 
 /** Oletusvoimassaolo (suunnitelma §4). */
 export const DEFAULT_OFFER_VALID_DAYS = 31;
@@ -6,11 +6,11 @@ export const DEFAULT_OFFER_VALID_DAYS = 31;
 export const DEFAULT_OFFER_NUMBER_START = 10285;
 
 /**
- * KHV-oletukset, tarkistettu vero.fi:stä 29.10.2026: 40 % työn arvonlisäverollisesta hinnasta,
+ * KTV-oletukset, tarkistettu vero.fi:stä 29.10.2026: 40 % työn arvonlisäverollisesta hinnasta,
  * omavastuu 150 €/hlö/v, enintään 2 100 €/hlö/v. Voimassa 2026–2027 (väliaikainen laki).
  * Käytetään vain, kun asetusta ei ole tallennettu. Laskenta lukee arvot aina asetuksista.
  */
-export const DEFAULT_KHV_SETTINGS: Readonly<KhvSettings> = Object.freeze({
+export const DEFAULT_KTV_SETTINGS: Readonly<KtvSettings> = Object.freeze({
   ratePercent: 40,
   deductibleEur: 150,
   capEur: 2100,
@@ -19,8 +19,8 @@ export const DEFAULT_KHV_SETTINGS: Readonly<KhvSettings> = Object.freeze({
 export const defaultOfferCompanySettings: Readonly<OfferCompanySettings> = Object.freeze({
   offerValidDays: DEFAULT_OFFER_VALID_DAYS,
   offerNumberStart: DEFAULT_OFFER_NUMBER_START,
-  khv: DEFAULT_KHV_SETTINGS,
-  khvFootnoteText: '',
+  ktv: DEFAULT_KTV_SETTINGS,
+  ktvFootnoteText: '',
 });
 
 function toNumber(value: unknown): number | undefined {
@@ -42,14 +42,14 @@ function asRecord(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
 }
 
-/** Yhdistää tallennetut (osittaiset tai rikkinäiset) KHV-arvot oletuksiin. Prosentti 0–100. */
-export function normalizeKhvSettings(raw: unknown): KhvSettings {
+/** Yhdistää tallennetut (osittaiset tai rikkinäiset) KTV-arvot oletuksiin. Prosentti 0–100. */
+export function normalizeKtvSettings(raw: unknown): KtvSettings {
   const src = asRecord(raw);
-  const rate = nonNegative(src.ratePercent, DEFAULT_KHV_SETTINGS.ratePercent);
+  const rate = nonNegative(src.ratePercent, DEFAULT_KTV_SETTINGS.ratePercent);
   return {
-    ratePercent: rate > 100 ? DEFAULT_KHV_SETTINGS.ratePercent : rate,
-    deductibleEur: nonNegative(src.deductibleEur, DEFAULT_KHV_SETTINGS.deductibleEur),
-    capEur: nonNegative(src.capEur, DEFAULT_KHV_SETTINGS.capEur),
+    ratePercent: rate > 100 ? DEFAULT_KTV_SETTINGS.ratePercent : rate,
+    deductibleEur: nonNegative(src.deductibleEur, DEFAULT_KTV_SETTINGS.deductibleEur),
+    capEur: nonNegative(src.capEur, DEFAULT_KTV_SETTINGS.capEur),
   };
 }
 
@@ -61,8 +61,8 @@ export function normalizeOfferCompanySettings(raw: unknown): OfferCompanySetting
       return n !== undefined && n >= 0 && Number.isInteger(n) ? n : DEFAULT_OFFER_VALID_DAYS;
     })(),
     offerNumberStart: positiveInteger(src.offerNumberStart, DEFAULT_OFFER_NUMBER_START),
-    khv: normalizeKhvSettings(src.khv),
-    khvFootnoteText: typeof src.khvFootnoteText === 'string' ? src.khvFootnoteText : '',
+    ktv: normalizeKtvSettings(src.ktv),
+    ktvFootnoteText: typeof src.ktvFootnoteText === 'string' ? src.ktvFootnoteText : '',
   };
 }
 

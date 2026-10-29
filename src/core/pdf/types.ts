@@ -2,7 +2,7 @@
  * Tarjous-PDF:n asetukset (v1.3, T4).
  *
  * Eemilin päätökset 29.10.2026:
- * - YRITYSKOHTAISET (yksi settings-avain): voimassaolo, numeroinnin aloitus, KHV-%, omavastuu, enimmäismäärä.
+ * - YRITYSKOHTAISET (yksi settings-avain): voimassaolo, numeroinnin aloitus, KTV-%, omavastuu, enimmäismäärä.
  * - RAKENNEKOHTAISET (paikallisesti puhelimessa, EI lomakepohjan JSON:ssa): Lisätiedot-teksti ja tulostettavat sivut.
  *   Monirakenteisessa laskelmassa käytetään ENSIMMÄISEN valitun rakenteen Lisätiedot-tekstiä.
  * Lomakepohjan (FormDefinition) JSON-muoto ei muutu.
@@ -14,7 +14,7 @@ export interface OfferPageInclusion {
 }
 
 /** Kotitalousvähennyksen arvot. Asetuksia, ei kovakoodattuja laskennassa. */
-export interface KhvSettings {
+export interface KtvSettings {
   /** Vähennysprosentti työn osuudesta sis. ALV. */
   ratePercent: number;
   /** Omavastuu euroina / henkilö / vuosi. */
@@ -29,9 +29,9 @@ export interface OfferCompanySettings {
   offerValidDays: number;
   /** Juoksevan tarjousnumeron aloitus. */
   offerNumberStart: number;
-  khv: KhvSettings;
-  /** Valinnainen KHV-sivun huomautus; tyhjä = oletusteksti. */
-  khvFootnoteText: string;
+  ktv: KtvSettings;
+  /** Valinnainen KTV-sivun huomautus; tyhjä = oletusteksti. */
+  ktvFootnoteText: string;
 }
 
 /** Rakennekohtaiset tarjousasetukset (settings-avain `offer_settings:<structureId>`). */
