@@ -9,42 +9,18 @@
  * Oletukset tarkistettu vero.fi:stä 29.10.2026: 40 % työn arvonlisäverollisesta hinnasta,
  * omavastuu 150 €/hlö/v, enintään 2 100 €/hlö/v. Voimassa vuosina 2026–2027 (väliaikainen laki).
  */
-export type KhvSettings = {
-  /** Vähennysprosentti työn osuudesta sis. ALV. */
-  ratePercent: number;
-  /** Omavastuu euroina / henkilö / vuosi. */
-  deductibleEur: number;
-  /** Enimmäismäärä euroina / henkilö / vuosi. */
-  capEur: number;
-};
+import { DEFAULT_KHV_SETTINGS, normalizeKhvSettings } from './defaultOfferSettings';
+import type { KhvSettings } from './types';
 
-export const DEFAULT_KHV_SETTINGS: Readonly<KhvSettings> = Object.freeze({
-  ratePercent: 40,
-  deductibleEur: 150,
-  capEur: 2100,
-});
+// Yksi lähde: tyyppi, oletukset ja normalisointi ovat T4:n tarjousasetuksissa (yrityskohtainen asetusavain).
+export { DEFAULT_KHV_SETTINGS, normalizeKhvSettings };
+export type { KhvSettings };
 
-/** PDF:ään tuleva huomautus (oletus; asetuksista voi tulla oma teksti T4/T8:ssa). */
+/** PDF:ään tuleva huomautus (oletus; Tarjous-asetusten oma teksti korvaa). */
 export const KHV_DEFAULT_NOTE =
   'Kotitalousvähennys on arvio yhdelle henkilölle. Vähennyksestä on vähennetty omavastuu ' +
   'ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit ja matkakulut ' +
   'eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.';
-
-function finiteNonNegative(value: unknown, fallback: number): number {
-  const n = typeof value === 'string' && value.trim() !== '' ? Number(value.replace(',', '.')) : value;
-  return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : fallback;
-}
-
-/** Yhdistää tallennetut (mahdollisesti osittaiset tai rikkinäiset) asetukset oletuksiin. */
-export function normalizeKhvSettings(raw: unknown): KhvSettings {
-  const src = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  const ratePercent = finiteNonNegative(src.ratePercent, DEFAULT_KHV_SETTINGS.ratePercent);
-  return {
-    ratePercent: ratePercent > 100 ? DEFAULT_KHV_SETTINGS.ratePercent : ratePercent,
-    deductibleEur: finiteNonNegative(src.deductibleEur, DEFAULT_KHV_SETTINGS.deductibleEur),
-    capEur: finiteNonNegative(src.capEur, DEFAULT_KHV_SETTINGS.capEur),
-  };
-}
 
 export type KotitalousDeductionInput = {
   /** Asiakkaan kokonaishinta sis. ALV alennuksen jälkeen. */

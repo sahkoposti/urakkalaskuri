@@ -1,5 +1,6 @@
 import type { PdfFooter, PriceRow, TarjousPdfContext } from './buildPdfContext';
 import { escapeHtml, escapeMultiline } from './escapeHtml';
+import { renderKotitalousPageHtml } from './renderKotitalousPageHtml';
 import { pdfStyles } from './pdfStyles';
 import type { SpecGridLayout } from './specGridLayout';
 
@@ -93,7 +94,13 @@ ${bodyHtml}
 }
 
 export function renderTarjousBody(ctx: TarjousPdfContext): string {
-  return [renderSpecGrid(ctx.specGrid), renderPriceBlock(ctx.price), renderAdditionalInfo(ctx.additionalInfo)]
+  // KHV-sivu aina viimeisenä (vain yksityisasiakas ilman käänteistä ALV:ta).
+  return [
+    renderSpecGrid(ctx.specGrid),
+    renderPriceBlock(ctx.price),
+    renderAdditionalInfo(ctx.additionalInfo),
+    renderKotitalousPageHtml(ctx),
+  ]
     .filter(Boolean)
     .join('\n');
 }
