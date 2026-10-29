@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { PdfExportButtons } from '@/src/components/pdf/PdfExportButtons';
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
 import { PriceBreakdownCard } from '@/src/components/calculation/PriceBreakdownCard';
@@ -22,7 +22,6 @@ import {
 import type { FormDefinition } from '@/src/core/form/types';
 import type { CalculationRecord, CustomerInfo, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
-import { runPdfSpike } from '@/src/core/pdf/runPdfSpike';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import {
@@ -71,22 +70,7 @@ export function CalculationDetailView({
   onDeletePress,
 }: CalculationDetailViewProps) {
   const styles = useThemedStyles(createStyles);
-  const { settings, structures, formDebug } = useApp();
-  // T1-spike (väliaikainen, poistetaan T10:ssä): näkyy vain kehitystilassa tai kun lomakkeen debug on päällä.
-  const showPdfSpike = __DEV__ || formDebug.enabled;
-  const [pdfSpikeBusy, setPdfSpikeBusy] = useState(false);
-  const handlePdfSpike = async () => {
-    if (pdfSpikeBusy) return;
-    setPdfSpikeBusy(true);
-    try {
-      const result = await runPdfSpike();
-      Alert.alert('PDF-testi', `Sivuja: ${result.numberOfPages}`);
-    } catch (error) {
-      Alert.alert('PDF-testi epäonnistui', error instanceof Error ? error.message : String(error));
-    } finally {
-      setPdfSpikeBusy(false);
-    }
-  };
+  const { settings, structures } = useApp();
   const customer = customerFromRecord(record);
   const privateCustomer = isPrivateCustomer(customer);
   const structureLines = ensureStructureLines(record);
@@ -138,13 +122,7 @@ export function CalculationDetailView({
           title="Muokkaa"
           onPress={() => router.push({ pathname: '/wizard', params: { editId: record.id } })}
         />
-        {showPdfSpike ? (
-          <OutlinedButton
-            title={pdfSpikeBusy ? 'Luodaan PDF-testiä…' : 'PDF-testi (T1, väliaikainen)'}
-            onPress={handlePdfSpike}
-            disabled={pdfSpikeBusy}
-          />
-        ) : null}
+        <PdfExportButtons calculationId={record.id} />
       </View>
 
       <AppCard style={styles.card}>
