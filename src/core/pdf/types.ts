@@ -1,11 +1,12 @@
 /**
- * Tarjous-PDF:n asetukset (v1.3, T4).
+ * Tarjous-PDF:n asetukset (v1.3).
  *
- * Eemilin päätökset 29.10.2026:
- * - YRITYSKOHTAISET (yksi settings-avain): voimassaolo, numeroinnin aloitus, KTV-%, omavastuu, enimmäismäärä.
- * - RAKENNEKOHTAISET (paikallisesti puhelimessa, EI lomakepohjan JSON:ssa): Lisätiedot-teksti ja tulostettavat sivut.
- *   Monirakenteisessa laskelmassa käytetään ENSIMMÄISEN valitun rakenteen Lisätiedot-tekstiä.
- * Lomakepohjan (FormDefinition) JSON-muoto ei muutu.
+ * YRITYSKOHTAISET (`offer_company_settings`): voimassaolo, numerointi, KTV ja
+ * Lisätiedot-teksti (tarjouksen Lisätiedot-osio, sellaisenaan).
+ * RAKENNEKOHTAISET (`offer_settings:<structureId>`, ei lomakepohjan JSON:ssa):
+ * lisäteksti tulostuu sen rakenteen osioon (Muuta). `offerPages` säilyy tallessa;
+ * tarjous ei lue sivukytkimiä.
+ * Lomakepohjan JSON-muoto ei muutu (kentän `print` on P1).
  */
 
 export interface OfferPageInclusion {
@@ -32,11 +33,13 @@ export interface OfferCompanySettings {
   ktv: KtvSettings;
   /** Valinnainen KTV-sivun huomautus; tyhjä = oletusteksti. */
   ktvFootnoteText: string;
+  /** Lisätiedot-osio kaikille tarjouksille. Tyhjä = osio pois. Tulostetaan sellaisenaan. */
+  additionalInfoText: string;
 }
 
 /** Rakennekohtaiset tarjousasetukset (settings-avain `offer_settings:<structureId>`). */
 export interface OfferStructureSettings {
-  /** Lisätiedot-osion teksti; tyhjä = osio pois. */
+  /** Rakenteen lisäteksti. Tulostuu tämän rakenteen osioon (Muuta). Tyhjä = ei tekstiä. */
   additionalInfoText: string;
   offerPages: OfferPageInclusion[];
 }

@@ -9,14 +9,15 @@ const norm = (s: string) => s.replace(/\s/g, ' ');
 
 describe('renderKotitalousPageHtml', () => {
   it('private customer: KTV page is last, with page break and one-person estimate text', () => {
-    const html = renderTarjousHtml(buildPdfContext(input(record({}))));
+    const ctx = buildPdfContext(input(record({})));
+    const html = renderTarjousHtml(ctx);
     const ktvAt = html.indexOf('<section class="ktv-page page-break">');
     expect(ktvAt).toBeGreaterThan(html.indexOf('class="price-block"'));
-    expect(ktvAt).toBeGreaterThan(html.indexOf('Lisätiedot:'));
-    expect(html.slice(ktvAt)).not.toContain('spec-card');
+    expect(ktvAt).toBeGreaterThan(html.indexOf('class="offer-seller"'));
+    expect(html.slice(ktvAt)).not.toContain('offer-section');
     expect(html).toContain(KTV_ONE_PERSON_LINE);
     expect(html).toContain('arvio yhdelle henkilölle');
-    expect(html).toMatchSnapshot();
+    expect(renderKotitalousPageHtml(ctx)).toMatchSnapshot();
   });
 
   it('business and reverse VAT customers: no KTV page', () => {

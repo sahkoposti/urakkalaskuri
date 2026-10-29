@@ -11,6 +11,8 @@ export const defaultCompanyProfile: Readonly<CompanyProfile> = Object.freeze({
   businessId: '3224017-2',
   phone: '+358 40 938 9403',
   sellerName: '',
+  sellerPhone: '',
+  sellerEmail: '',
 });
 
 const STRING_KEYS = [
@@ -23,6 +25,8 @@ const STRING_KEYS = [
   'businessId',
   'phone',
   'sellerName',
+  'sellerPhone',
+  'sellerEmail',
 ] as const satisfies readonly (keyof CompanyProfile)[];
 
 /**
@@ -56,7 +60,7 @@ export function parseStoredCompanyProfile(value: string | null | undefined): Com
 /** Siistii lomakkeen arvot tallennusta varten (trim). */
 export function cleanCompanyProfile(profile: CompanyProfile): CompanyProfile {
   const cleaned = normalizeCompanyProfile(profile);
-  for (const key of STRING_KEYS) cleaned[key] = cleaned[key].trim();
+  for (const key of STRING_KEYS) cleaned[key] = (cleaned[key] ?? '').trim();
   return cleaned;
 }
 
