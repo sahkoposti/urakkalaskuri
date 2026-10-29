@@ -9,7 +9,7 @@ import { applyVat, customerSeesVatInclusive, isPrivateCustomer } from '@/src/cor
 import { filterOfferCards, lineSpecSnapshot, specCardsFromSnapshot, type SpecCard } from './offerPageSpecs';
 import { specGridLayout, type SpecGridLayout } from './specGridLayout';
 import { enabledOfferPageIds } from './syncOfferPages';
-import type { KhvSettings, OfferCompanySettings, OfferStructureSettings } from './types';
+import type { KtvSettings, OfferCompanySettings, OfferStructureSettings } from './types';
 import { formatFinnishDate, validUntil } from './validUntil';
 
 export type PriceRow = { label: string; value: string; emphasis?: boolean };
@@ -26,15 +26,13 @@ export type TarjousPdfContext = {
   additionalInfo: string;
   footer: PdfFooter;
   /** Kotitalousvähennyssivu: vain yksityisasiakas ilman käänteistä ALV:ta. */
-  khv?: {
+  ktv?: {
     /** Kokonaishinta sis. ALV alennuksen jälkeen. */
     totalPriceVat: number;
-    /** Kokonaishinta sis. ALV ennen alennusta (alennuksen kohdistus: kotitalousDeduction.khvPriceSplit). */
-    totalPriceVatBeforeDiscount: number;
-    /** Materiaalit sis. ALV ennen alennusta. */
+    /** Materiaalit sis. ALV sellaisenaan; alennus pienentää vain työn osuutta (kotitalousDeduction.ktvPriceSplit). */
     materialsVat: number;
     /** Yrityskohtaiset asetukset (Tarjous-asetukset), ei kovakoodattuja arvoja. */
-    settings: KhvSettings;
+    settings: KtvSettings;
     /** Asetusten huomautusteksti; tyhjä → oletusteksti. */
     footnoteText: string;
   };
@@ -162,7 +160,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     { label: 'Päiväys', value: formatFinnishDate(generatedAt) },
     { label: 'Voimassa', value: formatFinnishDate(validUntil(generatedAt, offerCompany.offerValidDays)) },
   ];
-  const khvApplicable = isPrivateCustomer(customer) && !customer.reverseVat;
+  const ktvApplicable = isPrivateCustomer(customer) && !customer.reverseVat;
   return {
     kind: 'tarjous',
     logoUri: company.logoUri,
@@ -172,13 +170,12 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     price: offerPriceBlock(record, customer),
     additionalInfo: offerAdditionalInfo(record, input.offerStructureSettings),
     footer: buildFooter(company),
-    khv: khvApplicable
+    ktv: ktvApplicable
       ? {
           totalPriceVat: record.totalPriceVat,
-          totalPriceVatBeforeDiscount: record.totalPriceVatBeforeDiscount || record.totalPriceVat,
           materialsVat: Math.round(applyVat(record.materialsVat0, record.vatPercent) * 100) / 100,
-          settings: offerCompany.khv,
-          footnoteText: offerCompany.khvFootnoteText,
+          settings: offerCompany.ktv,
+          footnoteText: offerCompany.ktvFootnoteText,
         }
       : undefined,
   };

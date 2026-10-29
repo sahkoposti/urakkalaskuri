@@ -525,7 +525,7 @@ async function writeSettingValue(key: string, value: string): Promise<void> {
   await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value);
 }
 
-/** Yrityskohtaiset tarjousasetukset (voimassaolo, numerointi, KHV). */
+/** Yrityskohtaiset tarjousasetukset (voimassaolo, numerointi, KTV). */
 export async function getOfferCompanySettings(): Promise<OfferCompanySettings> {
   return parseStoredOfferCompanySettings(await readSettingValue(OFFER_COMPANY_SETTINGS_KEY));
 }

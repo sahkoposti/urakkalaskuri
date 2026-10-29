@@ -74,9 +74,9 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   .additional-info { page-break-inside: avoid; break-inside: avoid; }
   .additional-info h3 { margin: 0 0 1.5mm 0; font-size: 11pt; }
   .page-break { page-break-before: always; break-before: page; }
-  .khv-title { margin: 0 0 4mm 0; font-size: 14pt; }
-  .khv-page .price-block { max-width: 150mm; }
-  .khv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
-  .khv-note { font-size: 9pt; color: #333; }
+  .ktv-title { margin: 0 0 4mm 0; font-size: 14pt; }
+  .ktv-page .price-block { max-width: 150mm; }
+  .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
+  .ktv-note { font-size: 9pt; color: #333; }
 `;
 }
