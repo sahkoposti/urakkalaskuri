@@ -1,6 +1,7 @@
 import {
   DEFAULT_KHV_SETTINGS,
   KHV_DEFAULT_NOTE,
+  khvPriceSplit,
   khvWorkShareVatIncluded,
   kotitalousDeduction,
   normalizeKhvSettings,
@@ -40,10 +41,19 @@ describe('kotitalousDeduction', () => {
     expect(zero.estimatedCostAfterDeduction).toBe(1000);
   });
 
-  it('discount case: uses discounted total incl. VAT as given by caller', () => {
-    const r = kotitalousDeduction({ totalPriceVat: 2480 * 0.9, materialsVat: 248, settings: defaults });
-    expect(r.workShareVatIncluded).toBe(1984);
-    expect(r.deductionAmount).toBe(643.6);
+  it('discount case: whole price split, discount applied proportionally to work and materials', () => {
+    // 2480 before, 10 % off -> 2232; materials 248 -> 223.20; work 2008.80
+    const r = kotitalousDeduction({ totalPriceVat: 2232, totalPriceVatBeforeDiscount: 2480, materialsVat: 248, settings: defaults });
+    expect(r.materialsShareVatIncluded).toBe(223.2);
+    expect(r.workShareVatIncluded).toBe(2008.8);
+    expect(r.workShareVatIncluded + r.materialsShareVatIncluded).toBe(2232);
+    expect(r.deductionAmount).toBe(653.52);
+  });
+
+  it('travel time/costs stay in the work share (part of the price, not materials)', () => {
+    // price 2000 incl. 200 travel; materials 300 -> work 1700 incl. travel
+    const r = kotitalousDeduction({ totalPriceVat: 2000, materialsVat: 300, settings: defaults });
+    expect(r.workShareVatIncluded).toBe(1700);
   });
 
   it('uses company settings instead of defaults (not hardcoded)', () => {
@@ -64,10 +74,16 @@ describe('kotitalousDeduction', () => {
 });
 
 describe('khvWorkShareVatIncluded', () => {
-  it('is total after discount minus materials as given (no separate material discount)', () => {
+  it('no discount: total minus materials; never negative; NaN safe', () => {
     expect(khvWorkShareVatIncluded(2232, 248)).toBe(1984);
     expect(khvWorkShareVatIncluded(100, 200)).toBe(0);
     expect(khvWorkShareVatIncluded(Number.NaN, 10)).toBe(0);
+    expect(khvWorkShareVatIncluded(2232, 248, 2232)).toBe(1984);
+  });
+
+  it('with discount: materials reduced by the same factor; split sums to the paid price', () => {
+    expect(khvPriceSplit(1800, 400, 2000)).toEqual({ workShareVatIncluded: 1440, materialsShareVatIncluded: 360 });
+    expect(khvPriceSplit(0, 400, 2000)).toEqual({ workShareVatIncluded: 0, materialsShareVatIncluded: 0 });
   });
 });
 

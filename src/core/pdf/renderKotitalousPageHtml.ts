@@ -19,6 +19,7 @@ export function renderKotitalousPageHtml(ctx: Pick<TarjousPdfContext, 'khv'>): s
   if (!khv) return '';
   const result = kotitalousDeduction({
     totalPriceVat: khv.totalPriceVat,
+    totalPriceVatBeforeDiscount: khv.totalPriceVatBeforeDiscount,
     materialsVat: khv.materialsVat,
     settings: khv.settings,
   });
@@ -30,7 +31,7 @@ export function renderKotitalousPageHtml(ctx: Pick<TarjousPdfContext, 'khv'>): s
     row('Omavastuu / henkilö / vuosi', `−${formatCurrency(s.deductibleEur)}`),
     ...(result.capApplied ? [row('Enimmäismäärä / henkilö / vuosi', formatCurrency(s.capEur))] : []),
     row('Arvioitu kotitalousvähennys (1 henkilö)', formatCurrency(result.deductionAmount), 'emphasis'),
-    row('Materiaalit', 'eivät ole vähennyskelpoisia'),
+    row('Materiaalit (sis. ALV), eivät ole vähennyskelpoisia', formatCurrency(result.materialsShareVatIncluded)),
     row('Arvioitu kustannus vähennyksen jälkeen', formatCurrency(result.estimatedCostAfterDeduction), 'emphasis'),
   ].join('');
   return `<section class="khv-page page-break">

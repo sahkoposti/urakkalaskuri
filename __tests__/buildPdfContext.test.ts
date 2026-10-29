@@ -56,6 +56,7 @@ describe('buildPdfContext', () => {
     expect(ctx.price.right[1].emphasis).toBe(true);
     expect(ctx.khv).toEqual({
       totalPriceVat: 2510,
+      totalPriceVatBeforeDiscount: 2510,
       materialsVat: 502,
       settings: { ratePercent: 40, deductibleEur: 150, capEur: 2100 },
       footnoteText: '',

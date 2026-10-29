@@ -29,7 +29,9 @@ export type TarjousPdfContext = {
   khv?: {
     /** Kokonaishinta sis. ALV alennuksen jälkeen. */
     totalPriceVat: number;
-    /** Materiaalit sis. ALV sellaisenaan (ks. kotitalousDeduction.khvWorkShareVatIncluded). */
+    /** Kokonaishinta sis. ALV ennen alennusta (alennuksen kohdistus: kotitalousDeduction.khvPriceSplit). */
+    totalPriceVatBeforeDiscount: number;
+    /** Materiaalit sis. ALV ennen alennusta. */
     materialsVat: number;
     /** Yrityskohtaiset asetukset (Tarjous-asetukset), ei kovakoodattuja arvoja. */
     settings: KhvSettings;
@@ -173,6 +175,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     khv: khvApplicable
       ? {
           totalPriceVat: record.totalPriceVat,
+          totalPriceVatBeforeDiscount: record.totalPriceVatBeforeDiscount || record.totalPriceVat,
           materialsVat: Math.round(applyVat(record.materialsVat0, record.vatPercent) * 100) / 100,
           settings: offerCompany.khv,
           footnoteText: offerCompany.khvFootnoteText,
