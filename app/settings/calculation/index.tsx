@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 
-import { OutlinedButton, ScreenMessage, SectionTitle } from '@/src/components/common';
+import { AppCard, AppSwitch, OutlinedButton, ScreenMessage, SectionTitle } from '@/src/components/common';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { JsonImportField } from '@/src/components/form/JsonImportField';
 import { SettingsNavCard } from '@/src/components/SettingsNavCard';
@@ -24,6 +24,8 @@ import {
   serializeFormDefinition,
 } from '@/src/core/form/formDefinitionIo';
 import { normalizeFormDefinition } from '@/src/core/form/formDefinitionHelpers';
+import type { FormDebugSettings } from '@/src/core/form/types';
+import { db, useApp } from '@/src/context/AppContext';
 import { useSaveToast } from '@/src/context/SaveToastContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useStructureFormEditor } from '@/src/hooks/useStructureFormEditor';
@@ -37,6 +39,7 @@ export default function CalculationSettingsScreen() {
   const { formDefinition, persistForm, href, structure } = useStructureFormEditor();
   const { showAlert } = useThemedAlert();
   const { showSaved } = useSaveToast();
+  const { formDebug, refreshFormSettings } = useApp();
   const [importVisible, setImportVisible] = useState(false);
   const [importText, setImportText] = useState('');
   const [importFieldKey, setImportFieldKey] = useState(0);
@@ -91,6 +94,16 @@ export default function CalculationSettingsScreen() {
     }
   }
 
+  async function handleDebugChange(patch: Partial<FormDebugSettings>) {
+    try {
+      await db.saveFormDebugSettings({ ...formDebug, ...patch });
+      await refreshFormSettings();
+      showSaved('Tallennettu');
+    } catch {
+      showAlert('Virhe', 'Debug-asetuksen tallennus epäonnistui.');
+    }
+  }
+
   async function handleResetDefault() {
     setResetVisible(false);
     const defaults = normalizeFormDefinition(createDefaultFormDefinition());
@@ -114,9 +127,9 @@ export default function CalculationSettingsScreen() {
           onPress={() => router.push(href('/settings/calculation/fields'))}
         />
         <SettingsNavCard
-          title="Debug"
-          subtitle="Live-laskenta kaavojen kalibrointiin"
-          onPress={() => router.push(href('/settings/calculation/debug'))}
+          title="Tarjous"
+          subtitle="Tarjous-PDF: sivut, lisätiedot, numerointi, voimassaolo, kotitalousvähennys"
+          onPress={() => router.push(href('/settings/calculation/offer'))}
         />
 
         <SectionTitle title="Lomakepohja" />
@@ -129,6 +142,37 @@ export default function CalculationSettingsScreen() {
         />
         <OutlinedButton title="Vie JSON (leikepöytä)" onPress={() => void handleExport()} />
         <OutlinedButton title="Palauta oletuslomake…" onPress={() => setResetVisible(true)} />
+
+        <SectionTitle title="Debug" />
+        <AppCard>
+          <View style={styles.debugRow}>
+            <View style={styles.debugText}>
+              <Text style={styles.debugTitle}>Debug-tila</Text>
+              <Text style={styles.debugBody}>
+                Kun päällä, jokaisella syötekentällä voi asettaa esimerkkiarvon. Kaava-asetukset
+                näyttävät live-laskennan näiden arvojen pohjalta.
+              </Text>
+            </View>
+            <AppSwitch
+              value={formDebug.enabled}
+              onValueChange={(enabled) => void handleDebugChange({ enabled })}
+            />
+          </View>
+        </AppCard>
+        <AppCard>
+          <View style={styles.debugRow}>
+            <View style={styles.debugText}>
+              <Text style={styles.debugTitle}>Näytä välivaiheet</Text>
+              <Text style={styles.debugBody}>Listaa kaikki laskentavaiheet live-paneelissa.</Text>
+            </View>
+            <AppSwitch
+              value={formDebug.showIntermediateSteps}
+              onValueChange={(showIntermediateSteps) =>
+                void handleDebugChange({ showIntermediateSteps })
+              }
+            />
+          </View>
+        </AppCard>
       </ScrollView>
 
       <Modal
@@ -200,6 +244,25 @@ function createStyles(colors: AppColorPalette) {
       padding: 20,
       paddingBottom: 40,
       gap: 10,
+    },
+    debugRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 12,
+    },
+    debugText: {
+      flex: 1,
+    },
+    debugTitle: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      color: colors.primary,
+      fontSize: 16,
+      marginBottom: 6,
+    },
+    debugBody: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      lineHeight: 20,
     },
     modalAvoid: {
       flex: 1,

@@ -98,11 +98,15 @@ export function fieldValuesEqual(
 
 /** Kopio rivistä, jotta lomakkeen paikallinen tila ei jaa draftin objekteja. */
 export function cloneStructureLine(line: StructureLine): StructureLine {
-  return {
+  const cloned: StructureLine = {
     ...line,
     fieldValues: { ...(line.fieldValues ?? {}) },
     overrides: [...(line.overrides ?? [])],
   };
+  if (line.materialQuantities !== undefined) {
+    cloned.materialQuantities = line.materialQuantities.map((row) => ({ ...row }));
+  }
+  return cloned;
 }
 
 /**
@@ -136,6 +140,19 @@ function structureLineSignature(line: StructureLine) {
     formFilled: Boolean(line.formFilled),
     fieldValues: serializeFieldValues(line.fieldValues),
     pricesIncludeVat: line.pricesIncludeVat !== false,
+    ...(line.materialQuantities !== undefined
+      ? {
+          materialQuantities: line.materialQuantities.map((row) => ({
+            id: row.id,
+            productId: row.productId ?? '',
+            productName: row.productName,
+            quantity: row.quantity,
+            unit: row.unit ?? '',
+            source: row.source,
+            fieldKey: row.fieldKey ?? '',
+          })),
+        }
+      : {}),
   };
 }
 

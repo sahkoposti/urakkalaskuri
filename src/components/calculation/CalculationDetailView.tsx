@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { PdfExportButtons } from '@/src/components/pdf/PdfExportButtons';
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
 import { PriceBreakdownCard } from '@/src/components/calculation/PriceBreakdownCard';
@@ -19,7 +20,7 @@ import {
   hasFormVersionMismatch,
 } from '@/src/core/form/formVersion';
 import type { FormDefinition } from '@/src/core/form/types';
-import type { CalculationRecord, CustomerInfo, StructureLine } from '@/src/core/models/types';
+import type { CalculationRecord, CustomerInfo, MaterialQuantityRow, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
@@ -28,6 +29,7 @@ import {
   lineTotalVat0,
   withDerivedLinePricing,
 } from '@/src/core/structure/linePricing';
+import { formatQuantity } from '@/src/core/materials/materialQuantities';
 import { estimateWorkDurationDays } from '@/src/core/utils/formatters';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import { applyVat, isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
@@ -121,6 +123,7 @@ export function CalculationDetailView({
           title="Muokkaa"
           onPress={() => router.push({ pathname: '/wizard', params: { editId: record.id } })}
         />
+        <PdfExportButtons calculationId={record.id} />
       </View>
 
       <AppCard style={styles.card}>
@@ -257,6 +260,7 @@ function LineDetail({
           <ResultRow label="Lisätiedot" value={line.additionalInfo.trim()} />
         </AppCard>
       ) : null}
+      <SavedMaterialQuantities line={line} />
       <FormSummarySection
         form={structure?.form}
         fieldValues={line.fieldValues}
@@ -268,6 +272,29 @@ function LineDetail({
         fieldKeyPrefix={`${line.id}:`}
       />
     </View>
+  );
+}
+
+function materialDetailValue(row: MaterialQuantityRow): string {
+  const unit = row.unit && !row.unit.includes('€') ? row.unit.trim() : '';
+  return [formatQuantity(row.quantity), unit].filter((part) => part.length > 0).join(' ');
+}
+
+function SavedMaterialQuantities({ line }: { line: StructureLine }) {
+  const styles = useThemedStyles(createStyles);
+  const rows = (line.materialQuantities ?? []).filter((row) => row.productName.trim() && row.quantity > 0);
+  if (rows.length === 0) return null;
+  return (
+    <AppCard>
+      <Text style={styles.materialsTitle}>Materiaalit (urakkakortti)</Text>
+      {rows.map((row) => (
+        <ResultRow
+          key={row.id}
+          label={row.productName.replaceAll('€', '').trim() || 'Materiaali'}
+          value={materialDetailValue(row)}
+        />
+      ))}
+    </AppCard>
   );
 }
 
@@ -325,6 +352,12 @@ function createStyles(colors: AppColorPalette) {
     },
     card: {
       marginTop: 8,
+    },
+    materialsTitle: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 15,
+      color: colors.primary,
+      marginBottom: 4,
     },
   };
 }

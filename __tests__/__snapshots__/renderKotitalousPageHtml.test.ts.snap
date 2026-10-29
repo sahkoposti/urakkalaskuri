@@ -1,0 +1,10 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renderKotitalousPageHtml private customer: KTV page is last, with page break and one-person estimate text 1`] = `
+"<section class="ktv-page page-break">
+<h2 class="ktv-title">Kotitalousvähennys</h2>
+<div class="price-block"><div class="col"><table><tr><td>Työn osuus (sis. ALV)</td><td class="value">2 008,00 €</td></tr><tr><td>Kotitalousvähennys (40 %)</td><td class="value">803,20 €</td></tr><tr><td>Omavastuu / henkilö / vuosi</td><td class="value">−150,00 €</td></tr><tr class="emphasis"><td>Arvioitu kotitalousvähennys (1 henkilö)</td><td class="value">653,20 €</td></tr><tr><td>Materiaalit (sis. ALV), eivät ole vähennyskelpoisia</td><td class="value">502,00 €</td></tr><tr class="emphasis"><td>Arvioitu kustannus vähennyksen jälkeen</td><td class="value">1 856,80 €</td></tr></table></div></div>
+<p class="ktv-one-person">Laskelma on arvio yhdelle henkilölle.</p>
+<p class="ktv-note">Kotitalousvähennys on arvio yhdelle henkilölle. Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.</p>
+</section>"
+`;
