@@ -76,6 +76,9 @@ async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
   if (!calculationColumns.some((column) => column.name === 'total_price_vat0_before_discount')) {
     await db.execAsync('ALTER TABLE calculations ADD COLUMN total_price_vat0_before_discount REAL');
   }
+  if (!calculationColumns.some((column) => column.name === 'offer_number')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN offer_number INTEGER');
+  }
 
   const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
   if (!productColumns.some((column) => column.name === 'attributes')) {

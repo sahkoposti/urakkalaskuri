@@ -17,6 +17,7 @@ import {
   defaultOfferCompanySettings,
   normalizeOfferCompanySettings,
 } from '@/src/core/pdf/defaultOfferSettings';
+import { offerNumberStartWarning } from '@/src/core/pdf/offerNumber';
 import { syncOfferPages, toOfferPageInclusions } from '@/src/core/pdf/syncOfferPages';
 import type { OfferCompanySettings, SyncedOfferPage } from '@/src/core/pdf/types';
 import { useStructureFormEditor } from '@/src/hooks/useStructureFormEditor';
@@ -66,13 +67,19 @@ export default function OfferSettingsScreen() {
   const [info, setInfo] = useState('');
   const [storedPages, setStoredPages] = useState<SyncedOfferPage[]>([]);
   const [pages, setPages] = useState<SyncedOfferPage[]>([]);
+  const [storedNextOfferNumber, setStoredNextOfferNumber] = useState<number | undefined>();
 
   useEffect(() => {
     if (!formDefinition) return;
     let active = true;
-    Promise.all([db.getOfferCompanySettings(), db.getOfferStructureSettings(structureId)])
-      .then(([companySettings, structureSettings]) => {
+    Promise.all([
+      db.getOfferCompanySettings(),
+      db.getOfferStructureSettings(structureId),
+      db.getStoredNextOfferNumber(),
+    ])
+      .then(([companySettings, structureSettings, storedNext]) => {
         if (!active) return;
+        setStoredNextOfferNumber(storedNext);
         const draft = toDraft(companySettings);
         setStoredCompany(draft);
         setCompany(draft);
@@ -135,6 +142,12 @@ export default function OfferSettingsScreen() {
     router.back();
   }
 
+  // Varoitus vain, kun aloitusnumeroa on muutettu (ei pysyvää varoitusta käytön jälkeen).
+  const startWarning =
+    company.offerNumberStart !== storedCompany.offerNumberStart
+      ? offerNumberStartWarning(Number(company.offerNumberStart), storedNextOfferNumber)
+      : null;
+
   const setField = (key: keyof CompanyDraft) => (value: string) =>
     setCompany((prev) => ({ ...prev, [key]: value }));
 
@@ -172,6 +185,7 @@ export default function OfferSettingsScreen() {
           onChangeText={setField('offerNumberStart')}
           keyboardType="numeric"
         />
+        {startWarning ? <Text style={styles.note}>{startWarning}</Text> : null}
         <AppInput
           label="Voimassaolo (pv)"
           value={company.offerValidDays}
