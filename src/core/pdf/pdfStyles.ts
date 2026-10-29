@@ -101,4 +101,5 @@ export const offerDocumentCss = `
   .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
   .offer-seller { margin: 4mm 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; }
+  .ktv-rate-sentence { margin: 0 0 3mm 0; }
 `;
