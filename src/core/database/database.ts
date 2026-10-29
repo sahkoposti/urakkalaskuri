@@ -44,7 +44,7 @@ import {
 } from '../structure/types';
 import { parseCrewSize } from '../structure/structureSettings';
 import { ensureStructureLines } from '../structure/legacyCalculation';
-import { withManualContractPrices } from '../pdf/manualContract';
+import { recordWithManualContractPrices } from '../pdf/manualContract';
 import {
   ACTIVE_STRUCTURE_KEY,
   getDb,
@@ -590,8 +590,8 @@ export function assignOfferNumberForCalculation(calculationId: string): Promise<
 }
 
 /**
- * Urakkakortti: tallentaa käsin kirjatut urakat laskelman riveille (Eemil 29.10.2026 #6).
- * Päivittää vain structure_lines-sarakkeen; asiakashinnat ja kate ennallaan.
+ * Urakkakortti: käsin kirjattu urakka korvaa rivin contractPriceVat0:n ja kate lasketaan uudelleen
+ * (Eemil 29.10.2026 #6, #7). Tallennus saveCalculationin kautta (tarjousnumero säilyy).
  */
 export async function saveManualContractPrices(
   calculationId: string,
@@ -599,14 +599,9 @@ export async function saveManualContractPrices(
 ): Promise<CalculationRecord> {
   const record = await getCalculation(calculationId);
   if (!record) throw new Error('Laskelmaa ei löytynyt.');
-  const structureLines = withManualContractPrices(ensureStructureLines(record), manualByLineId);
-  const db = await getDb();
-  await db.runAsync(
-    'UPDATE calculations SET structure_lines = ? WHERE id = ?',
-    JSON.stringify(structureLines),
-    calculationId,
-  );
-  return { ...record, structureLines };
+  const updated = recordWithManualContractPrices(record, manualByLineId);
+  await saveCalculation(updated);
+  return updated;
 }
 
 const FIELDS_PAGE_EXPANDED_KEY = 'fields_page_expanded';

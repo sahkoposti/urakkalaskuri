@@ -44,7 +44,7 @@ export function ManualContractDialog({ visible, lines, onSubmit, onCancel }: Man
           <Text style={styles.title}>Tekijöiden urakka</Text>
           <View style={styles.underline} />
           <Text style={styles.message}>
-            Lomaketta ei käytetty, joten urakka puuttuu. Kirjaa urakka (alv0). Se tallennetaan laskelmaan.
+            Urakka puuttuu (lomaketta ei käytetty). Kirjaa urakka (alv0): se tallennetaan laskelman urakaksi ja kate lasketaan uudelleen. Urakkaa voi muokata myöhemmin rivikortilla.
           </Text>
           <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
             {lines.map((line) => (

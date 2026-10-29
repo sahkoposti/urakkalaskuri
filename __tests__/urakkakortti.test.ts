@@ -3,10 +3,12 @@ import {
   effectiveContractVat0,
   linesNeedingManualContract,
   parseManualContractInputs,
+  recordWithManualContractPrices,
   withManualContractPrices,
 } from '../src/core/pdf/manualContract';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
 import { buildUrakkakorttiContext, type BuildUrakkakorttiInput } from '../src/core/pdf/urakkakortti';
+import { patchStructureLine } from '../src/core/structure/applyFormToLine';
 import { withDerivedLinePricing } from '../src/core/structure/linePricing';
 import { form, input, line, record } from './pdfFixtures';
 import type { CalculationRecord } from '../src/core/models/types';
@@ -25,27 +27,39 @@ function ukInput(rec: CalculationRecord): BuildUrakkakorttiInput {
 
 const bodyOf = (html: string) => html.replace(/<style>[\s\S]*?<\/style>/, '');
 
-describe('manual contract price', () => {
-  it('uses the form contract first, then the manual sum', () => {
-    expect(effectiveContractVat0({ contractPriceVat0: 1000, manualContractPriceVat0: 5 })).toBe(1000);
-    expect(effectiveContractVat0({ contractPriceVat0: 0, manualContractPriceVat0: 800 })).toBe(800);
+describe('manual contract price (replaces contractPriceVat0)', () => {
+  it('urakka is the line contractPriceVat0', () => {
+    expect(effectiveContractVat0({ contractPriceVat0: 1000 })).toBe(1000);
     expect(effectiveContractVat0({ contractPriceVat0: 0 })).toBe(0);
   });
 
-  it('lists lines that need a manual sum and applies valid values only', () => {
-    const lines = [{ ...line('a', 's1', 'A'), contractPriceVat0: 0, formFilled: false }, line('b', 's1', 'B')];
+  it('manual value replaces contractPriceVat0, marks the override and recalculates the margin', () => {
+    const base = { ...line('a', 's1', 'A'), contractPriceVat0: 0, formFilled: false };
+    const lines = [base, line('b', 's1', 'B')];
     const rec = record({}, { structureLines: lines });
     expect(linesNeedingManualContract(rec).map((l) => l.id)).toEqual(['a']);
     const applied = withManualContractPrices(lines, { a: 1234.567, b: -1 });
-    expect(applied[0].manualContractPriceVat0).toBe(1234.57);
-    expect(applied[1].manualContractPriceVat0).toBeUndefined();
+    expect(applied[0].contractPriceVat0).toBe(1234.57);
+    expect(applied[0].overrides).toContain('contractPrice');
+    const before = withDerivedLinePricing(base).marginEur;
+    expect(applied[0].marginEur).toBeCloseTo(before - 1234.57, 2);
+    expect(applied[1]).toBe(lines[1]);
     expect(linesNeedingManualContract(record({}, { structureLines: applied }))).toEqual([]);
   });
 
-  it('manual sum survives line re-pricing (edit + save keeps it) and does not change the contract', () => {
-    const priced = withDerivedLinePricing({ ...line('a', 's1', 'A'), contractPriceVat0: 0, manualContractPriceVat0: 900 });
-    expect(priced.manualContractPriceVat0).toBe(900);
-    expect(priced.contractPriceVat0).toBe(0);
+  it('record totals: contract and margin recalculated, customer price unchanged', () => {
+    const rec = record({}, { structureLines: [{ ...line('a', 's1', 'A'), contractPriceVat0: 0 }] });
+    const updated = recordWithManualContractPrices(rec, { a: 900 });
+    expect(updated.contractPriceVat0).toBe(900);
+    expect(updated.marginEur).toBeCloseTo(updated.structureLines![0].marginEur, 2);
+    expect(updated.totalPriceVat).toBe(rec.totalPriceVat);
+    expect(updated.totalPriceVat0).toBe(rec.totalPriceVat0);
+  });
+
+  it('a later form recompute keeps the manual contract (override)', () => {
+    const [applied] = withManualContractPrices([{ ...line('a', 's1', 'A'), contractPriceVat0: 0 }], { a: 700 });
+    const patched = patchStructureLine(applied, { discountPercent: 5 });
+    expect(patched.contractPriceVat0).toBe(700);
   });
 
   it('parses dialog inputs with decimal comma and rejects empty/invalid', () => {
@@ -69,7 +83,7 @@ describe('urakkakortti', () => {
   });
 
   it('multi-structure: one card with per-line contract sums and total', () => {
-    const lines = [line('a', 's1', 'Ulkomaalaus'), { ...line('b', 's2', 'Sokkeli', '30'), contractPriceVat0: 0, manualContractPriceVat0: 450 }];
+    const lines = [line('a', 's1', 'Ulkomaalaus'), { ...line('b', 's2', 'Sokkeli', '30'), contractPriceVat0: 450 }];
     const ctx = buildUrakkakorttiContext(ukInput(record({}, { structureLines: lines })));
     expect(ctx.contractRows.map((r) => r.label)).toEqual([
       'Tekijöiden urakka: Ulkomaalaus',
