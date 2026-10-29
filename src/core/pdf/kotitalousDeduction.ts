@@ -1,5 +1,5 @@
 /**
- * Kotitalousvähennys (KHV) tarjous-PDF:n viimeiselle sivulle (T8, laskentaosa).
+ * Kotitalousvähennys (KTV) tarjous-PDF:n viimeiselle sivulle (T8, laskentaosa).
  *
  * Eemilin päätökset 29.10.2026: vähennyksen pohja = KOKO hinta jaettuna työhön ja materiaaleihin
  * (työn osuus sis. ALV). Matka-aika ja matkakulut kuuluvat maalarin näkökulmasta työhön, joten ne
@@ -10,15 +10,15 @@
  * Oletukset tarkistettu vero.fi:stä 29.10.2026: 40 % työn arvonlisäverollisesta hinnasta,
  * omavastuu 150 €/hlö/v, enintään 2 100 €/hlö/v. Voimassa vuosina 2026–2027 (väliaikainen laki).
  */
-import { DEFAULT_KHV_SETTINGS, normalizeKhvSettings } from './defaultOfferSettings';
-import type { KhvSettings } from './types';
+import { DEFAULT_KTV_SETTINGS, normalizeKtvSettings } from './defaultOfferSettings';
+import type { KtvSettings } from './types';
 
 // Yksi lähde: tyyppi, oletukset ja normalisointi ovat T4:n tarjousasetuksissa (yrityskohtainen asetusavain).
-export { DEFAULT_KHV_SETTINGS, normalizeKhvSettings };
-export type { KhvSettings };
+export { DEFAULT_KTV_SETTINGS, normalizeKtvSettings };
+export type { KtvSettings };
 
 /** PDF:ään tuleva huomautus (oletus; Tarjous-asetusten oma teksti korvaa). */
-export const KHV_DEFAULT_NOTE =
+export const KTV_DEFAULT_NOTE =
   'Kotitalousvähennys on arvio yhdelle henkilölle. Vähennyksestä on vähennetty omavastuu ' +
   'ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole ' +
   'vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.';
@@ -26,16 +26,14 @@ export const KHV_DEFAULT_NOTE =
 export type KotitalousDeductionInput = {
   /** Asiakkaan kokonaishinta sis. ALV alennuksen jälkeen. */
   totalPriceVat: number;
-  /** Kokonaishinta sis. ALV ennen alennusta. Puuttuu → ei alennusta. */
-  totalPriceVatBeforeDiscount?: number;
-  /** Materiaalit sis. ALV ennen alennusta (laskelman materiaalisumma). */
+  /** Materiaalit sis. ALV sellaisenaan (alennus ei pienennä, ks. ktvPriceSplit). */
   materialsVat: number;
-  settings: KhvSettings;
+  settings: KtvSettings;
 };
 
 export type KotitalousDeductionResult = {
   workShareVatIncluded: number;
-  /** Materiaalien osuus kokonaishinnasta (alennus kohdistettu), sis. ALV. */
+  /** Materiaalit sis. ALV sellaisenaan (alennus ei kohdistu materiaaleihin). */
   materialsShareVatIncluded: number;
   /** Prosentti × työn osuus, ennen omavastuuta ja enimmäismäärää. */
   grossDeduction: number;
@@ -43,55 +41,40 @@ export type KotitalousDeductionResult = {
   deductionAmount: number;
   capApplied: boolean;
   estimatedCostAfterDeduction: number;
-  settings: KhvSettings;
+  settings: KtvSettings;
 };
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
-export type KhvPriceSplit = { workShareVatIncluded: number; materialsShareVatIncluded: number };
+export type KtvPriceSplit = { workShareVatIncluded: number; materialsShareVatIncluded: number };
 
 const finiteNonNegative = (n: number | undefined) => Math.max(0, typeof n === 'number' && Number.isFinite(n) ? n : 0);
 
 /**
- * KHV:n pohja: KOKO hinta jaetaan työhön ja materiaaleihin. AINOA paikka, jossa jako ja alennus lasketaan.
+ * KTV:n pohja: KOKO hinta jaetaan työhön ja materiaaleihin. AINOA paikka, jossa jako ja alennus lasketaan.
  *
- * Alennuksen käsittely (Eemil 29.10.2026 #4, "koko hinnan jako"): alennus kohdistuu koko hintaan,
- * eli työhön ja materiaaleihin SAMASSA SUHTEESSA kuin ennen alennusta:
- *   kerroin            = hinta alennuksen jälkeen / hinta ennen alennusta
- *   materiaalien osuus = materiaalit (ennen alennusta) × kerroin   (enintään koko hinta)
- *   työn osuus         = hinta alennuksen jälkeen − materiaalien osuus
- * Työn osuus + materiaalien osuus = asiakkaan maksama kokonaishinta. Matka-aika/-kulut ovat työtä.
- * Ilman alennusta (tai jos ennen-hinta puuttuu) kerroin = 1.
+ * Alennuksen käsittely (Eemil 29.10.2026 klo 17.33): alennus EI pienennä materiaaleja, se pienentää
+ * vain työn osuutta:
+ *   materiaalien osuus = materiaalit sis. ALV sellaisenaan (laskelman materiaalisumma, ei alennusta)
+ *   työn osuus         = asiakkaan maksama hinta sis. ALV (alennuksen jälkeen) − materiaalit
+ * Jos alennus on niin suuri, että työn osuus menisi negatiiviseksi, työn osuus = 0 (rajaus).
+ * Matka-aika ja matkakulut kuuluvat työn osuuteen (niitä ei makseta työntekijälle matkakuluina).
  */
-export function khvPriceSplit(
-  totalPriceVatAfterDiscount: number,
-  materialsVat: number,
-  totalPriceVatBeforeDiscount?: number,
-): KhvPriceSplit {
+export function ktvPriceSplit(totalPriceVatAfterDiscount: number, materialsVat: number): KtvPriceSplit {
   const total = finiteNonNegative(totalPriceVatAfterDiscount);
-  const before = finiteNonNegative(totalPriceVatBeforeDiscount);
-  const factor = before > total && before > 0 ? total / before : 1;
-  const materialsShare = round2(Math.min(total, finiteNonNegative(materialsVat) * factor));
-  return { workShareVatIncluded: round2(Math.max(0, total - materialsShare)), materialsShareVatIncluded: materialsShare };
+  const materials = round2(finiteNonNegative(materialsVat));
+  return { workShareVatIncluded: round2(Math.max(0, total - materials)), materialsShareVatIncluded: materials };
 }
 
-/** Työn osuus sis. ALV (ks. khvPriceSplit). */
-export function khvWorkShareVatIncluded(
-  totalPriceVatAfterDiscount: number,
-  materialsVat: number,
-  totalPriceVatBeforeDiscount?: number,
-): number {
-  return khvPriceSplit(totalPriceVatAfterDiscount, materialsVat, totalPriceVatBeforeDiscount).workShareVatIncluded;
+/** Työn osuus sis. ALV (ks. ktvPriceSplit). */
+export function ktvWorkShareVatIncluded(totalPriceVatAfterDiscount: number, materialsVat: number): number {
+  return ktvPriceSplit(totalPriceVatAfterDiscount, materialsVat).workShareVatIncluded;
 }
 
 export function kotitalousDeduction(input: KotitalousDeductionInput): KotitalousDeductionResult {
-  const settings = normalizeKhvSettings(input.settings);
+  const settings = normalizeKtvSettings(input.settings);
   const total = Math.max(0, Number.isFinite(input.totalPriceVat) ? input.totalPriceVat : 0);
-  const { workShareVatIncluded, materialsShareVatIncluded } = khvPriceSplit(
-    input.totalPriceVat,
-    input.materialsVat,
-    input.totalPriceVatBeforeDiscount,
-  );
+  const { workShareVatIncluded, materialsShareVatIncluded } = ktvPriceSplit(input.totalPriceVat, input.materialsVat);
   const grossDeduction = round2((workShareVatIncluded * settings.ratePercent) / 100);
   const afterDeductible = Math.max(0, grossDeduction - settings.deductibleEur);
   const capApplied = afterDeductible > settings.capEur;

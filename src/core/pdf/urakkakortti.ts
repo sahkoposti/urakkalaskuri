@@ -16,7 +16,7 @@ export { effectiveContractVat0, linesNeedingManualContract, withManualContractPr
 
 /**
  * Urakkakortti (suunnitelma §2, Eemil 29.10.2026 #3, #6). Maalareille.
- * EI: asiakashinta, ALV, kate, palkkio, materiaalihinnat, KHV, voimassaolo, tarjousnumero, tarjouksen lisätiedot.
+ * EI: asiakashinta, ALV, kate, palkkio, materiaalihinnat, KTV, voimassaolo, tarjousnumero, tarjouksen lisätiedot.
  */
 
 export type UrakkakorttiMaterialRow = { product: string; quantity: string; unit: string };

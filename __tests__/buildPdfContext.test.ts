@@ -48,15 +48,14 @@ describe('offerPageSpecs', () => {
 });
 
 describe('buildPdfContext', () => {
-  it('private customer: VAT-inclusive price block, no Ale row at 0 %, KHV data present', () => {
+  it('private customer: VAT-inclusive price block, no Ale row at 0 %, KTV data present', () => {
     const ctx = buildPdfContext(input(record({})));
     expect(ctx.price.includesVat).toBe(true);
     expect(labels(ctx.price.left)).toEqual(['Hinta alv0', 'ALV 25,5 %']);
     expect(labels(ctx.price.right)).toEqual(['Hinta alv', 'Loppusumma']);
     expect(ctx.price.right[1].emphasis).toBe(true);
-    expect(ctx.khv).toEqual({
+    expect(ctx.ktv).toEqual({
       totalPriceVat: 2510,
-      totalPriceVatBeforeDiscount: 2510,
       materialsVat: 502,
       settings: { ratePercent: 40, deductibleEur: 150, capEur: 2100 },
       footnoteText: '',
@@ -108,19 +107,19 @@ describe('buildPdfContext', () => {
     expect(ctx.price.right[1].value.replace(/\s/g, ' ')).toBe('1 800,00 €');
   });
 
-  it('business customer: alv0 only, no VAT rows, no reverse VAT text, no KHV', () => {
+  it('business customer: alv0 only, no VAT rows, no reverse VAT text, no KTV', () => {
     const ctx = buildPdfContext(input(record({ customerType: 'business' })));
     expect(ctx.price.includesVat).toBe(false);
     expect(labels([...ctx.price.left, ...ctx.price.right])).toEqual(['Hinta alv0', 'Loppusumma']);
     expect(JSON.stringify(ctx)).not.toMatch(/Käänteinen|ALV \d/);
-    expect(ctx.khv).toBeUndefined();
+    expect(ctx.ktv).toBeUndefined();
   });
 
-  it('reverse VAT: alv0 only and no KHV page', () => {
+  it('reverse VAT: alv0 only and no KTV page', () => {
     const ctx = buildPdfContext(input(record({ customerType: 'business', reverseVat: true })));
     expect(labels([...ctx.price.left, ...ctx.price.right])).toEqual(['Hinta alv0', 'Loppusumma']);
     expect(ctx.price.right[0].value.replace(/\s/g, ' ')).toBe('2 000,00 €');
-    expect(ctx.khv).toBeUndefined();
+    expect(ctx.ktv).toBeUndefined();
     expect(JSON.stringify(ctx)).not.toContain('Käänteinen');
   });
 

@@ -29,10 +29,10 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 type CompanyDraft = {
   offerNumberStart: string;
   offerValidDays: string;
-  khvRatePercent: string;
-  khvDeductibleEur: string;
-  khvCapEur: string;
-  khvFootnoteText: string;
+  ktvRatePercent: string;
+  ktvDeductibleEur: string;
+  ktvCapEur: string;
+  ktvFootnoteText: string;
 };
 
 function toDraft(s: OfferCompanySettings): CompanyDraft {
@@ -40,10 +40,10 @@ function toDraft(s: OfferCompanySettings): CompanyDraft {
   return {
     offerNumberStart: String(s.offerNumberStart),
     offerValidDays: String(s.offerValidDays),
-    khvRatePercent: n(s.khv.ratePercent),
-    khvDeductibleEur: n(s.khv.deductibleEur),
-    khvCapEur: n(s.khv.capEur),
-    khvFootnoteText: s.khvFootnoteText,
+    ktvRatePercent: n(s.ktv.ratePercent),
+    ktvDeductibleEur: n(s.ktv.deductibleEur),
+    ktvCapEur: n(s.ktv.capEur),
+    ktvFootnoteText: s.ktvFootnoteText,
   };
 }
 
@@ -51,8 +51,8 @@ function fromDraft(d: CompanyDraft): OfferCompanySettings {
   return normalizeOfferCompanySettings({
     offerNumberStart: d.offerNumberStart,
     offerValidDays: d.offerValidDays,
-    khv: { ratePercent: d.khvRatePercent, deductibleEur: d.khvDeductibleEur, capEur: d.khvCapEur },
-    khvFootnoteText: d.khvFootnoteText.trim(),
+    ktv: { ratePercent: d.ktvRatePercent, deductibleEur: d.ktvDeductibleEur, capEur: d.ktvCapEur },
+    ktvFootnoteText: d.ktvFootnoteText.trim(),
   });
 }
 
@@ -197,26 +197,26 @@ export default function OfferSettingsScreen() {
         <Text style={styles.sectionLabel}>Kotitalousvähennys (vain yksityisasiakas)</Text>
         <AppInput
           label="Vähennys % työn osuudesta (sis. ALV)"
-          value={company.khvRatePercent}
-          onChangeText={setField('khvRatePercent')}
+          value={company.ktvRatePercent}
+          onChangeText={setField('ktvRatePercent')}
           keyboardType="decimal-pad"
         />
         <AppInput
           label="Omavastuu € / henkilö / vuosi"
-          value={company.khvDeductibleEur}
-          onChangeText={setField('khvDeductibleEur')}
+          value={company.ktvDeductibleEur}
+          onChangeText={setField('ktvDeductibleEur')}
           keyboardType="decimal-pad"
         />
         <AppInput
           label="Enimmäismäärä € / henkilö / vuosi"
-          value={company.khvCapEur}
-          onChangeText={setField('khvCapEur')}
+          value={company.ktvCapEur}
+          onChangeText={setField('ktvCapEur')}
           keyboardType="decimal-pad"
         />
         <AppInput
-          label="Huomautus KHV-sivulle"
-          value={company.khvFootnoteText}
-          onChangeText={setField('khvFootnoteText')}
+          label="Huomautus KTV-sivulle"
+          value={company.ktvFootnoteText}
+          onChangeText={setField('ktvFootnoteText')}
           multiline
           placeholder="Tyhjä = oletusteksti"
         />
