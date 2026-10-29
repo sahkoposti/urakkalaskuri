@@ -178,7 +178,7 @@ describe('buildPdfContext', () => {
     expect(ctx.footer.right).toEqual(['Y-tunnus: 3224017-2', 'Puh. +358 40 938 9403']);
   });
 
-  it('private customer with discount: list prices before discount, Ale %, Loppusumma after', () => {
+  it('private customer with discount: list prices before discount, discount on its own row, Loppusumma after', () => {
     const ctx = buildPdfContext(
       input(
         record({}, {
@@ -192,9 +192,25 @@ describe('buildPdfContext', () => {
       ),
     );
     expect(ctx.price.left.map((r) => r.value.replace(/\s/g, ' '))).toEqual(['2 000,00 €', '510,00 €']);
-    expect(labels(ctx.price.right)).toEqual(['Hinta alv', 'Ale %', 'Loppusumma']);
-    expect(ctx.price.right[1].value).toBe('10 %');
+    expect(labels(ctx.price.right)).toEqual(['Hinta alv', 'Alennus 10 %', 'Loppusumma']);
+    expect(ctx.price.right[1].value.replace(/\s/g, ' ')).toBe('−251,00 €');
     expect(ctx.price.right[2].value.replace(/\s/g, ' ')).toBe('2 259,00 €');
+  });
+
+  it('business customer with discount: alv0 discount amount on its own row', () => {
+    const ctx = buildPdfContext(
+      input(
+        record({ customerType: 'business', reverseVat: true }, {
+          discountPercent: 10,
+          totalPriceVat0BeforeDiscount: 2000,
+          totalPriceVat0: 1800,
+        }),
+      ),
+    );
+    expect(labels(ctx.price.left)).toEqual(['Hinta alv0']);
+    expect(labels(ctx.price.right)).toEqual(['Alennus 10 %', 'Loppusumma']);
+    expect(ctx.price.right[0].value.replace(/\s/g, ' ')).toBe('−200,00 €');
+    expect(ctx.price.right[1].value.replace(/\s/g, ' ')).toBe('1 800,00 €');
   });
 
   it('business customer: alv0 only, no VAT rows, no reverse VAT text, no KHV', () => {

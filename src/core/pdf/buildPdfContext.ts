@@ -76,10 +76,17 @@ export function customerHeaderLines(customer: CustomerInfo): string[] {
  */
 export function offerPriceBlock(record: CalculationRecord, customer: CustomerInfo): TarjousPdfContext['price'] {
   const hasDiscount = record.discountPercent > 0 && record.totalPriceVat0BeforeDiscount > record.totalPriceVat0;
-  const discountRow: PriceRow[] = hasDiscount ? [{ label: 'Ale %', value: formatPercent(record.discountPercent) }] : [];
   const listVat0 = hasDiscount ? record.totalPriceVat0BeforeDiscount : record.totalPriceVat0;
+  const vatInclusive = customerSeesVatInclusive(customer);
+  // Eemil 29.10.2026 #2: alennus omana rivinään (prosentti + euromäärä), muut rivit ennallaan.
+  const discountAmount = vatInclusive
+    ? record.totalPriceVatBeforeDiscount - record.totalPriceVat
+    : record.totalPriceVat0BeforeDiscount - record.totalPriceVat0;
+  const discountRow: PriceRow[] = hasDiscount
+    ? [{ label: `Alennus ${formatPercent(record.discountPercent)}`, value: `−${formatCurrency(discountAmount)}` }]
+    : [];
 
-  if (customerSeesVatInclusive(customer)) {
+  if (vatInclusive) {
     const listVat = hasDiscount ? record.totalPriceVatBeforeDiscount : record.totalPriceVat;
     const vatAmount = hasDiscount ? listVat - listVat0 : record.vatAmount;
     return {
@@ -105,7 +112,7 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
 
 /**
  * Lisätiedot-teksti (Eemil 29.10.2026): rakennekohtainen; usean rakenteen laskelmassa ENSIMMÄISEN rakenteen teksti.
- * Lähde nyt: Tarjous-asetusten rakennekohtainen teksti (T4). AINOA paikka, jossa lähde valitaan.
+ * Lähde (Eemil 29.10.2026 klo 17.14 #1): rakenteen Tarjous-asetusten teksti (T4). AINOA paikka, jossa lähde valitaan.
  */
 export function offerAdditionalInfo(
   record: CalculationRecord,
