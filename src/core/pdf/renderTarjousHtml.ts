@@ -66,7 +66,7 @@ function renderAdditionalInfo(text: string): string {
   return `<div class="additional-info"><h3>Lisätiedot:</h3><div>${escapeMultiline(text.trim())}</div></div>`;
 }
 
-/** Sivupohja: toistuva ylä-/alatunniste + sisältö. Käytetään myös KHV-sivulle (T8). */
+/** Sivupohja: toistuva ylä-/alatunniste + sisältö. Käytetään myös KTV-sivulle (T8). */
 export function renderDocument(
   ctx: Pick<TarjousPdfContext, 'customerLines' | 'offerInfo' | 'footer'>,
   bodyHtml: string,
@@ -94,7 +94,7 @@ ${bodyHtml}
 }
 
 export function renderTarjousBody(ctx: TarjousPdfContext): string {
-  // KHV-sivu aina viimeisenä (vain yksityisasiakas ilman käänteistä ALV:ta).
+  // KTV-sivu aina viimeisenä (vain yksityisasiakas ilman käänteistä ALV:ta).
   return [
     renderSpecGrid(ctx.specGrid),
     renderPriceBlock(ctx.price),

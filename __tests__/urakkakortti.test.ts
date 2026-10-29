@@ -113,7 +113,7 @@ describe('urakkakortti', () => {
     expect(bodyOf(renderUrakkakorttiHtml(buildUrakkakorttiContext(ukInput(record({})))))).not.toContain('Materiaalit');
   });
 
-  it('forbidden strings: no customer price, VAT, margin, commission, KHV, validity or offer number', () => {
+  it('forbidden strings: no customer price, VAT, margin, commission, KTV, validity or offer number', () => {
     const rec = record({ notes: 'Huom' }, {
       offerNumber: 10285,
       discountPercent: 10,
