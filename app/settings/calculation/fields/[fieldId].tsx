@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 
@@ -34,12 +34,24 @@ import {
   updateField,
 } from '@/src/core/form/formMutations';
 import { sanitizeKeyInput } from '@/src/core/form/formKeyUtils';
+import {
+  applyPrintEditorChange,
+  canPrintOnUrakkakortti,
+  isPrintEditable,
+  legacyToExplicitState,
+  printWhenOptions,
+  quantityKeyOptions,
+  readPrintEditorState,
+  stateForTypeChange,
+  type PrintEditorState,
+  type TargetEditorState,
+} from '@/src/core/form/printEditorState';
 import { MATERIALS_CONTEXT_KEY } from '@/src/core/form/systemFields';
 import { isProductField } from '@/src/core/form/productFieldUtils';
 import { isFieldEffectComplete } from '@/src/core/form/fieldEffects';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { isSystemField, isSystemFieldHiddenFromUi, restoreSystemField } from '@/src/core/form/systemFields';
-import type { FieldType, FormDefinition, FormField } from '@/src/core/form/types';
+import type { FieldType, FormDefinition, FormField, PrintGroup, PrintWhen } from '@/src/core/form/types';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import { useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
@@ -57,40 +69,40 @@ function fieldsEqual(a: FormField, b: FormField): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-function applyFieldTypeChange(current: FormField, type: FieldType): FormField {
+function applyFieldTypeChange(current: FormField, type: FieldType, form: FormDefinition): FormField {
   const next: FormField = {
     ...current,
     type,
     required: type !== 'section' && type !== 'computed' ? current.required : false,
   };
 
+  let updated: FormField;
   if (type === 'select') {
-    return {
+    updated = {
       ...next,
       options: current.options?.length ? current.options : [createSelectOption('Vaihtoehto 1')],
     };
-  }
-
-  if (type === 'computed') {
-    return { ...next, formula: current.formula ?? '', showOnSummary: true, allowManualOverride: true };
-  }
-
-  if (type === 'section') {
+  } else if (type === 'computed') {
+    updated = { ...next, formula: current.formula ?? '', showOnSummary: true, allowManualOverride: true };
+  } else if (type === 'section') {
     const {
       options: _options,
       formula: _formula,
       sameRowAsPrevious: _sameRow,
       ...rest
     } = next;
-    return rest as FormField;
+    updated = rest as FormField;
+  } else if (type === 'number' && !next.unit) {
+    updated = { ...next, unit: '' };
+  } else {
+    const { options: _options, formula: _formula, ...rest } = next;
+    updated = rest as FormField;
   }
 
-  if (type === 'number' && !next.unit) {
-    return { ...next, unit: '' };
-  }
-
-  const { options: _options, formula: _formula, ...rest } = next;
-  return rest as FormField;
+  // Legacy stays legacy. Explicit print is rewritten so ifYes / quantityKey match the new type.
+  const printState = stateForTypeChange(current, updated, form);
+  if (!printState) return updated;
+  return applyPrintEditorChange(updated, form, printState);
 }
 
 export default function FormFieldEditorScreen() {
@@ -278,7 +290,7 @@ export default function FormFieldEditorScreen() {
   }
 
   function handleTypeChange(type: FieldType) {
-    setField((current) => (current ? applyFieldTypeChange(current, type) : current));
+    setField((current) => (current ? applyFieldTypeChange(current, type, previewForm) : current));
   }
 
   const isInputField = editingField.type !== 'computed' && editingField.type !== 'section';
@@ -544,6 +556,14 @@ export default function FormFieldEditorScreen() {
           />
         ) : null}
 
+        {isPrintEditable(field) ? (
+          <PrintSettingsEditor
+            field={field}
+            form={previewForm}
+            onChange={(next) => setField(next)}
+          />
+        ) : null}
+
         <AppInput
           label="Ohjeteksti (valinnainen)"
           value={field.helpText ?? ''}
@@ -673,5 +693,292 @@ function createStyles(colors: AppColorPalette) {
       color: colors.text,
       lineHeight: 20,
     },
+    printSection: {
+      marginTop: 12,
+      marginBottom: 8,
+      gap: 4,
+    },
+    printHeading: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 16,
+      color: colors.primary,
+    },
+    printNote: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      color: colors.text,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    extrasToggle: {
+      marginTop: 4,
+      paddingVertical: 8,
+    },
+    extrasToggleText: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.accent,
+    },
+    targetBlock: {
+      marginTop: 4,
+      marginBottom: 8,
+      padding: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 5,
+      backgroundColor: colors.surface,
+      gap: 4,
+    },
+    targetHeading: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.text,
+      marginBottom: 4,
+    },
   };
+}
+
+const WHEN_LABELS: Record<PrintWhen, string> = {
+  always: 'Aina',
+  notEmpty: 'Kun täytetty',
+  ifYes: 'Vain kun Kyllä',
+};
+
+const GROUP_LABELS: Record<PrintGroup, string> = {
+  osa_alueet: 'Osa-alueet',
+  tyovaiheet: 'Työvaiheet',
+  muuta: 'Muuta',
+  tieto: 'Tieto (oletus)',
+  maali: 'Maali',
+};
+
+const OFFER_GROUPS: readonly PrintGroup[] = ['osa_alueet', 'tyovaiheet', 'muuta', 'tieto'];
+const ALL_GROUPS: readonly PrintGroup[] = ['osa_alueet', 'tyovaiheet', 'muuta', 'tieto', 'maali'];
+
+function groupChoices(target: 'offer' | 'urakkakortti', current: PrintGroup): PrintGroup[] {
+  const choices = target === 'offer' ? [...OFFER_GROUPS] : [...ALL_GROUPS];
+  if (target === 'offer' && current === 'maali') choices.push('maali');
+  return choices;
+}
+
+function parseStrictOrder(value: string): number | undefined | null {
+  const trimmed = value.trim();
+  if (trimmed === '') return undefined;
+  if (!/^-?\d+(?:[.,]\d+)?$/.test(trimmed)) return null;
+  const parsed = Number(trimmed.replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function PrintOrderField({
+  order,
+  onOrderChange,
+}: {
+  order: number | undefined;
+  onOrderChange: (order: number | undefined) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? (order === undefined ? '' : String(order).replace('.', ','));
+  return (
+    <AppInput
+      label="Järjestys"
+      value={shown}
+      placeholder="Lomakkeen järjestys"
+      keyboardType="decimal-pad"
+      compact
+      onChangeText={(value) => {
+        setDraft(value);
+        const parsed = parseStrictOrder(value);
+        if (parsed === null) return;
+        if (parsed === order) return;
+        onOrderChange(parsed);
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  );
+}
+
+function PrintSettingsEditor({
+  field,
+  form,
+  onChange,
+}: {
+  field: FormField;
+  form: FormDefinition;
+  onChange: (field: FormField) => void;
+}) {
+  const styles = useThemedStyles(createStyles);
+  const [extrasOpen, setExtrasOpen] = useState(false);
+
+  useEffect(() => {
+    setExtrasOpen(false);
+  }, [field.id]);
+
+  const editorState = readPrintEditorState(field, form);
+  const cardAllowed = canPrintOnUrakkakortti(field);
+  const offerOn = editorState.offer !== null;
+  const cardOn = cardAllowed && editorState.urakkakortti !== null;
+  const anyOn = offerOn || cardOn;
+  const whenOptions = printWhenOptions(field);
+
+  function commit(next: PrintEditorState) {
+    const sanitized = cardAllowed ? next : { ...next, urakkakortti: null };
+    onChange(applyPrintEditorChange(field, form, sanitized));
+  }
+
+  function edit(mutate: (base: PrintEditorState) => PrintEditorState) {
+    const base = editorState.legacy ? legacyToExplicitState(field, form) : editorState;
+    commit(mutate(base));
+  }
+
+  function setTarget(target: 'offer' | 'urakkakortti', enabled: boolean) {
+    edit((base) => ({
+      ...base,
+      [target]: enabled ? { group: 'tieto' } : null,
+    }));
+  }
+
+  function patchTarget(target: 'offer' | 'urakkakortti', patch: Partial<TargetEditorState>) {
+    edit((base) => {
+      const current = base[target] ?? { group: 'tieto' as const };
+      const next: TargetEditorState = { ...current, ...patch };
+      if (next.group !== 'maali') delete next.quantityKey;
+      if (patch.when === undefined && Object.prototype.hasOwnProperty.call(patch, 'when')) delete next.when;
+      if (patch.label === undefined && Object.prototype.hasOwnProperty.call(patch, 'label')) delete next.label;
+      if (patch.order === undefined && Object.prototype.hasOwnProperty.call(patch, 'order')) delete next.order;
+      if (patch.quantityKey === undefined && Object.prototype.hasOwnProperty.call(patch, 'quantityKey')) {
+        delete next.quantityKey;
+      }
+      return { ...base, [target]: next };
+    });
+  }
+
+  function renderTarget(target: 'offer' | 'urakkakortti', settings: TargetEditorState) {
+    const groups = groupChoices(target, settings.group);
+    return (
+      <View key={target} style={styles.targetBlock}>
+        <Text style={styles.targetHeading}>{target === 'offer' ? 'Tarjous' : 'Urakkakortti'}</Text>
+        <AppPicker
+          label="Ehto tällä tulosteella"
+          selectedValue={settings.when ?? ''}
+          onValueChange={(value) => {
+            patchTarget(target, { when: value === '' ? undefined : (value as PrintWhen) });
+          }}
+          items={[
+            { value: '', label: 'Sama kuin yllä' },
+            ...whenOptions.map((option) => ({ value: option, label: WHEN_LABELS[option] })),
+          ]}
+        />
+        <AppPicker
+          label="Ryhmä"
+          selectedValue={settings.group}
+          onValueChange={(value) => {
+            const group = value as PrintGroup;
+            patchTarget(target, {
+              group,
+              quantityKey: group === 'maali' ? settings.quantityKey : undefined,
+            });
+          }}
+          items={groups.map((group) => ({ value: group, label: GROUP_LABELS[group] }))}
+        />
+        <PrintOrderField
+          key={`${field.id}-${target}-order`}
+          order={settings.order}
+          onOrderChange={(order) => patchTarget(target, { order })}
+        />
+        <AppInput
+          label="Tulostusteksti"
+          value={settings.label === '' ? '' : (settings.label ?? '')}
+          onChangeText={(label) => patchTarget(target, { label: label.length === 0 ? undefined : label })}
+          placeholder="Kentän nimi"
+          compact
+        />
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>Vain arvo, ei nimeä</Text>
+          <AppSwitch
+            value={settings.label === ''}
+            onValueChange={(enabled) => patchTarget(target, { label: enabled ? '' : undefined })}
+          />
+        </View>
+        {target === 'urakkakortti' && field.type === 'product_select' && settings.group === 'maali' ? (
+          <>
+            <AppPicker
+              label="Määräkenttä"
+              selectedValue={settings.quantityKey ?? ''}
+              onValueChange={(value) => patchTarget(target, { quantityKey: value || undefined })}
+              placeholder="Ei määräkenttää"
+              allowEmpty
+              items={quantityKeyOptions(form, field).map((option) => ({
+                value: option.key,
+                label: `${option.label} (${option.key})`,
+              }))}
+            />
+            <Text style={styles.printNote}>Esim. maalin litramäärä urakkakortin materiaaliriville.</Text>
+          </>
+        ) : null}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.printSection}>
+      <Text style={styles.printHeading}>Tulostus</Text>
+      <Text style={styles.printNote}>
+        Valitse, tulostetaanko kenttä tarjoukseen ja urakkakortille. Ei vaikuta laskentaan eikä sovelluksen
+        yhteenvetoon.
+      </Text>
+      {editorState.legacy ? (
+        <Text style={styles.printNote}>
+          Oletus vanhan asetuksen (Näytä yhteenvetolomakkeella) mukaan. Asetus tallentuu vasta, kun muutat sitä.
+        </Text>
+      ) : null}
+      {editorState.legacy && field.showOnSummaryWhen ? (
+        <Text style={styles.printNote}>
+          Kun muutat tulostusta, yhteenvedon ehto ei enää vaikuta tulosteisiin.
+        </Text>
+      ) : null}
+
+      <View style={styles.switchRow}>
+        <Text style={styles.switchLabel}>Tarjouksessa</Text>
+        <AppSwitch value={offerOn} onValueChange={(enabled) => setTarget('offer', enabled)} />
+      </View>
+      <View style={styles.switchRow}>
+        <Text style={styles.switchLabel}>Urakkakortilla</Text>
+        <AppSwitch
+          value={cardOn}
+          disabled={!cardAllowed}
+          onValueChange={(enabled) => {
+            if (!cardAllowed) return;
+            setTarget('urakkakortti', enabled);
+          }}
+        />
+      </View>
+      {!cardAllowed ? <Text style={styles.printNote}>€-rivejä ei tulosteta urakkakortille.</Text> : null}
+
+      {anyOn ? (
+        <>
+          <AppPicker
+            label="Näytä"
+            selectedValue={whenOptions.includes(editorState.when) ? editorState.when : ''}
+            onValueChange={(value) => {
+              if (!whenOptions.includes(value as PrintWhen)) return;
+              edit((base) => ({ ...base, when: value as PrintWhen }));
+            }}
+            items={whenOptions.map((option) => ({ value: option, label: WHEN_LABELS[option] }))}
+          />
+          <Text style={styles.printNote}>Aina: myös Ei / 0 tulostetaan. Tyhjää tekstiä ei tulosteta.</Text>
+          <Pressable
+            onPress={() => setExtrasOpen((open) => !open)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: extrasOpen }}
+            style={styles.extrasToggle}
+          >
+            <Text style={styles.extrasToggleText}>{extrasOpen ? 'Lisäasetukset ▾' : 'Lisäasetukset ▸'}</Text>
+          </Pressable>
+          {extrasOpen ? (
+            <>
+              {offerOn && editorState.offer ? renderTarget('offer', editorState.offer) : null}
+              {cardOn && editorState.urakkakortti ? renderTarget('urakkakortti', editorState.urakkakortti) : null}
+            </>
+          ) : null}
+        </>
+      ) : null}
+    </View>
+  );
 }
