@@ -3,6 +3,7 @@ import {
   FormDefinitionImportError,
   importedFormSummary,
   parseImportedFormDefinition,
+  parseImportedFormDefinitionWithWarnings,
   serializeFormDefinition,
 } from '../src/core/form/formDefinitionIo';
 import {
@@ -198,6 +199,120 @@ describe('formDefinitionIo', () => {
     );
     expect(imported.pages[0]?.id).toBe('page_surfaces');
     expect(imported.pages[0]?.fieldIds).toEqual(['field_etaisyys', 'field_foo']);
+  });
+});
+
+describe('imported print settings', () => {
+  const base = {
+    id: 'imported',
+    name: 'Julkisivumaalaus',
+    version: 108,
+    pages: [{ id: 'p1', title: 'Sivu', sortOrder: 0, fieldIds: ['f1'] }],
+    updatedAt: 1,
+  };
+
+  test('valid print round-trips through serialize and parse', () => {
+    const print = {
+      when: 'notEmpty' as const,
+      offer: { group: 'osa_alueet' as const, order: 10, label: 'Ala' },
+      urakkakortti: true as const,
+    };
+    const first = parseImportedFormDefinition(
+      JSON.stringify({
+        ...base,
+        fields: [
+          {
+            id: 'f1',
+            key: 'pinta_ala',
+            label: 'Pinta-ala',
+            type: 'number',
+            required: false,
+            showOnSummary: true,
+            print,
+          },
+        ],
+      }),
+    );
+    const saved = first.fields.find((item) => item.key === 'pinta_ala')?.print;
+    expect(saved).toEqual(print);
+    expect(serializeFormDefinition(first)).toContain('"print"');
+
+    const second = parseImportedFormDefinition(serializeFormDefinition(first));
+    expect(second.fields.find((item) => item.key === 'pinta_ala')?.print).toEqual(saved);
+  });
+
+  test('invalid print values return warnings and a cleaned form', () => {
+    const { form, warnings } = parseImportedFormDefinitionWithWarnings(
+      JSON.stringify({
+        ...base,
+        fields: [
+          {
+            id: 'f1',
+            key: 'pinta_ala',
+            label: 'Pinta-ala',
+            type: 'number',
+            required: false,
+            showOnSummary: true,
+            print: {
+              when: 'sometimes',
+              extra: true,
+              offer: false,
+              urakkakortti: { group: 'nope', order: '3', label: 5, quantityKey: 'puuttuu' },
+            },
+          },
+        ],
+      }),
+    );
+
+    expect(form.fields.find((item) => item.key === 'pinta_ala')?.print).toEqual({
+      urakkakortti: { group: 'tieto' },
+    });
+    expect(warnings).toEqual([
+      'Kenttä "pinta_ala": tuntematon print.when "sometimes" ohitettu',
+      'Kenttä "pinta_ala": tuntematon tulostuskohde "extra" ohitettu',
+      'Kenttä "pinta_ala": print.offer ei ole true tai objekti, ohitettu',
+      'Kenttä "pinta_ala": tuntematon print.urakkakortti.group "nope" ohitettu',
+      'Kenttä "pinta_ala": virheellinen print.urakkakortti.order "3" ohitettu',
+      'Kenttä "pinta_ala": virheellinen print.urakkakortti.label 5 ohitettu',
+      'Kenttä "pinta_ala": virheellinen print.urakkakortti.quantityKey "puuttuu" ohitettu',
+    ]);
+    expect(importedFormSummary(form, 107, warnings)).toBe(
+      [
+        'Julkisivumaalaus. Versio 108 (edellinen versio: 107).',
+        'Huomiot:',
+        warnings[0],
+        warnings[1],
+        warnings[2],
+        warnings[3],
+        warnings[4],
+        '…ja 2 muuta',
+      ].join('\n'),
+    );
+  });
+
+  test('an old template without print has no warnings and no print key', () => {
+    const { form, warnings } = parseImportedFormDefinitionWithWarnings(
+      JSON.stringify({
+        ...base,
+        fields: [
+          {
+            id: 'f1',
+            key: 'pinta_ala',
+            label: 'Pinta-ala',
+            type: 'number',
+            required: false,
+            showOnSummary: true,
+          },
+        ],
+      }),
+    );
+    expect(warnings).toEqual([]);
+    for (const item of form.fields) {
+      expect(item).not.toHaveProperty('print');
+    }
+    expect(importedFormSummary(form, 107, warnings)).toBe(
+      'Julkisivumaalaus. Versio 108 (edellinen versio: 107).',
+    );
   });
 });
 

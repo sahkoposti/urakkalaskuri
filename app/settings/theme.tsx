@@ -1,8 +1,8 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 
-import { AppInput, BrandLogo, PrimaryButton, ScreenLoading } from '@/src/components/common';
+import { AppInput, PrimaryButton, ScreenLoading } from '@/src/components/common';
 import { defaultThemeSettings } from '@/src/core/models/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
@@ -90,14 +90,6 @@ export default function ThemeSettingsScreen() {
     <>
       <Stack.Screen options={{ title: 'Teema' }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionLabel}>Logo</Text>
-        <View style={styles.logoPreview}>
-          <BrandLogo width={220} />
-        </View>
-        <Text style={styles.note}>
-          Oletuslogo ColoRajaton. Oma logotiedoston valinta tulee myöhemmin.
-        </Text>
-
         <Text style={styles.sectionLabel}>Värit</Text>
         <AppInput label="Korostusväri (hex)" value={accentColor} onChangeText={setAccentColor} />
         <AppInput label="Pääväri (hex)" value={primaryColor} onChangeText={setPrimaryColor} />
@@ -142,14 +134,6 @@ function createStyles(colors: AppColorPalette) {
       fontFamily: 'IBMPlexSans_700Bold',
       fontSize: 16,
       color: colors.primary,
-    },
-    logoPreview: {
-      alignItems: 'center' as const,
-      backgroundColor: colors.secondary,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 5,
-      paddingVertical: 20,
     },
     note: {
       marginTop: 4,

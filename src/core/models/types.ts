@@ -135,6 +135,8 @@ export interface CalculationRecord {
   deliveryScheduleText?: string;
   travelTimeHoursOneWay?: number;
   structureLines?: StructureLine[];
+  /** Tarjousnumero (v1.3). Myönnetään ensimmäisestä tarjous-PDF:stä; säilyy muokkauksessa. */
+  offerNumber?: number;
 }
 
 export type StructureLineOverride =
@@ -145,6 +147,21 @@ export type StructureLineOverride =
   | 'unit'
   | 'contractPrice'
   | 'workDurationDisplay';
+
+/** Urakkakortin materiaalimäärä. Tallennetaan rivin `structure_lines`-JSON:iin. */
+export interface MaterialQuantityRow {
+  id: string;
+  productId?: string;
+  productName: string;
+  quantity: number;
+  unit?: string;
+  source: 'form' | 'manual';
+  /**
+   * `product_select`-kenttä, josta esitäyttö syntyi.
+   * Muokattu lomakerivi säilyttää avaimen (`source: 'manual'`) ja estää saman kentän esitäytön.
+   */
+  fieldKey?: string;
+}
 
 export interface StructureLine {
   id: string;
@@ -176,6 +193,11 @@ export interface StructureLine {
   formVersion?: number;
   snapshot?: FormSnapshot;
   overrides: StructureLineOverride[];
+  /**
+   * Urakkakortin materiaalimäärät. Puuttuva avain = vanha laskelma (ei kirjoiteta uudelleen).
+   * Tyhjä taulukko = käyttäjä poisti rivit (taulukkoa ei tulosteta).
+   */
+  materialQuantities?: MaterialQuantityRow[];
 }
 
 export interface CustomerInfo {

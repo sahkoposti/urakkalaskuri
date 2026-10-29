@@ -18,6 +18,24 @@ import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../form/formDefinitionHelpers';
 import { bumpFormVersion } from '../form/formVersion';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
+import { parseStoredCompanyProfile } from '../company/defaultCompany';
+import { COMPANY_PROFILE_SETTINGS_KEY, type CompanyProfile } from '../company/types';
+import {
+  parseStoredOfferCompanySettings,
+  parseStoredOfferStructureSettings,
+} from '../pdf/defaultOfferSettings';
+import {
+  assignOfferNumber,
+  NEXT_OFFER_NUMBER_KEY,
+  offerNumberOnSave,
+  type OfferNumberAssignment,
+} from '../pdf/offerNumber';
+import {
+  OFFER_COMPANY_SETTINGS_KEY,
+  offerStructureSettingsKey,
+  type OfferCompanySettings,
+  type OfferStructureSettings,
+} from '../pdf/types';
 import { defaultFormDebugSettings } from '../form/types';
 import {
   DEFAULT_STRUCTURE_ID,
@@ -25,6 +43,8 @@ import {
   type ProductStructure,
 } from '../structure/types';
 import { parseCrewSize } from '../structure/structureSettings';
+import { ensureStructureLines } from '../structure/legacyCalculation';
+import { recordWithManualContractPrices } from '../pdf/manualContract';
 import {
   ACTIVE_STRUCTURE_KEY,
   getDb,
@@ -113,6 +133,7 @@ function calculationFromRow(
     travelTimeHoursOneWay:
       row.travel_time_one_way_h == null ? undefined : Number(row.travel_time_one_way_h),
     structureLines: parseStructureLines(row.structure_lines),
+    offerNumber: row.offer_number == null ? undefined : Number(row.offer_number),
   };
 }
 
@@ -289,6 +310,10 @@ export async function getCalculation(id: string): Promise<CalculationRecord | nu
 export async function saveCalculation(record: CalculationRecord): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
+    const existing = await db.getFirstAsync<{ offer_number: number | null }>(
+      'SELECT offer_number FROM calculations WHERE id = ?',
+      record.id,
+    );
     await db.runAsync(
       `INSERT OR REPLACE INTO calculations (
         id, project_name, customer, group_duration_h, crew_size, hourly_rate,
@@ -296,8 +321,9 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
         margin_eur, commission_eur, total_price_vat0, vat_percent, vat_amount, total_price_vat,
         work_duration_days, discount_percent, discount_eur,
         total_price_vat_before_discount, total_price_vat0_before_discount,
-        created_at, form_snapshot, customer_id, delivery_schedule_text, travel_time_one_way_h, structure_lines
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        created_at, form_snapshot, customer_id, delivery_schedule_text, travel_time_one_way_h, structure_lines,
+        offer_number
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       record.id,
       record.projectName,
       record.customer ?? null,
@@ -325,6 +351,8 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.deliveryScheduleText ?? null,
       record.travelTimeHoursOneWay ?? null,
       record.structureLines ? JSON.stringify(record.structureLines) : null,
+      // Uusi rivi, myös kopio, ei peri tarjousnumeroa. Numero myönnetään vasta seuraavasta tarjouksesta.
+      existing ? offerNumberOnSave(record.offerNumber, existing.offer_number) : null,
     );
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', record.id);
     for (const line of record.lines) {
@@ -344,6 +372,30 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       );
     }
   });
+}
+
+/**
+ * Laskelman kopio. Uusi id, ei tarjousnumeroa. Lähde ja sen numero säilyvät.
+ * Seuraava tarjous-PDF myöntää kopiolle oman numeron, koska kenttä on tyhjä.
+ */
+export function copyCalculationRecord(
+  source: CalculationRecord,
+  newId: string,
+  createdAt: Date = new Date(),
+): CalculationRecord {
+  const copy: CalculationRecord = {
+    ...source,
+    id: newId,
+    createdAt,
+    lines: source.lines.map((line) => ({ ...line })),
+    structureLines: source.structureLines?.map((line) => ({
+      ...line,
+      fieldValues: { ...line.fieldValues },
+      overrides: [...(line.overrides ?? [])],
+    })),
+  };
+  delete copy.offerNumber;
+  return copy;
 }
 
 export async function deleteCalculation(id: string): Promise<void> {
@@ -466,6 +518,115 @@ export async function saveFormDebugSettings(debug: FormDebugSettings): Promise<v
     'form_debug',
     JSON.stringify(debug),
   );
+}
+
+export async function getCompanyProfile(): Promise<CompanyProfile> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    COMPANY_PROFILE_SETTINGS_KEY,
+  );
+  return parseStoredCompanyProfile(row?.value);
+}
+
+export async function saveCompanyProfile(profile: CompanyProfile): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    COMPANY_PROFILE_SETTINGS_KEY,
+    JSON.stringify(profile),
+  );
+}
+
+async function readSettingValue(key: string): Promise<string | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    key,
+  );
+  return row?.value ?? null;
+}
+
+async function writeSettingValue(key: string, value: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value);
+}
+
+/** Yrityskohtaiset tarjousasetukset (voimassaolo, numerointi, KTV). */
+export async function getOfferCompanySettings(): Promise<OfferCompanySettings> {
+  return parseStoredOfferCompanySettings(await readSettingValue(OFFER_COMPANY_SETTINGS_KEY));
+}
+
+export async function saveOfferCompanySettings(settings: OfferCompanySettings): Promise<void> {
+  await writeSettingValue(OFFER_COMPANY_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+/** Rakennekohtaiset tarjousasetukset (Lisätiedot, sivuvalinnat). Paikallinen, ei lomakepohjassa. */
+export async function getOfferStructureSettings(structureId: string): Promise<OfferStructureSettings> {
+  return parseStoredOfferStructureSettings(await readSettingValue(offerStructureSettingsKey(structureId)));
+}
+
+export async function saveOfferStructureSettings(
+  structureId: string,
+  settings: OfferStructureSettings,
+): Promise<void> {
+  await writeSettingValue(offerStructureSettingsKey(structureId), JSON.stringify(settings));
+}
+
+export async function getStoredNextOfferNumber(): Promise<number | undefined> {
+  const value = await readSettingValue(NEXT_OFFER_NUMBER_KEY);
+  const n = value == null ? Number.NaN : Number(value);
+  return Number.isInteger(n) && n >= 1 ? n : undefined;
+}
+
+let offerNumberLock: Promise<unknown> = Promise.resolve();
+
+/**
+ * Myöntää laskelmalle tarjousnumeron (vain tarjous-PDF, ei urakkakortti).
+ * Uudelleentulostus palauttaa saman numeron. Sarjallistettu, jotta tuplanapautus ei myönnä kahta numeroa.
+ */
+export function assignOfferNumberForCalculation(calculationId: string): Promise<OfferNumberAssignment> {
+  const run = offerNumberLock.then(async () => {
+    const db = await getDb();
+    let result: OfferNumberAssignment | undefined;
+    await db.withTransactionAsync(async () => {
+      const row = await db.getFirstAsync<{ offer_number: number | null }>(
+        'SELECT offer_number FROM calculations WHERE id = ?',
+        calculationId,
+      );
+      if (!row) throw new Error('Laskelmaa ei löytynyt.');
+      const company = await getOfferCompanySettings();
+      const storedNext = await getStoredNextOfferNumber();
+      result = assignOfferNumber(row.offer_number, storedNext, company.offerNumberStart);
+      if (result.assigned) {
+        await db.runAsync(
+          'UPDATE calculations SET offer_number = ? WHERE id = ?',
+          result.offerNumber,
+          calculationId,
+        );
+        await writeSettingValue(NEXT_OFFER_NUMBER_KEY, String(result.nextOfferNumber));
+      }
+    });
+    if (!result) throw new Error('Tarjousnumeron myöntäminen epäonnistui.');
+    return result;
+  });
+  offerNumberLock = run.catch(() => undefined);
+  return run;
+}
+
+/**
+ * Urakkakortti: käsin kirjattu urakka korvaa rivin contractPriceVat0:n ja kate lasketaan uudelleen
+ * (Eemil 29.10.2026 #6, #7). Tallennus saveCalculationin kautta (tarjousnumero säilyy).
+ */
+export async function saveManualContractPrices(
+  calculationId: string,
+  manualByLineId: Record<string, number | null | undefined>,
+): Promise<CalculationRecord> {
+  const record = await getCalculation(calculationId);
+  if (!record) throw new Error('Laskelmaa ei löytynyt.');
+  const updated = recordWithManualContractPrices(record, manualByLineId);
+  await saveCalculation(updated);
+  return updated;
 }
 
 const FIELDS_PAGE_EXPANDED_KEY = 'fields_page_expanded';
@@ -622,6 +783,7 @@ export async function deleteProductStructure(id: string): Promise<void> {
     });
   }
   await db.runAsync('DELETE FROM product_structures WHERE id = ?', id);
+  await db.runAsync('DELETE FROM settings WHERE key = ?', offerStructureSettingsKey(id));
   const activeId = await getActiveStructureId();
   if (activeId === id) {
     await setActiveStructureId(fallback.id);

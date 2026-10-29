@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
+import { sanitizeMaterialQuantities } from '../materials/materialQuantities';
 import type { FormSnapshot, StructureLine } from '../models/types';
 import { defaultSettings, parseCustomerDetails } from '../models/types';
 import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
@@ -50,7 +51,15 @@ export function parseStructureLines(raw: unknown): StructureLine[] | undefined {
   try {
     const parsed = JSON.parse(raw) as StructureLine[];
     if (!Array.isArray(parsed) || parsed.length === 0) return undefined;
-    return parsed.map((line) => withDerivedLinePricing(line));
+    return parsed.map((line) => {
+      const next = { ...line };
+      if (Object.prototype.hasOwnProperty.call(line, 'materialQuantities')) {
+        const quantities = sanitizeMaterialQuantities(line.materialQuantities);
+        if (quantities === undefined) delete next.materialQuantities;
+        else next.materialQuantities = quantities;
+      }
+      return withDerivedLinePricing(next);
+    });
   } catch {
     return undefined;
   }
@@ -75,6 +84,9 @@ async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
   }
   if (!calculationColumns.some((column) => column.name === 'total_price_vat0_before_discount')) {
     await db.execAsync('ALTER TABLE calculations ADD COLUMN total_price_vat0_before_discount REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'offer_number')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN offer_number INTEGER');
   }
 
   const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');

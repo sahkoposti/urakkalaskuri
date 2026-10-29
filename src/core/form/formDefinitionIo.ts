@@ -1,4 +1,4 @@
-import { normalizeFormDefinition } from '@/src/core/form/formDefinitionHelpers';
+import { normalizeFormDefinitionWithWarnings } from '@/src/core/form/formDefinitionHelpers';
 import type { FormDefinition } from '@/src/core/form/types';
 
 export class FormDefinitionImportError extends Error {
@@ -14,9 +14,10 @@ export function serializeFormDefinition(form: FormDefinition): string {
 }
 
 /**
- * Parsii tuodun lomakepohjan JSON:sta ja normalisoi (järjestelmäkentät, migraatiot).
+ * Parsii tuodun lomakepohjan ja palauttaa normalisoidun lomakkeen sekä print-huomiot.
+ * Kelvoton JSON heittää edelleen FormDefinitionImportError.
  */
-export function parseImportedFormDefinition(raw: string): FormDefinition {
+export function parseImportedFormDefinitionWithWarnings(raw: string): { form: FormDefinition; warnings: string[] } {
   const trimmed = raw.trim();
   if (!trimmed) {
     throw new FormDefinitionImportError('JSON on tyhjä');
@@ -38,7 +39,7 @@ export function parseImportedFormDefinition(raw: string): FormDefinition {
     throw new FormDefinitionImportError('JSON:sta puuttuu fields- tai pages-taulukko');
   }
 
-  return normalizeFormDefinition({
+  const normalized = normalizeFormDefinitionWithWarnings({
     id: typeof obj.id === 'string' && obj.id.trim() ? obj.id : `imported_${Date.now()}`,
     name: typeof obj.name === 'string' && obj.name.trim() ? obj.name : 'Tuotu lomake',
     version: typeof obj.version === 'number' && Number.isFinite(obj.version) ? obj.version : 1,
@@ -46,15 +47,33 @@ export function parseImportedFormDefinition(raw: string): FormDefinition {
     fields: obj.fields as FormDefinition['fields'],
     updatedAt: Date.now(),
   });
+  return normalized;
 }
 
-/** Lyhyt kuvaus onnistuneen tuonnin jälkeen. */
-export function importedFormSummary(form: FormDefinition, previousVersion?: number): string {
+/**
+ * Parsii tuodun lomakepohjan JSON:sta ja normalisoi (järjestelmäkentät, migraatiot).
+ * Huomiot eivät palaudu tästä; käytä parseImportedFormDefinitionWithWarnings.
+ */
+export function parseImportedFormDefinition(raw: string): FormDefinition {
+  return parseImportedFormDefinitionWithWarnings(raw).form;
+}
+
+/** Lyhyt kuvaus onnistuneen tuonnin jälkeen. Valinnaiset huomiot: enintään 5 riviä. */
+export function importedFormSummary(
+  form: FormDefinition,
+  previousVersion?: number,
+  warnings?: string[],
+): string {
   const name = form.name.trim();
   const previous =
     typeof previousVersion === 'number' && Number.isFinite(previousVersion)
       ? ` (edellinen versio: ${previousVersion})`
       : '';
   const version = `Versio ${form.version}${previous}.`;
-  return name ? `${name}. ${version}` : version;
+  const base = name ? `${name}. ${version}` : version;
+  if (!warnings?.length) return base;
+  const shown = warnings.slice(0, 5);
+  const extra = warnings.length - shown.length;
+  const lines = extra > 0 ? [...shown, `…ja ${extra} muuta`] : shown;
+  return `${base}\nHuomiot:\n${lines.join('\n')}`;
 }
