@@ -10,9 +10,11 @@ import { buildFooter, customerHeaderLines, type PdfFooter, type PriceRow } from 
 import { lineSpecSnapshot, specCardsFromSnapshot, type SpecCard } from './offerPageSpecs';
 import { specGridLayout, type SpecGridLayout } from './specGridLayout';
 import { effectiveContractVat0 } from './manualContract';
+import { buildUrakkakorttiSections, lineUsesUrakkakorttiPrint, type UrakkakorttiSection } from './urakkakorttiSections';
 import { formatFinnishDate } from './validUntil';
 
 export { effectiveContractVat0, linesNeedingManualContract, withManualContractPrices } from './manualContract';
+export type { UrakkakorttiSection } from './urakkakorttiSections';
 
 /**
  * Urakkakortti (suunnitelma §2, Eemil 29.10.2026 #3, #6). Maalareille.
@@ -29,6 +31,8 @@ export type UrakkakorttiContext = {
   contractRows: PriceRow[];
   infoRows: PriceRow[];
   specGrid: SpecGridLayout;
+  /** Print-tilan rivit. Tyhjä, kun laskelma on pelkkää vanhaa pohjaa. */
+  sections: UrakkakorttiSection[];
   materials: UrakkakorttiMaterialRow[];
   customerNotes: string;
   footer: PdfFooter;
@@ -52,7 +56,10 @@ function withoutEuroRows(card: SpecCard): SpecCard {
 
 export function urakkakorttiSpecCards(input: BuildUrakkakorttiInput): SpecCard[] {
   const customer = customerFromRecord(input.record);
-  const lines = ensureStructureLines(input.record);
+  // Print-pohja piirretään osioina. Vanha pohja pysyy T9-kortteina (printableFields pudottaa "–"-rivit).
+  const lines = ensureStructureLines(input.record).filter(
+    (line) => !lineUsesUrakkakorttiPrint(line, input.structures),
+  );
   const perLine = lines.map((line) => {
     const structure = input.structures.find((item) => item.id === line.structureId);
     const customerPageIds = new Set(
@@ -126,6 +133,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     contractRows,
     infoRows,
     specGrid: specGridLayout(urakkakorttiSpecCards(input)),
+    sections: buildUrakkakorttiSections(input),
     materials: urakkakorttiMaterials(record),
     customerNotes: customer.notes?.trim() ?? '',
     footer: buildFooter(input.company),
