@@ -1,7 +1,7 @@
 import {
-  DEFAULT_KHV_SETTINGS,
+  DEFAULT_KTV_SETTINGS,
   defaultOfferCompanySettings,
-  normalizeKhvSettings,
+  normalizeKtvSettings,
   normalizeOfferCompanySettings,
   parseStoredOfferCompanySettings,
   parseStoredOfferStructureSettings,
@@ -9,20 +9,20 @@ import {
 import { offerStructureSettingsKey } from '../src/core/pdf/types';
 
 describe('offer company settings', () => {
-  it('defaults: validity 31, numbering 10285, KHV 40 % / 150 € / 2100 €', () => {
+  it('defaults: validity 31, numbering 10285, KTV 40 % / 150 € / 2100 €', () => {
     const s = parseStoredOfferCompanySettings(null);
     expect(s.offerValidDays).toBe(31);
     expect(s.offerNumberStart).toBe(10285);
-    expect(s.khv).toEqual({ ratePercent: 40, deductibleEur: 150, capEur: 2100 });
-    expect(s.khvFootnoteText).toBe('');
-    expect(s).toEqual({ ...defaultOfferCompanySettings, khv: { ...DEFAULT_KHV_SETTINGS } });
+    expect(s.ktv).toEqual({ ratePercent: 40, deductibleEur: 150, capEur: 2100 });
+    expect(s.ktvFootnoteText).toBe('');
+    expect(s).toEqual({ ...defaultOfferCompanySettings, ktv: { ...DEFAULT_KTV_SETTINGS } });
   });
 
   it('corrupt JSON or wrong shape falls back to defaults', () => {
     expect(parseStoredOfferCompanySettings('{x')).toEqual(normalizeOfferCompanySettings(undefined));
     expect(parseStoredOfferCompanySettings('[]')).toEqual(normalizeOfferCompanySettings(undefined));
     expect(
-      normalizeOfferCompanySettings({ offerValidDays: -1, offerNumberStart: 0.5, khv: 'x' }),
+      normalizeOfferCompanySettings({ offerValidDays: -1, offerNumberStart: 0.5, ktv: 'x' }),
     ).toEqual(normalizeOfferCompanySettings(undefined));
   });
 
@@ -30,21 +30,21 @@ describe('offer company settings', () => {
     const s = normalizeOfferCompanySettings({
       offerValidDays: 14,
       offerNumberStart: 20000,
-      khv: { ratePercent: 35, deductibleEur: 100, capEur: 1600 },
-      khvFootnoteText: 'Oma huomautus',
+      ktv: { ratePercent: 35, deductibleEur: 100, capEur: 1600 },
+      ktvFootnoteText: 'Oma huomautus',
     });
     expect(s).toEqual({
       offerValidDays: 14,
       offerNumberStart: 20000,
-      khv: { ratePercent: 35, deductibleEur: 100, capEur: 1600 },
-      khvFootnoteText: 'Oma huomautus',
+      ktv: { ratePercent: 35, deductibleEur: 100, capEur: 1600 },
+      ktvFootnoteText: 'Oma huomautus',
     });
   });
 
-  it('KHV: partial merge, decimal comma, rate above 100 rejected', () => {
-    expect(normalizeKhvSettings({ ratePercent: '37,5' })).toEqual({ ratePercent: 37.5, deductibleEur: 150, capEur: 2100 });
-    expect(normalizeKhvSettings({ ratePercent: 150 }).ratePercent).toBe(40);
-    expect(normalizeKhvSettings({ capEur: 4200 }).capEur).toBe(4200);
+  it('KTV: partial merge, decimal comma, rate above 100 rejected', () => {
+    expect(normalizeKtvSettings({ ratePercent: '37,5' })).toEqual({ ratePercent: 37.5, deductibleEur: 150, capEur: 2100 });
+    expect(normalizeKtvSettings({ ratePercent: 150 }).ratePercent).toBe(40);
+    expect(normalizeKtvSettings({ capEur: 4200 }).capEur).toBe(4200);
   });
 });
 
