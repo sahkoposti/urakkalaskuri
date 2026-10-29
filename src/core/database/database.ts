@@ -43,6 +43,8 @@ import {
   type ProductStructure,
 } from '../structure/types';
 import { parseCrewSize } from '../structure/structureSettings';
+import { ensureStructureLines } from '../structure/legacyCalculation';
+import { recordWithManualContractPrices } from '../pdf/manualContract';
 import {
   ACTIVE_STRUCTURE_KEY,
   getDb,
@@ -585,6 +587,21 @@ export function assignOfferNumberForCalculation(calculationId: string): Promise<
   });
   offerNumberLock = run.catch(() => undefined);
   return run;
+}
+
+/**
+ * Urakkakortti: käsin kirjattu urakka korvaa rivin contractPriceVat0:n ja kate lasketaan uudelleen
+ * (Eemil 29.10.2026 #6, #7). Tallennus saveCalculationin kautta (tarjousnumero säilyy).
+ */
+export async function saveManualContractPrices(
+  calculationId: string,
+  manualByLineId: Record<string, number | null | undefined>,
+): Promise<CalculationRecord> {
+  const record = await getCalculation(calculationId);
+  if (!record) throw new Error('Laskelmaa ei löytynyt.');
+  const updated = recordWithManualContractPrices(record, manualByLineId);
+  await saveCalculation(updated);
+  return updated;
 }
 
 const FIELDS_PAGE_EXPANDED_KEY = 'fields_page_expanded';
