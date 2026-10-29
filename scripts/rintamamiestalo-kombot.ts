@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * Laskee rintamamiestalon julkisivumaalauksen hinnat kaikilla pyydetyillä
  * lomakekomboilla (Julkisivumaalaus v100) ja kirjoittaa listan hintajärjestykseen.
