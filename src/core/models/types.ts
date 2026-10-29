@@ -148,6 +148,21 @@ export type StructureLineOverride =
   | 'contractPrice'
   | 'workDurationDisplay';
 
+/** Urakkakortin materiaalimäärä. Tallennetaan rivin `structure_lines`-JSON:iin. */
+export interface MaterialQuantityRow {
+  id: string;
+  productId?: string;
+  productName: string;
+  quantity: number;
+  unit?: string;
+  source: 'form' | 'manual';
+  /**
+   * `product_select`-kenttä, josta esitäyttö syntyi.
+   * Muokattu lomakerivi säilyttää avaimen (`source: 'manual'`) ja estää saman kentän esitäytön.
+   */
+  fieldKey?: string;
+}
+
 export interface StructureLine {
   id: string;
   structureId: string;
@@ -178,6 +193,11 @@ export interface StructureLine {
   formVersion?: number;
   snapshot?: FormSnapshot;
   overrides: StructureLineOverride[];
+  /**
+   * Urakkakortin materiaalimäärät. Puuttuva avain = vanha laskelma (ei kirjoiteta uudelleen).
+   * Tyhjä taulukko = käyttäjä poisti rivit (taulukkoa ei tulosteta).
+   */
+  materialQuantities?: MaterialQuantityRow[];
 }
 
 export interface CustomerInfo {

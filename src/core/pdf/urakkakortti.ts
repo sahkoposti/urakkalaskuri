@@ -1,5 +1,7 @@
 import type { CompanyProfile } from '@/src/core/company/types';
-import type { AppSettings, CalculationRecord, Product } from '@/src/core/models/types';
+import type { FormDefinition } from '@/src/core/form/types';
+import { effectiveMaterialQuantities, formatQuantity } from '@/src/core/materials/materialQuantities';
+import type { AppSettings, CalculationRecord, MaterialQuantityRow, Product } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import type { ProductStructure } from '@/src/core/structure/types';
@@ -7,9 +9,9 @@ import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurat
 import { estimateWorkDurationDays, formatCurrency } from '@/src/core/utils/formatters';
 
 import { buildFooter, customerHeaderLines, type PdfFooter, type PriceRow } from './buildPdfContext';
+import { effectiveContractVat0 } from './manualContract';
 import { lineSpecSnapshot, specCardsFromSnapshot, type SpecCard } from './offerPageSpecs';
 import { specGridLayout, type SpecGridLayout } from './specGridLayout';
-import { effectiveContractVat0 } from './manualContract';
 import { buildUrakkakorttiSections, lineUsesUrakkakorttiPrint, type UrakkakorttiSection } from './urakkakorttiSections';
 import { formatFinnishDate } from './validUntil';
 
@@ -99,10 +101,55 @@ export function urakkakorttiMaterials(record: CalculationRecord): UrakkakorttiMa
     }));
 }
 
+function lineForm(input: BuildUrakkakorttiInput, structureId: string): FormDefinition | undefined {
+  return input.structures.find((item) => item.id === structureId)?.form;
+}
+
+function rowHasEuro(row: MaterialQuantityRow): boolean {
+  return row.productName.includes('€') || Boolean(row.unit?.includes('€'));
+}
+
+/**
+ * Materiaalitaulukko.
+ * Ilman `materialQuantities`-avainta jäädään T9-riveihin (`record.lines`): P4 tulostaa
+ * `quantityKey`-määrän jo maali-riville, ja olemassa oleva HTML kieltää ylimääräisen Materiaalit-osion.
+ * Kun avain on kirjoitettu, taulukko lukee `effectiveMaterialQuantities`. Tyhjä lista ei palaa T9:ään.
+ * Useampi rakennerivi: tuotenimen eteen `rivin nimi: `.
+ */
+function resolveUrakkakorttiMaterialTable(input: BuildUrakkakorttiInput): {
+  rows: UrakkakorttiMaterialRow[];
+  omitPaintQuantityLineIds: Set<string>;
+} {
+  const lines = ensureStructureLines(input.record);
+  const explicit = lines.some((line) => line.materialQuantities !== undefined);
+  if (!explicit) return { rows: urakkakorttiMaterials(input.record), omitPaintQuantityLineIds: new Set() };
+
+  const rows: UrakkakorttiMaterialRow[] = [];
+  const omitPaintQuantityLineIds = new Set<string>();
+  const prefix = lines.length > 1;
+  for (const line of lines) {
+    const quantities = effectiveMaterialQuantities(line, lineForm(input, line.structureId), input.products).filter(
+      (row) => row.productName.trim() && Number.isFinite(row.quantity) && row.quantity > 0 && !rowHasEuro(row),
+    );
+    if (quantities.length === 0) continue;
+    omitPaintQuantityLineIds.add(line.id);
+    for (const row of quantities) {
+      const name = row.productName.trim();
+      rows.push({
+        product: prefix ? `${line.name}: ${name}` : name,
+        quantity: formatQuantity(row.quantity),
+        unit: row.unit?.trim() ?? '',
+      });
+    }
+  }
+  return { rows, omitPaintQuantityLineIds };
+}
+
 export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): UrakkakorttiContext {
   const { record, settings } = input;
   const customer = customerFromRecord(record);
   const lines = ensureStructureLines(record);
+  const materialTable = resolveUrakkakorttiMaterialTable(input);
   const contractRows: PriceRow[] = lines.map((line) => ({
     label: lines.length > 1 ? `Tekijöiden urakka: ${line.name}` : 'Tekijöiden urakka (alv0)',
     value: formatCurrency(effectiveContractVat0(line)),
@@ -133,8 +180,10 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     contractRows,
     infoRows,
     specGrid: specGridLayout(urakkakorttiSpecCards(input)),
-    sections: buildUrakkakorttiSections(input),
-    materials: urakkakorttiMaterials(record),
+    sections: buildUrakkakorttiSections(input, {
+      omitPaintQuantityLineIds: materialTable.omitPaintQuantityLineIds,
+    }),
+    materials: materialTable.rows,
     customerNotes: customer.notes?.trim() ?? '',
     footer: buildFooter(input.company),
   };

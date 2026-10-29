@@ -75,8 +75,9 @@ function tietoLine(row: PrintRow): string {
   return `${label} ${value}`.trim();
 }
 
-function maaliLine(row: PrintRow): string {
+function maaliLine(row: PrintRow, includeQuantity = true): string {
   const name = row.value.trim();
+  if (!includeQuantity) return name;
   const quantity = row.quantity;
   if (!quantity) return name;
   const amount = [quantity.value.trim(), quantity.unit?.trim() ?? ''].filter((part) => part.length > 0).join(' ');
@@ -89,7 +90,12 @@ export function isEuroPrintRow(row: PrintRow): boolean {
   return row.unit === '€' || (typeof row.value === 'string' && row.value.includes('€'));
 }
 
-export function sectionFromPrintRows(title: string, rows: PrintRow[]): UrakkakorttiSection {
+export function sectionFromPrintRows(
+  title: string,
+  rows: PrintRow[],
+  options?: { includePaintQuantity?: boolean },
+): UrakkakorttiSection {
+  const includePaintQuantity = options?.includePaintQuantity !== false;
   const grouped = groupPrintRows(rows.filter((row) => row && !isEuroPrintRow(row)));
   const areas = grouped.osa_alueet.map(phrase).filter((item) => item.length > 0);
   const section: UrakkakorttiSection = {
@@ -97,7 +103,7 @@ export function sectionFromPrintRows(title: string, rows: PrintRow[]): Urakkakor
     phases: grouped.tyovaiheet.map(phrase).filter((item) => item.length > 0),
     notes: grouped.muuta.map(phrase).filter((item) => item.length > 0),
     facts: grouped.tieto.map(tietoLine).filter((item) => item.length > 0),
-    paints: grouped.maali.map(maaliLine).filter((item) => item.length > 0),
+    paints: grouped.maali.map((row) => maaliLine(row, includePaintQuantity)).filter((item) => item.length > 0),
   };
   if (areas.length > 0) section.areas = `Osa-alueet: ${areas.join(', ')}`;
   return section;
@@ -144,14 +150,22 @@ function urakkakorttiPrintRows(
 }
 
 /** Print-tilan rivit `ensureStructureLines`-järjestyksessä. Vanhat rivit eivät tuota osiota. */
-export function buildUrakkakorttiSections(source: UrakkakorttiSectionSource): UrakkakorttiSection[] {
+export function buildUrakkakorttiSections(
+  source: UrakkakorttiSectionSource,
+  options?: { omitPaintQuantityLineIds?: ReadonlySet<string> },
+): UrakkakorttiSection[] {
   const reverseVat = Boolean(customerFromRecord(source.record).reverseVat);
   const sections: UrakkakorttiSection[] = [];
   for (const line of ensureStructureLines(source.record)) {
     if (!lineUsesUrakkakorttiPrint(line, source.structures)) continue;
     const structure = source.structures.find((item) => item.id === line.structureId);
     if (!structure?.form) continue;
-    sections.push(sectionFromPrintRows(line.name, urakkakorttiPrintRows(line, structure, source, reverseVat)));
+    const includePaintQuantity = !options?.omitPaintQuantityLineIds?.has(line.id);
+    sections.push(
+      sectionFromPrintRows(line.name, urakkakorttiPrintRows(line, structure, source, reverseVat), {
+        includePaintQuantity,
+      }),
+    );
   }
   return sections;
 }
