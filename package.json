@@ -41,6 +41,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest",
+    "typecheck": "tsc --noEmit",
     "kombot": "npx --yes tsx --tsconfig tsconfig.json scripts/rintamamiestalo-kombot.ts"
   },
   "private": true
