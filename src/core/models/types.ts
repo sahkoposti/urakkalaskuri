@@ -135,6 +135,8 @@ export interface CalculationRecord {
   deliveryScheduleText?: string;
   travelTimeHoursOneWay?: number;
   structureLines?: StructureLine[];
+  /** Tarjousnumero (v1.3). Myönnetään ensimmäisestä tarjous-PDF:stä; säilyy muokkauksessa. */
+  offerNumber?: number;
 }
 
 export type StructureLineOverride =

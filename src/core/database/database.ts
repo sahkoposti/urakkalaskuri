@@ -25,6 +25,12 @@ import {
   parseStoredOfferStructureSettings,
 } from '../pdf/defaultOfferSettings';
 import {
+  assignOfferNumber,
+  NEXT_OFFER_NUMBER_KEY,
+  offerNumberOnSave,
+  type OfferNumberAssignment,
+} from '../pdf/offerNumber';
+import {
   OFFER_COMPANY_SETTINGS_KEY,
   offerStructureSettingsKey,
   type OfferCompanySettings,
@@ -125,6 +131,7 @@ function calculationFromRow(
     travelTimeHoursOneWay:
       row.travel_time_one_way_h == null ? undefined : Number(row.travel_time_one_way_h),
     structureLines: parseStructureLines(row.structure_lines),
+    offerNumber: row.offer_number == null ? undefined : Number(row.offer_number),
   };
 }
 
@@ -301,6 +308,10 @@ export async function getCalculation(id: string): Promise<CalculationRecord | nu
 export async function saveCalculation(record: CalculationRecord): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
+    const existing = await db.getFirstAsync<{ offer_number: number | null }>(
+      'SELECT offer_number FROM calculations WHERE id = ?',
+      record.id,
+    );
     await db.runAsync(
       `INSERT OR REPLACE INTO calculations (
         id, project_name, customer, group_duration_h, crew_size, hourly_rate,
@@ -308,8 +319,9 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
         margin_eur, commission_eur, total_price_vat0, vat_percent, vat_amount, total_price_vat,
         work_duration_days, discount_percent, discount_eur,
         total_price_vat_before_discount, total_price_vat0_before_discount,
-        created_at, form_snapshot, customer_id, delivery_schedule_text, travel_time_one_way_h, structure_lines
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        created_at, form_snapshot, customer_id, delivery_schedule_text, travel_time_one_way_h, structure_lines,
+        offer_number
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       record.id,
       record.projectName,
       record.customer ?? null,
@@ -337,6 +349,7 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.deliveryScheduleText ?? null,
       record.travelTimeHoursOneWay ?? null,
       record.structureLines ? JSON.stringify(record.structureLines) : null,
+      offerNumberOnSave(record.offerNumber, existing?.offer_number),
     );
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', record.id);
     for (const line of record.lines) {
@@ -531,6 +544,47 @@ export async function saveOfferStructureSettings(
   settings: OfferStructureSettings,
 ): Promise<void> {
   await writeSettingValue(offerStructureSettingsKey(structureId), JSON.stringify(settings));
+}
+
+export async function getStoredNextOfferNumber(): Promise<number | undefined> {
+  const value = await readSettingValue(NEXT_OFFER_NUMBER_KEY);
+  const n = value == null ? Number.NaN : Number(value);
+  return Number.isInteger(n) && n >= 1 ? n : undefined;
+}
+
+let offerNumberLock: Promise<unknown> = Promise.resolve();
+
+/**
+ * Myöntää laskelmalle tarjousnumeron (vain tarjous-PDF, ei urakkakortti).
+ * Uudelleentulostus palauttaa saman numeron. Sarjallistettu, jotta tuplanapautus ei myönnä kahta numeroa.
+ */
+export function assignOfferNumberForCalculation(calculationId: string): Promise<OfferNumberAssignment> {
+  const run = offerNumberLock.then(async () => {
+    const db = await getDb();
+    let result: OfferNumberAssignment | undefined;
+    await db.withTransactionAsync(async () => {
+      const row = await db.getFirstAsync<{ offer_number: number | null }>(
+        'SELECT offer_number FROM calculations WHERE id = ?',
+        calculationId,
+      );
+      if (!row) throw new Error('Laskelmaa ei löytynyt.');
+      const company = await getOfferCompanySettings();
+      const storedNext = await getStoredNextOfferNumber();
+      result = assignOfferNumber(row.offer_number, storedNext, company.offerNumberStart);
+      if (result.assigned) {
+        await db.runAsync(
+          'UPDATE calculations SET offer_number = ? WHERE id = ?',
+          result.offerNumber,
+          calculationId,
+        );
+        await writeSettingValue(NEXT_OFFER_NUMBER_KEY, String(result.nextOfferNumber));
+      }
+    });
+    if (!result) throw new Error('Tarjousnumeron myöntäminen epäonnistui.');
+    return result;
+  });
+  offerNumberLock = run.catch(() => undefined);
+  return run;
 }
 
 const FIELDS_PAGE_EXPANDED_KEY = 'fields_page_expanded';
