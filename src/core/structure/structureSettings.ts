@@ -3,6 +3,59 @@ import type { ProductStructure } from '@/src/core/structure/types';
 
 export const DEFAULT_CREW_SIZE = 2;
 
+/** Yläraja tuoterakenteen tuntipalkalle (€/h, alv 0). */
+export const MAX_HOURLY_RATE = 500;
+
+/** Kentän tekstit yhdessä paikassa. */
+export const HOURLY_RATE_FIELD = {
+  label: 'Tuntihinta, €/h (alv 0 %)',
+  help: 'Tuntihinta ilman arvonlisäveroa. Käytetään sekä tekijöiden urakkahinnassa että asiakashinnan kentissä. Tyhjä = yleinen tuntihinta (Asetukset → Yleinen).',
+  invalid:
+    'Anna tuntihinta, joka on suurempi kuin 0 ja enintään 500 €/h. Esimerkki: 45,5.',
+} as const;
+
+/** Pelkkä ei-negatiivinen desimaali, piste tai pilkku. Ei eksponenttia, välejä tai yksiköitä. */
+const HOURLY_RATE_INPUT = /^\d+(?:[.,]\d+)?$/;
+
+export function formatHourlyRate(value: number): string {
+  if (!Number.isFinite(value)) return '';
+  return String(value).replace('.', ',');
+}
+
+/** Paikkamerkki: yleinen tuntihinta pilkkudesimaalina. */
+export function hourlyRatePlaceholder(generalRate: number): string {
+  return formatHourlyRate(generalRate);
+}
+
+function isAcceptableHourlyRate(value: number): boolean {
+  return Number.isFinite(value) && value > 0 && value <= MAX_HOURLY_RATE;
+}
+
+/**
+ * Tyhjä = ei rakenteen omaa hintaa (`null`).
+ * Kelvollinen luku tai `'invalid'`.
+ */
+export function parseHourlyRateInput(raw: string): number | null | 'invalid' {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!HOURLY_RATE_INPUT.test(trimmed)) return 'invalid';
+  const parsed = Number(trimmed.replace(',', '.'));
+  if (!isAcceptableHourlyRate(parsed)) return 'invalid';
+  return parsed;
+}
+
+/** Tietokannasta tai kaavaan: kelvoton arvo jää pois (Yleinen-fallback). */
+export function storedHourlyRate(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return isAcceptableHourlyRate(value) ? value : undefined;
+  }
+  if (typeof value === 'string') {
+    const parsed = parseHourlyRateInput(value);
+    return typeof parsed === 'number' ? parsed : undefined;
+  }
+  return undefined;
+}
+
 export type StructurePricingSettings = Pick<ProductStructure, 'commissionPercent' | 'crewSize'> &
   Partial<
     Pick<
@@ -21,11 +74,9 @@ export function parseCrewSize(value: unknown, fallback = DEFAULT_CREW_SIZE): num
   return parsed;
 }
 
-/** Positiivinen €/h, muuten `fallback` (Yleinen-asetus). */
+/** Kelvollinen €/h, muuten `fallback` (Yleinen-asetus). Sama sääntö kuin syötteen parserissa. */
 export function parseHourlyRate(value: unknown, fallback: number): number {
-  const parsed = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-  return parsed;
+  return storedHourlyRate(value) ?? fallback;
 }
 
 export function parseMarginAmount(value: unknown, fallback: number): number {

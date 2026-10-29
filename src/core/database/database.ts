@@ -25,6 +25,7 @@ import {
   type ProductStructure,
 } from '../structure/types';
 import { parseCrewSize } from '../structure/structureSettings';
+import { storedHourlyRate } from '../structure/structureSettings';
 import {
   ACTIVE_STRUCTURE_KEY,
   getDb,
@@ -494,14 +495,6 @@ function optionalDbNumber(value: unknown): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-/** NULL tai ei-positiivinen = ei rakenteen omaa tuntipalkkaa (Yleinen-fallback). */
-function structureHourlyRate(value: unknown): number | undefined {
-  if (value == null || value === '') return undefined;
-  const parsed = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
-  return parsed;
-}
-
 function structureFromRow(row: Record<string, unknown>): ProductStructure {
   const additionalInfo = ((row.default_additional_info as string | null) ?? '').trim();
   return {
@@ -511,7 +504,7 @@ function structureFromRow(row: Record<string, unknown>): ProductStructure {
     form: normalizeFormDefinition(JSON.parse(row.form_json as string)),
     commissionPercent: row.commission_percent as number,
     crewSize: parseCrewSize(row.crew_size),
-    hourlyRate: structureHourlyRate(row.hourly_rate),
+    hourlyRate: storedHourlyRate(row.hourly_rate),
     marginLowAmount: optionalDbNumber(row.margin_low_amount),
     marginLowPercent: optionalDbNumber(row.margin_low_percent),
     marginHighAmount: optionalDbNumber(row.margin_high_amount),

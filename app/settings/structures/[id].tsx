@@ -21,8 +21,12 @@ import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import {
+  formatHourlyRate,
+  HOURLY_RATE_FIELD,
+  hourlyRatePlaceholder,
   maxMarginPercent,
   parseCrewSize,
+  parseHourlyRateInput,
   resolvedStructureMargin,
   structureMarginFromSettings,
 } from '@/src/core/structure/structureSettings';
@@ -60,8 +64,9 @@ export default function ProductStructureDetailScreen() {
         : '',
   );
   const [hourlyRate, setHourlyRate] = useState(
-    isNew ? '' : hourlyRateText(structure?.hourlyRate),
+    isNew || structure?.hourlyRate == null ? '' : formatHourlyRate(structure.hourlyRate),
   );
+  const [hourlyRateError, setHourlyRateError] = useState<string | null>(null);
   const initialMargin = isNew
     ? structureMarginFromSettings(settings)
     : structure
@@ -111,7 +116,8 @@ export default function ProductStructureDetailScreen() {
     setName(structure.name);
     setCommission(String(structure.commissionPercent).replace('.', ','));
     setCrewSize(String(structure.crewSize));
-    setHourlyRate(hourlyRateText(structure.hourlyRate));
+    setHourlyRate(structure.hourlyRate == null ? '' : formatHourlyRate(structure.hourlyRate));
+    setHourlyRateError(null);
     const margin = resolvedStructureMargin(structure, settings);
     setMarginLowAmount(String(margin.marginLowAmount));
     setMarginLowPercent(margin.marginLowPercent);
@@ -128,7 +134,7 @@ export default function ProductStructureDetailScreen() {
         name: structure.name,
         commission: String(structure.commissionPercent).replace('.', ','),
         crewSize: String(structure.crewSize),
-        hourlyRate: hourlyRateText(structure.hourlyRate),
+        hourlyRate: structure.hourlyRate == null ? '' : formatHourlyRate(structure.hourlyRate),
         marginLowAmount: String(margin.marginLowAmount),
         marginLowPercent: margin.marginLowPercent,
         marginHighAmount: String(margin.marginHighAmount),
@@ -187,11 +193,15 @@ export default function ProductStructureDetailScreen() {
       showAlert('Virhe', 'Virheellinen työryhmän koko');
       return false;
     }
-    const parsedHourlyRate = parseOptionalHourlyRate(hourlyRate);
+    const parsedHourlyRate = parseHourlyRateInput(hourlyRate);
     if (parsedHourlyRate === 'invalid') {
-      showAlert('Virhe', 'Virheellinen tuntipalkka');
+      setHourlyRateError(HOURLY_RATE_FIELD.invalid);
       return false;
     }
+    setHourlyRateError(null);
+    const nextHourlyRate = parsedHourlyRate ?? undefined;
+    const hourlyRateDisplay = nextHourlyRate == null ? '' : formatHourlyRate(nextHourlyRate);
+    setHourlyRate(hourlyRateDisplay);
     const unitPrice = parseOptionalPrice(defaultUnitPrice);
     const displayDuration = parseOptionalDays(defaultDisplayWorkDuration);
     const materials = parseOptionalPrice(defaultMaterials);
@@ -245,7 +255,7 @@ export default function ProductStructureDetailScreen() {
       form,
       commissionPercent: parsed,
       crewSize: parseCrewSize(parsedCrew),
-      hourlyRate: parsedHourlyRate,
+      hourlyRate: nextHourlyRate,
       marginLowAmount: parsedLowAmount,
       marginLowPercent,
       marginHighAmount: parsedHighAmount,
@@ -265,7 +275,7 @@ export default function ProductStructureDetailScreen() {
         name: name.trim(),
         commission,
         crewSize,
-        hourlyRate,
+        hourlyRate: hourlyRateDisplay,
         marginLowAmount,
         marginLowPercent,
         marginHighAmount,
@@ -380,12 +390,19 @@ export default function ProductStructureDetailScreen() {
           placeholder="Henkilöä"
         />
         <AppInput
-          label="Tekijän tuntipalkka (alv0) €/h"
+          label={HOURLY_RATE_FIELD.label}
           value={hourlyRate}
-          onChangeText={setHourlyRate}
+          onChangeText={(text) => {
+            setHourlyRate(text);
+            setHourlyRateError(
+              parseHourlyRateInput(text) === 'invalid' ? HOURLY_RATE_FIELD.invalid : null,
+            );
+          }}
           keyboardType="decimal-pad"
-          placeholder={`Yleinen: ${settings.defaultHourlyRate} €/h`}
+          placeholder={hourlyRatePlaceholder(settings.defaultHourlyRate)}
         />
+        <Text style={styles.sectionHint}>{HOURLY_RATE_FIELD.help}</Text>
+        {hourlyRateError ? <Text style={styles.fieldError}>{hourlyRateError}</Text> : null}
         <AppInput
           label="Lisätiedot"
           value={additionalInfo}
@@ -439,19 +456,6 @@ export default function ProductStructureDetailScreen() {
   );
 }
 
-function hourlyRateText(value: number | undefined): string {
-  if (value == null || !Number.isFinite(value) || value <= 0) return '';
-  return String(value);
-}
-
-function parseOptionalHourlyRate(raw: string): number | undefined | 'invalid' {
-  const trimmed = raw.trim();
-  if (!trimmed) return undefined;
-  const parsed = parseNumber(trimmed);
-  if (parsed === null || parsed <= 0) return 'invalid';
-  return parsed;
-}
-
 function optionalDaysText(value: number | undefined): string {
   const days = normalizeDisplayWorkDurationDays(value);
   return days == null ? '' : String(days);
@@ -493,6 +497,13 @@ function createStyles(colors: AppColorPalette) {
       fontSize: 13,
       lineHeight: 20,
       color: colors.text,
+    },
+    fieldError: {
+      marginTop: -4,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      lineHeight: 18,
+      color: colors.accent,
     },
   };
 }

@@ -16,12 +16,13 @@ type MemoryDatabase = {
 type SqliteTestState = {
   db: MemoryDatabase | null;
   beforeOpen: ((db: MemoryDatabase) => void) | null;
+  reuseDb: boolean;
 };
 
 function sqliteTestState(): SqliteTestState {
   const holder = globalThis as { __structureHourlyRateSqlite?: SqliteTestState };
   if (!holder.__structureHourlyRateSqlite) {
-    holder.__structureHourlyRateSqlite = { db: null, beforeOpen: null };
+    holder.__structureHourlyRateSqlite = { db: null, beforeOpen: null, reuseDb: false };
   }
   return holder.__structureHourlyRateSqlite;
 }
@@ -34,14 +35,15 @@ jest.mock('expo-sqlite', () => {
 
   return {
     openDatabaseAsync: async () => {
-      const db = new DatabaseSync(':memory:');
       const holder = globalThis as { __structureHourlyRateSqlite?: SqliteTestState };
       if (!holder.__structureHourlyRateSqlite) {
-        holder.__structureHourlyRateSqlite = { db: null, beforeOpen: null };
+        holder.__structureHourlyRateSqlite = { db: null, beforeOpen: null, reuseDb: false };
       }
       const state = holder.__structureHourlyRateSqlite;
+      const db = state.reuseDb && state.db ? state.db : new DatabaseSync(':memory:');
+      const openedExisting = state.reuseDb && state.db != null;
       state.db = db;
-      state.beforeOpen?.(db);
+      if (!openedExisting) state.beforeOpen?.(db);
       return {
         execAsync: async (sql: string) => {
           db.exec(sql);
@@ -106,6 +108,7 @@ describe('product structure hourly_rate', () => {
     const state = sqliteTestState();
     state.beforeOpen = null;
     state.db = null;
+    state.reuseDb = false;
     resetDatabaseConnection();
   });
 
@@ -157,6 +160,47 @@ describe('product structure hourly_rate', () => {
     expect((await getProductStructure('legacy'))?.hourlyRate).toBeUndefined();
     rawRun('UPDATE product_structures SET hourly_rate = -4 WHERE id = ?', 'legacy');
     expect((await getProductStructure('legacy'))?.hourlyRate).toBeUndefined();
+    rawRun('UPDATE product_structures SET hourly_rate = 500.01 WHERE id = ?', 'legacy');
+    expect((await getProductStructure('legacy'))?.hourlyRate).toBeUndefined();
+    rawRun('UPDATE product_structures SET hourly_rate = NULL WHERE id = ?', 'legacy');
+  });
+
+  test('migraatio kahdesti on idempotentti ja NULL säilyy', async () => {
+    sqliteTestState().beforeOpen = (db) => {
+      db.exec(`
+        CREATE TABLE product_structures (
+          id TEXT PRIMARY KEY NOT NULL,
+          name TEXT NOT NULL,
+          unit TEXT,
+          form_json TEXT NOT NULL,
+          commission_percent REAL NOT NULL,
+          sort_order INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          crew_size REAL,
+          margin_low_amount REAL,
+          margin_low_percent REAL,
+          margin_high_amount REAL,
+          margin_high_percent REAL
+        );
+        INSERT INTO product_structures (
+          id, name, form_json, commission_percent, sort_order, created_at, updated_at, crew_size,
+          margin_low_amount, margin_low_percent, margin_high_amount, margin_high_percent
+        ) VALUES (
+          'legacy', 'Vanha', '{}', 7, 0, 1, 1, 2,
+          2000, 45, 10000, 30
+        );
+      `);
+    };
+
+    await getProductStructure('legacy');
+    expect(rawGet('SELECT hourly_rate FROM product_structures WHERE id = ?', 'legacy')?.hourly_rate).toBeNull();
+
+    resetDatabaseConnection();
+    sqliteTestState().reuseDb = true;
+    const again = await getProductStructure('legacy');
+    expect(again?.hourlyRate).toBeUndefined();
+    expect(rawGet('SELECT hourly_rate FROM product_structures WHERE id = ?', 'legacy')?.hourly_rate).toBeNull();
   });
 
   test('upsert kirjoittaa hourly_rate-arvon ja nullin, structureFromRow kierrosta', async () => {
