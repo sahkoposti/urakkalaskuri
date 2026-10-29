@@ -173,6 +173,11 @@ export interface StructureLine {
   pricesIncludeVat?: boolean;
   /** Rivin lisätiedot; tuoterakenne omistaa kentän, oletusteksti kopioidaan rakenteesta. */
   additionalInfo?: string;
+  /**
+   * v1.3 urakkakortti: käsin kirjattu tekijöiden urakka (alv0), kun lomaketta ei käytetty / urakka 0.
+   * Tallennetaan laskelmaan (Eemil 29.10.2026). Ei muuta asiakashintaa eikä contractPriceVat0:aa.
+   */
+  manualContractPriceVat0?: number;
   fieldValues: Record<string, string>;
   formFilled: boolean;
   formVersion?: number;

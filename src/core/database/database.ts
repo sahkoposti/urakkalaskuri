@@ -43,6 +43,8 @@ import {
   type ProductStructure,
 } from '../structure/types';
 import { parseCrewSize } from '../structure/structureSettings';
+import { ensureStructureLines } from '../structure/legacyCalculation';
+import { withManualContractPrices } from '../pdf/manualContract';
 import {
   ACTIVE_STRUCTURE_KEY,
   getDb,
@@ -585,6 +587,26 @@ export function assignOfferNumberForCalculation(calculationId: string): Promise<
   });
   offerNumberLock = run.catch(() => undefined);
   return run;
+}
+
+/**
+ * Urakkakortti: tallentaa käsin kirjatut urakat laskelman riveille (Eemil 29.10.2026 #6).
+ * Päivittää vain structure_lines-sarakkeen; asiakashinnat ja kate ennallaan.
+ */
+export async function saveManualContractPrices(
+  calculationId: string,
+  manualByLineId: Record<string, number | null | undefined>,
+): Promise<CalculationRecord> {
+  const record = await getCalculation(calculationId);
+  if (!record) throw new Error('Laskelmaa ei löytynyt.');
+  const structureLines = withManualContractPrices(ensureStructureLines(record), manualByLineId);
+  const db = await getDb();
+  await db.runAsync(
+    'UPDATE calculations SET structure_lines = ? WHERE id = ?',
+    JSON.stringify(structureLines),
+    calculationId,
+  );
+  return { ...record, structureLines };
 }
 
 const FIELDS_PAGE_EXPANDED_KEY = 'fields_page_expanded';
