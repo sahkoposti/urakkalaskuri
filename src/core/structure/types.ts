@@ -20,6 +20,8 @@ export interface ProductStructure {
   commissionPercent: number;
   /** Henkilöiden määrä. Kaava: `asetukset.tyoryhman_koko`. */
   crewSize: number;
+  /** Tekijän tuntipalkka €/h alv0. Kaava: asetukset.tuntihinta. Tyhjä = Yleinen-asetus. */
+  hourlyRate?: number;
   /** Liukuvan katteen alaraja € (alv0). Kaava: `asetukset.myyntikate_alaraja_eur`. */
   marginLowAmount?: number;
   /** Kate % alarajalla. Kaava: `asetukset.myyntikate_alaraja_prosentti`. */
