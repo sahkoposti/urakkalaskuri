@@ -54,7 +54,13 @@ describe('buildPdfContext', () => {
     expect(labels(ctx.price.left)).toEqual(['Hinta alv0', 'ALV 25,5 %']);
     expect(labels(ctx.price.right)).toEqual(['Hinta alv', 'Loppusumma']);
     expect(ctx.price.right[1].emphasis).toBe(true);
-    expect(ctx.khv).toEqual({ totalPriceVat: 2510, materialsVat: 502 });
+    expect(ctx.khv).toEqual({
+      totalPriceVat: 2510,
+      totalPriceVatBeforeDiscount: 2510,
+      materialsVat: 502,
+      settings: { ratePercent: 40, deductibleEur: 150, capEur: 2100 },
+      footnoteText: '',
+    });
     expect(ctx.customerLines).toEqual(['Matti Meikäläinen', 'Testitie 1, 20100 Turku', '040 000 0000']);
     expect(ctx.offerInfo).toEqual([
       { label: 'Tarjousnumero', value: '10285' },

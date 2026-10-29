@@ -9,7 +9,7 @@ import { applyVat, customerSeesVatInclusive, isPrivateCustomer } from '@/src/cor
 import { filterOfferCards, lineSpecSnapshot, specCardsFromSnapshot, type SpecCard } from './offerPageSpecs';
 import { specGridLayout, type SpecGridLayout } from './specGridLayout';
 import { enabledOfferPageIds } from './syncOfferPages';
-import type { OfferCompanySettings, OfferStructureSettings } from './types';
+import type { KhvSettings, OfferCompanySettings, OfferStructureSettings } from './types';
 import { formatFinnishDate, validUntil } from './validUntil';
 
 export type PriceRow = { label: string; value: string; emphasis?: boolean };
@@ -29,8 +29,14 @@ export type TarjousPdfContext = {
   khv?: {
     /** Kokonaishinta sis. ALV alennuksen jälkeen. */
     totalPriceVat: number;
-    /** Materiaalit sis. ALV sellaisenaan (ks. kotitalousDeduction.khvWorkShareVatIncluded). */
+    /** Kokonaishinta sis. ALV ennen alennusta (alennuksen kohdistus: kotitalousDeduction.khvPriceSplit). */
+    totalPriceVatBeforeDiscount: number;
+    /** Materiaalit sis. ALV ennen alennusta. */
     materialsVat: number;
+    /** Yrityskohtaiset asetukset (Tarjous-asetukset), ei kovakoodattuja arvoja. */
+    settings: KhvSettings;
+    /** Asetusten huomautusteksti; tyhjä → oletusteksti. */
+    footnoteText: string;
   };
 };
 
@@ -169,7 +175,10 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     khv: khvApplicable
       ? {
           totalPriceVat: record.totalPriceVat,
+          totalPriceVatBeforeDiscount: record.totalPriceVatBeforeDiscount || record.totalPriceVat,
           materialsVat: Math.round(applyVat(record.materialsVat0, record.vatPercent) * 100) / 100,
+          settings: offerCompany.khv,
+          footnoteText: offerCompany.khvFootnoteText,
         }
       : undefined,
   };
