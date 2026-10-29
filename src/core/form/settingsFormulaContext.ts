@@ -35,6 +35,7 @@ const SETTING_BINDINGS: Array<{ finnish: string; legacy: string; value: (s: AppS
   {
     finnish: 'asetukset.tuntihinta',
     legacy: 'settings.default_hourly_rate',
+    /** Tuoterakenteen tuntipalkka, kun settingsForStructure on käytössä. Muuten Yleinen. */
     value: (s) => s.defaultHourlyRate,
   },
   {

@@ -7,11 +7,22 @@ export type StructurePricingSettings = Pick<ProductStructure, 'commissionPercent
   Partial<
     Pick<
       ProductStructure,
-      'marginLowAmount' | 'marginLowPercent' | 'marginHighAmount' | 'marginHighPercent'
+      | 'hourlyRate'
+      | 'marginLowAmount'
+      | 'marginLowPercent'
+      | 'marginHighAmount'
+      | 'marginHighPercent'
     >
   >;
 
 export function parseCrewSize(value: unknown, fallback = DEFAULT_CREW_SIZE): number {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+/** Positiivinen €/h, muuten `fallback` (Yleinen-asetus). */
+export function parseHourlyRate(value: unknown, fallback: number): number {
   const parsed = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return parsed;
@@ -65,7 +76,7 @@ export function resolvedStructureMargin(
   };
 }
 
-/** Rivin lomake: palkkio-%, työryhmän koko ja kate tästä tuoterakenteesta. */
+/** Rivin lomake: palkkio-%, työryhmän koko, tuntipalkka ja kate tästä tuoterakenteesta. */
 export function settingsForStructure(
   settings: AppSettings,
   structure: StructurePricingSettings,
@@ -75,6 +86,7 @@ export function settingsForStructure(
     ...settings,
     defaultCommissionPercent: structure.commissionPercent,
     defaultCrewSize: parseCrewSize(structure.crewSize, settings.defaultCrewSize),
+    defaultHourlyRate: parseHourlyRate(structure.hourlyRate, settings.defaultHourlyRate),
     defaultMarginPercent: margin.marginLowPercent,
     ...margin,
   };

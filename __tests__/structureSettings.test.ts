@@ -1,6 +1,7 @@
 import { runProductionPipeline } from '../src/core/calculation/calculationPipeline';
 import { createMinimalFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
+import { buildSettingsFormulaContext } from '../src/core/form/settingsFormulaContext';
 import { defaultSettings } from '../src/core/models/types';
 import { settingsForStructure } from '../src/core/structure/structureSettings';
 
@@ -77,5 +78,52 @@ describe('settingsForStructure', () => {
     });
     expect(runProductionPipeline(form, {}, 0, high)['asetukset.myyntikate_alaraja_prosentti']).toBe(50);
     expect(runProductionPipeline(form, {}, 0, low)['asetukset.myyntikate_alaraja_prosentti']).toBe(25);
+  });
+
+  test('kaava käyttää tuoterakenteen tuntipalkkaa', () => {
+    const resolved = settingsForStructure(defaultSettings, {
+      commissionPercent: 7,
+      crewSize: 2,
+      hourlyRate: 40,
+    });
+    expect(resolved.defaultHourlyRate).toBe(40);
+    expect(buildSettingsFormulaContext(resolved)['asetukset.tuntihinta']).toBe(40);
+    expect(buildSettingsFormulaContext(resolved)['settings.default_hourly_rate']).toBe(40);
+  });
+
+  test('tyhjä, nolla ja NaN käyttävät Yleinen-tuntipalkkaa', () => {
+    const base = { ...defaultSettings, defaultHourlyRate: 30 };
+    for (const hourlyRate of [undefined, 0, Number.NaN]) {
+      const resolved = settingsForStructure(base, {
+        commissionPercent: 7,
+        crewSize: 2,
+        hourlyRate,
+      });
+      expect(resolved.defaultHourlyRate).toBe(30);
+    }
+  });
+
+  test('oletus urakka_hinta_alv0 eroaa rakenteen tuntipalkalla 40 ja yleisellä 30', () => {
+    const form = normalizeFormDefinition(createMinimalFormDefinition());
+    const values = { tyoryhma_kesto_pv: '5' };
+    const general = runProductionPipeline(form, values, 0, defaultSettings);
+    const structured = runProductionPipeline(
+      form,
+      values,
+      0,
+      settingsForStructure(defaultSettings, {
+        commissionPercent: defaultSettings.defaultCommissionPercent,
+        crewSize: defaultSettings.defaultCrewSize,
+        hourlyRate: 40,
+      }),
+    );
+
+    expect(defaultSettings.defaultHourlyRate).toBe(30);
+    expect(general['asetukset.tuntihinta']).toBe(30);
+    expect(structured['asetukset.tuntihinta']).toBe(40);
+    // 5 pv * 8 h * työryhmä 2 * tuntihinta
+    expect(general.urakka_hinta_alv0).toBeCloseTo(2400, 2);
+    expect(structured.urakka_hinta_alv0).toBeCloseTo(3200, 2);
+    expect(structured.urakka_hinta_alv0).not.toBe(general.urakka_hinta_alv0);
   });
 });

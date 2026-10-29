@@ -494,6 +494,14 @@ function optionalDbNumber(value: unknown): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+/** NULL tai ei-positiivinen = ei rakenteen omaa tuntipalkkaa (Yleinen-fallback). */
+function structureHourlyRate(value: unknown): number | undefined {
+  if (value == null || value === '') return undefined;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
+
 function structureFromRow(row: Record<string, unknown>): ProductStructure {
   const additionalInfo = ((row.default_additional_info as string | null) ?? '').trim();
   return {
@@ -503,6 +511,7 @@ function structureFromRow(row: Record<string, unknown>): ProductStructure {
     form: normalizeFormDefinition(JSON.parse(row.form_json as string)),
     commissionPercent: row.commission_percent as number,
     crewSize: parseCrewSize(row.crew_size),
+    hourlyRate: structureHourlyRate(row.hourly_rate),
     marginLowAmount: optionalDbNumber(row.margin_low_amount),
     marginLowPercent: optionalDbNumber(row.margin_low_percent),
     marginHighAmount: optionalDbNumber(row.margin_high_amount),
@@ -576,8 +585,9 @@ export async function upsertProductStructure(structure: ProductStructure): Promi
       id, name, unit, form_json, commission_percent, sort_order, created_at, updated_at,
       default_additional_info, default_unit_price_vat0, default_contract_price_vat0, default_materials_vat0,
       default_display_work_duration_days, crew_size,
-      margin_low_amount, margin_low_percent, margin_high_amount, margin_high_percent
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      margin_low_amount, margin_low_percent, margin_high_amount, margin_high_percent,
+      hourly_rate
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     structure.id,
     structure.name,
     structure.unit ?? null,
@@ -596,6 +606,7 @@ export async function upsertProductStructure(structure: ProductStructure): Promi
     structure.marginLowPercent ?? null,
     structure.marginHighAmount ?? null,
     structure.marginHighPercent ?? null,
+    structure.hourlyRate ?? null,
   );
 }
 

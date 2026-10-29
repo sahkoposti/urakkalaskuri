@@ -59,6 +59,9 @@ export default function ProductStructureDetailScreen() {
         ? String(structure.crewSize)
         : '',
   );
+  const [hourlyRate, setHourlyRate] = useState(
+    isNew ? '' : hourlyRateText(structure?.hourlyRate),
+  );
   const initialMargin = isNew
     ? structureMarginFromSettings(settings)
     : structure
@@ -90,6 +93,7 @@ export default function ProductStructureDetailScreen() {
       name: name.trim(),
       commission,
       crewSize,
+      hourlyRate,
       marginLowAmount,
       marginLowPercent,
       marginHighAmount,
@@ -107,6 +111,7 @@ export default function ProductStructureDetailScreen() {
     setName(structure.name);
     setCommission(String(structure.commissionPercent).replace('.', ','));
     setCrewSize(String(structure.crewSize));
+    setHourlyRate(hourlyRateText(structure.hourlyRate));
     const margin = resolvedStructureMargin(structure, settings);
     setMarginLowAmount(String(margin.marginLowAmount));
     setMarginLowPercent(margin.marginLowPercent);
@@ -123,6 +128,7 @@ export default function ProductStructureDetailScreen() {
         name: structure.name,
         commission: String(structure.commissionPercent).replace('.', ','),
         crewSize: String(structure.crewSize),
+        hourlyRate: hourlyRateText(structure.hourlyRate),
         marginLowAmount: String(margin.marginLowAmount),
         marginLowPercent: margin.marginLowPercent,
         marginHighAmount: String(margin.marginHighAmount),
@@ -145,6 +151,7 @@ export default function ProductStructureDetailScreen() {
     name,
     commission,
     crewSize,
+    hourlyRate,
     marginLowAmount,
     marginLowPercent,
     marginHighAmount,
@@ -178,6 +185,11 @@ export default function ProductStructureDetailScreen() {
     const parsedCrew = Number.parseInt(crewSize.replace(',', '.'), 10);
     if (!Number.isFinite(parsedCrew) || parsedCrew <= 0) {
       showAlert('Virhe', 'Virheellinen työryhmän koko');
+      return false;
+    }
+    const parsedHourlyRate = parseOptionalHourlyRate(hourlyRate);
+    if (parsedHourlyRate === 'invalid') {
+      showAlert('Virhe', 'Virheellinen tuntipalkka');
       return false;
     }
     const unitPrice = parseOptionalPrice(defaultUnitPrice);
@@ -233,6 +245,7 @@ export default function ProductStructureDetailScreen() {
       form,
       commissionPercent: parsed,
       crewSize: parseCrewSize(parsedCrew),
+      hourlyRate: parsedHourlyRate,
       marginLowAmount: parsedLowAmount,
       marginLowPercent,
       marginHighAmount: parsedHighAmount,
@@ -252,6 +265,7 @@ export default function ProductStructureDetailScreen() {
         name: name.trim(),
         commission,
         crewSize,
+        hourlyRate,
         marginLowAmount,
         marginLowPercent,
         marginHighAmount,
@@ -366,6 +380,13 @@ export default function ProductStructureDetailScreen() {
           placeholder="Henkilöä"
         />
         <AppInput
+          label="Tekijän tuntipalkka (alv0) €/h"
+          value={hourlyRate}
+          onChangeText={setHourlyRate}
+          keyboardType="decimal-pad"
+          placeholder={`Yleinen: ${settings.defaultHourlyRate} €/h`}
+        />
+        <AppInput
           label="Lisätiedot"
           value={additionalInfo}
           onChangeText={setAdditionalInfo}
@@ -416,6 +437,19 @@ export default function ProductStructureDetailScreen() {
       {exitDialog}
     </>
   );
+}
+
+function hourlyRateText(value: number | undefined): string {
+  if (value == null || !Number.isFinite(value) || value <= 0) return '';
+  return String(value);
+}
+
+function parseOptionalHourlyRate(raw: string): number | undefined | 'invalid' {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  const parsed = parseNumber(trimmed);
+  if (parsed === null || parsed <= 0) return 'invalid';
+  return parsed;
 }
 
 function optionalDaysText(value: number | undefined): string {
