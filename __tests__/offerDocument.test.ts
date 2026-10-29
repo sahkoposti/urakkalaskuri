@@ -9,6 +9,7 @@ import { kotitalousDeduction } from '../src/core/pdf/kotitalousDeduction';
 import {
   buildOfferRows,
   buildOfferSections,
+  offerDocumentProblems,
   offerVatSummary,
   sellerContactLines,
 } from '../src/core/pdf/offerDocument';
@@ -273,6 +274,7 @@ describe('offer rows and sections', () => {
     expect(sections[0].facts).toEqual(['Pelkkä arvo <b>', 'Korkeus 99,0 m']);
     expect(sections[0].paints).toEqual(['Testimaali Sininen']);
     expect(sections[0].workDuration).toBe('Työn arvioitu kesto 4 työpäivää');
+    expect(offerDocumentProblems(source.record)).toEqual([]);
     expect(JSON.stringify(sections)).not.toContain('8,5');
     expect(sections[1]).toMatchObject({
       areas: 'Osa-alueet: Piippu',
@@ -292,6 +294,63 @@ describe('offer rows and sections', () => {
     expect(html).toContain('Testimaali Sininen');
     expect(html).not.toContain('8,5');
     expect((html.match(/class="offer-section"/g) ?? []).length).toBe(2);
+  });
+
+  it('uses the singular työpäivä for exactly one day and the plural otherwise', () => {
+    const one = buildOfferSections(groupedInput([{ ...eaves, displayWorkDurationDays: 1 }]));
+    expect(one[0].workDuration).toBe('Työn arvioitu kesto 1 työpäivä');
+    const several = buildOfferSections(groupedInput([{ ...eaves, displayWorkDurationDays: 3 }]));
+    expect(several[0].workDuration).toBe('Työn arvioitu kesto 3 työpäivää');
+  });
+
+  it('omits a zero quantity row and keeps saved totals', () => {
+    const zero = { ...eaves, id: 'z', name: 'Nollamäärä', quantity: 0, unitPriceVat0: 999 };
+    const withZero = groupedInput([eaves, zero]);
+    const without = groupedInput([eaves]);
+    expect(buildOfferRows(withZero).map((row) => row.name)).toEqual(['Räystäänalusten maalaus']);
+    expect(offerDocumentProblems(withZero.record)).toEqual([]);
+    expect(buildPdfContext(withZero).price).toEqual(buildPdfContext(without).price);
+    expect(buildPdfContext(withZero).vatSummary).toEqual(buildPdfContext(without).vatSummary);
+    expect(withZero.record.totalPriceVat).toBe(without.record.totalPriceVat);
+  });
+
+  it('does not print NaN or Infinity as 0,00 € and lists a problem per line', () => {
+    const nanLine = { ...eaves, id: 'n', name: 'Rikkinäinen', unitPriceVat0: Number.NaN };
+    const infLine = { ...chimney, id: 'i', name: 'Ääretön', unitPriceVat0: Number.POSITIVE_INFINITY };
+    const badQty = { ...hoist, id: 'q', name: 'Huono määrä', quantity: Number.NaN };
+    const source = groupedInput([nanLine, infLine, badQty, eaves]);
+    const savedTotal = source.record.totalPriceVat;
+    const problems = offerDocumentProblems(source.record);
+    expect(problems).toEqual([
+      'Tarjouksen rivillä Rikkinäinen on virheellinen hinta. Korjaa hinta ennen tulostusta.',
+      'Tarjouksen rivillä Ääretön on virheellinen hinta. Korjaa hinta ennen tulostusta.',
+      'Tarjouksen rivillä Huono määrä on virheellinen hinta. Korjaa hinta ennen tulostusta.',
+    ]);
+    const rows = buildOfferRows(source);
+    expect(rows.map((row) => row.name)).toEqual(['Rikkinäinen', 'Ääretön', 'Huono määrä', 'Räystäänalusten maalaus']);
+    for (const row of rows.slice(0, 3)) {
+      expect(row.unitPrice).not.toContain('0,00');
+      expect(row.total).not.toContain('0,00');
+      expect(row.unitPrice).toBe('');
+      expect(row.total).toBe('');
+    }
+    expect(rows[3].unitPrice).toBe(money(80, 25.5, true));
+    expect(rows[3].total).toBe(money(lineTotalVat0(eaves), 25.5, true));
+    expect(source.record.totalPriceVat).toBe(savedTotal);
+    expect(nanLine.unitPriceVat0).toBeNaN();
+  });
+
+  it('still prints a real zero price and leaves a business Alv-% column at 0 %', () => {
+    const free = { ...hoist, name: 'Ilmainen', unitPriceVat0: 0 };
+    const rows = buildOfferRows(groupedInput([free]));
+    expect(rows[0].unitPrice).toBe(money(0, 25.5, true));
+    expect(rows[0].total).toBe(money(0, 25.5, true));
+    expect(offerDocumentProblems(groupedInput([free]).record)).toEqual([]);
+
+    const business = groupedInput([{ ...eaves, vatPercent: Number.NaN }], { customerType: 'business', reverseVat: true });
+    expect(offerDocumentProblems(business.record)).toEqual([]);
+    expect(buildOfferRows(business)[0].unitPrice).toBe(money(80, 25.5, false));
+    expect(buildOfferRows(business)[0].vatPercent).toBe(formatPercent(0));
   });
 
   it('treats a line with no matching structure as a manual row', () => {

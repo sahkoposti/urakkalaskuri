@@ -6,6 +6,7 @@ import { ensureStructureLines } from '../structure/legacyCalculation';
 import { buildPdfContext } from './buildPdfContext';
 import type { GeneratePdfOptions, GeneratePdfResult } from './generatePdf';
 import { linesNeedingManualContract } from './manualContract';
+import { offerDocumentProblems } from './offerDocument';
 import type { OfferNumberAssignment } from './offerNumber';
 import type { OfferCompanySettings, OfferStructureSettings } from './types';
 import { buildPdfFileName } from './pdfFileName';
@@ -48,6 +49,11 @@ export async function exportTarjousPdf(
   app: PdfAppData,
   deps: PdfExportDeps,
 ): Promise<GeneratePdfResult & { offerNumber: number; fileName: string }> {
+  const existing = await requireCalculation(deps, calculationId);
+  const problems = offerDocumentProblems(existing);
+  if (problems.length > 0) {
+    throw new Error(problems.join('\n'));
+  }
   const { offerNumber } = await deps.assignOfferNumber(calculationId);
   const record = await requireCalculation(deps, calculationId);
   const [company, offerCompany, logoDataUri] = await Promise.all([

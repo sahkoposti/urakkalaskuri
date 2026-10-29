@@ -351,7 +351,8 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.deliveryScheduleText ?? null,
       record.travelTimeHoursOneWay ?? null,
       record.structureLines ? JSON.stringify(record.structureLines) : null,
-      offerNumberOnSave(record.offerNumber, existing?.offer_number),
+      // Uusi rivi, myös kopio, ei peri tarjousnumeroa. Numero myönnetään vasta seuraavasta tarjouksesta.
+      existing ? offerNumberOnSave(record.offerNumber, existing.offer_number) : null,
     );
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', record.id);
     for (const line of record.lines) {
@@ -371,6 +372,30 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       );
     }
   });
+}
+
+/**
+ * Laskelman kopio. Uusi id, ei tarjousnumeroa. Lähde ja sen numero säilyvät.
+ * Seuraava tarjous-PDF myöntää kopiolle oman numeron, koska kenttä on tyhjä.
+ */
+export function copyCalculationRecord(
+  source: CalculationRecord,
+  newId: string,
+  createdAt: Date = new Date(),
+): CalculationRecord {
+  const copy: CalculationRecord = {
+    ...source,
+    id: newId,
+    createdAt,
+    lines: source.lines.map((line) => ({ ...line })),
+    structureLines: source.structureLines?.map((line) => ({
+      ...line,
+      fieldValues: { ...line.fieldValues },
+      overrides: [...(line.overrides ?? [])],
+    })),
+  };
+  delete copy.offerNumber;
+  return copy;
 }
 
 export async function deleteCalculation(id: string): Promise<void> {

@@ -67,9 +67,55 @@ function formatQuantity(value: number): string {
   return formatDebugDecimal(value);
 }
 
-function formatOfferMoney(vat0: number, includesVat: boolean, vatPercent: number): string {
+/** Asiakkaalle tulostettava summa. null = NaN, Infinity tai muu kelvoton luku. */
+function offerAmount(vat0: number, includesVat: boolean, vatPercent: number): number | null {
+  if (!Number.isFinite(vat0)) return null;
+  if (includesVat && !Number.isFinite(vatPercent)) return null;
   const amount = includesVat ? applyVat(vat0, vatPercent) : vat0;
+  return Number.isFinite(amount) ? amount : null;
+}
+
+function formatOfferMoney(vat0: number, includesVat: boolean, vatPercent: number): string {
+  const amount = offerAmount(vat0, includesVat, vatPercent);
+  if (amount == null) return '';
   return formatCurrency(roundToCents(amount));
+}
+
+/** Ainoa paikka varoitustekstille. Rivin nimeä ei muotoilla uudelleen. */
+export function invalidOfferPriceWarning(lineName: string): string {
+  return `Tarjouksen rivillä ${lineName} on virheellinen hinta. Korjaa hinta ennen tulostusta.`;
+}
+
+/** Täsmälleen yksi päivä on yksikkö, muut monikko. */
+export function formatOfferWorkDuration(days: number): string {
+  const unit = days === 1 ? 'työpäivä' : 'työpäivää';
+  return `Työn arvioitu kesto ${days} ${unit}`;
+}
+
+/**
+ * Rivin yksikköhinta tai rivisumma ei ole tulostettava luku.
+ * Määrä tasan 0 ei ole virhe: rivi jätetään taulukosta pois.
+ * Määrä NaN/Infinity on virhe, koska rivisumma painuisi muuten nollaksi.
+ */
+export function lineOfferPriceInvalid(line: StructureLine, includesVat: boolean): boolean {
+  if (line.quantity === 0) return false;
+  if (!Number.isFinite(line.quantity)) return true;
+  const totalVat0 = lineTotalVat0(line);
+  return (
+    offerAmount(line.unitPriceVat0, includesVat, line.vatPercent) == null ||
+    offerAmount(totalVat0, includesVat, line.vatPercent) == null
+  );
+}
+
+/** Tarjouksen tulostusesteet. Ei muuta laskelmaa. Tyhjä lista = tarjouksen saa luoda. */
+export function offerDocumentProblems(record: CalculationRecord): string[] {
+  const includesVat = customerSeesVatInclusive(customerFromRecord(record));
+  const problems: string[] = [];
+  for (const line of ensureStructureLines(record)) {
+    if (line.quantity === 0) continue;
+    if (lineOfferPriceInvalid(line, includesVat)) problems.push(invalidOfferPriceWarning(line.name));
+  }
+  return problems;
 }
 
 function matchingStructure(line: StructureLine, structures: ProductStructure[]): ProductStructure | undefined {
@@ -149,22 +195,25 @@ function offerPrintRows(
 
 export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
   const includesVat = customerSeesVatInclusive(customerFromRecord(source.record));
-  const lines = ensureStructureLines(source.record);
+  const lines = ensureStructureLines(source.record).filter((line) => line.quantity !== 0);
   const showDiscount = lines.some((line) => line.discountPercent > 0);
-  return lines.map((line) => {
+  const rows: OfferRow[] = [];
+  for (const line of lines) {
     const description = isManualOfferLine(line, source.structures) ? line.additionalInfo?.trim() ?? '' : '';
+    const invalid = lineOfferPriceInvalid(line, includesVat);
     const row: OfferRow = {
       name: line.name,
       quantity: formatQuantity(line.quantity),
       unit: line.unit?.trim() ?? '',
-      unitPrice: formatOfferMoney(line.unitPriceVat0, includesVat, line.vatPercent),
+      unitPrice: invalid ? '' : formatOfferMoney(line.unitPriceVat0, includesVat, line.vatPercent),
       vatPercent: formatPercent(includesVat ? line.vatPercent : 0),
-      total: formatOfferMoney(lineTotalVat0(line), includesVat, line.vatPercent),
+      total: invalid ? '' : formatOfferMoney(lineTotalVat0(line), includesVat, line.vatPercent),
     };
     if (showDiscount) row.discountPercent = formatPercent(line.discountPercent);
     if (description) row.description = description;
-    return row;
-  });
+    rows.push(row);
+  }
+  return rows;
 }
 
 export function buildOfferSections(source: OfferDocumentSource): OfferSection[] {
@@ -187,7 +236,7 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
       paints: grouped.maali.map((row) => row.value.trim()).filter((item) => item.length > 0),
     };
     if (areas.length > 0) section.areas = `Osa-alueet: ${areas.join(', ')}`;
-    if (days != null && days > 0) section.workDuration = `Työn arvioitu kesto ${days} työpäivää`;
+    if (days != null && days > 0) section.workDuration = formatOfferWorkDuration(days);
     sections.push(section);
   }
   return sections;

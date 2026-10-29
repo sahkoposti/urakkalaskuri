@@ -49,6 +49,24 @@ describe('exportTarjousPdf', () => {
     expect(printed[0].html).toContain(`${first.offerNumber}`);
     expect(printed[0].html).toContain('Loppusumma');
   });
+
+  it('blocks PDF generation when a line price is invalid and does not change the calculation', async () => {
+    const rec = record(
+      { name: 'Testi Asiakas' },
+      {
+        projectName: 'Testi Asiakas',
+        structureLines: [{ ...line('a', 's1', 'Räystäs'), unitPriceVat0: Number.NaN }],
+      },
+    );
+    const { deps, app, printed, current } = setup(rec);
+    await expect(exportTarjousPdf('c1', app, deps)).rejects.toThrow(
+      'Tarjouksen rivillä Räystäs on virheellinen hinta. Korjaa hinta ennen tulostusta.',
+    );
+    expect(printed).toHaveLength(0);
+    expect(current().offerNumber).toBeUndefined();
+    expect(current().structureLines?.[0].unitPriceVat0).toBeNaN();
+    expect(current().totalPriceVat).toBe(rec.totalPriceVat);
+  });
 });
 
 describe('exportUrakkakorttiPdf', () => {

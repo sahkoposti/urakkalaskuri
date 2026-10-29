@@ -123,7 +123,7 @@ export function CalculationDetailView({
           title="Muokkaa"
           onPress={() => router.push({ pathname: '/wizard', params: { editId: record.id } })}
         />
-        <PdfExportButtons calculationId={record.id} />
+        <PdfExportButtons calculationId={record.id} record={record} />
       </View>
 
       <AppCard style={styles.card}>
