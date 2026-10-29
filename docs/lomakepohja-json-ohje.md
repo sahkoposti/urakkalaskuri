@@ -24,7 +24,7 @@ JSON = **kentät ja kaavat**. Ei työryhmän kokoa, palkkiota, liukuvaa katetta,
 4. [Runkoavaimet](#4-runkoavaimet)
 5. [Materiaalit, kesto, efektit](#5-materiaalit-kesto-efektit)
 6. [Tuotelista](#6-tuotelista)
-7. [Näkyvyys, rivitys, oletukset](#7-näkyvyys-rivitys-oletukset)
+7. [Näkyvyys, rivitys, oletukset](#7-näkyvyys-rivitys-oletukset) ([`print`](#print-tulostus-tarjoukseen--urakkakortille))
 8. [Tarkistuslista ja virheet](#8-tarkistuslista-ja-virheet)
 
 ---
@@ -126,6 +126,7 @@ Sijoita sivulle (jos haluat wizardissa): `field_system_tyoryhma_kesto_pv`, `fiel
 | `debugExampleValue` | Debug-tila |
 | `systemKey` | **älä keksi** — runko liittää nämä |
 | `options` | vain `select` |
+| `print` | [tulostus tarjoukseen / urakkakortille](#print-tulostus-tarjoukseen--urakkakortille) |
 
 | `type` | |
 |--------|--|
@@ -136,6 +137,65 @@ Sijoita sivulle (jos haluat wizardissa): `field_system_tyoryhma_kesto_pv`, `fiel
 | `product_select` | `defaultValue` = tuotteen id. [§6](#6-tuotelista) |
 | `computed` | `formula` + live-laskenta |
 | `section` | otsikko, ei syötettä |
+
+#### `print` (tulostus tarjoukseen / urakkakortille)
+
+Valinnainen lohko. Kertoo, tulostuuko kenttä **tarjoukseen** ja **urakkakortille**. PDF-koostajat eivät vielä lue lohkoa: tuonti vain normalisoi sen ja pitää sen viennissä.
+
+```json
+"print": {
+  "when": "always",
+  "offer": { "when": "notEmpty", "group": "osa_alueet", "order": 10, "label": "Julkisivu" },
+  "urakkakortti": true
+}
+```
+
+| | |
+|--|--|
+| Kohde mukana (`true` tai objekti) | kenttä tulostuu sinne. `true` = `{}` |
+| Kohde puuttuu | ei tulostu sinne |
+| `"print": {}` | ei tulostu minnekään |
+| Ei `print`-objektia | vanha oletus (alla) |
+
+Kohteen `when` voittaa lohkon `when`. Oletus ilman `when`: boolean `ifYes`, muut `notEmpty`.
+
+| `when` | boolean | numero / computed | teksti | select / product_select |
+|--------|---------|-------------------|--------|-------------------------|
+| `always` | Kyllä ja Ei | myös `0`. Puuttuva arvo ei tulostu | tyhjä jää pois | vain valittu |
+| `notEmpty` | sama kuin `always` | luku ≠ 0 | ei tyhjä | vain valittu |
+| `ifYes` | vain kun tosi | sama kuin `notEmpty` | sama kuin `notEmpty` | sama kuin `notEmpty` |
+
+`group`: `osa_alueet`, `tyovaiheet`, `muuta`, `tieto` tai `maali`. Oletus `tieto`.
+
+`order`: äärellinen luku. Oletus = sivun `sortOrder`, sitten indeksi `fieldIds`:ssä. `label`: merkkijono. Oletus = kentän nimi. `""` = pelkkä arvo.
+
+`quantityKey` vain kohteessa `urakkakortti`, ryhmässä `maali`, kentän tyyppi `product_select`, ja arvo on olemassa oleva kentän `key` (myös runkoavain).
+
+`section` ja järjestelmäkenttä (`systemKey`) eivät tulostu `print`-lohkon kautta. Keston, toimitusajankohdan ja urakan lisää sovellus itse.
+
+Kun `print` on objekti, vain se ratkaisee. `showOnSummary` ja `showOnSummaryWhen` eivät vaikuta. Wizardin `showWhen` vaikuttaa yhä: piilotettu kenttä ei tulostu.
+
+**Vanha pohja** (ei `print`-objektia):
+
+- **Tarjous:** pois, jos `systemKey`, `section` tai `unit` on `€`. Muuten mukana kun `showOnSummary`, ja `showOnSummaryWhen` täyttyy. Boolean `ifYes` (Ei piiloon), muut `notEmpty`. Ryhmä `tieto`, lomakejärjestys.
+- **Urakkakortti:** samat `showOnSummary`-kentät kuin nykyinen kortti, paitsi sivulla `system: "customer"`. Boolean `always` (Kyllä ja Ei), muut `notEmpty`. Ryhmä `tieto`.
+
+**Urakkakortti ei tulosta €-rivejä**, oli asetus vanha tai suora `print`: rivi pois, jos `unit` on `€` tai muotoiltu arvo sisältää `€`.
+
+**Virheellinen arvo:** tuntematon `when` poistetaan (käyttöön oletus), tuntematon `group` → `tieto`, kelvoton `order` tai `label` poistetaan, kohde joka ei ole `true` tai objekti poistetaan (pois päältä), kelvoton `quantityKey` poistetaan. Jokaisesta yksi lyhyt suomenkielinen huomio (`Kenttä "avain": … ohitettu`). Koko `print` joka ei ole objekti (`null`, merkkijono, taulukko) → vanha oletus ja yksi huomio. Pohja ilman `print`-avainta ei tuota huomioita eikä lisää avainta. Huomiot palauttaa `parseImportedFormDefinitionWithWarnings` / `normalizeFormDefinitionWithWarnings`. Tyhjä näyttö `–` on tyhjä arvo.
+
+Esimerkki on **kuvitteellinen** (avaimet tiedostosta `docs/examples/julkisivumaalaus_v100.json`, ei osa tehdaslomaketta):
+
+```json
+{
+  "key": "kaytettava_maali",
+  "print": {
+    "when": "notEmpty",
+    "offer": { "group": "tieto", "label": "Maali" },
+    "urakkakortti": { "group": "maali", "quantityKey": "savyjen_lkm", "order": 10 }
+  }
+}
+```
 
 ---
 
@@ -372,6 +432,37 @@ Boolean: `"true"` / `"false"` (tuonti hyväksyy myös boolean/number). Select: `
 
 Merkkijono: number `"120"`, select `"1.15"`, boolean `"true"`, product id. Tyhjä = kenttä tyhjänä (ei nollaa). Huomioidaan validoinnissa ja kaavoissa kunnes käyttäjä muuttaa.
 
+### `print` (tulostus tarjoukseen / urakkakortille)
+
+Sama lohko kuin [kentän `print`](#print-tulostus-tarjoukseen--urakkakortille). Lyhyesti: valinnainen kohdekohtainen tulostus. `true` kohteessa = `{}`. Puuttuva kohde = ei tulostu. `{}` = ei minnekään. Ilman koko objektia vanha yhteenveto.
+
+| `when` | boolean | muu |
+|--------|---------|-----|
+| `always` | Kyllä ja Ei | numero myös 0; tyhjä teksti ja tyhjä valinta jäävät pois |
+| `notEmpty` | sama kuin `always` | teksti ei tyhjä, numero ≠ 0, valinta tai tuote valittu |
+| `ifYes` | vain kun tosi | sama kuin `notEmpty` |
+
+Kohteen `when` voittaa lohkon `when`. Oletus: boolean `ifYes`, muut `notEmpty`. Ryhmät: `osa_alueet`, `tyovaiheet`, `muuta`, `tieto` (oletus), `maali`. `order` = luku (oletus lomakejärjestys). `label` = merkkijono (oletus kentän nimi, `""` = pelkkä arvo). `quantityKey` vain `urakkakortti` + `maali` + `product_select` + olemassa oleva `key`.
+
+`section` ja `systemKey` eivät tulostu. Mukana oleva `print` ohittaa `showOnSummary` / `showOnSummaryWhen`; `showWhen` pätee silti.
+
+Vanha pohja: tarjous = `showOnSummary` ilman `€` / järjestelmäkenttää / otsikkoa (`ifYes` / `notEmpty`). Urakkakortti = samat kentät paitsi `system: "customer"`, boolean `always`. Urakkakortille ei €-rivejä (`unit` tai arvo sisältää `€`), vaikka `print` käskisi.
+
+Kelvoton arvo pudotetaan (tuntematon `group` → `tieto`) ja siitä tulee yksi huomio. Ei-objekti `print` → vanha oletus. Ilman `print`-avainta ei huomioita eikä uutta avainta.
+
+```json
+{
+  "key": "kaytettava_maali",
+  "print": {
+    "when": "notEmpty",
+    "offer": { "group": "tieto", "label": "Maali" },
+    "urakkakortti": { "group": "maali", "quantityKey": "savyjen_lkm", "order": 10 }
+  }
+}
+```
+
+Kuvitteellinen esimerkki, avaimet `docs/examples/julkisivumaalaus_v100.json`. Ei tehdaslomakkeen arvo.
+
 ---
 
 ## 8. Tarkistuslista ja virheet
@@ -383,6 +474,7 @@ Ennen tuontia:
 - `key` uniikki, `a-z0-9_`
 - `select`: vähintään yksi option; `value` numero merkkijonona jos kaava käyttää
 - `showWhen` / `showOnSummaryWhen` → olemassa oleva `key`
+- `print` valinnainen objekti. Tuntematon `when`, kohde, `order`, `label` tai `quantityKey` pudotetaan; tuntematon `group` → `tieto`. Ilman `print`-objektia vanha yhteenveto (tarjous / urakkakortti). Urakkakortille ei €-rivejä. `section` ja järjestelmäkenttä eivät tulostu `print`-lohkon kautta
 - `defaultValue` merkkijono; `product_select`-id on olemassa
 - `kokonaishinta_alv0` = listahinta (ei alennusta kaavassa)
 - ei `alv_maara` / `kokonaishinta`-kaavaa
