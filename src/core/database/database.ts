@@ -18,6 +18,8 @@ import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../form/formDefinitionHelpers';
 import { bumpFormVersion } from '../form/formVersion';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
+import { parseStoredCompanyProfile } from '../company/defaultCompany';
+import { COMPANY_PROFILE_SETTINGS_KEY, type CompanyProfile } from '../company/types';
 import { defaultFormDebugSettings } from '../form/types';
 import {
   DEFAULT_STRUCTURE_ID,
@@ -465,6 +467,24 @@ export async function saveFormDebugSettings(debug: FormDebugSettings): Promise<v
     'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
     'form_debug',
     JSON.stringify(debug),
+  );
+}
+
+export async function getCompanyProfile(): Promise<CompanyProfile> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    COMPANY_PROFILE_SETTINGS_KEY,
+  );
+  return parseStoredCompanyProfile(row?.value);
+}
+
+export async function saveCompanyProfile(profile: CompanyProfile): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    COMPANY_PROFILE_SETTINGS_KEY,
+    JSON.stringify(profile),
   );
 }
 

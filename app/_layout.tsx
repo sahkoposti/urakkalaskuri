@@ -97,6 +97,7 @@ function ThemedRoot() {
           <Stack.Screen name="settings/calculation/fields/index" options={{ title: 'Kentät' }} />
           <Stack.Screen name="settings/calculation/fields/new" options={{ title: 'Uusi kenttä' }} />
           <Stack.Screen name="settings/calculation/fields/[fieldId]" options={{ title: 'Kenttä' }} />
+          <Stack.Screen name="settings/company" options={{ title: 'Yritys' }} />
           <Stack.Screen name="settings/theme" options={{ title: 'Teema' }} />
         </Stack>
         <DraftResumeBanner />
