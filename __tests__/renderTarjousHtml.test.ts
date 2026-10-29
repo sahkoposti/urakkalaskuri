@@ -76,3 +76,26 @@ describe('renderTarjousHtml', () => {
     expect(html).toContain('"Sivu " counter(page) "/2"');
   });
 });
+
+describe('renderTarjousHtml discount row', () => {
+  it('shows the discount as its own row between Hinta alv and Loppusumma', () => {
+    const ctx = buildPdfContext(
+      input(record({}, {
+        discountPercent: 10,
+        totalPriceVat0BeforeDiscount: 2000,
+        totalPriceVatBeforeDiscount: 2510,
+        totalPriceVat0: 1800,
+        vatAmount: 459,
+        totalPriceVat: 2259,
+      })),
+    );
+    const html = renderTarjousHtml(ctx).replace(/\s+/g, ' ');
+    const iHinta = html.indexOf('Hinta alv<');
+    const iAle = html.indexOf('Alennus 10 %');
+    const iLoppu = html.indexOf('Loppusumma');
+    expect(iHinta).toBeGreaterThan(-1);
+    expect(iAle).toBeGreaterThan(iHinta);
+    expect(iLoppu).toBeGreaterThan(iAle);
+    expect(html).toMatch(/−251,00 €/);
+  });
+});
