@@ -23,7 +23,7 @@ JSON = **kentät ja kaavat**. Ei työryhmän kokoa, palkkiota, liukuvaa katetta,
 3. [Kaavat ja muuttujat](#3-kaavat-ja-muuttujat)
 4. [Runkoavaimet](#4-runkoavaimet)
 5. [Materiaalit, kesto, efektit](#5-materiaalit-kesto-efektit)
-6. [Tuotelista](#6-tuotelista)
+6. [Tuotelista (yksi tai useita)](#6-tuotelista-yksi-tai-useita)
 7. [Näkyvyys, rivitys, oletukset](#7-näkyvyys-rivitys-oletukset)
 8. [Tarkistuslista ja virheet](#8-tarkistuslista-ja-virheet)
 
@@ -261,13 +261,15 @@ Jos korvaat `kokonaishinta_alv0`:n (esim. `liukuva_myyntihinta(urakka_hinta_alv0
 
 Lopullinen kesto: `(peruskesto h × kertoimet) + lisätunnit`. Kestoefekti muuttaa urakan **vain**, jos `urakka_hinta_alv0` lukee kestoa (oletuskaava). Omalla urakkakaavalla päivitä myös se.
 
-`materiaalit` = tuoterivit × kertoimet + €-lisät. Älä lisää omaa `materiaalit`-kenttää `fields`:iin — käytä `field_system_materiaalit`. Pelkkä kaava **ei** vie materiaaleihin ilman efektiä.
+`materiaalit` = kaikkien `add_material_fixed`-efektien €-summa × kertoimet. Älä lisää omaa `materiaalit`-kenttää `fields`:iin — käytä `field_system_materiaalit`. Pelkkä kaava **ei** vie materiaaleihin ilman efektiä.
+
+Lomakkeessa **ei ole** „lisää tuoterivi” -nappia. Useita tuotteita = useita `product_select`-kenttiä ([§6](#6-tuotelista-yksi-tai-useita)). `system: "materials"` -sivu on vanha rivi-editori eikä näy rivin lomakkeessa.
 
 ### Materiaalit
 
-**A.** `pages[].system: "materials"` — ei näy rivin lomakkeessa.  
+**A.** `pages[].system: "materials"` — ei näy rivin lomakkeessa; älä luota tähän.  
 **B.** Kiinteä €: `"effects": [{ "type": "add_material_fixed", "value": 85 }]`.  
-**C.** Kaava → materiaalit (yleisin):
+**C.** Kaava → materiaalit (yleisin; toista pari jokaiselle tuotteelle):
 
 ```json
 {
@@ -316,21 +318,54 @@ Molemmat: `"effects": [{ "type": "add_duration" }, { "type": "add_material_fixed
 
 ---
 
-## 6. Tuotelista
+## 6. Tuotelista (yksi tai useita)
 
 Tuotteet: **Tuotteet**-näkymä (ostohinta, myyntihinta, menekki, työkerroin, rakenteet). Lomake näyttää **tämän rakenteen** tuotteet Tuotteet-listan järjestyksessä.
+
+Yksi kenttä = yksi valinta. Wizardissa ei voi lisätä rivejä lennosta. **Useita tuotteita:** kopioi kenttäpari omilla `id`/`key`-arvoilla ja lisää molemmat sivun `fieldIds`:ään. Jokainen `add_material_fixed` **lisätään** samaan `materiaalit`-summaan.
 
 ```json
 {
   "id": "field_maali",
   "key": "kaytettava_maali",
-  "label": "Käytettävä maali",
+  "label": "Maali",
   "type": "product_select",
   "required": true,
+  "showOnSummary": true
+},
+{
+  "id": "field_maalin_kustannus",
+  "key": "maalin_kustannus",
+  "label": "Maalin kustannus",
+  "type": "computed",
+  "required": false,
   "showOnSummary": true,
-  "defaultValue": "tuote-id"
+  "unit": "€",
+  "formula": "pinta_ala / kaytettava_maali.menekki * kaytettava_maali.ostohinta",
+  "effects": [{ "type": "add_material_fixed" }]
+},
+{
+  "id": "field_pohjuste",
+  "key": "kaytettava_pohjuste",
+  "label": "Pohjuste",
+  "type": "product_select",
+  "required": false,
+  "showOnSummary": true
+},
+{
+  "id": "field_pohjusteen_kustannus",
+  "key": "pohjusteen_kustannus",
+  "label": "Pohjusteen kustannus",
+  "type": "computed",
+  "required": false,
+  "showOnSummary": true,
+  "unit": "€",
+  "formula": "pinta_ala / kaytettava_pohjuste.menekki * kaytettava_pohjuste.ostohinta",
+  "effects": [{ "type": "add_material_fixed" }]
 }
 ```
+
+Valinnainen määrä per tuote: erillinen `number`-kenttä (esim. `maali_litraa`) kaavaan. Ehdollinen toinen tuote: `showWhen` pohjuste-kentille.
 
 Kun valittu:
 
@@ -389,6 +424,7 @@ Ennen tuontia:
 - kesto, alennus-% ja halutut hinta-yliajot sivulla; kate / ALV € / alennus € pois lomakkeelta
 - materiaalit: `effects` ja/tai hyväksyt 0 € (`system: "materials"` ei näy rivillä)
 - laskettu materiaali: `computed` + `add_material_fixed` ilman `value`
+- useita tuotteita: jokaisella oma `product_select` + kustannus-kenttä + efekti; `key`/`id` uniikkeja
 - urakka: oletus + kesto **tai** oma `urakka_hinta_alv0` (kestoefekti ei riitä omaan kaavaan)
 - jos korvaat myyntihinnan, kate ja palkkio samaan metodiikkaan
 - tälle rakenteelle asetettu ryhmäkoko, palkkio ja liukuva kate
