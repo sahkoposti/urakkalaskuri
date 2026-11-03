@@ -127,6 +127,14 @@ export interface FormSnapshot {
    */
   urakkakorttiHidePrices?: boolean;
   /**
+   * Urakkakortin rivikohtaiset urakkahinnat (alv0) ennen sivukulukerrointa.
+   * Avain on `StructureLine.id`. Puuttuva kartta tai puuttuva rivin avain = laskettu urakka.
+   * Rivin järjestyksen vaihto ei vaihda id:tä, joten yliajo seuraa riviä.
+   * Poistetun rivin avain ohitetaan. Uusi rivi saa uuden id:n eikä peri yliajoa.
+   * Tyhjä kartta poistetaan. Ei kuulu tarjoukseen eikä SQL-migraatioon.
+   */
+  urakkakorttiRivihinnat?: Record<string, number>;
+  /**
    * Yritystarjouksen ALV koko laskelmalle. Valinnainen avain samassa `form_snapshot`-JSON:ssa
    * (ei lomakepohjan JSON:ia, ei skeemamuutosta). `'alv0'` = veroton otsikko "Alv 0 %".
    * `'sis'` = brutto-otsikko "sis. alv X %". Puuttuva tai muu arvo = `'alv0'`.

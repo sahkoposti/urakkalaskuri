@@ -5,8 +5,13 @@ import type { ProductStructure } from '../structure/types';
 import { ensureStructureLines } from '../structure/legacyCalculation';
 import { buildPdfContext } from './buildPdfContext';
 import type { GeneratePdfOptions, GeneratePdfResult } from './generatePdf';
-import { linesNeedingManualContract } from './manualContract';
-import { readUrakkakorttiHidePrices, urakkakorttiContractProblems } from './urakkakorttiCard';
+import {
+  calculationWithUrakkakorttiRivihinnat,
+  cardLinesNeedingManualContract,
+  readUrakkakorttiHidePrices,
+  readUrakkakorttiRivihinnat,
+  urakkakorttiContractProblems,
+} from './urakkakorttiCard';
 import { offerDocumentProblems } from './offerDocument';
 import type { OfferNumberAssignment } from './offerNumber';
 import type { OfferCompanySettings, OfferStructureSettings } from './types';
@@ -27,6 +32,7 @@ export type PdfExportDeps = {
   getCalculation: (id: string) => Promise<CalculationRecord | null>;
   assignOfferNumber: (id: string) => Promise<OfferNumberAssignment>;
   saveManualContractPrices: (id: string, values: Record<string, number>) => Promise<CalculationRecord>;
+  saveCalculation: (record: CalculationRecord) => Promise<void>;
   getCompanyProfile: () => Promise<CompanyProfile>;
   getOfferCompanySettings: () => Promise<OfferCompanySettings>;
   getOfferStructureSettings: (structureId: string) => Promise<OfferStructureSettings>;
@@ -84,6 +90,39 @@ export async function exportTarjousPdf(
   return { ...result, offerNumber, fileName };
 }
 
+/**
+ * Käsin syötetty hinta: rivillä jo oleva yliajo päivitetään yliajoksi (tarjouksen summat eivät muutu).
+ * Ilman yliajoa hinta kirjoitetaan rivin contractPriceVat0-kenttään kuten ennen.
+ */
+async function applyCardManualPrices(
+  deps: PdfExportDeps,
+  calculationId: string,
+  values: Record<string, number>,
+): Promise<CalculationRecord> {
+  const existing = await requireCalculation(deps, calculationId);
+  const current = readUrakkakorttiRivihinnat(existing.formSnapshot) ?? {};
+  const contract: Record<string, number> = {};
+  const overrides = { ...current };
+  let overrideChanged = false;
+  for (const [lineId, value] of Object.entries(values)) {
+    if (Object.prototype.hasOwnProperty.call(current, lineId)) {
+      overrides[lineId] = value;
+      overrideChanged = true;
+    } else {
+      contract[lineId] = value;
+    }
+  }
+  let record = existing;
+  if (overrideChanged) {
+    record = calculationWithUrakkakorttiRivihinnat(existing, overrides);
+    await deps.saveCalculation(record);
+  }
+  if (Object.keys(contract).length > 0) {
+    record = await deps.saveManualContractPrices(calculationId, contract);
+  }
+  return record;
+}
+
 export type UrakkakorttiExportResult =
   | { status: 'needsManualContract'; lines: { id: string; name: string }[] }
   | ({ status: 'done'; fileName: string } & GeneratePdfResult);
@@ -100,14 +139,14 @@ export async function exportUrakkakorttiPdf(
 ): Promise<UrakkakorttiExportResult> {
   const record =
     manualValues && Object.keys(manualValues).length > 0
-      ? await deps.saveManualContractPrices(calculationId, manualValues)
+      ? await applyCardManualPrices(deps, calculationId, manualValues)
       : await requireCalculation(deps, calculationId);
   const hidePrices = readUrakkakorttiHidePrices(record.formSnapshot);
   const contractProblems = hidePrices ? [] : urakkakorttiContractProblems(record);
   if (contractProblems.length > 0) {
     throw new Error(contractProblems.join('\n'));
   }
-  const missing = hidePrices ? [] : linesNeedingManualContract(record);
+  const missing = cardLinesNeedingManualContract(record);
   if (missing.length > 0) {
     return { status: 'needsManualContract', lines: missing.map((line) => ({ id: line.id, name: line.name })) };
   }

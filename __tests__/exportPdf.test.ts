@@ -3,7 +3,11 @@ import { assignOfferNumber } from '../src/core/pdf/offerNumber';
 import { recordWithManualContractPrices } from '../src/core/pdf/manualContract';
 import type { GeneratePdfOptions } from '../src/core/pdf/generatePdf';
 import type { CalculationRecord } from '../src/core/models/types';
-import { calculationWithUrakkakorttiHidePrices, calculationWithUrakkakorttiMode } from '../src/core/pdf/urakkakorttiCard';
+import {
+  calculationWithUrakkakorttiHidePrices,
+  calculationWithUrakkakorttiMode,
+  calculationWithUrakkakorttiRivihinnat,
+} from '../src/core/pdf/urakkakorttiCard';
 import { input, line, record } from './pdfFixtures';
 
 function setup(rec: CalculationRecord) {
@@ -24,6 +28,9 @@ function setup(rec: CalculationRecord) {
     saveManualContractPrices: async (_id, values) => {
       stored = recordWithManualContractPrices(stored, values);
       return stored;
+    },
+    saveCalculation: async (next) => {
+      stored = next;
     },
     getCompanyProfile: async () => base.company,
     getOfferCompanySettings: async () => base.offerCompany,
@@ -97,6 +104,48 @@ describe('exportUrakkakorttiPdf', () => {
     expect(printed).toHaveLength(0);
     expect(current().structureLines?.[0].contractPriceVat0).toBeNaN();
     expect(current().offerNumber).toBeUndefined();
+  });
+
+  it('writes a manual price onto an existing override and leaves the offer totals unchanged', async () => {
+    const rec = calculationWithUrakkakorttiRivihinnat(
+      record(
+        { name: 'Testi' },
+        { projectName: 'Testi', structureLines: [{ ...line('a', 's1', 'Räystäs'), contractPriceVat0: 0 }] },
+      ),
+      { a: 0 },
+    );
+    const { deps, app, printed, current } = setup(rec);
+    const ask = await exportUrakkakorttiPdf('c1', app, deps);
+    expect(ask).toEqual({ status: 'needsManualContract', lines: [{ id: 'a', name: 'Räystäs' }] });
+    const done = await exportUrakkakorttiPdf('c1', app, deps, { a: 640 });
+    expect(done.status).toBe('done');
+    expect(current().formSnapshot?.urakkakorttiRivihinnat).toEqual({ a: 640 });
+    expect(current().structureLines?.[0].contractPriceVat0).toBe(0);
+    expect(current().totalPriceVat).toBe(rec.totalPriceVat);
+    expect(current().marginEur).toBe(rec.marginEur);
+    expect(printed[0].html).toMatch(/640,00\s€/);
+  });
+
+  it('asks again when a Työntekijä override is zero and then divides the entered override', async () => {
+    const rec = calculationWithUrakkakorttiMode(
+      calculationWithUrakkakorttiRivihinnat(
+        record(
+          { name: 'Testi' },
+          { projectName: 'Testi', structureLines: [{ ...line('a', 's1', 'Räystäs'), contractPriceVat0: 900 }] },
+        ),
+        { a: 0 },
+      ),
+      'tyontekija',
+    );
+    const { deps, app, printed, current } = setup(rec);
+    const ask = await exportUrakkakorttiPdf('c1', app, deps);
+    expect(ask.status).toBe('needsManualContract');
+    const done = await exportUrakkakorttiPdf('c1', app, deps, { a: 3000 });
+    expect(done.status).toBe('done');
+    expect(current().structureLines?.[0].contractPriceVat0).toBe(900);
+    expect(current().totalPriceVat).toBe(rec.totalPriceVat);
+    expect(printed[0].html).toMatch(/2\s000,00\s€/);
+    expect(printed[0].html).not.toMatch(/kerroin/i);
   });
 
   it('does not ask for a manual contract or block an invalid Työntekijä price when prices are hidden', async () => {

@@ -5,6 +5,7 @@ import { roundToCents } from '@/src/core/utils/formatters';
 import type { BusinessVatMode } from '@/src/core/utils/priceDisplay';
 
 import { DEFAULT_SIVUKULUKERROIN } from './defaultOfferSettings';
+import { effectiveContractVat0 } from './manualContract';
 
 /** Laskelman `form_snapshot`-JSON. Puuttuva avain = alihankkija. */
 export const URAKKAKORTTI_MODE_KEY = 'urakkakorttiMode' as const;
@@ -17,6 +18,9 @@ export const BUSINESS_VAT_MODE_KEY = 'businessVatMode' as const;
 
 /** Laskelman `form_snapshot`-JSON. Puuttuva avain = hinnat näytetään. */
 export const URAKKAKORTTI_HIDE_PRICES_KEY = 'urakkakorttiHidePrices' as const;
+
+/** Laskelman `form_snapshot`-JSON. Puuttuva avain = laskettu urakka. Avain = StructureLine.id. */
+export const URAKKAKORTTI_RIVIHINNAT_KEY = 'urakkakorttiRivihinnat' as const;
 
 export type UrakkakorttiMode = 'alihankkija' | 'tyontekija';
 
@@ -40,6 +44,53 @@ export function readUrakkakorttiMode(snapshot: FormSnapshot | null | undefined):
   if (!hasKey(snapshot, URAKKAKORTTI_MODE_KEY)) return 'alihankkija';
   const value = snapshotRecord(snapshot)[URAKKAKORTTI_MODE_KEY];
   return isUrakkakorttiMode(value) ? value : 'alihankkija';
+}
+
+/** Tuntematon muoto = ei yliajoja. Vain numerot jäävät. */
+export function readUrakkakorttiRivihinnat(
+  snapshot: FormSnapshot | null | undefined,
+): Record<string, number> | undefined {
+  if (!hasKey(snapshot, URAKKAKORTTI_RIVIHINNAT_KEY)) return undefined;
+  const value = snapshotRecord(snapshot)[URAKKAKORTTI_RIVIHINNAT_KEY];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const prices: Record<string, number> = {};
+  for (const [id, amount] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof amount === 'number') prices[id] = amount;
+  }
+  return prices;
+}
+
+/**
+ * Korvaa koko kartan. Tyhjä kartta poistaa avaimen.
+ * Kutsuja yhdistää vanhat ja uudet avaimet; poistettu avain ei jää.
+ */
+export function calculationWithUrakkakorttiRivihinnat(
+  record: CalculationRecord,
+  values: Record<string, number>,
+): CalculationRecord {
+  const clean: Record<string, number> = {};
+  for (const [id, amount] of Object.entries(values)) {
+    if (typeof amount === 'number') clean[id] = amount;
+  }
+  const snapshot = record.formSnapshot;
+  const has = hasKey(snapshot, URAKKAKORTTI_RIVIHINNAT_KEY);
+  if (Object.keys(clean).length === 0) {
+    if (!has || !snapshot) return record;
+    const next = { ...snapshot };
+    delete next.urakkakorttiRivihinnat;
+    return { ...record, formSnapshot: next };
+  }
+  return withSnapshot(record, { urakkakorttiRivihinnat: clean });
+}
+
+/** Rivin urakka ennen kerrointa. Yliajo voittaa lasketun hinnan. Orpo avain ei osu mihinkään riviin. */
+export function cardContractBase(
+  line: { id: string; contractPriceVat0: number },
+  mode: UrakkakorttiMode,
+  overrides: Record<string, number> | undefined,
+): number {
+  if (overrides && Object.prototype.hasOwnProperty.call(overrides, line.id)) return overrides[line.id];
+  return mode === 'tyontekija' ? line.contractPriceVat0 : effectiveContractVat0(line);
 }
 
 /** Vain täsmälleen `true` piilottaa hinnat. Puuttuva ja muu arvo = näytä. */
@@ -145,10 +196,29 @@ export function urakkakorttiContractProblems(
   hidePrices: boolean = readUrakkakorttiHidePrices(record.formSnapshot),
 ): string[] {
   if (hidePrices) return [];
-  if (mode !== 'tyontekija') return [];
-  return ensureStructureLines(record)
-    .filter((line) => employeeContractPriceInvalid(line.contractPriceVat0))
-    .map((line) => invalidEmployeeContractWarning(line.name));
+  const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
+  return ensureStructureLines(record).flatMap((line) => {
+    if (overrides && Object.prototype.hasOwnProperty.call(overrides, line.id)) {
+      return employeeContractPriceInvalid(overrides[line.id]) ? [invalidEmployeeContractWarning(line.name)] : [];
+    }
+    if (mode === 'tyontekija' && employeeContractPriceInvalid(line.contractPriceVat0)) {
+      return [invalidEmployeeContractWarning(line.name)];
+    }
+    return [];
+  });
+}
+
+/** Käsin kysyttävät rivit. Yliajo 0 kysyy; positiivinen yliajo ei. Piilotetut hinnat eivät kysy. */
+export function cardLinesNeedingManualContract(record: CalculationRecord): ReturnType<typeof ensureStructureLines> {
+  if (readUrakkakorttiHidePrices(record.formSnapshot)) return [];
+  const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
+  return ensureStructureLines(record).filter((line) => {
+    if (overrides && Object.prototype.hasOwnProperty.call(overrides, line.id)) {
+      const value = overrides[line.id];
+      return !(typeof value === 'number' && Number.isFinite(value) && value > 0);
+    }
+    return effectiveContractVat0(line) <= 0;
+  });
 }
 
 export function assertPrintableEmployeeContracts(record: CalculationRecord): void {
@@ -221,6 +291,7 @@ const SNAPSHOT_EXTRA_KEYS = [
   URAKKAKORTTI_HUOMIO_KEY,
   BUSINESS_VAT_MODE_KEY,
   URAKKAKORTTI_HIDE_PRICES_KEY,
+  URAKKAKORTTI_RIVIHINNAT_KEY,
 ] as const;
 
 /** Wizardin uudelleenkirjoitus säilyttää laskelman JSON-avaimet. */

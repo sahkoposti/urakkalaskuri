@@ -18,6 +18,8 @@ import {
   calculationWithHuomioitavaa,
   calculationWithUrakkakorttiHidePrices,
   calculationWithUrakkakorttiMode,
+  calculationWithUrakkakorttiRivihinnat,
+  cardLinesNeedingManualContract,
   effectiveHuomioitavaa,
   employeeContractAmount,
   invalidEmployeeContractWarning,
@@ -248,6 +250,98 @@ describe('urakkakortti työntekijä and huomioitavaa', () => {
       expect(ctx.contractRows[0].value).toBe(formatCurrency(kept));
       expect(renderUrakkakorttiHtml(ctx)).not.toContain(message);
     }
+  });
+
+  it('prints an Alihankkija override as-is and divides a Työntekijä override by the factor', () => {
+    const lines = [
+      { ...line('a', 's1', 'Ulkomaalaus'), contractPriceVat0: 100 },
+      { ...line('b', 's2', 'Sokkeli'), contractPriceVat0: 100 },
+    ];
+    const base = record({}, { structureLines: lines });
+    const overridden = calculationWithUrakkakorttiRivihinnat(base, { a: 3000, b: 0 });
+    const ali = buildUrakkakorttiContext(input(overridden));
+    expect(ali.contractRows.map((row) => row.value)).toEqual([
+      formatCurrency(3000),
+      formatCurrency(0),
+      formatCurrency(3000),
+    ]);
+    const employee = calculationWithUrakkakorttiMode(overridden, 'tyontekija');
+    const ctx = buildUrakkakorttiContext({ ...input(employee), sivukulukerroin: 1.5 });
+    expect(ctx.contractRows.map((row) => row.value)).toEqual([
+      formatCurrency(2000),
+      formatCurrency(0),
+      formatCurrency(2000),
+    ]);
+    expect(renderUrakkakorttiHtml(ctx)).not.toMatch(/kerroin/i);
+  });
+
+  it('blocks NaN, Infinity and a negative override in both modes, and asks when the override is zero', () => {
+    const message = invalidEmployeeContractWarning('Ulkomaalaus');
+    const base = record({}, { structureLines: [{ ...line('a', 's1', 'Ulkomaalaus'), contractPriceVat0: 100 }] });
+    for (const mode of ['alihankkija', 'tyontekija'] as const) {
+      for (const amount of [Number.NaN, Number.POSITIVE_INFINITY, -4]) {
+        const rec =
+          mode === 'tyontekija'
+            ? calculationWithUrakkakorttiMode(calculationWithUrakkakorttiRivihinnat(base, { a: amount }), mode)
+            : calculationWithUrakkakorttiRivihinnat(base, { a: amount });
+        expect(urakkakorttiContractProblems(rec, mode)).toEqual([message]);
+        expect(() => buildUrakkakorttiContext({ ...input(rec), sivukulukerroin: 1.5 })).toThrow(message);
+      }
+      const hidden = calculationWithUrakkakorttiHidePrices(
+        calculationWithUrakkakorttiRivihinnat(base, { a: -1 }),
+        true,
+      );
+      const hiddenMode = mode === 'tyontekija' ? calculationWithUrakkakorttiMode(hidden, mode) : hidden;
+      expect(urakkakorttiContractProblems(hiddenMode, mode)).toEqual([]);
+      expect(buildUrakkakorttiContext(input(hiddenMode)).contractRows).toEqual([]);
+    }
+    const zero = calculationWithUrakkakorttiRivihinnat(base, { a: 0 });
+    expect(urakkakorttiContractProblems(zero)).toEqual([]);
+    expect(cardLinesNeedingManualContract(zero).map((item) => item.id)).toEqual(['a']);
+    const employeeZero = calculationWithUrakkakorttiMode(zero, 'tyontekija');
+    expect(cardLinesNeedingManualContract(employeeZero).map((item) => item.id)).toEqual(['a']);
+  });
+
+  it('ignores an override for a deleted line and does not apply it to a new line id', () => {
+    const kept = { ...line('a', 's1', 'Ulkomaalaus'), contractPriceVat0: 100 };
+    const rec = calculationWithUrakkakorttiRivihinnat(record({}, { structureLines: [kept] }), {
+      a: 3000,
+      deleted: 9999,
+    });
+    const ctx = buildUrakkakorttiContext(input(rec));
+    expect(ctx.contractRows.map((row) => row.value)).toEqual([formatCurrency(3000)]);
+    const replaced = calculationWithUrakkakorttiRivihinnat(record({}, { structureLines: [{ ...kept, id: 'new' }] }), {
+      a: 3000,
+    });
+    expect(buildUrakkakorttiContext(input(replaced)).contractRows[0].value).toBe(formatCurrency(100));
+  });
+
+  it('clearing an override restores the derived contract amount', () => {
+    const base = record({}, { structureLines: [{ ...line('a', 's1', 'Ulkomaalaus'), contractPriceVat0: 640 }] });
+    const overridden = calculationWithUrakkakorttiRivihinnat(base, { a: 10 });
+    expect(buildUrakkakorttiContext(input(overridden)).contractRows[0].value).toBe(formatCurrency(10));
+    const cleared = calculationWithUrakkakorttiRivihinnat(overridden, {});
+    expect(cleared.formSnapshot?.urakkakorttiRivihinnat).toBeUndefined();
+    expect(buildUrakkakorttiContext(input(cleared)).contractRows[0].value).toBe(formatCurrency(640));
+    const kept = preserveCalculationSnapshot(record({}), overridden.formSnapshot);
+    expect(kept.formSnapshot?.urakkakorttiRivihinnat).toEqual({ a: 10 });
+  });
+
+  it('offer HTML and totals stay byte-identical with card price overrides and hidden prices', () => {
+    const base = record({}, { structureLines: [{ ...line('a', 's1', 'Ulkomaalaus'), contractPriceVat0: 100 }] });
+    const cardOnly = calculationWithUrakkakorttiHidePrices(
+      calculationWithUrakkakorttiRivihinnat(base, { a: 4321 }),
+      true,
+    );
+    const plain = renderTarjousHtml(buildPdfContext(input(base)));
+    const changed = renderTarjousHtml(buildPdfContext(input(cardOnly)));
+    expect(changed).toBe(plain);
+    expect(cardOnly.totalPriceVat).toBe(base.totalPriceVat);
+    expect(cardOnly.totalPriceVat0).toBe(base.totalPriceVat0);
+    expect(cardOnly.structureLines).toEqual(base.structureLines);
+    const overrideOnly = calculationWithUrakkakorttiRivihinnat(base, { a: 1 });
+    expect(renderTarjousHtml(buildPdfContext(input(overrideOnly)))).toBe(plain);
+    expect(overrideOnly.totalPriceVat).toBe(base.totalPriceVat);
   });
 
   it('hides contract prices and the total for Alihankkija and Työntekijä', () => {

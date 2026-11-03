@@ -4,6 +4,7 @@ import {
   getCompanyProfile,
   getOfferCompanySettings,
   getOfferStructureSettings,
+  saveCalculation,
   saveManualContractPrices,
 } from '../database/database';
 import type { PdfExportDeps } from './exportPdf';
@@ -15,6 +16,7 @@ export const pdfExportDeps: PdfExportDeps = {
   getCalculation,
   assignOfferNumber: assignOfferNumberForCalculation,
   saveManualContractPrices,
+  saveCalculation,
   getCompanyProfile,
   getOfferCompanySettings,
   getOfferStructureSettings,

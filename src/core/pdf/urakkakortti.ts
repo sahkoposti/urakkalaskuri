@@ -10,13 +10,14 @@ import { estimateWorkDurationDays, formatCurrency, roundToCents } from '@/src/co
 
 import { buildFooter, customerHeaderLines, type PdfFooter, type PriceRow } from './buildPdfContext';
 import { DEFAULT_SIVUKULUKERROIN } from './defaultOfferSettings';
-import { effectiveContractVat0 } from './manualContract';
 import {
   assertPrintableEmployeeContracts,
+  cardContractBase,
   effectiveHuomioitavaa,
   employeeContractAmount,
   readUrakkakorttiHidePrices,
   readUrakkakorttiMode,
+  readUrakkakorttiRivihinnat,
   urakkakorttiModeLabel,
   type UrakkakorttiMode,
 } from './urakkakorttiCard';
@@ -175,13 +176,9 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
   const contractRows: PriceRow[] = [];
   if (!hidePrices) {
     assertPrintableEmployeeContracts(record);
+    const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
     const amounts = lines.map((line) =>
-      employeeContractAmount(
-        mode === 'tyontekija' ? line.contractPriceVat0 : effectiveContractVat0(line),
-        mode,
-        factor,
-        line.name,
-      ),
+      employeeContractAmount(cardContractBase(line, mode, overrides), mode, factor, line.name),
     );
     contractRows.push(
       ...lines.map((line, index) => ({
