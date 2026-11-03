@@ -723,7 +723,7 @@ describe('businessVatMode', () => {
 
   function priced(rec: ReturnType<typeof exampleRecord>) {
     const ctx = buildPdfContext(input(rec, { structures: [], offerStructureSettings: {} }));
-    const loppu = ctx.price.rows.find((row) => row.label === 'Loppusumma');
+    const loppu = ctx.price.rows.find((row) => row.label.startsWith('Loppusumma'));
     const headings = ctx.sections.map((section) => section.heading?.price ?? '');
     return { ctx, loppu, headings };
   }
@@ -922,7 +922,7 @@ describe('offer heading price columns', () => {
     expect(html).not.toContain('>Ale %</th>');
   });
 
-  it('keeps the offer discount row and the sum of heading Yht equal to the sis total', () => {
+  it('sums heading Yht to the sis Loppusumma when there is no discount', () => {
     const lines = [
       { ...line('a', 's1', 'Räystäät'), quantity: 20, unitPriceVat0: 185, vatPercent: 25.5, discountPercent: 0 },
       { ...line('b', 's1', 'Seinä'), quantity: 12, unitPriceVat0: 80, vatPercent: 25.5, discountPercent: 0 },
@@ -955,8 +955,68 @@ describe('offer heading price columns', () => {
       vatPercent: 25.5,
     });
     const net = buildPdfContext(input(alv0, { structures: [], offerStructureSettings: {} }));
-    expect(plain(net.price.rows.find((row) => row.label === 'Loppusumma')?.value ?? '')).toBe('4 810,00 €');
+    expect(plain(net.price.rows.find((row) => row.label.startsWith('Loppusumma'))?.value ?? '')).toBe('4 810,00 €');
+    expect(net.price.rows.map((row) => row.label)).toEqual(['Loppusumma (Alv 0 %)']);
     expect(roundToCents(net.sections.reduce((sum, section) => sum + parseEuro(section.heading?.price ?? ''), 0))).toBe(4810);
+  });
+
+  it('business sis with a line discount keeps Alennus and matches Loppusumma to the heading sum', () => {
+    const lines = [
+      { ...line('a', 's1', 'Räystäät'), quantity: 20, unitPriceVat0: 185, vatPercent: 25.5, discountPercent: 10 },
+      { ...line('b', 's1', 'Seinä'), quantity: 12, unitPriceVat0: 80, vatPercent: 25.5, discountPercent: 10 },
+    ];
+    const listNet = 20 * 185 + 12 * 80;
+    const net = roundToCents(listNet * 0.9);
+    const rec = calculationWithBusinessVatMode(
+      record({ customerType: 'business' }, {
+        structureLines: lines,
+        totalPriceVat0: net,
+        totalPriceVat0BeforeDiscount: listNet,
+        discountPercent: 10,
+        vatPercent: 25.5,
+      }),
+      'sis',
+    );
+    const ctx = buildPdfContext(input(rec, { structures: [], offerStructureSettings: {} }));
+    expect(ctx.price.rows.map((row) => row.label)).toEqual([
+      'Hinta alv0',
+      'Alennus 10 %',
+      'Veroton',
+      'ALV 25,5 %',
+      'Loppusumma',
+    ]);
+    const yht = roundToCents(ctx.sections.reduce((sum, section) => sum + parseEuro(section.heading?.price ?? ''), 0));
+    expect(parseEuro(ctx.price.rows.find((row) => row.label === 'Loppusumma')?.value ?? '')).toBe(yht);
+    expect(plain(ctx.price.rows[0].value)).toBe('4 660,00 €');
+    expect(plain(ctx.price.rows[1].value)).toBe('−466,00 €');
+  });
+
+  it('prints an A-hinta that multiplies back to Yht when two decimals cannot', () => {
+    const rounded = {
+      ...line('r', 's1', 'Räystäät'),
+      quantity: 20,
+      unit: 'm',
+      unitPriceVat0: 185,
+      vatPercent: 25.5,
+      discountPercent: 0,
+    };
+    const sis = calculationWithBusinessVatMode(
+      record({ customerType: 'business' }, { structureLines: [rounded], vatPercent: 25.5 }),
+      'sis',
+    );
+    const heading = buildOfferSections(input(sis, { structures: [], offerStructureSettings: {} }))[0].heading;
+    expect(plain(heading?.price ?? '')).toBe('4 643,50 €');
+    expect(plain(heading?.unitPrice ?? '')).toBe('232,175 €');
+    const unit = Number(plain(heading?.unitPrice ?? '').replace('€', '').replace(',', '.'));
+    expect(roundToCents(unit * rounded.quantity)).toBe(4643.5);
+    const exact = { ...rounded, quantity: 12, unitPriceVat0: 80 };
+    const exactSis = calculationWithBusinessVatMode(
+      record({ customerType: 'business' }, { structureLines: [exact], vatPercent: 25.5 }),
+      'sis',
+    );
+    const exactHeading = buildOfferSections(input(exactSis, { structures: [], offerStructureSettings: {} }))[0].heading;
+    expect(plain(exactHeading?.unitPrice ?? '')).toBe('100,40 €');
+    expect(plain(exactHeading?.price ?? '')).toBe('1 204,80 €');
   });
 
   it('does not add the price columns to the urakkakortti HTML', () => {

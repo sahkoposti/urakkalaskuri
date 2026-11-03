@@ -10,7 +10,6 @@ import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { isManualStructureId } from '@/src/core/structure/types';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
-import { clampDiscountPercent } from '@/src/core/calculation/discount';
 import { formatCurrency, formatPercent, formatPrintedQuantity, roundToCents } from '@/src/core/utils/formatters';
 import { applyVat, offerIncludesVat } from '@/src/core/utils/priceDisplay';
 
@@ -200,16 +199,43 @@ function offerVatLabel(includesVat: boolean, vatPercent: number): string | undef
 }
 
 /**
- * A-hinta. Ilman rivialennusta rivin yksikköhinta.
- * Rivialennus on jo Yht.-summassa, joten A-hinta on rivisumma / määrä.
+ * A-hinta johdetaan tulostetusta Yht.-summasta (Yht / määrä).
+ * Yht pysyy arvovaltaisena: kahden desimaalin yksikköhinta näytetään, kun se kertaa määrä
+ * palauttaa saman sentin. Muuten desimaaleja lisätään (enintään 6), kunnes tulo täsmää.
  * Tarjouksen erillinen Alennus-rivi ei muuta näitä sarakkeita.
  */
 function formatOfferUnitPrice(line: StructureLine, includesVat: boolean): string {
   const quantity = line.quantity;
-  if (clampDiscountPercent(line.discountPercent) > 0 && Number.isFinite(quantity) && quantity !== 0) {
-    return formatOfferMoney(lineTotalVat0(line) / quantity, includesVat, line.vatPercent);
+  const total = offerAmount(lineTotalVat0(line), includesVat, line.vatPercent);
+  if (total != null && Number.isFinite(quantity) && quantity !== 0) {
+    return formatUnitPriceMatchingTotal(roundToCents(total), quantity);
   }
   return formatOfferMoney(line.unitPriceVat0, includesVat, line.vatPercent);
+}
+
+const UNIT_PRICE_MAX_DECIMALS = 6;
+
+function formatEuroWithDigits(amount: number, digits: number): string {
+  if (digits <= 2) return formatCurrency(roundToCents(amount));
+  return new Intl.NumberFormat('fi-FI', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(amount);
+}
+
+/** Pienin desimaalimäärä, jolla näytetty A-hinta × määrä pyöristyy samaksi sentiksi kuin Yht. */
+function formatUnitPriceMatchingTotal(total: number, quantity: number): string {
+  const totalCents = Math.round(total * 100);
+  const denom = 100 * quantity;
+  for (let digits = 2; digits <= UNIT_PRICE_MAX_DECIMALS; digits += 1) {
+    const scale = 10 ** digits;
+    const scaled = Math.round((totalCents * scale) / denom);
+    const productCents = Math.round((scaled * quantity * 100) / scale);
+    if (productCents === totalCents) return formatEuroWithDigits(scaled / scale, digits);
+  }
+  return formatCurrency(roundToCents(total / quantity));
 }
 
 function offerHeading(line: StructureLine, includesVat: boolean): OfferHeading | undefined {

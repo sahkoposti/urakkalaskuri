@@ -3,6 +3,7 @@ import { defaultOfferCompanySettings } from '../src/core/pdf/defaultOfferSetting
 import {
   calculationWithOfferValidDays,
   offerValidDaysFieldText,
+  offerValidDaysForSave,
   parseOfferValidDaysInput,
   readOfferValidDays,
 } from '../src/core/pdf/offerValidDays';
@@ -48,5 +49,36 @@ describe('offerValidDays', () => {
     const fallback = buildPdfContext(input(record({})));
     expect(fallback.offerInfo.find((row) => row.label === 'Voimassa')?.value).toBe('10.11.2026');
     expect(readOfferValidDays({ formId: '', formVersion: 0, fields: [], offerValidDays: 0 }, 31)).toBe(31);
+  });
+
+  it('does not show or store 31 before a company default other than 31 has loaded', () => {
+    const rec = record({});
+    expect(offerValidDaysFieldText(rec.formSnapshot, null)).toBe('');
+    expect(offerValidDaysFieldText(rec.formSnapshot, 14)).toBe('14');
+    expect(
+      offerValidDaysForSave({
+        snapshot: rec.formSnapshot,
+        fieldText: '31',
+        companyDefault: null,
+        touched: false,
+      }),
+    ).toBe('skip');
+    expect(
+      offerValidDaysForSave({
+        snapshot: rec.formSnapshot,
+        fieldText: '31',
+        companyDefault: 14,
+        touched: false,
+      }),
+    ).toBe('skip');
+    expect(calculationWithOfferValidDays(rec, 14, 14)).toBe(rec);
+    const typed = offerValidDaysForSave({
+      snapshot: rec.formSnapshot,
+      fieldText: '31',
+      companyDefault: 14,
+      touched: true,
+    });
+    expect(typed).toBe(31);
+    expect(calculationWithOfferValidDays(rec, typed as number, 14).formSnapshot?.offerValidDays).toBe(31);
   });
 });

@@ -123,7 +123,7 @@ describe('buildPdfContext', () => {
   it('business customer: alv0 only, no VAT rows, no reverse VAT text, no KTV', () => {
     const ctx = buildPdfContext(input(record({ customerType: 'business' })));
     expect(ctx.price.includesVat).toBe(false);
-    expect(labels(ctx.price.rows)).toEqual(['Hinta alv0', 'Loppusumma']);
+    expect(labels(ctx.price.rows)).toEqual(['Loppusumma (Alv 0 %)']);
     expect(JSON.stringify(ctx)).not.toMatch(/Käänteinen|ALV \d/);
     expect(ctx.ktv).toBeUndefined();
     expect(ctx.vatSummary).toEqual([]);
@@ -131,7 +131,7 @@ describe('buildPdfContext', () => {
 
   it('reverse VAT: alv0 prices and no KTV page', () => {
     const ctx = buildPdfContext(input(record({ customerType: 'business', reverseVat: true })));
-    expect(labels(ctx.price.rows)).toEqual(['Hinta alv0', 'Loppusumma']);
+    expect(labels(ctx.price.rows)).toEqual(['Loppusumma (Alv 0 %)']);
     expect(JSON.stringify(ctx.price)).not.toContain('Käänteinen ALV');
     expect(ctx.price.rows[0].value.replace(/\s/g, ' ')).toBe('2 000,00 €');
     expect(ctx.price.includesVat).toBe(false);

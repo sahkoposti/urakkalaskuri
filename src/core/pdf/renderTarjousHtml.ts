@@ -100,14 +100,15 @@ function renderAdditionalInfo(text: string): string {
   return `<div class="additional-info"><h3>Lisätiedot:</h3><div>${escapeMultiline(text)}</div></div>`;
 }
 
-function signatureColumn(role: string, lines: string[]): string {
-  const details = lines.map((line) => `<p class="offer-sign-detail">${escapeHtml(line)}</p>`).join('');
-  return `<div class="offer-sign-col"><p class="offer-sign-role">${role}</p><div class="offer-sign-name">${details}</div><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></div>`;
+function signaturePen(label: string): string {
+  return `<div class="offer-sign-pen"><p class="offer-sign-label">${label}</p><div class="offer-sign-line"></div></div>`;
 }
 
 function renderSignature(signature: TarjousPdfContext['signature']): string {
+  const details = (lines: string[]) =>
+    lines.map((line) => `<p class="offer-sign-detail">${escapeHtml(line)}</p>`).join('');
   const customer = signature.customerName ? [signature.customerName] : [];
-  return `<div class="offer-sign">${signatureColumn('Myyjä', signature.sellerLines)}${signatureColumn('Tilaaja', customer)}</div>`;
+  return `<div class="offer-sign"><p class="offer-sign-role">Myyjä</p><p class="offer-sign-role">Tilaaja</p><div class="offer-sign-name">${details(signature.sellerLines)}</div><div class="offer-sign-name">${details(customer)}</div>${signaturePen('Allekirjoitus')}${signaturePen('Allekirjoitus')}${signaturePen('Päiväys')}${signaturePen('Päiväys')}</div>`;
 }
 
 /** Sivupohja: toistuva ylä-/alatunniste + sisältö. Käytetään myös KTV-sivulle (T8). */

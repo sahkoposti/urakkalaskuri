@@ -38,16 +38,46 @@ export function readOfferValidDays(snapshot: FormSnapshot | null | undefined, co
   return isValidOfferValidDays(snapshot.offerValidDays) ? snapshot.offerValidDays : fallback;
 }
 
-/** Kentän teksti. Puuttuva avain näyttää yrityksen oletuksen. */
+/**
+ * Kentän teksti. Tallennettu avain näytetään heti.
+ * Puuttuva avain näyttää yrityksen oletuksen vasta kun se on ladattu (`null` = ei vielä).
+ */
 export function offerValidDaysFieldText(
   snapshot: FormSnapshot | null | undefined,
-  companyDefault?: number,
+  companyDefault?: number | null,
 ): string {
-  if (!hasDaysKey(snapshot) || snapshot.offerValidDays == null) return String(companyOfferValidDays(companyDefault));
-  if (typeof snapshot.offerValidDays === 'number' && Number.isFinite(snapshot.offerValidDays)) {
-    return String(snapshot.offerValidDays);
+  if (hasDaysKey(snapshot) && snapshot.offerValidDays != null) {
+    if (typeof snapshot.offerValidDays === 'number' && Number.isFinite(snapshot.offerValidDays)) {
+      return String(snapshot.offerValidDays);
+    }
+    return '';
   }
-  return '';
+  if (companyDefault == null) return '';
+  return String(companyOfferValidDays(companyDefault));
+}
+
+export type OfferValidDaysSave = number | 'skip' | 'invalid';
+
+/**
+ * Koskematon kenttä ilman tallennettua avainta ei kirjoita oletusta päälle.
+ * `companyDefault === null` tarkoittaa, että yrityksen asetus ei ole vielä ladattu.
+ */
+export function offerValidDaysForSave(input: {
+  snapshot: FormSnapshot | null | undefined;
+  fieldText: string;
+  companyDefault: number | null;
+  touched: boolean;
+}): OfferValidDaysSave {
+  const hasStored = hasDaysKey(input.snapshot) && input.snapshot.offerValidDays != null;
+  if (!input.touched && !hasStored) return 'skip';
+  if (input.companyDefault == null && !input.touched) return 'skip';
+  const parsed = parseOfferValidDaysInput(input.fieldText);
+  if (parsed === 'invalid') return 'invalid';
+  if (parsed === 'empty') {
+    if (input.companyDefault == null) return 'skip';
+    return input.companyDefault;
+  }
+  return parsed;
 }
 
 /** Syöte 1..365. Tyhjä = paluu oletukseen. Desimaali, 0 ja 366 ovat kelvottomia. */

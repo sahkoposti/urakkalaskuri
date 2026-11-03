@@ -462,7 +462,8 @@ describe('offer signature', () => {
     expect(html).toContain('Allekirjoitus');
     expect(html).toContain('Päiväys');
     expect((html.match(/class="offer-sign-line"/g) ?? []).length).toBe(4);
-    expect((html.match(/class="offer-sign-col"/g) ?? []).length).toBe(2);
+    expect(html).toContain('.offer-sign { display: grid;');
+    expect(html).not.toContain('offer-sign-col');
     const sign = html.slice(html.indexOf('class="offer-sign"'), html.indexOf('class="ktv-page'));
     expect((sign.match(/>Allekirjoitus</g) ?? []).length).toBe(2);
     expect((sign.match(/>Päiväys</g) ?? []).length).toBe(2);

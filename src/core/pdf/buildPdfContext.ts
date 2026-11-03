@@ -112,7 +112,8 @@ function discountRow(record: CalculationRecord, amount: number): PriceRow {
 /**
  * Yksi summalohko. Alennus on aina veroton.
  * Verollinen: Hinta alv0 ja Alennus vain alennuksella, sitten Veroton, ALV ja Loppusumma.
- * Veroton tarjous: Veroton-rivi jätetään pois, koska se olisi sama kuin Loppusumma.
+ * Veroton tarjous ilman alennusta: vain Loppusumma, merkitty Alv 0 %.
+ * Veroton tarjous alennuksella: Hinta alv0, Alennus ja Loppusumma.
  * Yrityksen sis. ALV: Loppusumma on otsikoiden bruttosumma.
  */
 export function offerPriceBlock(record: CalculationRecord, customer: CustomerInfo): TarjousPdfContext['price'] {
@@ -151,10 +152,20 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
     );
     return { includesVat: true, rows };
   }
-  const rows: PriceRow[] = [{ label: 'Hinta alv0', value: formatCurrency(listNet) }];
-  if (discounted) rows.push(discountRow(record, listNet - net));
-  rows.push({ label: 'Loppusumma', value: formatCurrency(net), emphasis: true });
-  return { includesVat: false, rows };
+  if (!discounted) {
+    return {
+      includesVat: false,
+      rows: [{ label: 'Loppusumma (Alv 0 %)', value: formatCurrency(net), emphasis: true }],
+    };
+  }
+  return {
+    includesVat: false,
+    rows: [
+      { label: 'Hinta alv0', value: formatCurrency(listNet) },
+      discountRow(record, listNet - net),
+      { label: 'Loppusumma', value: formatCurrency(net), emphasis: true },
+    ],
+  };
 }
 
 export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext {

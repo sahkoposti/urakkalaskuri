@@ -40,9 +40,9 @@ import {
   companyOfferValidDays,
   OFFER_VALID_DAYS_INVALID_MESSAGE,
   offerValidDaysFieldText,
+  offerValidDaysForSave,
   parseOfferValidDaysInput,
 } from '@/src/core/pdf/offerValidDays';
-import { DEFAULT_OFFER_VALID_DAYS } from '@/src/core/pdf/defaultOfferSettings';
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -71,10 +71,10 @@ export function PdfExportButtons({
   );
   const [hidePrices, setHidePrices] = useState(() => readUrakkakorttiHidePrices(record.formSnapshot));
   const [overrideText, setOverrideText] = useState(() => cardPriceFieldTexts(record));
-  const [companyValidDays, setCompanyValidDays] = useState(DEFAULT_OFFER_VALID_DAYS);
-  const [validDaysText, setValidDaysText] = useState(() => offerValidDaysFieldText(record.formSnapshot));
+  const [companyValidDays, setCompanyValidDays] = useState<number | null>(null);
+  const [validDaysText, setValidDaysText] = useState(() => offerValidDaysFieldText(record.formSnapshot, null));
   const validDaysDirty = useRef(false);
-  const companyDaysRef = useRef(companyValidDays);
+  const companyDaysRef = useRef<number | null>(null);
   companyDaysRef.current = companyValidDays;
   const overrideTextRef = useRef(overrideText);
   overrideTextRef.current = overrideText;
@@ -141,6 +141,7 @@ export function PdfExportButtons({
   };
 
   const persistValidDays = async (days: number) => {
+    if (companyValidDays == null) return;
     await persistRecord(calculationWithOfferValidDays(record, days, companyValidDays));
   };
 
@@ -184,10 +185,16 @@ export function PdfExportButtons({
       showAlert('Tarjousta ei voi tulostaa', blocked.join('\n'));
       return;
     }
+    if (companyValidDays == null) return;
     return run('tarjous', async () => {
       if (parsedPersons !== 'invalid') await persistPersons(parsedPersons);
-      const days = parsedValidDays === 'empty' ? companyValidDays : parsedValidDays;
-      if (days !== 'invalid') await persistValidDays(days);
+      const days = offerValidDaysForSave({
+        snapshot: record.formSnapshot,
+        fieldText: validDaysText,
+        companyDefault: companyValidDays,
+        touched: validDaysDirty.current,
+      });
+      if (typeof days === 'number') await persistValidDays(days);
       await exportTarjousPdf(calculationId, app, pdfExportDeps);
       await refreshCalculations();
     });
@@ -243,8 +250,13 @@ export function PdfExportButtons({
           setValidDaysText(value);
         }}
         onBlur={() => {
-          if (parsedValidDays === 'invalid') return;
-          const days = parsedValidDays === 'empty' ? companyValidDays : parsedValidDays;
+          const days = offerValidDaysForSave({
+            snapshot: record.formSnapshot,
+            fieldText: validDaysText,
+            companyDefault: companyValidDays,
+            touched: validDaysDirty.current,
+          });
+          if (typeof days !== 'number') return;
           setValidDaysText(String(days));
           validDaysDirty.current = false;
           void persistValidDays(days).catch((error) => {
@@ -255,7 +267,11 @@ export function PdfExportButtons({
         keyboardType="numeric"
         compact
       />
-      <Text style={styles.hint}>Esitäyttö yrityksen asetuksesta ({companyValidDays} päivää).</Text>
+      <Text style={styles.hint}>
+        {companyValidDays == null
+          ? 'Esitäyttö yrityksen asetuksesta.'
+          : `Esitäyttö yrityksen asetuksesta (${companyValidDays} päivää).`}
+      </Text>
       {validDaysProblem ? (
         <Text style={styles.warning} accessibilityRole="alert">
           {validDaysProblem}
@@ -281,7 +297,13 @@ export function PdfExportButtons({
       <OutlinedButton
         title={busy === 'tarjous' ? 'Luodaan tarjousta…' : 'Luo tarjous'}
         onPress={handleTarjous}
-        disabled={busy !== null || offerProblems.length > 0 || personsProblem !== null || validDaysProblem !== null}
+        disabled={
+          busy !== null ||
+          companyValidDays == null ||
+          offerProblems.length > 0 ||
+          personsProblem !== null ||
+          validDaysProblem !== null
+        }
       />
       <AppPicker
         label="Urakkakortti"
