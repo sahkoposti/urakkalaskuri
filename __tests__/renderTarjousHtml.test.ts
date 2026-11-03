@@ -49,7 +49,7 @@ describe('renderTarjousHtml', () => {
     expect(html).not.toContain('class="offer-rows"');
     const content = html.replace(/<style>[\s\S]*?<\/style>/, '');
     expect(content).not.toContain('spec-card');
-    expect(content).toContain('Käänteinen ALV');
+    expect(content).not.toContain('Käänteinen ALV');
     expect(content).not.toMatch(/Hinta alv<|ALV \d{2}|Kate|Palkkio|margin|commission/i);
     expect(content).not.toMatch(/333,33|77,77/);
     expect(content).not.toContain('25,5');

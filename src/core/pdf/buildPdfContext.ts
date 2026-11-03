@@ -128,11 +128,9 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
       ],
     };
   }
-  // ALV 0. Käänteinen ALV lisää saman huomautuksen kuin ruudun hintaerittely.
-  const reverseNote: PriceRow[] = customer.reverseVat ? [{ label: 'ALV', value: 'Käänteinen ALV' }] : [];
   return {
     includesVat: false,
-    left: [{ label: 'Hinta alv0', value: formatCurrency(listVat0) }, ...reverseNote],
+    left: [{ label: 'Hinta alv0', value: formatCurrency(listVat0) }],
     right: [...discountRow, { label: 'Loppusumma', value: formatCurrency(record.totalPriceVat0), emphasis: true }],
   };
 }

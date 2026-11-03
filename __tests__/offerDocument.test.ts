@@ -310,7 +310,7 @@ describe('offer rows and sections', () => {
       buildPdfContext(groupedInput([reverseLine], { customerType: 'business', reverseVat: true })),
     );
     expect(reverseHtml).toContain('Alv 0 %');
-    expect(reverseHtml).toContain('Käänteinen ALV');
+    expect(reverseHtml).not.toContain('Käänteinen ALV');
     expect(reverseHtml).not.toContain('sis. alv');
     expect(reverseHtml).not.toContain(gross);
   });
