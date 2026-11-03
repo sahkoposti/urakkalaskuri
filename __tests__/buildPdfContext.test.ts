@@ -478,6 +478,42 @@ describe('buildPdfContext', () => {
     ]);
   });
 
+  it('calc-level discount with two VAT rates prints no VAT table', () => {
+    const totals = {
+      structureLines: [
+        { ...line('a', 's1', 'A'), quantity: 1, unitPriceVat0: 100, discountPercent: 0, vatPercent: 25.5 },
+        { ...line('b', 's1', 'B'), quantity: 1, unitPriceVat0: 100, discountPercent: 0, vatPercent: 10 },
+      ],
+      discountPercent: 10,
+      vatPercent: 25.5,
+      totalPriceVat0BeforeDiscount: 200,
+      totalPriceVat0: 180,
+      totalPriceVatBeforeDiscount: 235.5,
+      totalPriceVat: 211.95,
+      vatAmount: 31.95,
+      materialsVat0: 0,
+    };
+    const cases = [
+      record({}, totals),
+      calculationWithBusinessVatMode(record({ customerType: 'business', name: 'Kuvitteellinen Oy' }, totals), 'sis'),
+    ];
+    for (const rec of cases) {
+      const ctx = buildPdfContext(input(rec));
+      expect(ctx.vatSummary).toEqual([]);
+      expect(renderTarjousHtml(ctx)).not.toContain('class="offer-vat"');
+      expect(ctx.price.rows.map((row) => `${row.label}=${row.value.replace(/\s/g, ' ')}`)).toEqual([
+        'Rivit yhteensä=235,50 €',
+        'Alennus yhteensä 10 %=−23,55 €',
+        'Alennettu hinta yhteensä=211,95 €',
+      ]);
+      const amounts = ctx.price.rows.map((row) => Number(row.value.replace(/[^\d,.-]/g, '').replace(',', '.')));
+      expect(Math.round((amounts[0] - amounts[1]) * 100) / 100).toBe(211.95);
+      expect(amounts[2]).toBe(211.95);
+    }
+    expect(buildPdfContext(input(cases[0])).ktv?.totalPriceVat).toBe(211.95);
+    expect(buildPdfContext(input(cases[1])).ktv).toBeUndefined();
+  });
+
   it('multi-rate discount lists Sisältää ALV once per rate', () => {
     const ctx = buildPdfContext(
       input(

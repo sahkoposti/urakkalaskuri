@@ -141,8 +141,16 @@ describe('printed total sweep', () => {
       expect(roundToCents(inclusive ? shown.totalPriceVat : shown.totalPriceVat0)).toBe(closing);
 
       const parts = priceBreakdownParts(rec, inclusive);
-      const rows = reconcilePriceRows(parts.materials, parts.work, parts.showDiscount ? parts.discountAmount : 0, closing);
-      expect(roundToCents(rows.materials + rows.work - rows.discount)).toBe(closing);
+      const discountIn = parts.showDiscount ? parts.discountAmount : 0;
+      const rows = reconcilePriceRows(parts.materials, parts.work, discountIn, closing);
+      const gap = roundToCents(
+        closing - (roundToCents(parts.materials) + roundToCents(parts.work) - roundToCents(Math.max(0, discountIn))),
+      );
+      if (Math.abs(gap) > 0.02) {
+        expect(rows).toEqual({ materials: parts.materials, work: parts.work, discount: discountIn });
+      } else {
+        expect(roundToCents(rows.materials + rows.work - rows.discount)).toBe(closing);
+      }
 
       const sample = lines.find((item) => item.quantity !== 0 && item.structureId !== MANUAL_STRUCTURE_ID);
       expect(sample).toBeTruthy();

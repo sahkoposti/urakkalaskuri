@@ -377,8 +377,44 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
   return sections;
 }
 
-/** Usean verokannan taulu rivien pyöristetyistä summista. null = kelvoton rivi. */
+/**
+ * Alennus on vain laskelmalla, ei yhdelläkään rivillä.
+ * Rivisummat ovat silloin alentamattomia, eikä niistä saa ALV-taulua.
+ */
+function calcLevelDiscountOnly(record: CalculationRecord): boolean {
+  if (!(record.discountPercent > 0)) return false;
+  return !ensureStructureLines(record).some(
+    (line) => line.quantity !== 0 && Number.isFinite(line.quantity) && line.discountPercent > 0,
+  );
+}
+
+/** Verollinen loppusumma, johon ALV-taulun bruttosumman on täsmättävä. */
+function vatInclusivePayable(record: CalculationRecord, customer: CustomerInfo): number {
+  const lineDiscount = ensureStructureLines(record).some(
+    (line) => line.quantity !== 0 && Number.isFinite(line.quantity) && line.discountPercent > 0,
+  );
+  if (lineDiscount) return sumRoundedOfferLines(record, true, 'paid') ?? roundToCents(record.totalPriceVat);
+  if (record.discountPercent > 0 && record.totalPriceVat0BeforeDiscount > record.totalPriceVat0) {
+    return roundToCents(record.totalPriceVat);
+  }
+  if (customer.customerType === 'business') {
+    return sumOfferHeadingGross(record) ?? roundToCents(record.totalPriceVat);
+  }
+  return sumRoundedOfferLines(record, true, 'paid') ?? roundToCents(record.totalPriceVat);
+}
+
+function vatRowsMatchPayable(
+  rows: OfferVatSummaryRow[],
+  record: CalculationRecord,
+  customer: CustomerInfo,
+): boolean {
+  const sum = roundToCents(rows.reduce((total, row) => total + row.gross, 0));
+  return sum === vatInclusivePayable(record, customer);
+}
+
+/** Usean verokannan taulu rivien pyöristetyistä summista. null = kelvoton rivi tai pelkkä laskelman alennus. */
 function roundedVatRateRows(record: CalculationRecord): OfferVatSummaryRow[] | null {
+  if (calcLevelDiscountOnly(record)) return null;
   const lines = ensureStructureLines(record).filter((line) => line.quantity !== 0 && Number.isFinite(line.quantity));
   const rates: number[] = [];
   for (const line of lines) {
@@ -410,7 +446,10 @@ function roundedVatRateRows(record: CalculationRecord): OfferVatSummaryRow[] | n
  * ALV-erittely maksun jälkeen. Yksi verokanta → yksi rivi.
  * Yksityinen käyttää tallennettuja summia. Yrityksen sis. ALV käyttää otsikoiden
  * bruttosummaa, jotta erittely ja Loppusumma ovat samat.
- * Usea verokanta: jokaisen rivin pyöristetty netto ja brutto. Yrityksen ALV 0 ja käänteinen ALV: ei rivejä.
+ * Usea verokanta: jokaisen rivin pyöristetty netto ja brutto.
+ * Pelkkä laskelman alennus: ei taulua, koska rivisummat ovat alentamattomia.
+ * Painotettu jako tulostetaan vain, jos bruttosumma on sama kuin Loppusumma.
+ * Yrityksen ALV 0 ja käänteinen ALV: ei rivejä.
  */
 export function offerVatSummary(record: CalculationRecord, customer: CustomerInfo): OfferVatSummaryRow[] {
   if (!offerIncludesVat(customer, record.formSnapshot)) return [];
@@ -438,7 +477,8 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
   const roundedRows = roundedVatRateRows(record);
   if (roundedRows) return roundedRows;
   if (headingGross != null) {
-    return rates.map((rate) => {
+    if (calcLevelDiscountOnly(record)) return [];
+    const rows = rates.map((rate) => {
       const group = lines.filter(
         (line) => (Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent) === rate && line.quantity !== 0,
       );
@@ -448,7 +488,9 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
       );
       return { vatPercent: rate, net, vat: roundToCents(gross - net), gross };
     });
+    return vatRowsMatchPayable(rows, record, customer) ? rows : [];
   }
+  if (calcLevelDiscountOnly(record)) return [];
   const weightSum = rates.reduce((sum, rate) => sum + (weights.get(rate) ?? 0), 0);
   if (!(weightSum > 0)) {
     return [
@@ -462,7 +504,7 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
   }
   let netUsed = 0;
   let grossUsed = 0;
-  return rates.map((rate, index) => {
+  const weighted = rates.map((rate, index) => {
     const last = index === rates.length - 1;
     const weight = weights.get(rate) ?? 0;
     const net = last
@@ -475,6 +517,7 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
     grossUsed += gross;
     return { vatPercent: rate, net, vat: roundToCents(gross - net), gross };
   });
+  return vatRowsMatchPayable(weighted, record, customer) ? weighted : [];
 }
 
 /**

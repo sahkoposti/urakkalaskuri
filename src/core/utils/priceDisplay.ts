@@ -142,7 +142,8 @@ export function priceBreakdownParts(values: PriceBreakdownValues, includeVat: bo
 
 /**
  * Materiaalit + työ − alennus = näytetty kokonaishinta senteissä.
- * Rivien oma pyöristys voi jättää sentin. Suurempi riveistä (työ tai materiaalit) ottaa eron.
+ * Rivien oma pyöristys voi jättää 1–2 senttiä. Suurempi riveistä (työ tai materiaalit) ottaa eron.
+ * Yli 2 sentin eroa ei piiloteta: palautetaan alkuperäiset luvut.
  */
 export function reconcilePriceRows(
   materials: number,
@@ -154,6 +155,7 @@ export function reconcilePriceRows(
   const workCents = roundToCents(work);
   const discountCents = roundToCents(Math.max(0, discount));
   const gap = roundToCents(total - (materialsCents + workCents - discountCents));
+  if (Math.abs(gap) > 0.02) return { materials, work, discount };
   if (gap === 0) return { materials: materialsCents, work: workCents, discount: discountCents };
   if (Math.abs(materialsCents) >= Math.abs(workCents)) {
     return { materials: roundToCents(materialsCents + gap), work: workCents, discount: discountCents };

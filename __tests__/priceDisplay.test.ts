@@ -84,6 +84,11 @@ describe('vat labels', () => {
     expect(rows).toEqual({ materials: 0, work: 37.68, discount: 0 });
     expect(roundToCents(rows.materials + rows.work - rows.discount)).toBe(37.68);
   });
+
+  test('enintään 2 senttiä tasataan, sitä suurempaa eroa ei piiloteta', () => {
+    expect(reconcilePriceRows(10, 20.01, 0, 30.03)).toEqual({ materials: 10, work: 20.03, discount: 0 });
+    expect(reconcilePriceRows(100, 50, 0, 100)).toEqual({ materials: 100, work: 50, discount: 0 });
+  });
 });
 
 describe('printed total on screen', () => {
