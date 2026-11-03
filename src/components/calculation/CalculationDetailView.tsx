@@ -24,15 +24,12 @@ import type { CalculationRecord, CustomerInfo, MaterialQuantityRow, StructureLin
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
-import {
-  lineListPriceVat0,
-  lineTotalVat0,
-  withDerivedLinePricing,
-} from '@/src/core/structure/linePricing';
+import { withDerivedLinePricing } from '@/src/core/structure/linePricing';
 import { formatQuantity } from '@/src/core/materials/materialQuantities';
 import { estimateWorkDurationDays } from '@/src/core/utils/formatters';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
-import { applyVat, isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
+import { roundedLineCardPrices } from '@/src/core/pdf/offerDocument';
+import { isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import { useApp } from '@/src/context/AppContext';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -48,18 +45,11 @@ type CalculationDetailViewProps = {
 
 function lineBreakdown(line: StructureLine, reverseVat: boolean) {
   const priced = withDerivedLinePricing(line);
-  const total = lineTotalVat0(priced);
-  const list = lineListPriceVat0(priced);
-  const vatAmount = reverseVat ? 0 : applyVat(total, priced.vatPercent) - total;
   return {
     materialsVat0: priced.materialsVat0,
     discountPercent: priced.discountPercent,
-    totalPriceVat0: total,
-    totalPriceVat: reverseVat ? total : total + vatAmount,
-    vatAmount,
     vatPercent: priced.vatPercent,
-    totalPriceVatBeforeDiscount: reverseVat ? list : applyVat(list, priced.vatPercent),
-    totalPriceVat0BeforeDiscount: list,
+    ...roundedLineCardPrices(priced, reverseVat),
   };
 }
 

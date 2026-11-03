@@ -1,7 +1,7 @@
 import type { CalculationRecord, FormSnapshot } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
-import { roundToCents } from '@/src/core/utils/formatters';
+import { formatFixed2, roundToCents } from '@/src/core/utils/formatters';
 import type { BusinessVatMode } from '@/src/core/utils/priceDisplay';
 
 import { DEFAULT_SIVUKULUKERROIN } from './defaultOfferSettings';
@@ -81,6 +81,76 @@ export function calculationWithUrakkakorttiRivihinnat(
     return { ...record, formSnapshot: next };
   }
   return withSnapshot(record, { urakkakorttiRivihinnat: clean });
+}
+
+/**
+ * Lomakkeen esitäytön lähde. Alihankkija: kortille tulostuva urakka.
+ * Työntekijä: sama summa ennen Sivukulukerroin-jakoa.
+ */
+export function derivedCardContractAmount(
+  line: { contractPriceVat0: number },
+  mode: UrakkakorttiMode,
+): number {
+  return mode === 'tyontekija' ? line.contractPriceVat0 : effectiveContractVat0(line);
+}
+
+/** Kentän teksti. Yliajo näytetään, jos se on tallennettu. Muuten laskettu summa. */
+export function cardPriceFieldText(
+  line: { id: string; contractPriceVat0: number },
+  mode: UrakkakorttiMode,
+  overrides: Record<string, number> | undefined,
+): string {
+  if (overrides && Object.prototype.hasOwnProperty.call(overrides, line.id)) {
+    const amount = overrides[line.id];
+    if (typeof amount === 'number' && Number.isFinite(amount)) return formatFixed2(amount);
+  }
+  const derived = derivedCardContractAmount(line, mode);
+  return Number.isFinite(derived) ? formatFixed2(derived) : '';
+}
+
+export function cardPriceFieldTexts(
+  record: CalculationRecord,
+  mode: UrakkakorttiMode = readUrakkakorttiMode(record.formSnapshot),
+): Record<string, string> {
+  const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
+  const text: Record<string, string> = {};
+  for (const line of ensureStructureLines(record)) {
+    text[line.id] = cardPriceFieldText(line, mode, overrides);
+  }
+  return text;
+}
+
+/** Pilkku tai piste. Tyhjä = ei yliajoa. Ei-luku = virheellinen. */
+export function parseCardPriceInput(raw: string): number | 'empty' | 'invalid' {
+  const trimmed = raw.trim();
+  if (!trimmed) return 'empty';
+  const n = Number(trimmed.replace(/\s/g, '').replace(',', '.'));
+  return Number.isFinite(n) ? n : 'invalid';
+}
+
+/**
+ * Tallennuskartta. Laskettua summaa tai tyhjää kenttää ei kirjoiteta.
+ * Virheellinen teksti säilyttää aiemman yliajon. Paluu laskettuun summaan poistaa avaimen.
+ */
+export function urakkakorttiRivihinnatFromFieldTexts(
+  record: CalculationRecord,
+  texts: Record<string, string>,
+  mode: UrakkakorttiMode = readUrakkakorttiMode(record.formSnapshot),
+): Record<string, number> {
+  const stored = readUrakkakorttiRivihinnat(record.formSnapshot) ?? {};
+  const next: Record<string, number> = {};
+  for (const line of ensureStructureLines(record)) {
+    const parsed = parseCardPriceInput(texts[line.id] ?? '');
+    if (parsed === 'invalid') {
+      if (Object.prototype.hasOwnProperty.call(stored, line.id)) next[line.id] = stored[line.id];
+      continue;
+    }
+    if (parsed === 'empty') continue;
+    const derived = derivedCardContractAmount(line, mode);
+    if (Number.isFinite(derived) && roundToCents(parsed) === roundToCents(derived)) continue;
+    next[line.id] = parsed;
+  }
+  return next;
 }
 
 /** Rivin urakka ennen kerrointa. Yliajo voittaa lasketun hinnan. Orpo avain ei osu mihinkään riviin. */
@@ -287,6 +357,7 @@ export function calculationWithBusinessVatMode(
 
 const SNAPSHOT_EXTRA_KEYS = [
   'ktvPersons',
+  'offerValidDays',
   URAKKAKORTTI_MODE_KEY,
   URAKKAKORTTI_HUOMIO_KEY,
   BUSINESS_VAT_MODE_KEY,

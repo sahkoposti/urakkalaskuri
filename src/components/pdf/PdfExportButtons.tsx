@@ -23,17 +23,26 @@ import {
   calculationWithUrakkakorttiHidePrices,
   calculationWithUrakkakorttiMode,
   calculationWithUrakkakorttiRivihinnat,
+  cardPriceFieldTexts,
   huomioitavaaFieldText,
   invalidEmployeeContractWarning,
+  parseCardPriceInput,
   readUrakkakorttiHidePrices,
   readUrakkakorttiMode,
-  readUrakkakorttiRivihinnat,
   urakkakorttiContractProblems,
+  urakkakorttiRivihinnatFromFieldTexts,
   type UrakkakorttiMode,
 } from '@/src/core/pdf/urakkakorttiCard';
 import { readBusinessVatMode, type BusinessVatMode } from '@/src/core/utils/priceDisplay';
-import { formatFixed2 } from '@/src/core/utils/formatters';
 import { offerDocumentProblems } from '@/src/core/pdf/offerDocument';
+import {
+  calculationWithOfferValidDays,
+  companyOfferValidDays,
+  OFFER_VALID_DAYS_INVALID_MESSAGE,
+  offerValidDaysFieldText,
+  offerValidDaysForSave,
+  parseOfferValidDaysInput,
+} from '@/src/core/pdf/offerValidDays';
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -41,23 +50,6 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 type Busy = 'tarjous' | 'urakkakortti' | null;
 
 const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
-
-function parseCardOverride(raw: string): number | 'empty' | 'invalid' {
-  const trimmed = raw.trim();
-  if (!trimmed) return 'empty';
-  const n = Number(trimmed.replace(/\s/g, '').replace(',', '.'));
-  return Number.isFinite(n) ? n : 'invalid';
-}
-
-function overrideTexts(record: CalculationRecord): Record<string, string> {
-  const map = readUrakkakorttiRivihinnat(record.formSnapshot) ?? {};
-  const text: Record<string, string> = {};
-  for (const line of ensureStructureLines(record)) {
-    const amount = map[line.id];
-    if (typeof amount === 'number' && Number.isFinite(amount)) text[line.id] = formatFixed2(amount);
-  }
-  return text;
-}
 
 /** "Luo tarjous" ja "Luo urakkakortti" laskelman tietosivulla (T10). */
 export function PdfExportButtons({
@@ -78,7 +70,12 @@ export function PdfExportButtons({
     readBusinessVatMode(record.formSnapshot),
   );
   const [hidePrices, setHidePrices] = useState(() => readUrakkakorttiHidePrices(record.formSnapshot));
-  const [overrideText, setOverrideText] = useState(() => overrideTexts(record));
+  const [overrideText, setOverrideText] = useState(() => cardPriceFieldTexts(record));
+  const [companyValidDays, setCompanyValidDays] = useState<number | null>(null);
+  const [validDaysText, setValidDaysText] = useState(() => offerValidDaysFieldText(record.formSnapshot, null));
+  const validDaysDirty = useRef(false);
+  const companyDaysRef = useRef<number | null>(null);
+  companyDaysRef.current = companyValidDays;
   const overrideTextRef = useRef(overrideText);
   overrideTextRef.current = overrideText;
   const customer = customerFromRecord(record);
@@ -88,7 +85,7 @@ export function PdfExportButtons({
   const draftOverrideProblems = hidePrices
     ? []
     : cardLines.flatMap((line) =>
-        parseCardOverride(overrideText[line.id] ?? '') === 'invalid'
+        parseCardPriceInput(overrideText[line.id] ?? '') === 'invalid'
           ? [invalidEmployeeContractWarning(line.name)]
           : [],
       );
@@ -98,6 +95,8 @@ export function PdfExportButtons({
   ];
   const parsedPersons = parseKtvPersonsInput(personsText);
   const personsProblem = parsedPersons === 'invalid' ? KTV_PERSONS_INVALID_MESSAGE : null;
+  const parsedValidDays = parseOfferValidDaysInput(validDaysText);
+  const validDaysProblem = parsedValidDays === 'invalid' ? OFFER_VALID_DAYS_INVALID_MESSAGE : null;
   // Ref estää tuplanapautuksen ennen kuin tila ehtii päivittyä (DB-lukko on toinen varmistus).
   const busyRef = useRef(false);
   const [manualLines, setManualLines] = useState<{ id: string; name: string }[] | null>(null);
@@ -109,8 +108,27 @@ export function PdfExportButtons({
     setHuomioText(huomioitavaaFieldText(record));
     setBusinessVatMode(readBusinessVatMode(record.formSnapshot));
     setHidePrices(readUrakkakorttiHidePrices(record.formSnapshot));
-    setOverrideText(overrideTexts(record));
+    setOverrideText(cardPriceFieldTexts(record));
+    validDaysDirty.current = false;
+    setValidDaysText(offerValidDaysFieldText(record.formSnapshot, companyDaysRef.current));
   }, [record.id, record.formSnapshot, record.customer]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void db.getOfferCompanySettings().then((settings) => {
+      if (cancelled) return;
+      const days = companyOfferValidDays(settings.offerValidDays);
+      setCompanyValidDays(days);
+      if (!validDaysDirty.current && !Object.prototype.hasOwnProperty.call(record.formSnapshot ?? {}, 'offerValidDays')) {
+        setValidDaysText(String(days));
+      }
+    }).catch((error) => {
+      console.error(error);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [record.id, record.formSnapshot]);
 
   const persistRecord = async (next: CalculationRecord) => {
     if (next === record) return;
@@ -122,22 +140,17 @@ export function PdfExportButtons({
     await persistRecord(calculationWithKtvPersons(record, persons));
   };
 
+  const persistValidDays = async (days: number) => {
+    if (companyValidDays == null) return;
+    await persistRecord(calculationWithOfferValidDays(record, days, companyValidDays));
+  };
+
   const persistBusinessVatMode = async (mode: BusinessVatMode) => {
     await persistRecord(calculationWithBusinessVatMode(record, mode));
   };
 
   const persistOverrides = async (texts: Record<string, string>) => {
-    const stored = readUrakkakorttiRivihinnat(record.formSnapshot) ?? {};
-    const next: Record<string, number> = {};
-    for (const line of ensureStructureLines(record)) {
-      const parsed = parseCardOverride(texts[line.id] ?? '');
-      if (parsed === 'invalid') {
-        if (Object.prototype.hasOwnProperty.call(stored, line.id)) next[line.id] = stored[line.id];
-        continue;
-      }
-      if (parsed === 'empty') continue;
-      next[line.id] = parsed;
-    }
+    const next = urakkakorttiRivihinnatFromFieldTexts(record, texts, cardMode);
     await persistRecord(calculationWithUrakkakorttiRivihinnat(record, next));
   };
 
@@ -167,13 +180,21 @@ export function PdfExportButtons({
   };
 
   const handleTarjous = () => {
-    const blocked = [...offerProblems, ...(personsProblem ? [personsProblem] : [])];
+    const blocked = [...offerProblems, ...(personsProblem ? [personsProblem] : []), ...(validDaysProblem ? [validDaysProblem] : [])];
     if (blocked.length > 0) {
       showAlert('Tarjousta ei voi tulostaa', blocked.join('\n'));
       return;
     }
+    if (companyValidDays == null) return;
     return run('tarjous', async () => {
       if (parsedPersons !== 'invalid') await persistPersons(parsedPersons);
+      const days = offerValidDaysForSave({
+        snapshot: record.formSnapshot,
+        fieldText: validDaysText,
+        companyDefault: companyValidDays,
+        touched: validDaysDirty.current,
+      });
+      if (typeof days === 'number') await persistValidDays(days);
       await exportTarjousPdf(calculationId, app, pdfExportDeps);
       await refreshCalculations();
     });
@@ -221,6 +242,41 @@ export function PdfExportButtons({
           {personsProblem}
         </Text>
       ) : null}
+      <AppInput
+        label="Tarjous voimassa (päivää)"
+        value={validDaysText}
+        onChangeText={(value) => {
+          validDaysDirty.current = true;
+          setValidDaysText(value);
+        }}
+        onBlur={() => {
+          const days = offerValidDaysForSave({
+            snapshot: record.formSnapshot,
+            fieldText: validDaysText,
+            companyDefault: companyValidDays,
+            touched: validDaysDirty.current,
+          });
+          if (typeof days !== 'number') return;
+          setValidDaysText(String(days));
+          validDaysDirty.current = false;
+          void persistValidDays(days).catch((error) => {
+            console.error(error);
+            showAlert('Tallennus epäonnistui', errorMessage(error));
+          });
+        }}
+        keyboardType="numeric"
+        compact
+      />
+      <Text style={styles.hint}>
+        {companyValidDays == null
+          ? 'Esitäyttö yrityksen asetuksesta.'
+          : `Esitäyttö yrityksen asetuksesta (${companyValidDays} päivää).`}
+      </Text>
+      {validDaysProblem ? (
+        <Text style={styles.warning} accessibilityRole="alert">
+          {validDaysProblem}
+        </Text>
+      ) : null}
       {showBusinessVatChoice ? (
         <ChoiceToggle
           label="Hintojen ALV"
@@ -241,14 +297,23 @@ export function PdfExportButtons({
       <OutlinedButton
         title={busy === 'tarjous' ? 'Luodaan tarjousta…' : 'Luo tarjous'}
         onPress={handleTarjous}
-        disabled={busy !== null || offerProblems.length > 0 || personsProblem !== null}
+        disabled={
+          busy !== null ||
+          companyValidDays == null ||
+          offerProblems.length > 0 ||
+          personsProblem !== null ||
+          validDaysProblem !== null
+        }
       />
       <AppPicker
         label="Urakkakortti"
         selectedValue={cardMode}
         onValueChange={(value) => {
           const mode: UrakkakorttiMode = value === 'tyontekija' ? 'tyontekija' : 'alihankkija';
+          const texts = cardPriceFieldTexts(record, mode);
           setCardMode(mode);
+          setOverrideText(texts);
+          overrideTextRef.current = texts;
           void persistCard(mode, huomioText, hidePrices).catch((error) => {
             console.error(error);
             showAlert('Tallennus epäonnistui', errorMessage(error));
@@ -274,29 +339,30 @@ export function PdfExportButtons({
           });
         }}
       />
-      {cardLines.map((line) => (
-        <AppInput
-          key={line.id}
-          label={`Urakkahinta: ${line.name}`}
-          value={overrideText[line.id] ?? ''}
-          onChangeText={(value) =>
-            setOverrideText((current) => {
-              const next = { ...current, [line.id]: value };
-              overrideTextRef.current = next;
-              return next;
-            })
-          }
-          onBlur={() => {
-            void persistOverrides(overrideTextRef.current).catch((error) => {
-              console.error(error);
-              showAlert('Tallennus epäonnistui', errorMessage(error));
-            });
-          }}
-          keyboardType="decimal-pad"
-          compact
-          placeholder="Laskettu hinta"
-        />
-      ))}
+      {hidePrices
+        ? null
+        : cardLines.map((line) => (
+            <AppInput
+              key={line.id}
+              label={`Urakkahinta: ${line.name}`}
+              value={overrideText[line.id] ?? ''}
+              onChangeText={(value) =>
+                setOverrideText((current) => {
+                  const next = { ...current, [line.id]: value };
+                  overrideTextRef.current = next;
+                  return next;
+                })
+              }
+              onBlur={() => {
+                void persistOverrides(overrideTextRef.current).catch((error) => {
+                  console.error(error);
+                  showAlert('Tallennus epäonnistui', errorMessage(error));
+                });
+              }}
+              keyboardType="decimal-pad"
+              compact
+            />
+          ))}
       <AppInput
         label="Huomioitavaa"
         value={huomioText}
@@ -335,6 +401,13 @@ export function PdfExportButtons({
 
 function createStyles(colors: AppColorPalette) {
   return {
+    hint: {
+      marginBottom: 8,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      lineHeight: 18,
+      color: colors.text,
+    },
     warning: {
       marginBottom: 8,
       padding: 12,

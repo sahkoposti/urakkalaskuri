@@ -56,7 +56,11 @@ exports[`urakkakortti single line: contract, duration, crew, specs, notes area; 
   .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
   .ktv-note { font-size: 9pt; color: #333; }
 
-  .uk-title { margin: 0 0 4mm 0; font-size: 16pt; }
+  .uk-title { display: flex; justify-content: space-between; align-items: baseline; gap: 6mm; margin: 0 0 4mm 0; font-size: 16pt; font-weight: 700; }
+  .uk-title-text { font-weight: 700; }
+  .uk-sum { margin-left: auto; text-align: right; white-space: nowrap; }
+  .uk-sum-label { display: block; font-size: 8pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .uk-sum-value { display: block; font-size: 16pt; font-weight: 700; }
   .uk-materials { margin: 0 0 6mm 0; }
   .uk-materials h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
   .uk-materials table { width: 100%; border-collapse: collapse; font-size: 10pt; }
@@ -101,7 +105,7 @@ exports[`urakkakortti single line: contract, duration, crew, specs, notes area; 
 <thead><tr><td class="spacer-top"></td></tr></thead>
 <tfoot><tr><td class="spacer-bottom"></td></tr></tfoot>
 <tbody><tr><td>
-<h1 class="uk-title">Urakkakortti: Alihankkija</h1>
+<h1 class="uk-title"><span class="uk-title-text">Urakkakortti: Alihankkija</span><span class="uk-sum"><span class="uk-sum-label">Urakan summa</span><span class="uk-sum-value">1 000,00 €</span></span></h1>
 <div class="price-block"><div class="col"><table><tr><td>Urakka (alv0)</td><td class="value">1 000,00 €</td></tr></table></div><div class="col"><table><tr><td>Työn arvioitu kesto</td><td class="value">4 pv</td></tr></table></div></div>
 <div class="spec-grid">
 <div class="spec-card full"><h2>Pinta-alat</h2><table><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120,0 m²</td></tr><tr><td>Aukkovähennykset</td><td class="value">–</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Seinäpinta-ala (laskettu)</td><td class="value">–</td></tr></table></div>

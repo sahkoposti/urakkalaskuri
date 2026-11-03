@@ -24,6 +24,7 @@ import {
 import { lineSpecSnapshot, specCardsFromSnapshot, type SpecCard } from './offerPageSpecs';
 import { specGridLayout, type SpecGridLayout } from './specGridLayout';
 import { buildUrakkakorttiSections, lineUsesUrakkakorttiPrint, type UrakkakorttiSection } from './urakkakorttiSections';
+import type { OfferStructureSettings } from './types';
 import { formatFinnishDate } from './validUntil';
 
 export { effectiveContractVat0, linesNeedingManualContract, withManualContractPrices } from './manualContract';
@@ -54,6 +55,11 @@ export type UrakkakorttiContext = {
   mode: UrakkakorttiMode;
   /** Kortin otsikko: "Urakkakortti: Alihankkija" tai "Urakkakortti: Työntekijä". */
   modeLabel: string;
+  /**
+   * Otsikon urakan summa. Sama muotoilu kuin taulukon yhteensä-rivillä.
+   * null, kun hintoja ei näytetä tai urakkarivejä ei ole.
+   */
+  contractSum: string | null;
   footer: PdfFooter;
 };
 
@@ -66,6 +72,8 @@ export type BuildUrakkakorttiInput = {
   generatedAt: Date;
   /** Yritysasetuksen Sivukulukerroin. Puuttuu = oletus 1,5. Käytetään vain Työntekijä-tilassa. */
   sivukulukerroin?: number;
+  /** Rakenteen Muuta-teksti. Yrityksen Lisätiedot-ehtoja ei välitetä kortille. */
+  offerStructureSettings?: Record<string, OfferStructureSettings | undefined>;
 };
 
 /** €-arvoiset speksirivit pois (voivat paljastaa hintoja, esim. Hinnoittelu-sivu). */
@@ -178,7 +186,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     assertPrintableEmployeeContracts(record);
     const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
     const amounts = lines.map((line) =>
-      employeeContractAmount(cardContractBase(line, mode, overrides), mode, factor, line.name),
+      roundToCents(employeeContractAmount(cardContractBase(line, mode, overrides), mode, factor, line.name)),
     );
     contractRows.push(
       ...lines.map((line, index) => ({
@@ -195,6 +203,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
       });
     }
   }
+  const contractSum = contractRows.find((row) => row.emphasis)?.value ?? contractRows[0]?.value ?? null;
   const duration =
     lines.length === 1
       ? resolveDisplayedWorkDurationDays(lines[0], settings.weatherReserveFactor)
@@ -215,12 +224,14 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     specGrid: specGridLayout(urakkakorttiSpecCards(input)),
     sections: buildUrakkakorttiSections(input, {
       omitPaintQuantityLineIds: materialTable.omitPaintQuantityLineIds,
+      offerStructureSettings: input.offerStructureSettings,
     }),
     materials: materialTable.rows,
     customerNotes: customer.notes?.trim() ?? '',
     huomioitavaa: effectiveHuomioitavaa(record),
     mode,
     modeLabel: urakkakorttiModeLabel(mode),
+    contractSum,
     footer: buildFooter(input.company),
   };
 }

@@ -10,7 +10,8 @@ import { isManualStructureId } from '@/src/core/structure/types';
 
 import { lineSpecSnapshot } from './offerPageSpecs';
 import { printableFields, type PrintRow } from './printableFields';
-import { buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from './printedSection';
+import { appendPrintedText, buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from './printedSection';
+import type { OfferStructureSettings } from './types';
 
 /**
  * Urakkakortin tulostusosio (P4). Teksti- ja taulukko-osat ovat samat kuin tarjouksessa.
@@ -108,22 +109,47 @@ function urakkakorttiPrintRows(
   }).filter((row) => !isEuroPrintRow(row));
 }
 
-/** Print-tilan rivit `ensureStructureLines`-järjestyksessä. Vanhat rivit eivät tuota osiota. */
+/** Rakenteen Muuta-teksti sellaisenaan. Tyhjä tai pelkkä väli ei tulostu. */
+export function structureMuutaText(
+  settings: Record<string, OfferStructureSettings | undefined> | undefined,
+  structureId: string,
+): string {
+  return settings?.[structureId]?.additionalInfoText?.trim() ?? '';
+}
+
+function withStructureMuuta(section: UrakkakorttiSection, muuta: string): UrakkakorttiSection {
+  if (!muuta) return section;
+  const body = { textGroups: section.textGroups.map((group) => ({ ...group, items: [...group.items] })), tableRows: [...section.tableRows] };
+  appendPrintedText(body, 'muuta', muuta);
+  return { ...section, textGroups: body.textGroups, tableRows: body.tableRows };
+}
+
+/** Print-tilan rivit `ensureStructureLines`-järjestyksessä. Vanhat rivit eivät tuota osiota, ellei niillä ole Muuta-tekstiä. */
 export function buildUrakkakorttiSections(
   source: UrakkakorttiSectionSource,
-  options?: { omitPaintQuantityLineIds?: ReadonlySet<string> },
+  options?: {
+    omitPaintQuantityLineIds?: ReadonlySet<string>;
+    offerStructureSettings?: Record<string, OfferStructureSettings | undefined>;
+  },
 ): UrakkakorttiSection[] {
   const reverseVat = Boolean(customerFromRecord(source.record).reverseVat);
   const sections: UrakkakorttiSection[] = [];
   for (const line of ensureStructureLines(source.record)) {
-    if (!lineUsesUrakkakorttiPrint(line, source.structures)) continue;
+    const muuta = structureMuutaText(options?.offerStructureSettings, line.structureId);
     const structure = source.structures.find((item) => item.id === line.structureId);
-    if (!structure?.form) continue;
+    if (!lineUsesUrakkakorttiPrint(line, source.structures) || !structure?.form) {
+      if (!muuta) continue;
+      sections.push(withStructureMuuta({ title: line.name, textGroups: [], tableRows: [] }, muuta));
+      continue;
+    }
     const includePaintQuantity = !options?.omitPaintQuantityLineIds?.has(line.id);
     sections.push(
-      sectionFromPrintRows(line.name, urakkakorttiPrintRows(line, structure, source, reverseVat), {
-        includePaintQuantity,
-      }),
+      withStructureMuuta(
+        sectionFromPrintRows(line.name, urakkakorttiPrintRows(line, structure, source, reverseVat), {
+          includePaintQuantity,
+        }),
+        muuta,
+      ),
     );
   }
   return sections;

@@ -4,7 +4,7 @@ import { BackHandler, FlatList, Text, View } from 'react-native';
 
 import { AppCard, ScreenLoading, ScreenMessage } from '@/src/components/common';
 import { customerFromRecord } from '@/src/core/models/types';
-import { formatDisplayPrice } from '@/src/core/utils/priceDisplay';
+import { formatPrintedDisplayPrice } from '@/src/core/pdf/buildPdfContext';
 import { formatDate } from '@/src/core/utils/formatters';
 import { useApp } from '@/src/context/AppContext';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -36,11 +36,7 @@ export default function HistoryScreen() {
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       renderItem={({ item }) => {
         const customer = customerFromRecord(item);
-        const priceLabel = formatDisplayPrice(
-          item.totalPriceVat0,
-          item.totalPriceVat,
-          customer,
-        );
+        const priceLabel = formatPrintedDisplayPrice(item, customer);
         return (
           <AppCard onPress={() => router.push(`/history/${item.id}`)}>
             <Text style={styles.title}>{customer.name}</Text>

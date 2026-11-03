@@ -20,13 +20,16 @@ import {
   calculationWithUrakkakorttiMode,
   calculationWithUrakkakorttiRivihinnat,
   cardLinesNeedingManualContract,
+  cardPriceFieldTexts,
   effectiveHuomioitavaa,
   employeeContractAmount,
   invalidEmployeeContractWarning,
+  parseCardPriceInput,
   preserveCalculationSnapshot,
   urakkakorttiContractProblems,
+  urakkakorttiRivihinnatFromFieldTexts,
 } from '../src/core/pdf/urakkakorttiCard';
-import { formatCurrency, formatPrintedQuantity, stripTrailingZeroDecimals } from '../src/core/utils/formatters';
+import { formatCurrency, formatFixed2, formatPrintedQuantity, stripTrailingZeroDecimals } from '../src/core/utils/formatters';
 import { defaultCompanyProfile } from '../src/core/company/defaultCompany';
 import { input, line, record, structure } from './pdfFixtures';
 import type { FormDefinition } from '../src/core/form/types';
@@ -459,17 +462,22 @@ describe('offer signature', () => {
     expect(html).toContain('Allekirjoitus');
     expect(html).toContain('Päiväys');
     expect((html.match(/class="offer-sign-line"/g) ?? []).length).toBe(4);
-    const pen = html.match(/<tr class="offer-sign-pen">([\s\S]*?)<\/tr>/);
-    const date = html.match(/<tr class="offer-sign-date">([\s\S]*?)<\/tr>/);
-    expect(pen?.[1].match(/Allekirjoitus/g)).toHaveLength(2);
-    expect(pen?.[1].match(/class="offer-sign-line"/g)).toHaveLength(2);
-    expect(date?.[1].match(/Päiväys/g)).toHaveLength(2);
-    expect(date?.[1].match(/class="offer-sign-line"/g)).toHaveLength(2);
+    expect(html).toContain('.offer-sign { display: grid;');
+    expect(html).not.toContain('offer-sign-col');
+    const sign = html.slice(html.indexOf('class="offer-sign"'), html.indexOf('class="ktv-page'));
+    expect((sign.match(/>Allekirjoitus</g) ?? []).length).toBe(2);
+    expect((sign.match(/>Päiväys</g) ?? []).length).toBe(2);
+    expect(html).not.toContain('<table class="offer-sign"');
     expect(html).toContain('break-inside: avoid');
     const at = (needle: string) => html.indexOf(needle);
     expect(at('class="offer-sign"')).toBeGreaterThan(at('Lisätiedot:'));
-    expect(at('class="offer-sign"')).toBeGreaterThan(at('class="offer-seller"'));
+    expect(at('class="offer-seller"')).toBe(-1);
+    expect(at('Myyjä:')).toBe(-1);
     expect(at('class="offer-sign"')).toBeLessThan(at('class="ktv-page page-break"'));
+    expect(sign).toContain('Puh. +358 40 938 9403');
+    expect(sign).toContain('info@colorajaton.fi');
+    expect(sign.match(/Aada Asentaja/g)).toHaveLength(1);
+    expect(sign.match(/Kuvitteellinen Oy/g)).toHaveLength(1);
     expect(html).toContain('Loppusumma');
   });
 
@@ -496,5 +504,53 @@ describe('offer signature', () => {
     expect((block.match(/class="offer-sign-detail"/g) ?? []).length).toBe(0);
     expect((block.match(/class="offer-sign-line"/g) ?? []).length).toBe(4);
     expect(html.match(/class="offer-sign"/g)).toHaveLength(1);
+  });
+});
+
+describe('urakkakortti contract price prefill', () => {
+  const baseLine = { ...line('a', 's1', 'Ulkomaalaus'), contractPriceVat0: 3000 };
+
+  it('prefills the derived amount for Alihankkija and the undivided amount for Työntekijä', () => {
+    const rec = record({}, { structureLines: [baseLine] });
+    expect(cardPriceFieldTexts(rec).a).toBe(formatFixed2(3000));
+    const employee = calculationWithUrakkakorttiMode(rec, 'tyontekija');
+    expect(cardPriceFieldTexts(employee, 'tyontekija').a).toBe(formatFixed2(3000));
+    expect(cardPriceFieldTexts(employee, 'tyontekija').a).not.toBe(formatFixed2(2000));
+    const zeroed = record({}, { structureLines: [{ ...baseLine, contractPriceVat0: 0 }] });
+    expect(cardPriceFieldTexts(zeroed).a).toBe(formatFixed2(0));
+    const negative = record({}, { structureLines: [{ ...baseLine, contractPriceVat0: -4 }] });
+    expect(cardPriceFieldTexts(negative).a).toBe(formatFixed2(0));
+    expect(cardPriceFieldTexts(calculationWithUrakkakorttiMode(negative, 'tyontekija'), 'tyontekija').a).toBe(
+      formatFixed2(-4),
+    );
+  });
+
+  it('does not store an override for an unchanged prefill, stores an edit, and deletes a revert or a cleared field', () => {
+    const rec = record({}, { structureLines: [baseLine] });
+    const prefilled = cardPriceFieldTexts(rec);
+    expect(urakkakorttiRivihinnatFromFieldTexts(rec, prefilled)).toEqual({});
+    expect(calculationWithUrakkakorttiRivihinnat(rec, {}).formSnapshot?.urakkakorttiRivihinnat).toBeUndefined();
+
+    const edited = urakkakorttiRivihinnatFromFieldTexts(rec, { a: '4 321,50' });
+    expect(edited).toEqual({ a: 4321.5 });
+    const stored = calculationWithUrakkakorttiRivihinnat(rec, edited);
+    expect(stored.formSnapshot?.urakkakorttiRivihinnat).toEqual({ a: 4321.5 });
+    expect(cardPriceFieldTexts(stored).a).toBe(formatFixed2(4321.5));
+
+    expect(urakkakorttiRivihinnatFromFieldTexts(stored, { a: '3000,00' })).toEqual({});
+    expect(urakkakorttiRivihinnatFromFieldTexts(stored, { a: '' })).toEqual({});
+    expect(urakkakorttiRivihinnatFromFieldTexts(stored, { a: 'ei luku' })).toEqual({ a: 4321.5 });
+    expect(parseCardPriceInput('-4')).toBe(-4);
+    expect(parseCardPriceInput('Infinity')).toBe('invalid');
+  });
+
+  it('keeps offer HTML byte-identical when the prefill is not stored', () => {
+    const rec = record({}, { structureLines: [baseLine] });
+    const offer = renderTarjousHtml(buildPdfContext(input(rec)));
+    const untouched = calculationWithUrakkakorttiRivihinnat(rec, urakkakorttiRivihinnatFromFieldTexts(rec, cardPriceFieldTexts(rec)));
+    expect(renderTarjousHtml(buildPdfContext(input(untouched)))).toBe(offer);
+    const overridden = calculationWithUrakkakorttiRivihinnat(rec, { a: 10 });
+    expect(renderTarjousHtml(buildPdfContext(input(overridden)))).toBe(offer);
+    expect(overridden.totalPriceVat).toBe(rec.totalPriceVat);
   });
 });

@@ -46,14 +46,25 @@ function renderUrakkakorttiBlock(ctx: UrakkakorttiContext, kind: UrakkakorttiBlo
   return `<div class="uk-huomio"><h3>Huomioitavaa</h3>${renderPrintedLines(ctx.huomioitavaa)}</div>`;
 }
 
+function renderUrakkakorttiTitle(ctx: UrakkakorttiContext): string {
+  const sum = ctx.contractSum
+    ? `<span class="uk-sum"><span class="uk-sum-label">Urakan summa</span><span class="uk-sum-value">${escapeHtml(ctx.contractSum)}</span></span>`
+    : '';
+  return `<h1 class="uk-title"><span class="uk-title-text">${escapeHtml(ctx.modeLabel)}</span>${sum}</h1>`;
+}
+
 export function renderUrakkakorttiBody(ctx: UrakkakorttiContext): string {
-  const parts: string[] = [`<h1 class="uk-title">${escapeHtml(ctx.modeLabel)}</h1>`];
+  const parts: string[] = [renderUrakkakorttiTitle(ctx)];
   for (const kind of urakkakorttiBodyBlocks(ctx)) parts.push(renderUrakkakorttiBlock(ctx, kind));
   return parts.join('\n');
 }
 
 const URAKKAKORTTI_CSS = `
-  .uk-title { margin: 0 0 4mm 0; font-size: 16pt; }
+  .uk-title { display: flex; justify-content: space-between; align-items: baseline; gap: 6mm; margin: 0 0 4mm 0; font-size: 16pt; font-weight: 700; }
+  .uk-title-text { font-weight: 700; }
+  .uk-sum { margin-left: auto; text-align: right; white-space: nowrap; }
+  .uk-sum-label { display: block; font-size: 8pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .uk-sum-value { display: block; font-size: 16pt; font-weight: 700; }
   .uk-materials { margin: 0 0 6mm 0; }
   .uk-materials h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
   .uk-materials table { width: 100%; border-collapse: collapse; font-size: 10pt; }

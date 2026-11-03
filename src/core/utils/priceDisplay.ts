@@ -1,6 +1,6 @@
 import type { CustomerInfo, FormSnapshot } from '@/src/core/models/types';
 import { formatCustomerType } from '@/src/core/customer/customerRegister';
-import { formatCurrency, formatVatRate } from '@/src/core/utils/formatters';
+import { formatCurrency, formatVatRate, roundToCents } from '@/src/core/utils/formatters';
 
 export function isPrivateCustomer(customer: CustomerInfo): boolean {
   return (customer.customerType ?? 'private') === 'private';
@@ -138,6 +138,29 @@ export function priceBreakdownParts(values: PriceBreakdownValues, includeVat: bo
     discountAmount,
     showDiscount: values.discountPercent > 0 && discountAmount > 0,
   };
+}
+
+/**
+ * Materiaalit + työ − alennus = näytetty kokonaishinta senteissä.
+ * Rivien oma pyöristys voi jättää 1–2 senttiä. Suurempi riveistä (työ tai materiaalit) ottaa eron.
+ * Yli 2 sentin eroa ei piiloteta: palautetaan alkuperäiset luvut.
+ */
+export function reconcilePriceRows(
+  materials: number,
+  work: number,
+  discount: number,
+  total: number,
+): { materials: number; work: number; discount: number } {
+  const materialsCents = roundToCents(materials);
+  const workCents = roundToCents(work);
+  const discountCents = roundToCents(Math.max(0, discount));
+  const gap = roundToCents(total - (materialsCents + workCents - discountCents));
+  if (Math.abs(gap) > 0.02) return { materials, work, discount };
+  if (gap === 0) return { materials: materialsCents, work: workCents, discount: discountCents };
+  if (Math.abs(materialsCents) >= Math.abs(workCents)) {
+    return { materials: roundToCents(materialsCents + gap), work: workCents, discount: discountCents };
+  }
+  return { materials: materialsCents, work: roundToCents(workCents + gap), discount: discountCents };
 }
 
 export function materialsPriceLabel(customer: CustomerInfo, vatPercent = 25.5): string {

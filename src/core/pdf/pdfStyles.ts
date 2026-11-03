@@ -9,11 +9,22 @@
 export const PDF_HEADER_HEIGHT_MM = 30;
 export const PDF_FOOTER_HEIGHT_MM = 16;
 export const PDF_DEFAULT_ACCENT = '#C90000';
+/** @page-marginaalit. Urakkakortti käyttää näitä sellaisenaan. */
+export const PDF_PAGE_MARGIN_TOP_MM = 10;
+export const PDF_PAGE_MARGIN_RIGHT_MM = 14;
+export const PDF_PAGE_MARGIN_BOTTOM_MM = 12;
+export const PDF_PAGE_MARGIN_LEFT_MM = 14;
+/** Tarjouksen tekstialueen sisennys paperin reunasta, vasen ja oikea. */
+export const PDF_OFFER_TEXT_INSET_X_MM = 18;
+/** Tarjouksen vasen korostus. Sama väri kuin Loppusumman viiva. */
+export const PDF_OFFER_ACCENT_BAR_MM = 2.5;
 
 export type PdfStyleOptions = {
   accentColor?: string;
   /** Kaksivaiheinen fallback: tunnettu sivumäärä korvaa counter(pages):n. */
   knownTotalPages?: number | null;
+  /** Vain tarjous. Urakkakortti ei saa palkkia. */
+  offerAccentBar?: boolean;
 };
 
 const HEX = /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
@@ -28,17 +39,29 @@ export function pageNumberContent(knownTotalPages?: number | null): string {
 
 export function pdfStyles(options: PdfStyleOptions = {}): string {
   const accent = options.accentColor && HEX.test(options.accentColor) ? options.accentColor : PDF_DEFAULT_ACCENT;
+  const offerBar = options.offerAccentBar === true;
+  const marginRight = offerBar ? PDF_OFFER_TEXT_INSET_X_MM : PDF_PAGE_MARGIN_RIGHT_MM;
+  const marginLeft = offerBar ? PDF_OFFER_ACCENT_BAR_MM : PDF_PAGE_MARGIN_LEFT_MM;
+  const offerInsetLeft = PDF_OFFER_TEXT_INSET_X_MM - PDF_OFFER_ACCENT_BAR_MM;
+  const accentBoxes = offerBar
+    ? `
+    @top-left-corner { content: ""; background: ${accent}; }
+    @left-top { content: ""; background: ${accent}; }
+    @left-middle { content: ""; background: ${accent}; }
+    @left-bottom { content: ""; background: ${accent}; }
+    @bottom-left-corner { content: ""; background: ${accent}; }`
+    : '';
   return `
   @page {
     size: A4 portrait;
-    margin: 10mm 14mm 12mm 14mm;
+    margin: ${PDF_PAGE_MARGIN_TOP_MM}mm ${marginRight}mm ${PDF_PAGE_MARGIN_BOTTOM_MM}mm ${marginLeft}mm;
     @bottom-right {
       content: ${pageNumberContent(options.knownTotalPages)};
       font-family: 'IBM Plex Sans', Arial, Helvetica, sans-serif;
       font-style: italic;
       font-size: 8pt;
       color: #000;
-    }
+    }${accentBoxes}
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -76,28 +99,55 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   .ktv-title { margin: 0 0 4mm 0; font-size: 14pt; }
   .ktv-page .price-block { max-width: 150mm; }
   .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
-  .ktv-note { font-size: 9pt; color: #333; }
+  .ktv-note { font-size: 9pt; color: #333; }${offerBar ? `
+  body.doc-offer { padding-left: ${offerInsetLeft}mm; }
+  body.doc-offer .header, body.doc-offer .footer { left: ${offerInsetLeft}mm; }` : ''}
 `;
 }
 
 /** Tarjouksen rivitaulukko ja osiot. Liitetään vain tarjous-HTML:ään, ei urakkakorttiin. */
 export const offerDocumentCss = `
+  .price-block.offer-totals { justify-content: flex-end; }
+  .price-block.offer-totals .col { flex: 0 1 92mm; }
   .offer-delivery { margin: 1mm 0 4mm 0; }
   .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
   .offer-vat th, .offer-vat td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
   .offer-vat th.num, .offer-vat td.num { text-align: right; white-space: nowrap; }
   .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
-  .offer-seller { margin: 4mm 0; }
-  .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
-  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
-  .offer-sign td + td { padding: 0 0 0 6mm; }
+  .offer-sign { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12mm; width: 100%; margin: 6mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
-  .offer-sign-name { min-height: 12mm; }
+  .offer-sign-name { min-width: 0; }
+  .offer-sign-pen { break-inside: avoid; page-break-inside: avoid; }
   .offer-sign-detail { margin: 0 0 1mm 0; }
   .offer-sign-label { margin: 3mm 0 0 0; }
   .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
   .ktv-rate-sentence { margin: 0 0 3mm 0; }
+  table.offer-cols-head, table.offer-line-heading { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  table.offer-cols-head { margin: 3mm 0 0 0; break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
+  table.offer-line-heading { display: table; margin: 0 0 2mm 0; break-inside: avoid; page-break-inside: avoid; }
+  table.offer-cols-head .c-qty, table.offer-line-heading .c-qty { width: 18mm; }
+  table.offer-cols-head .c-unit, table.offer-line-heading .c-unit { width: 16mm; }
+  table.offer-cols-head .c-unitprice, table.offer-line-heading .c-unitprice { width: 28mm; }
+  table.offer-cols-head .c-vat, table.offer-line-heading .c-vat { width: 26mm; }
+  table.offer-cols-head .c-total, table.offer-line-heading .c-total { width: 32mm; }
+  table.offer-cols-head th, table.offer-cols-head td, table.offer-line-heading th, table.offer-line-heading td { padding: 0.6mm 1.5mm 0.6mm 0; vertical-align: baseline; text-align: left; }
+  table.offer-cols-head th.num, table.offer-cols-head td.num, table.offer-line-heading th.num, table.offer-line-heading td.num { text-align: right; white-space: nowrap; }
+  table.offer-cols-head th {
+    font-size: 8pt;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #555;
+    border-bottom: 0.25mm solid #ccc;
+  }
+  table.offer-line-heading td { border-bottom: 0.2mm solid #eee; padding-top: 1.2mm; padding-bottom: 1.2mm; }
+  table.offer-line-heading td.offer-line-title { font-weight: 700; font-size: 12pt; color: #000; }
+  table.offer-line-heading .offer-line-vat { font-size: 10pt; font-weight: 400; }
+  .offer-section { margin: 0 0 4mm 0; }
+  .offer-section .doc-fields td { line-height: 1.45; padding: 1mm 2mm 1mm 0; }
+  .offer-section .doc-group { margin: 0 0 2.5mm 0; }
+  .header { align-items: flex-start; }
+  .header .offer td { line-height: 1.35; vertical-align: baseline; }
+  .price-block.offer-totals { margin: 4mm 0 5mm 0; }
 `;
