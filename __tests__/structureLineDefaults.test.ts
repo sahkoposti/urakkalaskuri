@@ -1,6 +1,7 @@
 import { createMinimalFormDefinition } from '../src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../src/core/form/formDefinitionHelpers';
 import type { ProductStructure } from '../src/core/structure/types';
+import { linePricesIncludeVat } from '../src/core/structure/linePricing';
 import {
   emptyManualStructureLine,
   emptyStructureLine,
@@ -47,7 +48,8 @@ describe('emptyStructureLine', () => {
     expect(line.commissionPercent).toBe(7);
     expect(line.overrides).toEqual([]);
     expect(line.formFilled).toBe(false);
-    expect(line.pricesIncludeVat).toBe(true);
+    expect(line.pricesIncludeVat).toBeUndefined();
+    expect(linePricesIncludeVat(line)).toBe(true);
   });
 
   test('yritysasiakkaan rivi on ALV 0', () => {
@@ -87,6 +89,7 @@ describe('emptyManualStructureLine', () => {
     expect(line.additionalInfo).toBeUndefined();
     expect(line.formFilled).toBe(false);
     expect(line.overrides).toEqual([]);
-    expect(line.pricesIncludeVat).toBe(true);
+    expect(line.pricesIncludeVat).toBeUndefined();
+    expect(linePricesIncludeVat(line)).toBe(true);
   });
 });

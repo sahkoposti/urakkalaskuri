@@ -265,29 +265,54 @@ describe('offer rows and sections', () => {
     expect(discountedHtml).not.toContain(money(lineTotalVat0(chimney), 25.5, true));
   });
 
-  it('prints Alv 0 % on a business heading only for VAT 0 prices', () => {
-    const vat0 = buildOfferSections(
-      groupedInput([{ ...eaves, pricesIncludeVat: false }], { customerType: 'business' }),
-    );
-    expect(vat0[0].heading?.vatLabel).toBe('Alv 0 %');
-    expect(vat0[0].heading?.price).toBe(money(lineTotalVat0(eaves), 25.5, false));
+  it('prints Alv 0 % for a business VAT 0 line and sis. alv for a VAT-inclusive line', () => {
+    const gross = money(lineTotalVat0(eaves), 25.5, true);
+    const net = money(lineTotalVat0(eaves), 25.5, false);
+    for (const line of [eaves, { ...eaves, pricesIncludeVat: false as const }]) {
+      const sections = buildOfferSections(groupedInput([line], { customerType: 'business' }));
+      expect(sections[0].heading?.vatLabel).toBe('Alv 0 %');
+      expect(sections[0].heading?.price).toBe(net);
+    }
     const html0 = renderTarjousHtml(
       buildPdfContext(groupedInput([{ ...eaves, pricesIncludeVat: false }], { customerType: 'business' })),
     );
     expect(html0).toContain('Alv 0 %');
+    expect(html0).toContain('>Loppusumma<');
+    expect(html0).not.toContain('sis. alv');
+    expect(html0).not.toContain('>Hinta alv<');
 
     const inclusiveLine = { ...eaves, pricesIncludeVat: true as const };
     const inclusive = buildOfferSections(groupedInput([inclusiveLine], { customerType: 'business' }));
-    expect(inclusive[0].heading?.vatLabel).toBeUndefined();
-    expect(inclusive[0].heading?.price).toBe(money(lineTotalVat0(eaves), 25.5, false));
+    expect(inclusive[0].heading?.vatLabel).toBe('sis. alv 25,5 %');
+    expect(inclusive[0].heading?.price).toBe(gross);
     const html = renderTarjousHtml(buildPdfContext(groupedInput([inclusiveLine], { customerType: 'business' })));
     expect(html).not.toContain('Alv 0 %');
-    expect(html).not.toContain('class="offer-line-vat"');
-    expect(html).toContain(money(lineTotalVat0(eaves), 25.5, false));
+    expect(html).toContain('sis. alv 25,5 %');
+    expect(html).toContain(gross);
+    expect(html).toContain('>Hinta alv<');
+    expect(html).toContain('ALV 25,5 %');
+    expect(html).not.toContain('Kotitalousvähennys');
 
-    const privateInclusive = buildOfferSections(groupedInput([inclusiveLine]));
-    expect(privateInclusive[0].heading?.vatLabel).toBeUndefined();
-    expect(renderTarjousHtml(buildPdfContext(groupedInput([inclusiveLine])))).not.toContain('Alv 0 %');
+    const privateLine = buildOfferSections(groupedInput([inclusiveLine]));
+    expect(privateLine[0].heading?.vatLabel).toBeUndefined();
+    expect(privateLine[0].heading?.price).toBe(gross);
+    const privateVat0 = buildOfferSections(groupedInput([{ ...eaves, pricesIncludeVat: false }]));
+    expect(privateVat0[0].heading?.vatLabel).toBeUndefined();
+    expect(privateVat0[0].heading?.price).toBe(gross);
+
+    const reverseLine = { ...eaves, pricesIncludeVat: true as const };
+    const reverse = buildOfferSections(
+      groupedInput([reverseLine], { customerType: 'business', reverseVat: true }),
+    );
+    expect(reverse[0].heading?.vatLabel).toBe('Alv 0 %');
+    expect(reverse[0].heading?.price).toBe(net);
+    const reverseHtml = renderTarjousHtml(
+      buildPdfContext(groupedInput([reverseLine], { customerType: 'business', reverseVat: true })),
+    );
+    expect(reverseHtml).toContain('Alv 0 %');
+    expect(reverseHtml).toContain('Käänteinen ALV');
+    expect(reverseHtml).not.toContain('sis. alv');
+    expect(reverseHtml).not.toContain(gross);
   });
 
   it('gives each priced line its own heading and keeps groups as separate rows', () => {

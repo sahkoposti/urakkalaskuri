@@ -98,7 +98,7 @@ function emptyLineBase(input: {
     commissionEur: 0,
     marginEur: 0,
     marginPercent: 0,
-    pricesIncludeVat: input.pricesIncludeVat !== false,
+    pricesIncludeVat: input.pricesIncludeVat,
     additionalInfo: additionalInfo || undefined,
     fieldValues: {},
     formFilled: false,

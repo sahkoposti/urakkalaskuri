@@ -112,7 +112,7 @@ describe('buildPdfContext', () => {
         }),
       ),
     );
-    expect(labels(ctx.price.left)).toEqual(['Hinta alv0']);
+    expect(labels(ctx.price.left)).toEqual(['Hinta alv0', 'ALV']);
     expect(labels(ctx.price.right)).toEqual(['Alennus 10 %', 'Loppusumma']);
     expect(ctx.price.right[0].value.replace(/\s/g, ' ')).toBe('−200,00 €');
     expect(ctx.price.right[1].value.replace(/\s/g, ' ')).toBe('1 800,00 €');
@@ -127,12 +127,14 @@ describe('buildPdfContext', () => {
     expect(ctx.vatSummary).toEqual([]);
   });
 
-  it('reverse VAT: alv0 only and no KTV page', () => {
+  it('reverse VAT: alv0 prices, the legal note, and no KTV page', () => {
     const ctx = buildPdfContext(input(record({ customerType: 'business', reverseVat: true })));
-    expect(labels([...ctx.price.left, ...ctx.price.right])).toEqual(['Hinta alv0', 'Loppusumma']);
+    expect(labels([...ctx.price.left, ...ctx.price.right])).toEqual(['Hinta alv0', 'ALV', 'Loppusumma']);
+    expect(ctx.price.left[1].value).toBe('Käänteinen ALV');
     expect(ctx.price.right[0].value.replace(/\s/g, ' ')).toBe('2 000,00 €');
+    expect(ctx.price.includesVat).toBe(false);
     expect(ctx.ktv).toBeUndefined();
-    expect(JSON.stringify(ctx)).not.toContain('Käänteinen');
+    expect(ctx.vatSummary).toEqual([]);
   });
 
   it('legacy record without snapshot: manual row, no section, no offer number row when not assigned', () => {

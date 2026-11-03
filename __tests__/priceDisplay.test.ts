@@ -2,6 +2,8 @@ import {
   customerSeesVatInclusive,
   defaultPricesIncludeVat,
   labeledWithVatMode,
+  offerLineIncludesVat,
+  offerTotalsIncludeVat,
   priceBreakdownParts,
   summaryShowsVatInclusive,
   vat0Tag,
@@ -34,7 +36,18 @@ describe('vat labels', () => {
   test('yhteenveto on ALV 0 yritysasiakkaalla ja kun rivit ovat ALV 0', () => {
     const privateCustomer = { name: 'A', customerType: 'private' as const };
     const business = { name: 'B', customerType: 'business' as const };
-    expect(summaryShowsVatInclusive(business, [{ pricesIncludeVat: true }])).toBe(false);
+    const reverseBusiness = { name: 'C', customerType: 'business' as const, reverseVat: true };
+    expect(summaryShowsVatInclusive(business, [{ pricesIncludeVat: true }])).toBe(true);
+    expect(summaryShowsVatInclusive(business, [{ pricesIncludeVat: false }])).toBe(false);
+    expect(summaryShowsVatInclusive(business, [{}])).toBe(false);
+    expect(summaryShowsVatInclusive(reverseBusiness, [{ pricesIncludeVat: true }])).toBe(false);
+    expect(offerLineIncludesVat(business, {})).toBe(false);
+    expect(offerLineIncludesVat(business, { pricesIncludeVat: false })).toBe(false);
+    expect(offerLineIncludesVat(business, { pricesIncludeVat: true })).toBe(true);
+    expect(offerLineIncludesVat(reverseBusiness, { pricesIncludeVat: true })).toBe(false);
+    expect(offerLineIncludesVat(privateCustomer, { pricesIncludeVat: false })).toBe(true);
+    expect(offerTotalsIncludeVat(business, [{ pricesIncludeVat: true, quantity: 1 }])).toBe(true);
+    expect(offerTotalsIncludeVat(business, [{ pricesIncludeVat: true, quantity: 0 }])).toBe(false);
     expect(summaryShowsVatInclusive(privateCustomer, [{ pricesIncludeVat: true }])).toBe(true);
     expect(
       summaryShowsVatInclusive(privateCustomer, [

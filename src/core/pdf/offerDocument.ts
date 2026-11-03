@@ -11,7 +11,7 @@ import type { ProductStructure } from '@/src/core/structure/types';
 import { isManualStructureId } from '@/src/core/structure/types';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import { formatCurrency, formatPercent, formatPrintedQuantity, roundToCents } from '@/src/core/utils/formatters';
-import { applyVat, customerSeesVatInclusive } from '@/src/core/utils/priceDisplay';
+import { applyVat, offerLineIncludesVat, offerTotalsIncludeVat } from '@/src/core/utils/priceDisplay';
 
 import { lineSpecSnapshot } from './offerPageSpecs';
 import { printableFields, type PrintRow } from './printableFields';
@@ -42,9 +42,8 @@ export type OfferHeading = {
   /** Rivisumma (Yht.). Tyhjä, jos hinta on kelvoton. */
   price: string;
   /**
-   * Vain yritysasiakas, kun otsikon eurot ovat ALV 0 -hintoja.
-   * Puuttuu, jos rivi on merkitty ALV:lliseksi (`pricesIncludeVat === true`):
-   * otsikkosumma on silti veroton, joten prosentti sen vieressä olisi väärä.
+   * Vain yritysasiakas. ALV 0 → "Alv 0 %". Verollinen valinta → "sis. alv X %".
+   * Yksityinen tarjous ei tulosta otsikkotekstiä.
    */
   vatLabel?: string;
 };
@@ -121,11 +120,13 @@ export function lineOfferPriceInvalid(line: StructureLine, includesVat: boolean)
 
 /** Tarjouksen tulostusesteet. Ei muuta laskelmaa. Tyhjä lista = tarjouksen saa luoda. */
 export function offerDocumentProblems(record: CalculationRecord): string[] {
-  const includesVat = customerSeesVatInclusive(customerFromRecord(record));
+  const customer = customerFromRecord(record);
   const problems: string[] = [];
   for (const line of ensureStructureLines(record)) {
     if (line.quantity === 0) continue;
-    if (lineOfferPriceInvalid(line, includesVat)) problems.push(invalidOfferPriceWarning(line.name));
+    if (lineOfferPriceInvalid(line, offerLineIncludesVat(customer, line))) {
+      problems.push(invalidOfferPriceWarning(line.name));
+    }
   }
   return problems;
 }
@@ -144,6 +145,13 @@ export function isManualOfferLine(line: StructureLine, structures: ProductStruct
   return !hasOfferForm(matchingStructure(line, structures));
 }
 
+function offerVatLabel(business: boolean, includesVat: boolean, vatPercent: number): string | undefined {
+  if (!business) return undefined;
+  if (!includesVat) return `Alv ${formatPercent(0)}`;
+  if (!Number.isFinite(vatPercent)) return undefined;
+  return `sis. alv ${formatPercent(vatPercent)}`;
+}
+
 function offerHeading(line: StructureLine, includesVat: boolean, business: boolean): OfferHeading | undefined {
   if (line.quantity === 0) return undefined;
   const invalid = lineOfferPriceInvalid(line, includesVat);
@@ -153,9 +161,8 @@ function offerHeading(line: StructureLine, includesVat: boolean, business: boole
     quantityLabel: [quantity, unit].filter((part) => part.length > 0).join(' '),
     price: invalid ? '' : formatOfferMoney(lineTotalVat0(line), includesVat, line.vatPercent),
   };
-  if (business && line.pricesIncludeVat !== true) {
-    heading.vatLabel = `Alv ${formatPercent(includesVat ? line.vatPercent : 0)}`;
-  }
+  const vatLabel = offerVatLabel(business, includesVat, line.vatPercent);
+  if (vatLabel) heading.vatLabel = vatLabel;
   return heading;
 }
 
@@ -200,11 +207,12 @@ function offerPrintRows(
 }
 
 export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
-  const includesVat = customerSeesVatInclusive(customerFromRecord(source.record));
+  const customer = customerFromRecord(source.record);
   const lines = ensureStructureLines(source.record).filter((line) => line.quantity !== 0);
   const showDiscount = lines.some((line) => line.discountPercent > 0);
   const rows: OfferRow[] = [];
   for (const line of lines) {
+    const includesVat = offerLineIncludesVat(customer, line);
     const description = isManualOfferLine(line, source.structures) ? line.additionalInfo?.trim() ?? '' : '';
     const invalid = lineOfferPriceInvalid(line, includesVat);
     const row: OfferRow = {
@@ -224,12 +232,11 @@ export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
 
 export function buildOfferSections(source: OfferDocumentSource): OfferSection[] {
   const customer = customerFromRecord(source.record);
-  const includesVat = customerSeesVatInclusive(customer);
   const business = customer.customerType === 'business';
   const reverseVat = Boolean(customer.reverseVat);
   const sections: OfferSection[] = [];
   for (const line of ensureStructureLines(source.record)) {
-    const heading = offerHeading(line, includesVat, business);
+    const heading = offerHeading(line, offerLineIncludesVat(customer, line), business);
     if (isManualOfferLine(line, source.structures)) {
       const description = line.additionalInfo?.trim() || undefined;
       if (!heading && !description) continue;
@@ -255,10 +262,11 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
 /**
  * ALV-erittely maksun jälkeen. Yksi verokanta → yksi rivi tallennetuista summista.
  * Usea verokanta: rivien verottomat osuudet ovat vain painoja; netot ja bruttot
- * summataan tallennettuun laskelmaan. Yritys ja käänteinen ALV: ei rivejä.
+ * summataan tallennettuun laskelmaan. Yrityksen ALV 0 ja käänteinen ALV: ei rivejä.
+ * Yrityksen verollinen valinta käyttää samoja tallennettuja summia kuin yksityinen.
  */
 export function offerVatSummary(record: CalculationRecord, customer: CustomerInfo): OfferVatSummaryRow[] {
-  if (!customerSeesVatInclusive(customer)) return [];
+  if (!offerTotalsIncludeVat(customer, ensureStructureLines(record))) return [];
   const lines = ensureStructureLines(record);
   const rates: number[] = [];
   const weights = new Map<number, number>();

@@ -3,7 +3,8 @@ import type { AppSettings, CalculationRecord, CustomerInfo, Product } from '@/sr
 import { customerFromRecord } from '@/src/core/models/types';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { formatCurrency, formatPercent } from '@/src/core/utils/formatters';
-import { applyVat, customerSeesVatInclusive, isPrivateCustomer } from '@/src/core/utils/priceDisplay';
+import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
+import { applyVat, isPrivateCustomer, offerTotalsIncludeVat } from '@/src/core/utils/priceDisplay';
 
 import {
   buildOfferRows,
@@ -34,7 +35,7 @@ export type TarjousPdfContext = {
   sections: OfferSection[];
   /** Laskelman toimitusajankohta. Tyhjä = ei tulosteta. */
   deliveryScheduleText: string;
-  /** ALV-erittely maksun jälkeen. Yritys ja käänteinen ALV: tyhjä. */
+  /** ALV-erittely maksun jälkeen. Yrityksen ALV 0 ja käänteinen ALV: tyhjä. */
   vatSummary: OfferVatSummaryRow[];
   price: { includesVat: boolean; left: PriceRow[]; right: PriceRow[] };
   /** Yrityksen Lisätiedot-teksti. Tyhjä = osio pois. */
@@ -102,7 +103,7 @@ export function customerHeaderLines(customer: CustomerInfo): string[] {
 export function offerPriceBlock(record: CalculationRecord, customer: CustomerInfo): TarjousPdfContext['price'] {
   const hasDiscount = record.discountPercent > 0 && record.totalPriceVat0BeforeDiscount > record.totalPriceVat0;
   const listVat0 = hasDiscount ? record.totalPriceVat0BeforeDiscount : record.totalPriceVat0;
-  const vatInclusive = customerSeesVatInclusive(customer);
+  const vatInclusive = offerTotalsIncludeVat(customer, ensureStructureLines(record));
   // Eemil 29.10.2026 #2: alennus omana rivinään (prosentti + euromäärä), muut rivit ennallaan.
   const discountAmount = vatInclusive
     ? record.totalPriceVatBeforeDiscount - record.totalPriceVat
@@ -127,10 +128,11 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
       ],
     };
   }
-  // Yritys ja käänteinen ALV: aina alv0, ei ALV-rivejä eikä "Käänteinen ALV" -tekstiä.
+  // ALV 0. Käänteinen ALV lisää saman huomautuksen kuin ruudun hintaerittely.
+  const reverseNote: PriceRow[] = customer.reverseVat ? [{ label: 'ALV', value: 'Käänteinen ALV' }] : [];
   return {
     includesVat: false,
-    left: [{ label: 'Hinta alv0', value: formatCurrency(listVat0) }],
+    left: [{ label: 'Hinta alv0', value: formatCurrency(listVat0) }, ...reverseNote],
     right: [...discountRow, { label: 'Loppusumma', value: formatCurrency(record.totalPriceVat0), emphasis: true }],
   };
 }

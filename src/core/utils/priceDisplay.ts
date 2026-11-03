@@ -25,13 +25,43 @@ export function defaultPricesIncludeVat(customer: CustomerInfo): boolean {
 }
 
 /**
- * Yhteenveto noudattaa korttien hintatilaa. Yritysasiakas on aina ALV 0.
- * Jos kaikki rivit ovat ALV 0, yhteenveto näyttää vain ALV 0.
+ * Tarjouksen rivihinta.
+ * Yksityinen pysyy verollisena (käänteinen ALV pois lukien). Rivin lippua ei lueta.
+ * Yritys: oletus on ALV 0, myös kun `pricesIncludeVat` puuttuu. Vain tallennettu
+ * `true` on verollinen valinta. Käänteinen ALV on aina ALV 0.
+ * Ei uutta JSON-avainta: sama `pricesIncludeVat`.
+ */
+export function offerLineIncludesVat(
+  customer: CustomerInfo,
+  line: { pricesIncludeVat?: boolean },
+): boolean {
+  if (customer.reverseVat) return false;
+  if ((customer.customerType ?? 'private') !== 'business') return true;
+  return line.pricesIncludeVat === true;
+}
+
+/** Yrityksen yhteissumma on verollinen, jos yksikin hinnoiteltu rivi on valittu verolliseksi. */
+export function offerTotalsIncludeVat(
+  customer: CustomerInfo,
+  lines: Array<{ pricesIncludeVat?: boolean; quantity?: number }>,
+): boolean {
+  if (customer.reverseVat) return false;
+  if ((customer.customerType ?? 'private') !== 'business') return true;
+  return lines.some((line) => line.quantity !== 0 && offerLineIncludesVat(customer, line));
+}
+
+/**
+ * Ruudun yhteenveto. Yksityinen ennallaan. Yritys seuraa rivin valintaa:
+ * oletus ALV 0, `pricesIncludeVat === true` näyttää verollisen. Käänteinen ALV on ALV 0.
  */
 export function summaryShowsVatInclusive(
   customer: CustomerInfo,
-  lines?: Array<{ pricesIncludeVat?: boolean }>,
+  lines?: Array<{ pricesIncludeVat?: boolean; quantity?: number }>,
 ): boolean {
+  if (customer.reverseVat) return false;
+  if ((customer.customerType ?? 'private') === 'business') {
+    return offerTotalsIncludeVat(customer, lines ?? []);
+  }
   if (!customerSeesVatInclusive(customer)) return false;
   if (lines && lines.length > 0 && lines.every((line) => line.pricesIncludeVat === false)) {
     return false;
