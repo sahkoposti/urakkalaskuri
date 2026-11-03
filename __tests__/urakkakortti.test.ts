@@ -133,4 +133,79 @@ describe('urakkakortti', () => {
       expect((html.match(/€/g) ?? []).length).toBe(1);
     }
   });
+
+  it('prints each structure Muuta text in full and leaves company terms and customer notes out of it', () => {
+    const long = `Rivi 1\n${'Teline '.repeat(80).trim()}\nRivi <2> & "ok"`;
+    const lines = [line('a', 's1', 'Ulkomaalaus'), line('b', 's2', 'Sokkeli')];
+    const ctx = buildUrakkakorttiContext({
+      ...ukInput(record({ notes: 'Koira pihalla' }, { structureLines: lines })),
+      offerStructureSettings: {
+        s1: { additionalInfoText: `  ${long}  `, offerPages: [] },
+        s2: { additionalInfoText: 'Nokihormi kuvitteellinen.', offerPages: [] },
+        missing: { additionalInfoText: 'Ei kuulu riville', offerPages: [] },
+      },
+    });
+    expect(ctx.sections.map((section) => section.title)).toEqual(['Ulkomaalaus', 'Sokkeli']);
+    expect(ctx.sections[0].textGroups).toEqual([{ group: 'muuta', title: 'Muuta', items: [long] }]);
+    expect(ctx.sections[1].textGroups).toEqual([{ group: 'muuta', title: 'Muuta', items: ['Nokihormi kuvitteellinen.'] }]);
+    expect(ctx.huomioitavaa).toBe('Koira pihalla');
+    const html = renderUrakkakorttiHtml(ctx);
+    expect(html).toContain('>Muuta<');
+    expect(html).toContain('Teline '.repeat(80).trim());
+    expect(html).toContain('Rivi &lt;2&gt; &amp; &quot;ok&quot;');
+    expect(html).not.toContain('Lisätiedot:');
+    expect(html).not.toContain('Ei kuulu riville');
+    expect(html).not.toContain('Yrityksen maksuehto');
+    const muuta = html.slice(html.indexOf('doc-group-muuta'), html.indexOf('doc-group-muuta') + 800);
+    expect(muuta).not.toContain('Koira pihalla');
+    expect(html).toContain('>Huomioitavaa<');
+
+    const blank = buildUrakkakorttiContext({
+      ...ukInput(record({}, { structureLines: [line('a', 's1', 'Ulkomaalaus')] })),
+      offerStructureSettings: { s1: { additionalInfoText: ' \n ', offerPages: [] } },
+    });
+    expect(blank.sections).toEqual([]);
+  });
+
+  it('appends Muuta after the printed groups of a print-mode structure', () => {
+    const base = ukInput(record({}));
+    const structures = base.structures.map((item) =>
+      item.id === 's1'
+        ? {
+            ...item,
+            form: {
+              ...item.form,
+              fields: [
+                ...item.form.fields,
+                {
+                  id: 'field_aita',
+                  key: 'aita',
+                  label: 'Aita',
+                  type: 'text' as const,
+                  required: false,
+                  showOnSummary: true,
+                  print: { urakkakortti: { group: 'osa_alueet' as const } },
+                },
+              ],
+              pages: item.form.pages.map((page) =>
+                page.id === 'page_surfaces' ? { ...page, fieldIds: [...page.fieldIds, 'field_aita'] } : page,
+              ),
+            },
+          }
+        : item,
+    );
+    const rec = record({}, {
+      structureLines: [{ ...line('l1', 's1', 'Ulkomaalaus'), fieldValues: { aita: 'Portti auki' } }],
+    });
+    const ctx = buildUrakkakorttiContext({
+      ...base,
+      record: rec,
+      structures,
+      offerStructureSettings: { s1: { additionalInfoText: 'Koko muuta-teksti.', offerPages: [] } },
+    });
+    expect(ctx.sections).toHaveLength(1);
+    expect(ctx.sections[0].textGroups.map((group) => group.group)).toEqual(['osa_alueet', 'muuta']);
+    expect(ctx.sections[0].textGroups[1].items).toEqual(['Koko muuta-teksti.']);
+    expect(renderUrakkakorttiHtml(ctx)).toContain('Portti auki');
+  });
 });

@@ -155,6 +155,10 @@ export async function exportUrakkakorttiPdf(
     deps.loadLogoDataUri(),
     deps.getOfferCompanySettings(),
   ]);
+  const structureIds = [...new Set(ensureStructureLines(record).map((line) => line.structureId))];
+  const offerStructureSettings = Object.fromEntries(
+    await Promise.all(structureIds.map(async (id) => [id, await deps.getOfferStructureSettings(id)] as const)),
+  );
   const generatedAt = deps.now();
   const ctx = buildUrakkakorttiContext({
     record,
@@ -164,6 +168,7 @@ export async function exportUrakkakorttiPdf(
     settings: app.settings,
     generatedAt,
     sivukulukerroin: offerCompany.sivukulukerroin,
+    offerStructureSettings,
   });
   const html = renderUrakkakorttiHtml(ctx, { logoDataUri, accentColor: app.settings.theme?.accentColor });
   const fileName = buildPdfFileName({ kind: 'Urakkakortti', customerName: customerFromRecord(record).name, date: generatedAt });

@@ -24,6 +24,7 @@ import {
 import { lineSpecSnapshot, specCardsFromSnapshot, type SpecCard } from './offerPageSpecs';
 import { specGridLayout, type SpecGridLayout } from './specGridLayout';
 import { buildUrakkakorttiSections, lineUsesUrakkakorttiPrint, type UrakkakorttiSection } from './urakkakorttiSections';
+import type { OfferStructureSettings } from './types';
 import { formatFinnishDate } from './validUntil';
 
 export { effectiveContractVat0, linesNeedingManualContract, withManualContractPrices } from './manualContract';
@@ -66,6 +67,8 @@ export type BuildUrakkakorttiInput = {
   generatedAt: Date;
   /** Yritysasetuksen Sivukulukerroin. Puuttuu = oletus 1,5. Käytetään vain Työntekijä-tilassa. */
   sivukulukerroin?: number;
+  /** Rakenteen Muuta-teksti. Yrityksen Lisätiedot-ehtoja ei välitetä kortille. */
+  offerStructureSettings?: Record<string, OfferStructureSettings | undefined>;
 };
 
 /** €-arvoiset speksirivit pois (voivat paljastaa hintoja, esim. Hinnoittelu-sivu). */
@@ -215,6 +218,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     specGrid: specGridLayout(urakkakorttiSpecCards(input)),
     sections: buildUrakkakorttiSections(input, {
       omitPaintQuantityLineIds: materialTable.omitPaintQuantityLineIds,
+      offerStructureSettings: input.offerStructureSettings,
     }),
     materials: materialTable.rows,
     customerNotes: customer.notes?.trim() ?? '',

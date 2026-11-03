@@ -188,5 +188,8 @@ describe('exportUrakkakorttiPdf', () => {
     expect(printed).toHaveLength(1);
     expect(spy).not.toHaveBeenCalled();
     expect(current().offerNumber).toBeUndefined();
+    expect(printed[0].html).toContain('Sisältää telineet.');
+    expect(printed[0].html).toContain('>Muuta<');
+    expect(printed[0].html).not.toContain('Lisätiedot:');
   });
 });
