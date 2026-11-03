@@ -90,8 +90,6 @@ export const offerDocumentCss = `
   .offer-vat th, .offer-vat td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
   .offer-vat th.num, .offer-vat td.num { text-align: right; white-space: nowrap; }
   .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
-  .offer-seller { margin: 4mm 0; }
-  .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
   .offer-sign { display: flex; gap: 12mm; width: 100%; margin: 6mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-sign-col { flex: 1; min-width: 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }

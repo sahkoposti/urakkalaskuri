@@ -470,8 +470,13 @@ describe('offer signature', () => {
     expect(html).toContain('break-inside: avoid');
     const at = (needle: string) => html.indexOf(needle);
     expect(at('class="offer-sign"')).toBeGreaterThan(at('Lisätiedot:'));
-    expect(at('class="offer-sign"')).toBeGreaterThan(at('class="offer-seller"'));
+    expect(at('class="offer-seller"')).toBe(-1);
+    expect(at('Myyjä:')).toBe(-1);
     expect(at('class="offer-sign"')).toBeLessThan(at('class="ktv-page page-break"'));
+    expect(sign).toContain('Puh. +358 40 938 9403');
+    expect(sign).toContain('info@colorajaton.fi');
+    expect(sign.match(/Aada Asentaja/g)).toHaveLength(1);
+    expect(sign.match(/Kuvitteellinen Oy/g)).toHaveLength(1);
     expect(html).toContain('Loppusumma');
   });
 

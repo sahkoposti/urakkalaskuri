@@ -640,6 +640,16 @@ describe('company Lisätiedot and seller', () => {
     const html = renderTarjousHtml(buildPdfContext(input(record({}), { company: blank })));
     expect(html).not.toContain('class="offer-seller"');
     expect(html).not.toContain('Myyjä:');
+    const shown = renderTarjousHtml(buildPdfContext(input(record({}), { company: own })));
+    const sign = shown.slice(shown.indexOf('class="offer-sign"'), shown.indexOf('class="ktv-page'));
+    expect(shown).not.toContain('class="offer-seller"');
+    expect(shown).not.toContain('Myyjä:');
+    expect(sign).toContain('Aada Asentaja');
+    expect(sign).toContain('Puh. 040 111 2233');
+    expect(sign).toContain('aada@example.test');
+    expect(sign.match(/Aada Asentaja/g)).toHaveLength(1);
+    expect(sign).not.toContain('040 000 0000');
+    expect(sign).not.toContain('toimisto@example.test');
   });
 
   it('accepts old JSON without the new keys', () => {
@@ -668,8 +678,9 @@ describe('renderTarjousHtml offer order', () => {
     expect(at('class="price-block offer-totals"')).toBeGreaterThan(at('class="doc-section offer-section"'));
     expect(at('class="offer-vat"')).toBe(-1);
     expect(at('Lisätiedot:')).toBeGreaterThan(at('class="price-block offer-totals"'));
-    expect(at('class="offer-seller"')).toBeGreaterThan(at('Lisätiedot:'));
-    expect(at('class="offer-sign"')).toBeGreaterThan(at('class="offer-seller"'));
+    expect(at('class="offer-seller"')).toBe(-1);
+    expect(at('Myyjä:')).toBe(-1);
+    expect(at('class="offer-sign"')).toBeGreaterThan(at('Lisätiedot:'));
     expect(at('class="ktv-page')).toBeGreaterThan(at('class="offer-sign"'));
     const forbidden = ['k', 'hv'].join('');
     expect(html.toLowerCase()).not.toContain(forbidden);

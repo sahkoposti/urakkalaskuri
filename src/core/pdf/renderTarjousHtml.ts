@@ -78,11 +78,6 @@ function renderVatSummary(rows: OfferVatSummaryRow[]): string {
   return `<table class="offer-vat"><thead><tr><th>Alv-%</th><th class="num">Veroton</th><th class="num">Alv</th><th class="num">Yhteensä</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
-function renderSeller(lines: string[]): string {
-  if (lines.length === 0) return '';
-  return `<div class="offer-seller"><h3>Myyjä:</h3><div>${lines.map((line) => escapeHtml(line)).join('<br />')}</div></div>`;
-}
-
 function priceTable(rows: PriceRow[]): string {
   return `<table>${rows
     .map(
@@ -154,7 +149,6 @@ export function renderTarjousBody(ctx: TarjousPdfContext): string {
     renderPriceBlock(ctx.price),
     renderVatSummary(ctx.vatSummary),
     renderAdditionalInfo(ctx.additionalInfo),
-    renderSeller(ctx.sellerLines),
     renderSignature(ctx.signature),
     renderKotitalousPageHtml(ctx),
   ]

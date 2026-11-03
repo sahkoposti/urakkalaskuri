@@ -15,7 +15,7 @@ describe('renderKotitalousPageHtml', () => {
     const html = renderTarjousHtml(ctx);
     const ktvAt = html.indexOf('<section class="ktv-page page-break">');
     expect(ktvAt).toBeGreaterThan(html.indexOf('class="price-block offer-totals"'));
-    expect(ktvAt).toBeGreaterThan(html.indexOf('class="offer-seller"'));
+    expect(ktvAt).toBeGreaterThan(html.indexOf('class="offer-sign"'));
     expect(html.slice(ktvAt)).not.toContain('offer-section');
     expect(html).toContain(KTV_ONE_PERSON_LINE);
     expect(html).toContain('arvio yhdelle henkilölle');

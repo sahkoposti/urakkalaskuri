@@ -392,15 +392,17 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
 }
 
 /**
- * Allekirjoituslohkon osapuolet. Ei uusia kenttiä: myyjän nimi ja yrityksen nimi
- * tulevat samoista yritystiedoista kuin Myyjä-lohko. Titteliä ei ole asetuksissa, joten sitä ei tulosteta.
- * Puhelin ja sähköposti jäävät Myyjä-lohkoon.
+ * Allekirjoituslohkon osapuolet. Myyjän nimi ja yrityksen nimi, niiden alla puhelin ja sähköposti.
+ * Oma numero ja sähköposti voittavat yrityksen. Nimeä ei toisteta yhteystietoriveillä.
+ * Titteliä ei ole asetuksissa, joten sitä ei tulosteta.
  */
 export function offerSignatureParties(company: CompanyProfile, customerName: string | undefined): {
   sellerLines: string[];
   customerName: string;
 } {
-  const sellerLines = [company.sellerName, company.companyName]
+  const phone = company.sellerPhone?.trim() || company.phone?.trim() || '';
+  const email = company.sellerEmail?.trim() || company.email?.trim() || '';
+  const sellerLines = [company.sellerName, company.companyName, phone ? `Puh. ${phone}` : '', email]
     .map((line) => (typeof line === 'string' ? line.trim() : ''))
     .filter((line) => line.length > 0);
   return { sellerLines, customerName: customerName?.trim() ?? '' };
