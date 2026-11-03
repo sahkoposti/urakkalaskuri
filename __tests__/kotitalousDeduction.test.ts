@@ -111,3 +111,59 @@ describe('normalizeKtvSettings', () => {
     expect(KTV_DEFAULT_NOTE).toContain('arvio yhdelle henkilölle');
   });
 });
+
+describe('kotitalousDeduction persons', () => {
+  it('defaults to one person when persons is omitted', () => {
+    const r = kotitalousDeduction({ totalPriceVat: 8000, materialsVat: 0, settings: defaults });
+    expect(r.persons).toBe(1);
+    expect(r.deductionAmount).toBe(2100);
+  });
+
+  it('scales deductible and cap for two and three persons, reached and not reached', () => {
+    const twoOpen = kotitalousDeduction({ totalPriceVat: 8000, materialsVat: 0, settings: defaults, persons: 2 });
+    expect(twoOpen.persons).toBe(2);
+    expect(twoOpen.grossDeduction).toBe(3200);
+    expect(twoOpen.deductionAmount).toBe(2900);
+    expect(twoOpen.capApplied).toBe(false);
+
+    const twoCapped = kotitalousDeduction({ totalPriceVat: 12000, materialsVat: 0, settings: defaults, persons: 2 });
+    expect(twoCapped.deductionAmount).toBe(4200);
+    expect(twoCapped.capApplied).toBe(true);
+
+    const threeOpen = kotitalousDeduction({ totalPriceVat: 8000, materialsVat: 0, settings: defaults, persons: 3 });
+    expect(threeOpen.deductionAmount).toBe(2750);
+    expect(threeOpen.capApplied).toBe(false);
+
+    const threeCapped = kotitalousDeduction({ totalPriceVat: 20000, materialsVat: 0, settings: defaults, persons: 3 });
+    expect(threeCapped.deductionAmount).toBe(6300);
+    expect(threeCapped.capApplied).toBe(true);
+  });
+
+  it('deductible scales with n and a zero work share stays zero', () => {
+    const scaled = kotitalousDeduction({ totalPriceVat: 2000, materialsVat: 0, settings: defaults, persons: 2 });
+    expect(scaled.grossDeduction).toBe(800);
+    expect(scaled.deductionAmount).toBe(500);
+    const zero = kotitalousDeduction({ totalPriceVat: 300, materialsVat: 400, settings: defaults, persons: 3 });
+    expect(zero.workShareVatIncluded).toBe(0);
+    expect(zero.deductionAmount).toBe(0);
+  });
+
+  it('rejects 0, 11, 2.5 and NaN', () => {
+    for (const persons of [0, 11, 2.5, Number.NaN]) {
+      expect(() => kotitalousDeduction({ totalPriceVat: 2000, materialsVat: 0, settings: defaults, persons })).toThrow(
+        'Henkilöiden määrä on kokonaisluku väliltä 1–10.',
+      );
+    }
+  });
+
+  it('uses company cap and deductible multiplied by n, not hardcoded 150 and 2100', () => {
+    const r = kotitalousDeduction({
+      totalPriceVat: 20000,
+      materialsVat: 0,
+      settings: { ratePercent: 40, deductibleEur: 100, capEur: 1000 },
+      persons: 2,
+    });
+    expect(r.deductionAmount).toBe(2000);
+    expect(r.capApplied).toBe(true);
+  });
+});

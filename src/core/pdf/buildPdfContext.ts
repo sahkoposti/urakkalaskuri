@@ -15,6 +15,7 @@ import {
   type OfferVatSummaryRow,
 } from './offerDocument';
 import type { KtvSettings, OfferCompanySettings, OfferStructureSettings } from './types';
+import { readKtvPersons } from './ktvPersons';
 import { formatFinnishDate, validUntil } from './validUntil';
 
 export type PriceRow = { label: string; value: string; emphasis?: boolean };
@@ -50,6 +51,8 @@ export type TarjousPdfContext = {
     settings: KtvSettings;
     /** Asetusten huomautusteksti; tyhjä → oletusteksti. */
     footnoteText: string;
+    /** Henkilömäärä laskelman form_snapshot.ktvPersons-avaimesta. Puuttuva = 1. */
+    persons: number;
   };
 };
 
@@ -157,6 +160,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
           materialsVat: Math.round(applyVat(record.materialsVat0, record.vatPercent) * 100) / 100,
           settings: offerCompany.ktv,
           footnoteText: offerCompany.ktvFootnoteText,
+          persons: readKtvPersons(record.formSnapshot),
         }
       : undefined,
   };

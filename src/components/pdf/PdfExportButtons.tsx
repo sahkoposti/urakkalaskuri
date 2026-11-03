@@ -1,12 +1,18 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
-import { OutlinedButton } from '@/src/components/common';
-import { useApp } from '@/src/context/AppContext';
+import { AppInput, OutlinedButton } from '@/src/components/common';
+import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import type { CalculationRecord } from '@/src/core/models/types';
 import { exportTarjousPdf, exportUrakkakorttiPdf } from '@/src/core/pdf/exportPdf';
+import {
+  calculationWithKtvPersons,
+  KTV_PERSONS_INVALID_MESSAGE,
+  ktvPersonsFieldText,
+  parseKtvPersonsInput,
+} from '@/src/core/pdf/ktvPersons';
 import { offerDocumentProblems } from '@/src/core/pdf/offerDocument';
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -28,11 +34,25 @@ export function PdfExportButtons({
   const { settings, products, structures, refreshCalculations } = useApp();
   const { showAlert } = useThemedAlert();
   const [busy, setBusy] = useState<Busy>(null);
+  const [personsText, setPersonsText] = useState(() => ktvPersonsFieldText(record.formSnapshot));
   const offerProblems = offerDocumentProblems(record);
+  const parsedPersons = parseKtvPersonsInput(personsText);
+  const personsProblem = parsedPersons === 'invalid' ? KTV_PERSONS_INVALID_MESSAGE : null;
   // Ref estää tuplanapautuksen ennen kuin tila ehtii päivittyä (DB-lukko on toinen varmistus).
   const busyRef = useRef(false);
   const [manualLines, setManualLines] = useState<{ id: string; name: string }[] | null>(null);
   const app = { settings, products, structures };
+
+  useEffect(() => {
+    setPersonsText(ktvPersonsFieldText(record.formSnapshot));
+  }, [record.id, record.formSnapshot]);
+
+  const persistPersons = async (persons: number) => {
+    const next = calculationWithKtvPersons(record, persons);
+    if (next === record) return;
+    await db.saveCalculation(next);
+    await refreshCalculations();
+  };
 
   const run = async (kind: Exclude<Busy, null>, task: () => Promise<void>) => {
     if (busyRef.current) return;
@@ -53,11 +73,13 @@ export function PdfExportButtons({
   };
 
   const handleTarjous = () => {
-    if (offerProblems.length > 0) {
-      showAlert('Tarjousta ei voi tulostaa', offerProblems.join('\n'));
+    const blocked = [...offerProblems, ...(personsProblem ? [personsProblem] : [])];
+    if (blocked.length > 0) {
+      showAlert('Tarjousta ei voi tulostaa', blocked.join('\n'));
       return;
     }
     return run('tarjous', async () => {
+      if (parsedPersons !== 'invalid') await persistPersons(parsedPersons);
       await exportTarjousPdf(calculationId, app, pdfExportDeps);
       await refreshCalculations();
     });
@@ -75,15 +97,34 @@ export function PdfExportButtons({
 
   return (
     <View>
+      <AppInput
+        label="Henkilöiden määrä (kotitalousvähennys)"
+        value={personsText}
+        onChangeText={setPersonsText}
+        onBlur={() => {
+          if (parsedPersons === 'invalid') return;
+          void persistPersons(parsedPersons).catch((error) => {
+            console.error(error);
+            showAlert('Tallennus epäonnistui', errorMessage(error));
+          });
+        }}
+        keyboardType="numeric"
+        compact
+      />
       {offerProblems.map((problem, index) => (
         <Text key={`${index}:${problem}`} style={styles.warning} accessibilityRole="alert">
           {problem}
         </Text>
       ))}
+      {personsProblem ? (
+        <Text style={styles.warning} accessibilityRole="alert">
+          {personsProblem}
+        </Text>
+      ) : null}
       <OutlinedButton
         title={busy === 'tarjous' ? 'Luodaan tarjousta…' : 'Luo tarjous'}
         onPress={handleTarjous}
-        disabled={busy !== null || offerProblems.length > 0}
+        disabled={busy !== null || offerProblems.length > 0 || personsProblem !== null}
       />
       <OutlinedButton
         title={busy === 'urakkakortti' ? 'Luodaan urakkakorttia…' : 'Luo urakkakortti'}

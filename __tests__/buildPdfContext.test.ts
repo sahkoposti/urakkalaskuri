@@ -59,6 +59,7 @@ describe('buildPdfContext', () => {
       materialsVat: 502,
       settings: { ratePercent: 40, deductibleEur: 150, capEur: 2100 },
       footnoteText: '',
+      persons: 1,
     });
     expect(ctx.customerLines).toEqual(['Matti Meikäläinen', 'Testitie 1, 20100 Turku', '040 000 0000']);
     expect(ctx.offerInfo).toEqual([

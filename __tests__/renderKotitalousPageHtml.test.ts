@@ -2,7 +2,8 @@ import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
 import { defaultOfferCompanySettings } from '../src/core/pdf/defaultOfferSettings';
 import { escapeHtml } from '../src/core/pdf/escapeHtml';
 import { KTV_DEFAULT_NOTE } from '../src/core/pdf/kotitalousDeduction';
-import { KTV_ONE_PERSON_LINE, ktvRateSentence, renderKotitalousPageHtml } from '../src/core/pdf/renderKotitalousPageHtml';
+import { calculationWithKtvPersons } from '../src/core/pdf/ktvPersons';
+import { KTV_ONE_PERSON_LINE, ktvDefaultNote, ktvPersonsLine, ktvRateSentence, renderKotitalousPageHtml } from '../src/core/pdf/renderKotitalousPageHtml';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { input, record } from './pdfFixtures';
 
@@ -104,6 +105,45 @@ describe('renderKotitalousPageHtml', () => {
     expect(html).not.toContain('2 510,00 €');
     expect(html).toContain('Materiaalit (sis. ALV), eivät ole vähennyskelpoisia');
     expect(html).toContain('502,00 €');
+  });
+
+  it('n=2 and n=3 change the person rows and the default estimate wording', () => {
+    const two = norm(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(record({}), 2)))));
+    expect(two).toContain('Omavastuu yhteensä (2 henkilöä)');
+    expect(two).toContain('−300,00 €');
+    expect(two).toContain('Enimmäismäärä yhteensä (2 henkilöä)');
+    expect(two).toContain('4 200,00 €');
+    expect(two).toContain('Arvioitu kotitalousvähennys (2 henkilöä)');
+    expect(two).toContain('503,20 €');
+    expect(two).toContain(ktvPersonsLine(2));
+    expect(two).toContain(ktvDefaultNote(2));
+    expect(two).not.toContain('yhdelle henkilölle');
+    expect(two).not.toContain(KTV_ONE_PERSON_LINE);
+
+    const three = norm(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(record({}), 3)))));
+    expect(three).toContain('Omavastuu yhteensä (3 henkilöä)');
+    expect(three).toContain('−450,00 €');
+    expect(three).toContain('Enimmäismäärä yhteensä (3 henkilöä)');
+    expect(three).toContain('6 300,00 €');
+    expect(three).toContain('Arvioitu kotitalousvähennys (3 henkilöä)');
+    expect(three).toContain(ktvPersonsLine(3));
+    expect(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(record({}), 2))))).toMatchSnapshot();
+    expect(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(record({}), 3))))).toMatchSnapshot();
+  });
+
+  it('keeps a company note as written when n is greater than 1', () => {
+    const ctx = buildPdfContext(
+      input(calculationWithKtvPersons(record({}), 2), {
+        offerCompany: {
+          ...defaultOfferCompanySettings,
+          ktvFootnoteText: 'Oma huomautus yhdelle henkilölle.',
+        },
+      }),
+    );
+    const html = renderKotitalousPageHtml(ctx);
+    expect(html).toContain('Oma huomautus yhdelle henkilölle.');
+    expect(html).not.toContain(KTV_DEFAULT_NOTE);
+    expect(html).toContain('Laskelma on arvio 2 henkilölle.');
   });
 
   it('escapes the rate sentence', () => {

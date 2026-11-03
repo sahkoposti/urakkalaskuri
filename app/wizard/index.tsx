@@ -40,6 +40,7 @@ import {
   mergeStructureLineMaterials,
 } from '@/src/core/materials/materialQuantities';
 import { createId } from '@/src/core/utils/id';
+import { preserveKtvPersons } from '@/src/core/pdf/ktvPersons';
 import { buildCalculationRecordFromComposer } from '@/src/core/wizard/buildCalculationRecord';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
 import {
@@ -563,18 +564,22 @@ export default function CalculationComposerScreen() {
         ) ?? createId();
       const createdAt = originalCreatedAtRef.current ?? originalCreatedAt ?? new Date();
       bindExistingCalculation(savedId, createdAt, editFormVersion);
-      const record = buildCalculationRecordFromComposer({
-        id: savedId,
-        customer: info,
-        customerId: savedCustomerId,
-        deliveryScheduleText,
-        travelTimeOneWay,
-        structureLines,
-        settings,
-        products,
-        structures,
-        createdAt,
-      });
+      const previous = await db.getCalculation(savedId);
+      const record = preserveKtvPersons(
+        buildCalculationRecordFromComposer({
+          id: savedId,
+          customer: info,
+          customerId: savedCustomerId,
+          deliveryScheduleText,
+          travelTimeOneWay,
+          structureLines,
+          settings,
+          products,
+          structures,
+          createdAt,
+        }),
+        previous?.formSnapshot,
+      );
       await db.saveCalculation(record);
       await db.clearWizardDraft();
       await refreshCalculations();

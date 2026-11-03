@@ -104,6 +104,11 @@ export interface FormSnapshot {
    * Tarvitaan muokkaukseen; vanhoissa tallenteissa voi puuttua.
    */
   fieldValues?: Record<string, string>;
+  /**
+   * Kotitalousvähennyksen henkilömäärä. Valinnainen avain laskelman `form_snapshot`-JSON:ssa
+   * (ei lomakepohjan JSON:ia, ei skeemamuutosta). Puuttuva avain = 1. Vanha sovellus ohittaa avaimen.
+   */
+  ktvPersons?: number;
 }
 
 export interface CalculationRecord {
