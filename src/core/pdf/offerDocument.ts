@@ -19,8 +19,8 @@ import { appendPrintedText, buildPrintedBody, type PrintedTableRow, type Printed
 import type { OfferStructureSettings } from './types';
 
 /**
- * Tarjouksen rivit ja rakenneosiot (P3). Hinnat tulevat rivin kentistä ja
- * `lineTotalVat0`-funktiosta; ALV-erittelyn summat tallennetusta laskelmasta.
+ * Tarjouksen rivit ja rakenneosiot (P3). Otsikon Yht on listahinta ilman alennusta.
+ * Alennus on vain summalohkossa. ALV-erittelyn painot ovat maksun jälkeisiä.
  */
 
 export type OfferRow = {
@@ -154,11 +154,39 @@ export function formatOfferWorkDuration(days: number): string {
 export function lineOfferPriceInvalid(line: StructureLine, includesVat: boolean): boolean {
   if (line.quantity === 0) return false;
   if (!Number.isFinite(line.quantity)) return true;
-  const totalVat0 = lineTotalVat0(line);
   return (
     offerAmount(line.unitPriceVat0, includesVat, line.vatPercent) == null ||
-    offerAmount(totalVat0, includesVat, line.vatPercent) == null
+    offerAmount(lineListPriceVat0(line), includesVat, line.vatPercent) == null
   );
+}
+
+/** Tulostettava rivisumma senteissä. `list` on alentamaton Yht, `paid` alennettu. null = kelvoton. */
+export function roundedOfferLineAmount(
+  line: StructureLine,
+  includesVat: boolean,
+  basis: 'list' | 'paid',
+): number | null {
+  if (line.quantity === 0) return 0;
+  const vat0 = basis === 'list' ? lineListPriceVat0(line) : lineTotalVat0(line);
+  const amount = offerAmount(vat0, includesVat, line.vatPercent);
+  return amount == null ? null : roundToCents(amount);
+}
+
+/** Sama senttipyöristys kuin otsikon Yht-sarakkeessa. null = kelvoton rivi. */
+export function sumRoundedOfferLines(
+  record: CalculationRecord,
+  includesVat: boolean,
+  basis: 'list' | 'paid',
+): number | null {
+  let sum = 0;
+  for (const line of ensureStructureLines(record)) {
+    if (line.quantity === 0) continue;
+    if (!Number.isFinite(line.quantity)) return null;
+    const amount = roundedOfferLineAmount(line, includesVat, basis);
+    if (amount == null) return null;
+    sum += amount;
+  }
+  return roundToCents(sum);
 }
 
 /** Tarjouksen tulostusesteet. Ei muuta laskelmaa. Tyhjä lista = tarjouksen saa luoda. */
@@ -199,15 +227,15 @@ function offerVatLabel(includesVat: boolean, vatPercent: number): string | undef
 }
 
 /**
- * A-hinta on tulostetun Yht.-summan ja määrän osamäärä, aina kahdella desimaalilla.
- * Yht pysyy rivin pyöristettynä summana. Sentin ero määrän ja A-hinnan tulossa hyväksytään.
- * Tarjouksen erillinen Alennus-rivi ei muuta näitä sarakkeita.
+ * A-hinta on alentamattoman Yht-summan ja määrän osamäärä, aina kahdella desimaalilla.
+ * Yht on rivin pyöristetty listahinta. Sentin ero määrän ja A-hinnan tulossa hyväksytään.
+ * Alennus ei muuta näitä sarakkeita.
  */
 function formatOfferUnitPrice(line: StructureLine, includesVat: boolean): string {
   const quantity = line.quantity;
-  const total = offerAmount(lineTotalVat0(line), includesVat, line.vatPercent);
+  const total = roundedOfferLineAmount(line, includesVat, 'list');
   if (total != null && Number.isFinite(quantity) && quantity !== 0) {
-    return formatCurrency(roundToCents(roundToCents(total) / quantity));
+    return formatCurrency(roundToCents(total / quantity));
   }
   return formatOfferMoney(line.unitPriceVat0, includesVat, line.vatPercent);
 }
@@ -222,7 +250,7 @@ function offerHeading(line: StructureLine, includesVat: boolean): OfferHeading |
     quantity,
     unit,
     unitPrice: invalid ? '' : formatOfferUnitPrice(line, includesVat),
-    price: invalid ? '' : formatOfferMoney(lineTotalVat0(line), includesVat, line.vatPercent),
+    price: invalid ? '' : formatOfferMoney(lineListPriceVat0(line), includesVat, line.vatPercent),
   };
   const vatLabel = offerVatLabel(includesVat, line.vatPercent);
   if (vatLabel) heading.vatLabel = vatLabel;
@@ -284,7 +312,7 @@ export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
       unit: line.unit?.trim() ?? '',
       unitPrice: invalid ? '' : formatOfferMoney(line.unitPriceVat0, includesVat, line.vatPercent),
       vatPercent: formatPercent(includesVat ? line.vatPercent : 0),
-      total: invalid ? '' : formatOfferMoney(lineTotalVat0(line), includesVat, line.vatPercent),
+      total: invalid ? '' : formatOfferMoney(lineListPriceVat0(line), includesVat, line.vatPercent),
     };
     if (showDiscount) row.discountPercent = formatPercent(line.discountPercent);
     if (description) row.description = description;

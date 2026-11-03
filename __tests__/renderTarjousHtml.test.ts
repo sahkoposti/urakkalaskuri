@@ -94,9 +94,10 @@ describe('renderTarjousHtml', () => {
 });
 
 describe('renderTarjousHtml discount row', () => {
-  it('shows the inclusive discount between Hinta (sis. alv) and Loppusumma', () => {
+  it('shows Rivit yhteensä, Alennus yhteensä and Alennettu hinta, then the included VAT', () => {
     const ctx = buildPdfContext(
       input(record({}, {
+        structureLines: [{ ...line('l1', 's1', 'Ulkomaalaus'), quantity: 1, unitPriceVat0: 2000, discountPercent: 0, vatPercent: 25.5 }],
         discountPercent: 10,
         totalPriceVat0BeforeDiscount: 2000,
         totalPriceVatBeforeDiscount: 2510,
@@ -107,16 +108,19 @@ describe('renderTarjousHtml discount row', () => {
     );
     const html = renderTarjousHtml(ctx).replace(/\s+/g, ' ');
     const totals = html.slice(html.indexOf('class="price-block offer-totals"'), html.indexOf('class="offer-sign"'));
-    const iHinta = totals.indexOf('Hinta (sis. alv)');
-    const iAle = totals.indexOf('Alennus 10 %');
-    const iLoppu = totals.indexOf('Loppusumma');
-    expect(iHinta).toBeGreaterThan(-1);
-    expect(iAle).toBeGreaterThan(iHinta);
+    const iRivit = totals.indexOf('Rivit yhteensä');
+    const iAle = totals.indexOf('Alennus yhteensä 10 %');
+    const iLoppu = totals.indexOf('Alennettu hinta yhteensä');
+    const iVat = totals.indexOf('Sisältää ALV 25,5 %');
+    expect(iRivit).toBeGreaterThan(-1);
+    expect(iAle).toBeGreaterThan(iRivit);
     expect(iLoppu).toBeGreaterThan(iAle);
+    expect(iVat).toBeGreaterThan(iLoppu);
+    expect(totals).toContain('class="emphasis"');
     expect(totals).not.toContain('Veroton');
-    expect(totals).not.toContain('ALV 25,5 %');
     expect(totals).toContain('−251,00 €');
     expect(totals).toContain('2 259,00 €');
+    expect(totals).toContain('459,00 €');
     expect(html).not.toContain('class="offer-vat"');
     const ktv = html.slice(html.indexOf('class="ktv-page'));
     expect(ktv).toContain('2 259,00 €');

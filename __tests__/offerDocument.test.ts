@@ -18,7 +18,7 @@ import { groupPrintRows, printableFields } from '../src/core/pdf/printableFields
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
 import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
-import { lineTotalVat0 } from '../src/core/structure/linePricing';
+import { lineListPriceVat0, lineTotalVat0 } from '../src/core/structure/linePricing';
 import { ensureStructureLines } from '../src/core/structure/legacyCalculation';
 import { MANUAL_STRUCTURE_ID } from '../src/core/structure/types';
 import type { ProductStructure } from '../src/core/structure/types';
@@ -265,8 +265,8 @@ describe('offer rows and sections', () => {
     const discountedLine = { ...chimney, discountPercent: 10 };
     const discountedHtml = renderTarjousHtml(buildPdfContext(groupedInput([discountedLine])));
     expect(discountedHtml).not.toContain('>Ale %</th>');
-    expect(discountedHtml).toContain(money(lineTotalVat0(discountedLine), 25.5, true));
-    expect(discountedHtml).not.toContain(money(lineTotalVat0(chimney), 25.5, true));
+    expect(discountedHtml).toContain(money(lineListPriceVat0(chimney), 25.5, true));
+    expect(discountedHtml).toContain('Alennettu hinta yhteensä');
   });
 
   it('private headings stay gross and show the line VAT percent in the Alv column', () => {
@@ -508,15 +508,18 @@ describe('offer discount, VAT summary and KTV', () => {
 
     const ctx = buildPdfContext(input(rec));
     const flat = ctx.price.rows.map((row) => `${row.label}=${row.value.replace(/\s/g, ' ')}`);
-    expect(flat).toEqual([
-      `Hinta (sis. alv)=${formatCurrency(2480).replace(/\s/g, ' ')}`,
-      `Alennus 10 %=−${formatCurrency(248).replace(/\s/g, ' ')}`,
-      `Loppusumma=${formatCurrency(2232).replace(/\s/g, ' ')}`,
-    ]);
     const headingSum = roundToCents(
       ctx.sections.reduce((sum, section) => sum + Number((section.heading?.price ?? '0').replace(/\s/g, '').replace('€', '').replace(',', '.')), 0),
     );
-    expect(headingSum).not.toBe(2232);
+    expect(headingSum).toBe(2480.01);
+    expect(flat).toEqual([
+      `Rivit yhteensä=${formatCurrency(headingSum).replace(/\s/g, ' ')}`,
+      `Alennus yhteensä 10 %=−${formatCurrency(roundToCents(headingSum - 2232)).replace(/\s/g, ' ')}`,
+      `Alennettu hinta yhteensä=${formatCurrency(2232).replace(/\s/g, ' ')}`,
+      `Sisältää ALV ${formatPercent(vat)}=${formatCurrency(roundToCents(2232 - 2232 / (1 + vat / 100))).replace(/\s/g, ' ')}`,
+    ]);
+    expect(roundToCents(headingSum - roundToCents(headingSum - 2232))).toBe(2232);
+    expect(ctx.ktv?.totalPriceVat).toBe(2232);
     expect(ctx.vatSummary).toEqual([
       { vatPercent: vat, net: paidVat0, vat: roundToCents(2232 - paidVat0), gross: 2232 },
     ]);
@@ -913,18 +916,19 @@ describe('offer heading price columns', () => {
     expect(html).toContain('class="doc-desc"');
   });
 
-  it('uses the discounted line total for Yht and divides it into A-hinta', () => {
+  it('prints list-price Yht and a two-decimal A-hinta from the undiscounted total', () => {
     const discounted = { ...chimney, discountPercent: 10 };
     const sections = buildOfferSections(groupedInput([discounted]));
-    const total = money(lineTotalVat0(discounted), 25.5, true);
-    const unit = money(lineTotalVat0(discounted) / discounted.quantity, 25.5, true);
+    const total = money(lineListPriceVat0(chimney), 25.5, true);
+    const unit = money(lineListPriceVat0(chimney) / chimney.quantity, 25.5, true);
     expect(sections[0].heading?.price).toBe(total);
     expect(sections[0].heading?.unitPrice).toBe(unit);
+    expect(plain(sections[0].heading?.unitPrice ?? '')).toMatch(/,\d{2} €$/);
     expect(sections[0].heading?.quantity).toBe('3,5');
     const html = renderTarjousHtml(buildPdfContext(groupedInput([discounted])));
     expect(html).toContain(total);
-    expect(html).not.toContain(money(lineTotalVat0(chimney), 25.5, true));
     expect(html).not.toContain('>Ale %</th>');
+    expect(html).toContain('Alennus yhteensä 10 %');
   });
 
   it('sums heading Yht to the sis Loppusumma when there is no discount', () => {
@@ -965,7 +969,7 @@ describe('offer heading price columns', () => {
     expect(roundToCents(net.sections.reduce((sum, section) => sum + parseEuro(section.heading?.price ?? ''), 0))).toBe(4810);
   });
 
-  it('business sis with a line discount uses an inclusive Alennus and matches Loppusumma to the heading sum', () => {
+  it('business sis with a line discount keeps list-price Yht and reconciles Alennus to Alennettu hinta', () => {
     const lines = [
       { ...line('a', 's1', 'Räystäät'), quantity: 20, unitPriceVat0: 185, vatPercent: 25.5, discountPercent: 10 },
       { ...line('b', 's1', 'Seinä'), quantity: 12, unitPriceVat0: 80, vatPercent: 25.5, discountPercent: 10 },
@@ -979,17 +983,25 @@ describe('offer heading price columns', () => {
         totalPriceVat0BeforeDiscount: listNet,
         discountPercent: 10,
         vatPercent: 25.5,
+        totalPriceVat: 5263.47,
+        totalPriceVatBeforeDiscount: 5848.3,
       }),
       'sis',
     );
     const ctx = buildPdfContext(input(rec, { structures: [], offerStructureSettings: {} }));
-    expect(ctx.price.rows.map((row) => row.label)).toEqual(['Hinta (sis. alv)', 'Alennus 10 %', 'Loppusumma']);
+    expect(ctx.price.rows.map((row) => row.label)).toEqual([
+      'Rivit yhteensä',
+      'Alennus yhteensä 10 %',
+      'Alennettu hinta yhteensä',
+      'Sisältää ALV 25,5 %',
+    ]);
     const yht = roundToCents(ctx.sections.reduce((sum, section) => sum + parseEuro(section.heading?.price ?? ''), 0));
-    expect(parseEuro(ctx.price.rows.find((row) => row.label === 'Loppusumma')?.value ?? '')).toBe(yht);
+    expect(yht).toBe(5848.3);
     expect(plain(ctx.price.rows[0].value)).toBe('5 848,30 €');
     expect(plain(ctx.price.rows[1].value)).toBe('−584,83 €');
     expect(plain(ctx.price.rows[2].value)).toBe('5 263,47 €');
-    expect(yht).toBe(5263.47);
+    expect(roundToCents(5848.3 - 584.83)).toBe(5263.47);
+    expect(plain(ctx.sections.map((section) => section.heading?.price ?? '').join(' '))).toBe('4 643,50 € 1 204,80 €');
   });
 
   it('prints A-hinta with exactly two decimals while Yht stays the rounded line total', () => {
