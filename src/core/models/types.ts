@@ -121,6 +121,12 @@ export interface FormSnapshot {
    */
   urakkakorttiHuomioitavaa?: string;
   /**
+   * Urakkakortti ei tulosta urakkahintoja eikä yhteensä-riviä. Valinnainen avain samassa
+   * `form_snapshot`-JSON:ssa. Puuttuva tai muu kuin `true` = hinnat näytetään.
+   * Ei lomakepohjan avain eikä SQL-migraatio. Ei kuulu tarjoukseen.
+   */
+  urakkakorttiHidePrices?: boolean;
+  /**
    * Yritystarjouksen ALV koko laskelmalle. Valinnainen avain samassa `form_snapshot`-JSON:ssa
    * (ei lomakepohjan JSON:ia, ei skeemamuutosta). `'alv0'` = veroton otsikko "Alv 0 %".
    * `'sis'` = brutto-otsikko "sis. alv X %". Puuttuva tai muu arvo = `'alv0'`.

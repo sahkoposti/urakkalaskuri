@@ -6,7 +6,7 @@ import { ensureStructureLines } from '../structure/legacyCalculation';
 import { buildPdfContext } from './buildPdfContext';
 import type { GeneratePdfOptions, GeneratePdfResult } from './generatePdf';
 import { linesNeedingManualContract } from './manualContract';
-import { urakkakorttiContractProblems } from './urakkakorttiCard';
+import { readUrakkakorttiHidePrices, urakkakorttiContractProblems } from './urakkakorttiCard';
 import { offerDocumentProblems } from './offerDocument';
 import type { OfferNumberAssignment } from './offerNumber';
 import type { OfferCompanySettings, OfferStructureSettings } from './types';
@@ -102,11 +102,12 @@ export async function exportUrakkakorttiPdf(
     manualValues && Object.keys(manualValues).length > 0
       ? await deps.saveManualContractPrices(calculationId, manualValues)
       : await requireCalculation(deps, calculationId);
-  const contractProblems = urakkakorttiContractProblems(record);
+  const hidePrices = readUrakkakorttiHidePrices(record.formSnapshot);
+  const contractProblems = hidePrices ? [] : urakkakorttiContractProblems(record);
   if (contractProblems.length > 0) {
     throw new Error(contractProblems.join('\n'));
   }
-  const missing = linesNeedingManualContract(record);
+  const missing = hidePrices ? [] : linesNeedingManualContract(record);
   if (missing.length > 0) {
     return { status: 'needsManualContract', lines: missing.map((line) => ({ id: line.id, name: line.name })) };
   }

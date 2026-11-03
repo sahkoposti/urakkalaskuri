@@ -15,6 +15,9 @@ export const URAKKAKORTTI_HUOMIO_KEY = 'urakkakorttiHuomioitavaa' as const;
 /** Laskelman `form_snapshot`-JSON. Puuttuva avain = alv0. */
 export const BUSINESS_VAT_MODE_KEY = 'businessVatMode' as const;
 
+/** Laskelman `form_snapshot`-JSON. Puuttuva avain = hinnat näytetään. */
+export const URAKKAKORTTI_HIDE_PRICES_KEY = 'urakkakorttiHidePrices' as const;
+
 export type UrakkakorttiMode = 'alihankkija' | 'tyontekija';
 
 export function isUrakkakorttiMode(value: unknown): value is UrakkakorttiMode {
@@ -37,6 +40,12 @@ export function readUrakkakorttiMode(snapshot: FormSnapshot | null | undefined):
   if (!hasKey(snapshot, URAKKAKORTTI_MODE_KEY)) return 'alihankkija';
   const value = snapshotRecord(snapshot)[URAKKAKORTTI_MODE_KEY];
   return isUrakkakorttiMode(value) ? value : 'alihankkija';
+}
+
+/** Vain täsmälleen `true` piilottaa hinnat. Puuttuva ja muu arvo = näytä. */
+export function readUrakkakorttiHidePrices(snapshot: FormSnapshot | null | undefined): boolean {
+  if (!hasKey(snapshot, URAKKAKORTTI_HIDE_PRICES_KEY)) return false;
+  return snapshotRecord(snapshot)[URAKKAKORTTI_HIDE_PRICES_KEY] === true;
 }
 
 export function urakkakorttiModeLabel(mode: UrakkakorttiMode): string {
@@ -133,7 +142,9 @@ export function employeeContractPriceInvalid(amount: unknown): boolean {
 export function urakkakorttiContractProblems(
   record: CalculationRecord,
   mode: UrakkakorttiMode = readUrakkakorttiMode(record.formSnapshot),
+  hidePrices: boolean = readUrakkakorttiHidePrices(record.formSnapshot),
 ): string[] {
+  if (hidePrices) return [];
   if (mode !== 'tyontekija') return [];
   return ensureStructureLines(record)
     .filter((line) => employeeContractPriceInvalid(line.contractPriceVat0))
@@ -167,6 +178,23 @@ export function employeeContractAmount(
   return roundToCents(amount / divisor);
 }
 
+/** true kirjoittaa avaimen. false poistaa sen (puuttuva = näytä hinnat). */
+export function calculationWithUrakkakorttiHidePrices(
+  record: CalculationRecord,
+  hide: boolean,
+): CalculationRecord {
+  const snapshot = record.formSnapshot;
+  const has = hasKey(snapshot, URAKKAKORTTI_HIDE_PRICES_KEY);
+  if (!hide) {
+    if (!has || !snapshot) return record;
+    const next = { ...snapshot };
+    delete next.urakkakorttiHidePrices;
+    return { ...record, formSnapshot: next };
+  }
+  if (has && snapshot?.urakkakorttiHidePrices === true) return record;
+  return withSnapshot(record, { urakkakorttiHidePrices: true });
+}
+
 /** ALV 0 poistaa avaimen (puuttuva = alv0). Sis. ALV kirjoittaa `businessVatMode: 'sis'`. */
 export function calculationWithBusinessVatMode(
   record: CalculationRecord,
@@ -187,7 +215,13 @@ export function calculationWithBusinessVatMode(
   return withSnapshot(record, { businessVatMode: 'sis' });
 }
 
-const SNAPSHOT_EXTRA_KEYS = ['ktvPersons', URAKKAKORTTI_MODE_KEY, URAKKAKORTTI_HUOMIO_KEY, BUSINESS_VAT_MODE_KEY] as const;
+const SNAPSHOT_EXTRA_KEYS = [
+  'ktvPersons',
+  URAKKAKORTTI_MODE_KEY,
+  URAKKAKORTTI_HUOMIO_KEY,
+  BUSINESS_VAT_MODE_KEY,
+  URAKKAKORTTI_HIDE_PRICES_KEY,
+] as const;
 
 /** Wizardin uudelleenkirjoitus säilyttää laskelman JSON-avaimet. */
 export function preserveCalculationSnapshot(

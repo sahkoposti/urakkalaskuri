@@ -20,7 +20,12 @@ function renderUrakkakorttiSection(section: UrakkakorttiSection): string {
 
 function renderUrakkakorttiBlock(ctx: UrakkakorttiContext, kind: UrakkakorttiBlockKind): string {
   if (kind === 'price') {
-    return `<div class="price-block"><div class="col">${rowsTable(ctx.contractRows)}</div><div class="col">${rowsTable(ctx.infoRows)}</div></div>`;
+    const columns = [
+      ctx.contractRows.length > 0 ? `<div class="col">${rowsTable(ctx.contractRows)}</div>` : '',
+      ctx.infoRows.length > 0 ? `<div class="col">${rowsTable(ctx.infoRows)}</div>` : '',
+    ].filter((column) => column.length > 0);
+    if (columns.length === 0) return '';
+    return `<div class="price-block">${columns.join('')}</div>`;
   }
   if (kind === 'specs') {
     const cards = ctx.specGrid.cards

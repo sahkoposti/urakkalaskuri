@@ -19,8 +19,10 @@ import {
 import {
   calculationWithBusinessVatMode,
   calculationWithHuomioitavaa,
+  calculationWithUrakkakorttiHidePrices,
   calculationWithUrakkakorttiMode,
   huomioitavaaFieldText,
+  readUrakkakorttiHidePrices,
   readUrakkakorttiMode,
   urakkakorttiContractProblems,
   type UrakkakorttiMode,
@@ -53,10 +55,11 @@ export function PdfExportButtons({
   const [businessVatMode, setBusinessVatMode] = useState<BusinessVatMode>(() =>
     readBusinessVatMode(record.formSnapshot),
   );
+  const [hidePrices, setHidePrices] = useState(() => readUrakkakorttiHidePrices(record.formSnapshot));
   const customer = customerFromRecord(record);
   const showBusinessVatChoice = customer.customerType === 'business' && !customer.reverseVat;
   const offerProblems = offerDocumentProblems(record);
-  const cardProblems = urakkakorttiContractProblems(record, cardMode);
+  const cardProblems = urakkakorttiContractProblems(record, cardMode, hidePrices);
   const parsedPersons = parseKtvPersonsInput(personsText);
   const personsProblem = parsedPersons === 'invalid' ? KTV_PERSONS_INVALID_MESSAGE : null;
   // Ref estää tuplanapautuksen ennen kuin tila ehtii päivittyä (DB-lukko on toinen varmistus).
@@ -69,6 +72,7 @@ export function PdfExportButtons({
     setCardMode(readUrakkakorttiMode(record.formSnapshot));
     setHuomioText(huomioitavaaFieldText(record));
     setBusinessVatMode(readBusinessVatMode(record.formSnapshot));
+    setHidePrices(readUrakkakorttiHidePrices(record.formSnapshot));
   }, [record.id, record.formSnapshot, record.customer]);
 
   const persistRecord = async (next: CalculationRecord) => {
@@ -85,10 +89,11 @@ export function PdfExportButtons({
     await persistRecord(calculationWithBusinessVatMode(record, mode));
   };
 
-  const persistCard = async (mode: UrakkakorttiMode, huomio: string) => {
+  const persistCard = async (mode: UrakkakorttiMode, huomio: string, hide: boolean) => {
     const withMode = calculationWithUrakkakorttiMode(record, mode);
     const withNote = calculationWithHuomioitavaa(withMode, huomio);
-    await persistRecord(withNote);
+    const withHide = calculationWithUrakkakorttiHidePrices(withNote, hide);
+    await persistRecord(withHide);
   };
 
   const run = async (kind: Exclude<Busy, null>, task: () => Promise<void>) => {
@@ -128,7 +133,7 @@ export function PdfExportButtons({
       return;
     }
     return run('urakkakortti', async () => {
-      await persistCard(cardMode, huomioText);
+      await persistCard(cardMode, huomioText, hidePrices);
       const result = await exportUrakkakorttiPdf(calculationId, app, pdfExportDeps, manualValues);
       if (result.status === 'needsManualContract') {
         setManualLines(result.lines);
@@ -192,7 +197,7 @@ export function PdfExportButtons({
         onValueChange={(value) => {
           const mode: UrakkakorttiMode = value === 'tyontekija' ? 'tyontekija' : 'alihankkija';
           setCardMode(mode);
-          void persistCard(mode, huomioText).catch((error) => {
+          void persistCard(mode, huomioText, hidePrices).catch((error) => {
             console.error(error);
             showAlert('Tallennus epäonnistui', errorMessage(error));
           });
@@ -202,12 +207,27 @@ export function PdfExportButtons({
           { value: 'tyontekija', label: 'Työntekijä' },
         ]}
       />
+      <ChoiceToggle
+        label="Urakkahinnat"
+        value={hidePrices}
+        options={[
+          { value: false, label: 'Näytä' },
+          { value: true, label: 'Älä näytä urakkahintoja' },
+        ]}
+        onChange={(hide) => {
+          setHidePrices(hide);
+          void persistCard(cardMode, huomioText, hide).catch((error) => {
+            console.error(error);
+            showAlert('Tallennus epäonnistui', errorMessage(error));
+          });
+        }}
+      />
       <AppInput
         label="Huomioitavaa"
         value={huomioText}
         onChangeText={setHuomioText}
         onBlur={() => {
-          void persistCard(cardMode, huomioText).catch((error) => {
+          void persistCard(cardMode, huomioText, hidePrices).catch((error) => {
             console.error(error);
             showAlert('Tallennus epäonnistui', errorMessage(error));
           });

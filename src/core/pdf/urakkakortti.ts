@@ -15,6 +15,7 @@ import {
   assertPrintableEmployeeContracts,
   effectiveHuomioitavaa,
   employeeContractAmount,
+  readUrakkakorttiHidePrices,
   readUrakkakorttiMode,
   urakkakorttiModeLabel,
   type UrakkakorttiMode,
@@ -170,26 +171,32 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     typeof input.sivukulukerroin === 'number' && Number.isFinite(input.sivukulukerroin)
       ? input.sivukulukerroin
       : DEFAULT_SIVUKULUKERROIN;
-  assertPrintableEmployeeContracts(record);
-  const amounts = lines.map((line) =>
-    employeeContractAmount(
-      mode === 'tyontekija' ? line.contractPriceVat0 : effectiveContractVat0(line),
-      mode,
-      factor,
-      line.name,
-    ),
-  );
-  const contractRows: PriceRow[] = lines.map((line, index) => ({
-    label: lines.length > 1 ? `Urakka: ${line.name}` : 'Urakka (alv0)',
-    value: formatCurrency(amounts[index] ?? 0),
-  }));
-  if (lines.length > 1) {
-    const total = roundToCents(amounts.reduce((sum, amount) => sum + amount, 0));
-    contractRows.push({
-      label: 'Urakka yhteensä (alv0)',
-      value: formatCurrency(total),
-      emphasis: true,
-    });
+  const hidePrices = readUrakkakorttiHidePrices(record.formSnapshot);
+  const contractRows: PriceRow[] = [];
+  if (!hidePrices) {
+    assertPrintableEmployeeContracts(record);
+    const amounts = lines.map((line) =>
+      employeeContractAmount(
+        mode === 'tyontekija' ? line.contractPriceVat0 : effectiveContractVat0(line),
+        mode,
+        factor,
+        line.name,
+      ),
+    );
+    contractRows.push(
+      ...lines.map((line, index) => ({
+        label: lines.length > 1 ? `Urakka: ${line.name}` : 'Urakka (alv0)',
+        value: formatCurrency(amounts[index] ?? 0),
+      })),
+    );
+    if (lines.length > 1) {
+      const total = roundToCents(amounts.reduce((sum, amount) => sum + amount, 0));
+      contractRows.push({
+        label: 'Urakka yhteensä (alv0)',
+        value: formatCurrency(total),
+        emphasis: true,
+      });
+    }
   }
   const duration =
     lines.length === 1
@@ -228,7 +235,8 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
 export type UrakkakorttiBlockKind = 'price' | 'specs' | 'print' | 'materials' | 'huomio';
 
 export function urakkakorttiBodyBlocks(ctx: UrakkakorttiContext): UrakkakorttiBlockKind[] {
-  const blocks: UrakkakorttiBlockKind[] = ['price'];
+  const blocks: UrakkakorttiBlockKind[] = [];
+  if (ctx.contractRows.length > 0 || ctx.infoRows.length > 0) blocks.push('price');
   if (ctx.specGrid.mode !== 'none') blocks.push('specs');
   if (ctx.sections.length > 0) blocks.push('print');
   if (ctx.materials.length > 0) blocks.push('materials');

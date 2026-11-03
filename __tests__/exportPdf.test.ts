@@ -3,7 +3,7 @@ import { assignOfferNumber } from '../src/core/pdf/offerNumber';
 import { recordWithManualContractPrices } from '../src/core/pdf/manualContract';
 import type { GeneratePdfOptions } from '../src/core/pdf/generatePdf';
 import type { CalculationRecord } from '../src/core/models/types';
-import { calculationWithUrakkakorttiMode } from '../src/core/pdf/urakkakorttiCard';
+import { calculationWithUrakkakorttiHidePrices, calculationWithUrakkakorttiMode } from '../src/core/pdf/urakkakorttiCard';
 import { input, line, record } from './pdfFixtures';
 
 function setup(rec: CalculationRecord) {
@@ -97,6 +97,27 @@ describe('exportUrakkakorttiPdf', () => {
     expect(printed).toHaveLength(0);
     expect(current().structureLines?.[0].contractPriceVat0).toBeNaN();
     expect(current().offerNumber).toBeUndefined();
+  });
+
+  it('does not ask for a manual contract or block an invalid Työntekijä price when prices are hidden', async () => {
+    const rec = calculationWithUrakkakorttiHidePrices(
+      calculationWithUrakkakorttiMode(
+        record(
+          { name: 'Testi' },
+          { projectName: 'Testi', structureLines: [{ ...line('a', 's1', 'Räystäs'), contractPriceVat0: Number.NaN }] },
+        ),
+        'tyontekija',
+      ),
+      true,
+    );
+    const { deps, app, printed, current } = setup(rec);
+    const done = await exportUrakkakorttiPdf('c1', app, deps);
+    expect(done.status).toBe('done');
+    expect(printed).toHaveLength(1);
+    expect(printed[0].html).not.toContain('Urakka (alv0)');
+    expect(printed[0].html).not.toContain('Urakka:');
+    expect(current().structureLines?.[0].contractPriceVat0).toBeNaN();
+    expect(current().totalPriceVat).toBe(rec.totalPriceVat);
   });
 
   it('asks for a manual contract when Työntekijä price is zero, same as Alihankkija', async () => {

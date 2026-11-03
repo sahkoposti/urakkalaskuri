@@ -16,6 +16,7 @@ import { buildUrakkakorttiContext, urakkakorttiBodyBlocks } from '../src/core/pd
 import {
   calculationWithBusinessVatMode,
   calculationWithHuomioitavaa,
+  calculationWithUrakkakorttiHidePrices,
   calculationWithUrakkakorttiMode,
   effectiveHuomioitavaa,
   employeeContractAmount,
@@ -247,6 +248,44 @@ describe('urakkakortti työntekijä and huomioitavaa', () => {
       expect(ctx.contractRows[0].value).toBe(formatCurrency(kept));
       expect(renderUrakkakorttiHtml(ctx)).not.toContain(message);
     }
+  });
+
+  it('hides contract prices and the total for Alihankkija and Työntekijä', () => {
+    const lines = [
+      { ...line('a', 's1', 'Ulkomaalaus'), contractPriceVat0: 3000 },
+      { ...line('b', 's2', 'Sokkeli'), contractPriceVat0: 1500 },
+    ];
+    for (const mode of ['alihankkija', 'tyontekija'] as const) {
+      const shown = mode === 'tyontekija' ? calculationWithUrakkakorttiMode(record({}, { structureLines: lines }), mode) : record({}, { structureLines: lines });
+      const hidden = calculationWithUrakkakorttiHidePrices(shown, true);
+      expect(hidden.formSnapshot?.urakkakorttiHidePrices).toBe(true);
+      const ctx = buildUrakkakorttiContext({ ...input(hidden), sivukulukerroin: 1.5 });
+      expect(ctx.contractRows).toEqual([]);
+      expect(ctx.infoRows.some((row) => row.label === 'Työn arvioitu kesto')).toBe(true);
+      expect(urakkakorttiContractProblems(hidden, mode)).toEqual([]);
+      const html = renderUrakkakorttiHtml(ctx);
+      expect(html).not.toContain('Urakka (alv0)');
+      expect(html).not.toContain('Urakka:');
+      expect(html).not.toContain('Urakka yhteensä');
+      expect(html).not.toContain('3 000,00');
+      expect(html).not.toContain('2 000,00');
+      expect(html).toContain('Työn arvioitu kesto');
+      const price = html.slice(html.indexOf('class="price-block"'), html.indexOf('class="price-block"') + 400);
+      expect(price.match(/<div class="col">/g)).toHaveLength(1);
+      expect(price).not.toContain('<table></table>');
+      const offerShown = renderTarjousHtml(buildPdfContext(input(shown)));
+      const offerHidden = renderTarjousHtml(buildPdfContext(input(hidden)));
+      expect(offerHidden).toBe(offerShown);
+      expect(hidden.totalPriceVat).toBe(shown.totalPriceVat);
+      expect(hidden.totalPriceVat0).toBe(shown.totalPriceVat0);
+    }
+    const kept = preserveCalculationSnapshot(record({}), calculationWithUrakkakorttiHidePrices(record({}), true).formSnapshot);
+    expect(kept.formSnapshot?.urakkakorttiHidePrices).toBe(true);
+    const cleared = calculationWithUrakkakorttiHidePrices(
+      calculationWithUrakkakorttiHidePrices(record({}), true),
+      false,
+    );
+    expect(cleared.formSnapshot?.urakkakorttiHidePrices).toBeUndefined();
   });
 
   it('prefills Huomioitavaa from customer notes, keeps an edit, and omits a blank section', () => {
