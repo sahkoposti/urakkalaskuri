@@ -12,6 +12,10 @@ export type RenderTarjousOptions = {
   accentColor?: string;
   /** Kaksivaiheinen sivunumero-fallback (T1). */
   knownTotalPages?: number | null;
+  /** Tarjouksen vasen palkki. Urakkakortti jättää tämän pois. */
+  offerAccentBar?: boolean;
+  bodyClass?: string;
+  leadingHtml?: string;
 };
 
 const lines = (values: string[]) => values.map((value) => escapeHtml(value)).join('<br />');
@@ -117,9 +121,10 @@ export function renderDocument(
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>${pdfStyles({ accentColor: options.accentColor, knownTotalPages: options.knownTotalPages })}</style>
+<style>${pdfStyles({ accentColor: options.accentColor, knownTotalPages: options.knownTotalPages, offerAccentBar: options.offerAccentBar })}</style>
 </head>
-<body>
+<body class="${options.bodyClass ?? ''}">
+${options.leadingHtml ?? ''}
 ${renderHeader(ctx, options.logoDataUri)}
 ${renderFooter(ctx.footer)}
 <table class="layout">
@@ -157,7 +162,11 @@ export function renderTarjousBody(ctx: TarjousPdfContext): string {
 }
 
 export function renderTarjousHtml(ctx: TarjousPdfContext, options: RenderTarjousOptions = {}): string {
-  return renderDocument(ctx, renderTarjousBody(ctx), options).replace(
+  return renderDocument(ctx, renderTarjousBody(ctx), {
+    ...options,
+    offerAccentBar: true,
+    bodyClass: 'doc-offer',
+  }).replace(
     '</style>',
     `${printedSectionCss}${offerDocumentCss}</style>`,
   );

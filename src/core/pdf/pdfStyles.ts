@@ -9,11 +9,20 @@
 export const PDF_HEADER_HEIGHT_MM = 30;
 export const PDF_FOOTER_HEIGHT_MM = 16;
 export const PDF_DEFAULT_ACCENT = '#C90000';
+/** @page-marginaalit. Vasen ja oikea ovat symmetriset. */
+export const PDF_PAGE_MARGIN_TOP_MM = 10;
+export const PDF_PAGE_MARGIN_RIGHT_MM = 14;
+export const PDF_PAGE_MARGIN_BOTTOM_MM = 12;
+export const PDF_PAGE_MARGIN_LEFT_MM = 14;
+/** Tarjouksen vasen korostus. Sama väri kuin Loppusumman viiva. */
+export const PDF_OFFER_ACCENT_BAR_MM = 2.5;
 
 export type PdfStyleOptions = {
   accentColor?: string;
   /** Kaksivaiheinen fallback: tunnettu sivumäärä korvaa counter(pages):n. */
   knownTotalPages?: number | null;
+  /** Vain tarjous. Urakkakortti ei saa palkkia. */
+  offerAccentBar?: boolean;
 };
 
 const HEX = /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
@@ -28,17 +37,28 @@ export function pageNumberContent(knownTotalPages?: number | null): string {
 
 export function pdfStyles(options: PdfStyleOptions = {}): string {
   const accent = options.accentColor && HEX.test(options.accentColor) ? options.accentColor : PDF_DEFAULT_ACCENT;
+  const offerBar = options.offerAccentBar === true;
+  const marginLeft = offerBar ? PDF_OFFER_ACCENT_BAR_MM : PDF_PAGE_MARGIN_LEFT_MM;
+  const offerInsetLeft = PDF_PAGE_MARGIN_LEFT_MM - PDF_OFFER_ACCENT_BAR_MM;
+  const accentBoxes = offerBar
+    ? `
+    @top-left-corner { content: ""; background: ${accent}; }
+    @left-top { content: ""; background: ${accent}; }
+    @left-middle { content: ""; background: ${accent}; }
+    @left-bottom { content: ""; background: ${accent}; }
+    @bottom-left-corner { content: ""; background: ${accent}; }`
+    : '';
   return `
   @page {
     size: A4 portrait;
-    margin: 10mm 14mm 12mm 14mm;
+    margin: ${PDF_PAGE_MARGIN_TOP_MM}mm ${PDF_PAGE_MARGIN_RIGHT_MM}mm ${PDF_PAGE_MARGIN_BOTTOM_MM}mm ${marginLeft}mm;
     @bottom-right {
       content: ${pageNumberContent(options.knownTotalPages)};
       font-family: 'IBM Plex Sans', Arial, Helvetica, sans-serif;
       font-style: italic;
       font-size: 8pt;
       color: #000;
-    }
+    }${accentBoxes}
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -79,6 +99,9 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   .ktv-page .price-block { max-width: 150mm; }
   .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
   .ktv-note { font-size: 9pt; color: #333; }
+  ${options.offerAccentBar ? `
+  body.doc-offer { padding-left: ${offerInsetLeft}mm; }
+  body.doc-offer .header, body.doc-offer .footer { left: ${offerInsetLeft}mm; }` : ''}
 `;
 }
 
@@ -108,7 +131,21 @@ export const offerDocumentCss = `
   table.offer-cols-head .c-total, table.offer-line-heading .c-total { width: 32mm; }
   table.offer-cols-head th, table.offer-cols-head td, table.offer-line-heading th, table.offer-line-heading td { padding: 0.6mm 1.5mm 0.6mm 0; vertical-align: baseline; text-align: left; }
   table.offer-cols-head th.num, table.offer-cols-head td.num, table.offer-line-heading th.num, table.offer-line-heading td.num { text-align: right; white-space: nowrap; }
-  table.offer-cols-head th { font-size: 9pt; font-weight: 700; border-bottom: 1px solid #000; }
-  table.offer-line-heading td.offer-line-title { font-weight: 700; font-size: 12pt; }
-  table.offer-line-heading .offer-line-vat { font-size: 10pt; }
+  table.offer-cols-head th {
+    font-size: 8pt;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #555;
+    border-bottom: 0.25mm solid #ccc;
+  }
+  table.offer-line-heading td { border-bottom: 0.2mm solid #eee; padding-top: 1.2mm; padding-bottom: 1.2mm; }
+  table.offer-line-heading td.offer-line-title { font-weight: 700; font-size: 12pt; color: #000; }
+  table.offer-line-heading .offer-line-vat { font-size: 10pt; font-weight: 400; }
+  .offer-section { margin: 0 0 4mm 0; }
+  .offer-section .doc-fields td { line-height: 1.45; padding: 1mm 2mm 1mm 0; }
+  .offer-section .doc-group { margin: 0 0 2.5mm 0; }
+  .header { align-items: flex-start; }
+  .header .offer td { line-height: 1.35; vertical-align: baseline; }
+  .price-block.offer-totals { margin: 4mm 0 5mm 0; }
 `;

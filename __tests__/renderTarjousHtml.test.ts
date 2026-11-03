@@ -1,7 +1,9 @@
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
 import { defaultOfferCompanySettings } from '../src/core/pdf/defaultOfferSettings';
 import { escapeHtml, escapeMultiline } from '../src/core/pdf/escapeHtml';
-import { pageNumberContent } from '../src/core/pdf/pdfStyles';
+import { pageNumberContent, PDF_DEFAULT_ACCENT } from '../src/core/pdf/pdfStyles';
+import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
+import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { input, line, record } from './pdfFixtures';
 
@@ -128,5 +130,19 @@ describe('renderTarjousHtml discount row', () => {
     const html = renderTarjousHtml(buildPdfContext(input(mixed)));
     expect(html).toContain('class="offer-vat"');
     expect(html).toContain('>Veroton</th>');
+  });
+
+  it('draws the brand bar on the offer only, using the same accent as Loppusumma', () => {
+    const html = renderTarjousHtml(buildPdfContext(input(record({}))));
+    expect(html).toContain('@left-middle { content: ""; background: ' + PDF_DEFAULT_ACCENT);
+    expect(html).toContain('margin: 10mm 14mm 12mm 2.5mm');
+    expect(html).toContain('padding-left: 11.5mm');
+    expect(html).toContain('"Sivu " counter(page) "/" counter(pages)');
+    const themed = renderTarjousHtml(buildPdfContext(input(record({}))), { accentColor: '#123abc' });
+    expect(themed).toContain('background: #123abc');
+    expect(themed).not.toContain(`background: ${PDF_DEFAULT_ACCENT}`);
+    const card = renderUrakkakorttiHtml(buildUrakkakorttiContext(input(record({}))));
+    expect(card).not.toContain('@left-middle');
+    expect(card).toContain('margin: 10mm 14mm 12mm 14mm');
   });
 });
