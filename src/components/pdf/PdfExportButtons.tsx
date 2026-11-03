@@ -23,16 +23,17 @@ import {
   calculationWithUrakkakorttiHidePrices,
   calculationWithUrakkakorttiMode,
   calculationWithUrakkakorttiRivihinnat,
+  cardPriceFieldTexts,
   huomioitavaaFieldText,
   invalidEmployeeContractWarning,
+  parseCardPriceInput,
   readUrakkakorttiHidePrices,
   readUrakkakorttiMode,
-  readUrakkakorttiRivihinnat,
   urakkakorttiContractProblems,
+  urakkakorttiRivihinnatFromFieldTexts,
   type UrakkakorttiMode,
 } from '@/src/core/pdf/urakkakorttiCard';
 import { readBusinessVatMode, type BusinessVatMode } from '@/src/core/utils/priceDisplay';
-import { formatFixed2 } from '@/src/core/utils/formatters';
 import { offerDocumentProblems } from '@/src/core/pdf/offerDocument';
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -41,23 +42,6 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 type Busy = 'tarjous' | 'urakkakortti' | null;
 
 const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
-
-function parseCardOverride(raw: string): number | 'empty' | 'invalid' {
-  const trimmed = raw.trim();
-  if (!trimmed) return 'empty';
-  const n = Number(trimmed.replace(/\s/g, '').replace(',', '.'));
-  return Number.isFinite(n) ? n : 'invalid';
-}
-
-function overrideTexts(record: CalculationRecord): Record<string, string> {
-  const map = readUrakkakorttiRivihinnat(record.formSnapshot) ?? {};
-  const text: Record<string, string> = {};
-  for (const line of ensureStructureLines(record)) {
-    const amount = map[line.id];
-    if (typeof amount === 'number' && Number.isFinite(amount)) text[line.id] = formatFixed2(amount);
-  }
-  return text;
-}
 
 /** "Luo tarjous" ja "Luo urakkakortti" laskelman tietosivulla (T10). */
 export function PdfExportButtons({
@@ -78,7 +62,7 @@ export function PdfExportButtons({
     readBusinessVatMode(record.formSnapshot),
   );
   const [hidePrices, setHidePrices] = useState(() => readUrakkakorttiHidePrices(record.formSnapshot));
-  const [overrideText, setOverrideText] = useState(() => overrideTexts(record));
+  const [overrideText, setOverrideText] = useState(() => cardPriceFieldTexts(record));
   const overrideTextRef = useRef(overrideText);
   overrideTextRef.current = overrideText;
   const customer = customerFromRecord(record);
@@ -88,7 +72,7 @@ export function PdfExportButtons({
   const draftOverrideProblems = hidePrices
     ? []
     : cardLines.flatMap((line) =>
-        parseCardOverride(overrideText[line.id] ?? '') === 'invalid'
+        parseCardPriceInput(overrideText[line.id] ?? '') === 'invalid'
           ? [invalidEmployeeContractWarning(line.name)]
           : [],
       );
@@ -109,7 +93,7 @@ export function PdfExportButtons({
     setHuomioText(huomioitavaaFieldText(record));
     setBusinessVatMode(readBusinessVatMode(record.formSnapshot));
     setHidePrices(readUrakkakorttiHidePrices(record.formSnapshot));
-    setOverrideText(overrideTexts(record));
+    setOverrideText(cardPriceFieldTexts(record));
   }, [record.id, record.formSnapshot, record.customer]);
 
   const persistRecord = async (next: CalculationRecord) => {
@@ -127,17 +111,7 @@ export function PdfExportButtons({
   };
 
   const persistOverrides = async (texts: Record<string, string>) => {
-    const stored = readUrakkakorttiRivihinnat(record.formSnapshot) ?? {};
-    const next: Record<string, number> = {};
-    for (const line of ensureStructureLines(record)) {
-      const parsed = parseCardOverride(texts[line.id] ?? '');
-      if (parsed === 'invalid') {
-        if (Object.prototype.hasOwnProperty.call(stored, line.id)) next[line.id] = stored[line.id];
-        continue;
-      }
-      if (parsed === 'empty') continue;
-      next[line.id] = parsed;
-    }
+    const next = urakkakorttiRivihinnatFromFieldTexts(record, texts, cardMode);
     await persistRecord(calculationWithUrakkakorttiRivihinnat(record, next));
   };
 
@@ -248,7 +222,10 @@ export function PdfExportButtons({
         selectedValue={cardMode}
         onValueChange={(value) => {
           const mode: UrakkakorttiMode = value === 'tyontekija' ? 'tyontekija' : 'alihankkija';
+          const texts = cardPriceFieldTexts(record, mode);
           setCardMode(mode);
+          setOverrideText(texts);
+          overrideTextRef.current = texts;
           void persistCard(mode, huomioText, hidePrices).catch((error) => {
             console.error(error);
             showAlert('Tallennus epäonnistui', errorMessage(error));
@@ -274,29 +251,30 @@ export function PdfExportButtons({
           });
         }}
       />
-      {cardLines.map((line) => (
-        <AppInput
-          key={line.id}
-          label={`Urakkahinta: ${line.name}`}
-          value={overrideText[line.id] ?? ''}
-          onChangeText={(value) =>
-            setOverrideText((current) => {
-              const next = { ...current, [line.id]: value };
-              overrideTextRef.current = next;
-              return next;
-            })
-          }
-          onBlur={() => {
-            void persistOverrides(overrideTextRef.current).catch((error) => {
-              console.error(error);
-              showAlert('Tallennus epäonnistui', errorMessage(error));
-            });
-          }}
-          keyboardType="decimal-pad"
-          compact
-          placeholder="Laskettu hinta"
-        />
-      ))}
+      {hidePrices
+        ? null
+        : cardLines.map((line) => (
+            <AppInput
+              key={line.id}
+              label={`Urakkahinta: ${line.name}`}
+              value={overrideText[line.id] ?? ''}
+              onChangeText={(value) =>
+                setOverrideText((current) => {
+                  const next = { ...current, [line.id]: value };
+                  overrideTextRef.current = next;
+                  return next;
+                })
+              }
+              onBlur={() => {
+                void persistOverrides(overrideTextRef.current).catch((error) => {
+                  console.error(error);
+                  showAlert('Tallennus epäonnistui', errorMessage(error));
+                });
+              }}
+              keyboardType="decimal-pad"
+              compact
+            />
+          ))}
       <AppInput
         label="Huomioitavaa"
         value={huomioText}
