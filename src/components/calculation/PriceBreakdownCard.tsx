@@ -6,12 +6,13 @@ import { cardShownTotals } from '@/src/core/pdf/buildPdfContext';
 import {
   labeledWithVatMode,
   priceBreakdownParts,
+  reconcilePriceRows,
   summaryShowsVatInclusive,
   vat0Tag,
   vatInclTag,
   type PriceBreakdownValues,
 } from '@/src/core/utils/priceDisplay';
-import { formatCurrency, formatPercent } from '@/src/core/utils/formatters';
+import { formatCurrency, formatPercent, roundToCents } from '@/src/core/utils/formatters';
 import {
   formatDurationDisplayValue,
   WORK_DURATION_DISPLAY_LABEL,
@@ -46,6 +47,13 @@ export function PriceBreakdownCard({
   const includeVat = includeVatProp ?? summaryShowsVatInclusive(customer, lines, snapshot);
   const parts = priceBreakdownParts(values, includeVat);
   const shown = cardShownTotals(values, customer);
+  const target = roundToCents(includeVat ? shown.totalPriceVat : shown.totalPriceVat0);
+  const rows = reconcilePriceRows(
+    parts.materials,
+    parts.work,
+    parts.showDiscount ? parts.discountAmount : 0,
+    target,
+  );
   const durationText = formatDurationDisplayValue(displayedWorkDurationDays);
 
   return (
@@ -55,18 +63,18 @@ export function PriceBreakdownCard({
       ) : null}
       <ResultRow
         label={labeledWithVatMode('Materiaalit', includeVat, parts.vatRate)}
-        value={formatCurrency(parts.materials)}
+        value={formatCurrency(rows.materials)}
       />
       <ResultRow
         label={labeledWithVatMode('Työ', includeVat, parts.vatRate)}
-        value={formatCurrency(parts.work)}
+        value={formatCurrency(rows.work)}
       />
       {parts.showDiscount ? (
         <>
           <View style={styles.divider} />
           <ResultRow
             label={`Alennus (${formatPercent(values.discountPercent)})`}
-            value={`−${formatCurrency(parts.discountAmount)}`}
+            value={`−${formatCurrency(rows.discount)}`}
           />
         </>
       ) : null}

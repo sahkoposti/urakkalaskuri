@@ -186,7 +186,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     assertPrintableEmployeeContracts(record);
     const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
     const amounts = lines.map((line) =>
-      employeeContractAmount(cardContractBase(line, mode, overrides), mode, factor, line.name),
+      roundToCents(employeeContractAmount(cardContractBase(line, mode, overrides), mode, factor, line.name)),
     );
     contractRows.push(
       ...lines.map((line, index) => ({

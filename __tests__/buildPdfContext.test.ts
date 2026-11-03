@@ -203,7 +203,7 @@ describe('buildPdfContext', () => {
     const ctx = buildPdfContext(input(record({ customerType: 'business', reverseVat: true })));
     expect(labels(ctx.price.rows)).toEqual(['Loppusumma (Alv 0 %)']);
     expect(JSON.stringify(ctx.price)).not.toContain('Käänteinen ALV');
-    expect(ctx.price.rows[0].value.replace(/\s/g, ' ')).toBe('2 000,00 €');
+    expect(ctx.price.rows[0].value.replace(/\s/g, ' ')).toBe('1 000,00 €');
     expect(ctx.price.includesVat).toBe(false);
     expect(ctx.ktv).toBeUndefined();
     expect(ctx.vatSummary).toEqual([]);
@@ -305,6 +305,49 @@ describe('buildPdfContext', () => {
     ]);
     expect(ctx.price.rows[1].label).toBe('Alennus yhteensä 5 %');
     expect(ctx.ktv?.totalPriceVat).toBe(108.02);
+  });
+
+  it('business alv0 and reverse VAT without discount: 3 x 2,5 x 10,01 uses the rounded line sum', () => {
+    const lines = [0, 1, 2].map((index) => ({
+      ...line(`a${index}`, 's1', `Osa ${index}`),
+      quantity: 2.5,
+      unitPriceVat0: 10.01,
+      discountPercent: 0,
+      vatPercent: 25.5,
+      materialsVat0: 0,
+    }));
+    const stored = 2.5 * 10.01 * 3;
+    const customers = [
+      { customerType: 'business' as const },
+      { customerType: 'business' as const, reverseVat: true },
+      { customerType: 'private' as const, reverseVat: true },
+    ];
+    for (const customer of customers) {
+      const base = record(customer, {
+        structureLines: lines,
+        discountPercent: 0,
+        totalPriceVat0: stored,
+        totalPriceVat0BeforeDiscount: stored,
+        totalPriceVat: stored,
+        totalPriceVatBeforeDiscount: stored,
+        vatAmount: 0,
+        vatPercent: 25.5,
+        materialsVat0: 0,
+      });
+      const rec = customer.customerType === 'business' && !customer.reverseVat
+        ? calculationWithBusinessVatMode(base, 'alv0')
+        : base;
+      const ctx = buildPdfContext(input(rec));
+      expect(ctx.sections.map((section) => section.heading?.price.replace(/\s/g, ' '))).toEqual([
+        '25,03 €',
+        '25,03 €',
+        '25,03 €',
+      ]);
+      expect(ctx.price.rows.map((row) => `${row.label}=${row.value.replace(/\s/g, ' ')}`)).toEqual([
+        'Loppusumma (Alv 0 %)=75,09 €',
+      ]);
+      expect(ctx.ktv).toBeUndefined();
+    }
   });
 
   it('private without discount: 3 x 10,01 uses rounded line totals, Veroton + ALV = Loppusumma, KTV matches', () => {

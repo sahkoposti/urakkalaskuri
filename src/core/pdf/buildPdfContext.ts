@@ -151,7 +151,7 @@ export type PrintedOfferAmounts = {
   gross: number;
   /**
    * `lines`: loppusumma on rivien pyöristetty summa.
-   * `stored`: tallennettu summa (legacy-alennus, ALV 0, tai kelvoton rivi).
+   * `stored`: tallennettu summa (pelkkä laskelman alennus tai kelvoton rivi).
    */
   source: 'lines' | 'stored';
 };
@@ -169,7 +169,8 @@ function storedPrinted(record: CalculationRecord, vatInclusive: boolean): Printe
  * bruttosummien summa. ALV on erotus, joten Veroton + ALV = Loppusumma.
  * Brutto / (1 + kanta) ei käy: 3 × 10,01 antaa verottoman 30,02 eikä rivien 30,03.
  * Rivialennus: maksettu rivisumma. Pelkkä laskelman alennus: tallennettu summa.
- * Yrityksen sis. ALV ilman alennusta: Loppusumma on otsikoiden brutto, Veroton tallennettu.
+ * ALV 0 ja käänteinen ALV ilman alennusta: Loppusumma on rivien pyöristetty netto.
+ * Yrityksen sis. ALV ilman alennusta: Loppusumma on otsikoiden brutto, Veroton rivien netto.
  */
 export function printedOfferAmounts(record: CalculationRecord, customer: CustomerInfo): PrintedOfferAmounts {
   const vatInclusive = offerIncludesVat(customer, record.formSnapshot);
@@ -183,11 +184,16 @@ export function printedOfferAmounts(record: CalculationRecord, customer: Custome
     const net = netLines ?? roundToCents(record.totalPriceVat0);
     return { net, vat: roundToCents(gross - net), gross, source: paid != null ? 'lines' : 'stored' };
   }
-  if (!vatInclusive) return storedPrinted(record, false);
+  if (!vatInclusive) {
+    const netLines = sumRoundedOfferLines(record, false, 'paid');
+    if (netLines != null) return { net: netLines, vat: 0, gross: netLines, source: 'lines' };
+    return storedPrinted(record, false);
+  }
   if (customer.customerType === 'business') {
     const heading = sumOfferHeadingGross(record);
     const gross = heading ?? roundToCents(record.totalPriceVat);
-    const net = roundToCents(record.totalPriceVat0);
+    const netLines = sumRoundedOfferLines(record, false, 'paid');
+    const net = netLines ?? roundToCents(record.totalPriceVat0);
     return { net, vat: roundToCents(gross - net), gross, source: heading != null ? 'lines' : 'stored' };
   }
   const priced = ensureStructureLines(record).some((line) => line.quantity !== 0 && Number.isFinite(line.quantity));
@@ -235,10 +241,10 @@ export function cardShownTotals(
   };
 }
 
-/** Historia: yksityinen näkee brutton, yritys verottoman. Luku on tulosteen vastaava sentti. */
+/** Historia näyttää saman loppusumman kuin tarjous: verollinen brutto, ALV 0 veroton. */
 export function formatPrintedDisplayPrice(record: CalculationRecord, customer: CustomerInfo): string {
   const shown = cardShownTotals(record, customer);
-  return formatCurrency(isPrivateCustomer(customer) ? shown.totalPriceVat : shown.totalPriceVat0);
+  return formatCurrency(offerIncludesVat(customer, record.formSnapshot) ? shown.totalPriceVat : shown.totalPriceVat0);
 }
 
 function discountValue(rivit: number, loppu: number): string {
@@ -279,17 +285,17 @@ function vatIncludedRows(record: CalculationRecord, loppu: number, lineDiscount:
  * Alennus: Rivit yhteensä (otsikoiden listahinnat), Alennus yhteensä (erotus), Alennettu hinta yhteensä.
  * Verollinen alennus: alle rivin Sisältää ALV. Veroton ja ALV-rivit jäävät pois.
  * Ilman alennusta: verollisella Veroton, ALV ja Loppusumma rivien pyöristetystä summasta.
- * ALV 0: vain Loppusumma (Alv 0 %). Yrityksen sis. ALV: Loppusumma on otsikoiden brutto, Veroton tallennettu.
+ * ALV 0: vain Loppusumma (Alv 0 %), rivien pyöristetty netto. Yrityksen sis. ALV: Loppusumma on otsikoiden brutto.
  */
 export function offerPriceBlock(record: CalculationRecord, customer: CustomerInfo): TarjousPdfContext['price'] {
   const discounted = linesCarryDiscount(record) || hasOfferDiscount(record);
-  const net = record.totalPriceVat0;
   const vatInclusive = offerIncludesVat(customer, record.formSnapshot);
   if (!discounted) {
     if (!vatInclusive) {
+      const printed = printedOfferAmounts(record, customer);
       return {
         includesVat: false,
-        rows: [{ label: 'Loppusumma (Alv 0 %)', value: formatCurrency(net), emphasis: true }],
+        rows: [{ label: 'Loppusumma (Alv 0 %)', value: formatCurrency(printed.gross), emphasis: true }],
       };
     }
     const printed = printedOfferAmounts(record, customer);

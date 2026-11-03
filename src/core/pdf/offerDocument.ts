@@ -377,11 +377,40 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
   return sections;
 }
 
+/** Usean verokannan taulu rivien pyöristetyistä summista. null = kelvoton rivi. */
+function roundedVatRateRows(record: CalculationRecord): OfferVatSummaryRow[] | null {
+  const lines = ensureStructureLines(record).filter((line) => line.quantity !== 0 && Number.isFinite(line.quantity));
+  const rates: number[] = [];
+  for (const line of lines) {
+    const rate = Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent;
+    if (!rates.includes(rate)) rates.push(rate);
+  }
+  if (rates.length <= 1) return null;
+  const rows: OfferVatSummaryRow[] = [];
+  for (const rate of rates) {
+    let net = 0;
+    let gross = 0;
+    for (const line of lines) {
+      const lineRate = Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent;
+      if (lineRate !== rate) continue;
+      const netPart = roundedOfferLineAmount(line, false, 'paid');
+      const grossPart = roundedOfferLineAmount(line, true, 'paid');
+      if (netPart == null || grossPart == null) return null;
+      net += netPart;
+      gross += grossPart;
+    }
+    const netCents = roundToCents(net);
+    const grossCents = roundToCents(gross);
+    rows.push({ vatPercent: rate, net: netCents, vat: roundToCents(grossCents - netCents), gross: grossCents });
+  }
+  return rows;
+}
+
 /**
  * ALV-erittely maksun jälkeen. Yksi verokanta → yksi rivi.
  * Yksityinen käyttää tallennettuja summia. Yrityksen sis. ALV käyttää otsikoiden
  * bruttosummaa, jotta erittely ja Loppusumma ovat samat.
- * Usea verokanta: rivien verottomat osuudet ovat painoja. Yrityksen ALV 0 ja käänteinen ALV: ei rivejä.
+ * Usea verokanta: jokaisen rivin pyöristetty netto ja brutto. Yrityksen ALV 0 ja käänteinen ALV: ei rivejä.
  */
 export function offerVatSummary(record: CalculationRecord, customer: CustomerInfo): OfferVatSummaryRow[] {
   if (!offerIncludesVat(customer, record.formSnapshot)) return [];
@@ -406,6 +435,8 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
       },
     ];
   }
+  const roundedRows = roundedVatRateRows(record);
+  if (roundedRows) return roundedRows;
   if (headingGross != null) {
     return rates.map((rate) => {
       const group = lines.filter(

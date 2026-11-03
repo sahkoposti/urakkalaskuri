@@ -7,6 +7,7 @@ import {
   labeledWithVatMode,
   offerIncludesVat,
   priceBreakdownParts,
+  reconcilePriceRows,
   summaryShowsVatInclusive,
   vat0Tag,
   vatInclTag,
@@ -76,6 +77,12 @@ describe('vat labels', () => {
     );
     expect(parts.work).toBeCloseTo(800 * 1.255, 10);
     expect(parts.materials + parts.work - parts.discountAmount).toBeCloseTo(parts.priceAfterDiscount, 10);
+  });
+
+  test('3 x 10,01: suurempi rivi ottaa sentin, jotta summa on kokonaishinta', () => {
+    const rows = reconcilePriceRows(0, 30.03 * 1.255, 0, 37.68);
+    expect(rows).toEqual({ materials: 0, work: 37.68, discount: 0 });
+    expect(roundToCents(rows.materials + rows.work - rows.discount)).toBe(37.68);
   });
 });
 
