@@ -265,6 +265,31 @@ describe('offer rows and sections', () => {
     expect(discountedHtml).not.toContain(money(lineTotalVat0(chimney), 25.5, true));
   });
 
+  it('prints Alv 0 % on a business heading only for VAT 0 prices', () => {
+    const vat0 = buildOfferSections(
+      groupedInput([{ ...eaves, pricesIncludeVat: false }], { customerType: 'business' }),
+    );
+    expect(vat0[0].heading?.vatLabel).toBe('Alv 0 %');
+    expect(vat0[0].heading?.price).toBe(money(lineTotalVat0(eaves), 25.5, false));
+    const html0 = renderTarjousHtml(
+      buildPdfContext(groupedInput([{ ...eaves, pricesIncludeVat: false }], { customerType: 'business' })),
+    );
+    expect(html0).toContain('Alv 0 %');
+
+    const inclusiveLine = { ...eaves, pricesIncludeVat: true as const };
+    const inclusive = buildOfferSections(groupedInput([inclusiveLine], { customerType: 'business' }));
+    expect(inclusive[0].heading?.vatLabel).toBeUndefined();
+    expect(inclusive[0].heading?.price).toBe(money(lineTotalVat0(eaves), 25.5, false));
+    const html = renderTarjousHtml(buildPdfContext(groupedInput([inclusiveLine], { customerType: 'business' })));
+    expect(html).not.toContain('Alv 0 %');
+    expect(html).not.toContain('class="offer-line-vat"');
+    expect(html).toContain(money(lineTotalVat0(eaves), 25.5, false));
+
+    const privateInclusive = buildOfferSections(groupedInput([inclusiveLine]));
+    expect(privateInclusive[0].heading?.vatLabel).toBeUndefined();
+    expect(renderTarjousHtml(buildPdfContext(groupedInput([inclusiveLine])))).not.toContain('Alv 0 %');
+  });
+
   it('gives each priced line its own heading and keeps groups as separate rows', () => {
     const sections = buildOfferSections(source);
     expect(sections.map((section) => section.title)).toEqual([

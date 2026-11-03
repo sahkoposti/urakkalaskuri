@@ -41,7 +41,11 @@ export type OfferHeading = {
   quantityLabel: string;
   /** Rivisumma (Yht.). Tyhjä, jos hinta on kelvoton. */
   price: string;
-  /** Vain yritysasiakas. Sama merkkijono kuin vanhan Alv-%-sarakkeen arvo, etuliitteellä "Alv ". */
+  /**
+   * Vain yritysasiakas, kun otsikon eurot ovat ALV 0 -hintoja.
+   * Puuttuu, jos rivi on merkitty ALV:lliseksi (`pricesIncludeVat === true`):
+   * otsikkosumma on silti veroton, joten prosentti sen vieressä olisi väärä.
+   */
   vatLabel?: string;
 };
 
@@ -149,7 +153,9 @@ function offerHeading(line: StructureLine, includesVat: boolean, business: boole
     quantityLabel: [quantity, unit].filter((part) => part.length > 0).join(' '),
     price: invalid ? '' : formatOfferMoney(lineTotalVat0(line), includesVat, line.vatPercent),
   };
-  if (business) heading.vatLabel = `Alv ${formatPercent(includesVat ? line.vatPercent : 0)}`;
+  if (business && line.pricesIncludeVat !== true) {
+    heading.vatLabel = `Alv ${formatPercent(includesVat ? line.vatPercent : 0)}`;
+  }
   return heading;
 }
 
