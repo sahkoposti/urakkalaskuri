@@ -141,6 +141,11 @@ export interface FormSnapshot {
    * Rivin `pricesIncludeVat` ei vaikuta yritystarjoukseen. Käänteinen ALV on aina `'alv0'`.
    */
   businessVatMode?: 'alv0' | 'sis';
+  /**
+   * Tarjouksen voimassaolo kalenteripäivinä. Valinnainen avain samassa `form_snapshot`-JSON:ssa.
+   * Puuttuva avain = yrityksen asetus (oletus 31). Arvo 1–365. Oletusta vastaavaa arvoa ei tallenneta.
+   */
+  offerValidDays?: number;
 }
 
 export interface CalculationRecord {

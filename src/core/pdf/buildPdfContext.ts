@@ -19,6 +19,7 @@ import {
 } from './offerDocument';
 import type { KtvSettings, OfferCompanySettings, OfferStructureSettings } from './types';
 import { readKtvPersons } from './ktvPersons';
+import { readOfferValidDays } from './offerValidDays';
 import { formatFinnishDate, validUntil } from './validUntil';
 
 export type PriceRow = { label: string; value: string; emphasis?: boolean };
@@ -162,7 +163,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
   const offerInfo: PriceRow[] = [
     ...(input.offerNumber != null ? [{ label: 'Tarjousnumero', value: String(input.offerNumber) }] : []),
     { label: 'Päiväys', value: formatFinnishDate(generatedAt) },
-    { label: 'Voimassa', value: formatFinnishDate(validUntil(generatedAt, offerCompany.offerValidDays)) },
+    { label: 'Voimassa', value: formatFinnishDate(validUntil(generatedAt, readOfferValidDays(record.formSnapshot, offerCompany.offerValidDays))) },
   ];
   const ktvApplicable = isPrivateCustomer(customer) && !customer.reverseVat;
   return {

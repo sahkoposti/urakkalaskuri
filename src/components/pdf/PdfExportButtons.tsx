@@ -35,6 +35,14 @@ import {
 } from '@/src/core/pdf/urakkakorttiCard';
 import { readBusinessVatMode, type BusinessVatMode } from '@/src/core/utils/priceDisplay';
 import { offerDocumentProblems } from '@/src/core/pdf/offerDocument';
+import {
+  calculationWithOfferValidDays,
+  companyOfferValidDays,
+  OFFER_VALID_DAYS_INVALID_MESSAGE,
+  offerValidDaysFieldText,
+  parseOfferValidDaysInput,
+} from '@/src/core/pdf/offerValidDays';
+import { DEFAULT_OFFER_VALID_DAYS } from '@/src/core/pdf/defaultOfferSettings';
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -63,6 +71,11 @@ export function PdfExportButtons({
   );
   const [hidePrices, setHidePrices] = useState(() => readUrakkakorttiHidePrices(record.formSnapshot));
   const [overrideText, setOverrideText] = useState(() => cardPriceFieldTexts(record));
+  const [companyValidDays, setCompanyValidDays] = useState(DEFAULT_OFFER_VALID_DAYS);
+  const [validDaysText, setValidDaysText] = useState(() => offerValidDaysFieldText(record.formSnapshot));
+  const validDaysDirty = useRef(false);
+  const companyDaysRef = useRef(companyValidDays);
+  companyDaysRef.current = companyValidDays;
   const overrideTextRef = useRef(overrideText);
   overrideTextRef.current = overrideText;
   const customer = customerFromRecord(record);
@@ -82,6 +95,8 @@ export function PdfExportButtons({
   ];
   const parsedPersons = parseKtvPersonsInput(personsText);
   const personsProblem = parsedPersons === 'invalid' ? KTV_PERSONS_INVALID_MESSAGE : null;
+  const parsedValidDays = parseOfferValidDaysInput(validDaysText);
+  const validDaysProblem = parsedValidDays === 'invalid' ? OFFER_VALID_DAYS_INVALID_MESSAGE : null;
   // Ref estää tuplanapautuksen ennen kuin tila ehtii päivittyä (DB-lukko on toinen varmistus).
   const busyRef = useRef(false);
   const [manualLines, setManualLines] = useState<{ id: string; name: string }[] | null>(null);
@@ -94,7 +109,26 @@ export function PdfExportButtons({
     setBusinessVatMode(readBusinessVatMode(record.formSnapshot));
     setHidePrices(readUrakkakorttiHidePrices(record.formSnapshot));
     setOverrideText(cardPriceFieldTexts(record));
+    validDaysDirty.current = false;
+    setValidDaysText(offerValidDaysFieldText(record.formSnapshot, companyDaysRef.current));
   }, [record.id, record.formSnapshot, record.customer]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void db.getOfferCompanySettings().then((settings) => {
+      if (cancelled) return;
+      const days = companyOfferValidDays(settings.offerValidDays);
+      setCompanyValidDays(days);
+      if (!validDaysDirty.current && !Object.prototype.hasOwnProperty.call(record.formSnapshot ?? {}, 'offerValidDays')) {
+        setValidDaysText(String(days));
+      }
+    }).catch((error) => {
+      console.error(error);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [record.id, record.formSnapshot]);
 
   const persistRecord = async (next: CalculationRecord) => {
     if (next === record) return;
@@ -104,6 +138,10 @@ export function PdfExportButtons({
 
   const persistPersons = async (persons: number) => {
     await persistRecord(calculationWithKtvPersons(record, persons));
+  };
+
+  const persistValidDays = async (days: number) => {
+    await persistRecord(calculationWithOfferValidDays(record, days, companyValidDays));
   };
 
   const persistBusinessVatMode = async (mode: BusinessVatMode) => {
@@ -141,13 +179,15 @@ export function PdfExportButtons({
   };
 
   const handleTarjous = () => {
-    const blocked = [...offerProblems, ...(personsProblem ? [personsProblem] : [])];
+    const blocked = [...offerProblems, ...(personsProblem ? [personsProblem] : []), ...(validDaysProblem ? [validDaysProblem] : [])];
     if (blocked.length > 0) {
       showAlert('Tarjousta ei voi tulostaa', blocked.join('\n'));
       return;
     }
     return run('tarjous', async () => {
       if (parsedPersons !== 'invalid') await persistPersons(parsedPersons);
+      const days = parsedValidDays === 'empty' ? companyValidDays : parsedValidDays;
+      if (days !== 'invalid') await persistValidDays(days);
       await exportTarjousPdf(calculationId, app, pdfExportDeps);
       await refreshCalculations();
     });
@@ -195,6 +235,32 @@ export function PdfExportButtons({
           {personsProblem}
         </Text>
       ) : null}
+      <AppInput
+        label="Tarjous voimassa (päivää)"
+        value={validDaysText}
+        onChangeText={(value) => {
+          validDaysDirty.current = true;
+          setValidDaysText(value);
+        }}
+        onBlur={() => {
+          if (parsedValidDays === 'invalid') return;
+          const days = parsedValidDays === 'empty' ? companyValidDays : parsedValidDays;
+          setValidDaysText(String(days));
+          validDaysDirty.current = false;
+          void persistValidDays(days).catch((error) => {
+            console.error(error);
+            showAlert('Tallennus epäonnistui', errorMessage(error));
+          });
+        }}
+        keyboardType="numeric"
+        compact
+      />
+      <Text style={styles.hint}>Esitäyttö yrityksen asetuksesta ({companyValidDays} päivää).</Text>
+      {validDaysProblem ? (
+        <Text style={styles.warning} accessibilityRole="alert">
+          {validDaysProblem}
+        </Text>
+      ) : null}
       {showBusinessVatChoice ? (
         <ChoiceToggle
           label="Hintojen ALV"
@@ -215,7 +281,7 @@ export function PdfExportButtons({
       <OutlinedButton
         title={busy === 'tarjous' ? 'Luodaan tarjousta…' : 'Luo tarjous'}
         onPress={handleTarjous}
-        disabled={busy !== null || offerProblems.length > 0 || personsProblem !== null}
+        disabled={busy !== null || offerProblems.length > 0 || personsProblem !== null || validDaysProblem !== null}
       />
       <AppPicker
         label="Urakkakortti"
@@ -313,6 +379,13 @@ export function PdfExportButtons({
 
 function createStyles(colors: AppColorPalette) {
   return {
+    hint: {
+      marginBottom: 8,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      lineHeight: 18,
+      color: colors.text,
+    },
     warning: {
       marginBottom: 8,
       padding: 12,
