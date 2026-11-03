@@ -10,6 +10,7 @@ import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { isManualStructureId } from '@/src/core/structure/types';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
+import { clampDiscountPercent } from '@/src/core/calculation/discount';
 import { formatCurrency, formatPercent, formatPrintedQuantity, roundToCents } from '@/src/core/utils/formatters';
 import { applyVat, offerIncludesVat } from '@/src/core/utils/priceDisplay';
 
@@ -37,13 +38,20 @@ export type OfferRow = {
 };
 
 export type OfferHeading = {
-  /** Määrä ja yksikkö, jos vanha taulukko olisi näyttänyt ne. Kokonaisluku ilman desimaalia. */
+  /** Määrä ja yksikkö samassa merkkijonossa. Kokonaisluku ilman desimaalia. */
   quantityLabel: string;
+  /** Määrä-sarake. `formatPrintedQuantity`: kokonaisluku ilman desimaaleja. */
+  quantity: string;
+  /** Yks.-sarake. Rivin yksikkö. Tyhjä, jos rivillä ei ole yksikköä. */
+  unit: string;
+  /** A-hinta. Tyhjä, jos hinta on kelvoton. */
+  unitPrice: string;
   /** Rivisumma (Yht.). Tyhjä, jos hinta on kelvoton. */
   price: string;
   /**
-   * Vain yritysasiakas. ALV 0 → "Alv 0 %". Verollinen valinta → "sis. alv X %".
-   * Yksityinen tarjous ei tulosta otsikkotekstiä.
+   * Alv-%-sarake.
+   * ALV 0 ja käänteinen ALV → "Alv 0 %".
+   * Verollinen hinta (yritys sis. ALV ja yksityinen) → rivin ALV-%, esim. "25,5 %".
    */
   vatLabel?: string;
 };
@@ -181,23 +189,42 @@ export function isManualOfferLine(line: StructureLine, structures: ProductStruct
   return !hasOfferForm(matchingStructure(line, structures));
 }
 
-function offerVatLabel(business: boolean, includesVat: boolean, vatPercent: number): string | undefined {
-  if (!business) return undefined;
+/**
+ * Alv-%-sarake. ALV 0 (myös käänteinen) tulostaa "Alv 0 %".
+ * Verollinen summa tulostaa rivin verokannan, myös yksityisellä.
+ */
+function offerVatLabel(includesVat: boolean, vatPercent: number): string | undefined {
   if (!includesVat) return `Alv ${formatPercent(0)}`;
   if (!Number.isFinite(vatPercent)) return undefined;
-  return `sis. alv ${formatPercent(vatPercent)}`;
+  return formatPercent(vatPercent);
 }
 
-function offerHeading(line: StructureLine, includesVat: boolean, business: boolean): OfferHeading | undefined {
+/**
+ * A-hinta. Ilman rivialennusta rivin yksikköhinta.
+ * Rivialennus on jo Yht.-summassa, joten A-hinta on rivisumma / määrä.
+ * Tarjouksen erillinen Alennus-rivi ei muuta näitä sarakkeita.
+ */
+function formatOfferUnitPrice(line: StructureLine, includesVat: boolean): string {
+  const quantity = line.quantity;
+  if (clampDiscountPercent(line.discountPercent) > 0 && Number.isFinite(quantity) && quantity !== 0) {
+    return formatOfferMoney(lineTotalVat0(line) / quantity, includesVat, line.vatPercent);
+  }
+  return formatOfferMoney(line.unitPriceVat0, includesVat, line.vatPercent);
+}
+
+function offerHeading(line: StructureLine, includesVat: boolean): OfferHeading | undefined {
   if (line.quantity === 0) return undefined;
   const invalid = lineOfferPriceInvalid(line, includesVat);
-  const quantity = formatQuantity(line.quantity);
+  const quantity = Number.isFinite(line.quantity) ? formatQuantity(line.quantity) : '';
   const unit = line.unit?.trim() ?? '';
   const heading: OfferHeading = {
     quantityLabel: [quantity, unit].filter((part) => part.length > 0).join(' '),
+    quantity,
+    unit,
+    unitPrice: invalid ? '' : formatOfferUnitPrice(line, includesVat),
     price: invalid ? '' : formatOfferMoney(lineTotalVat0(line), includesVat, line.vatPercent),
   };
-  const vatLabel = offerVatLabel(business, includesVat, line.vatPercent);
+  const vatLabel = offerVatLabel(includesVat, line.vatPercent);
   if (vatLabel) heading.vatLabel = vatLabel;
   return heading;
 }
@@ -268,12 +295,11 @@ export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
 
 export function buildOfferSections(source: OfferDocumentSource): OfferSection[] {
   const customer = customerFromRecord(source.record);
-  const business = customer.customerType === 'business';
   const includesVat = offerIncludesVat(customer, source.record.formSnapshot);
   const reverseVat = Boolean(customer.reverseVat);
   const sections: OfferSection[] = [];
   for (const line of ensureStructureLines(source.record)) {
-    const heading = offerHeading(line, includesVat, business);
+    const heading = offerHeading(line, includesVat);
     if (isManualOfferLine(line, source.structures)) {
       const description = line.additionalInfo?.trim() || undefined;
       if (!heading && !description) continue;

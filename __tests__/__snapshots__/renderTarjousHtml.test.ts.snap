@@ -56,25 +56,6 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
   .ktv-note { font-size: 9pt; color: #333; }
 
-  .offer-delivery { margin: 1mm 0 4mm 0; }
-  .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
-  .offer-vat th, .offer-vat td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
-  .offer-vat th.num, .offer-vat td.num { text-align: right; white-space: nowrap; }
-  .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
-  .offer-seller { margin: 4mm 0; }
-  .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
-  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
-  .offer-sign td + td { padding: 0 0 0 6mm; }
-  .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
-  .offer-sign-name { min-height: 12mm; }
-  .offer-sign-detail { margin: 0 0 1mm 0; }
-  .offer-sign-label { margin: 3mm 0 0 0; }
-  .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .ktv-rate-sentence { margin: 0 0 3mm 0; }
-
   .doc-section { margin: 0 0 5mm 0; }
   .doc-heading, .offer-line-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
   .doc-heading { margin: 3mm 0 1.5mm 0; font-size: 12pt; }
@@ -95,6 +76,38 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   .doc-fields td.value { text-align: right; }
   .uk-huomio { margin-top: 4mm; }
   .uk-huomio h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
+
+  .offer-delivery { margin: 1mm 0 4mm 0; }
+  .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
+  .offer-vat th, .offer-vat td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
+  .offer-vat th.num, .offer-vat td.num { text-align: right; white-space: nowrap; }
+  .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
+  .offer-seller { margin: 4mm 0; }
+  .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
+  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
+  .offer-sign td + td { padding: 0 0 0 6mm; }
+  .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
+  .offer-sign-name { min-height: 12mm; }
+  .offer-sign-detail { margin: 0 0 1mm 0; }
+  .offer-sign-label { margin: 3mm 0 0 0; }
+  .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .ktv-rate-sentence { margin: 0 0 3mm 0; }
+  table.offer-cols-head, table.offer-line-heading { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  table.offer-cols-head { margin: 3mm 0 0 0; break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
+  table.offer-line-heading { display: table; margin: 0 0 2mm 0; break-inside: avoid; page-break-inside: avoid; }
+  table.offer-cols-head .c-qty, table.offer-line-heading .c-qty { width: 18mm; }
+  table.offer-cols-head .c-unit, table.offer-line-heading .c-unit { width: 16mm; }
+  table.offer-cols-head .c-unitprice, table.offer-line-heading .c-unitprice { width: 28mm; }
+  table.offer-cols-head .c-vat, table.offer-line-heading .c-vat { width: 26mm; }
+  table.offer-cols-head .c-total, table.offer-line-heading .c-total { width: 32mm; }
+  table.offer-cols-head th, table.offer-cols-head td, table.offer-line-heading th, table.offer-line-heading td { padding: 0.6mm 1.5mm 0.6mm 0; vertical-align: baseline; text-align: left; }
+  table.offer-cols-head th.num, table.offer-cols-head td.num, table.offer-line-heading th.num, table.offer-line-heading td.num { text-align: right; white-space: nowrap; }
+  table.offer-cols-head th { font-size: 9pt; font-weight: 700; border-bottom: 1px solid #000; }
+  table.offer-line-heading td.offer-line-title { font-weight: 700; font-size: 12pt; }
+  table.offer-line-heading .offer-line-vat { font-size: 10pt; }
 </style>
 </head>
 <body>
@@ -112,7 +125,7 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
 <thead><tr><td class="spacer-top"></td></tr></thead>
 <tfoot><tr><td class="spacer-bottom"></td></tr></tfoot>
 <tbody><tr><td>
-<section class="doc-section offer-section"><h2 class="offer-line-heading"><span class="offer-line-title">Ulkomaalaus</span><span class="offer-line-leader"></span><span class="offer-line-qty">1</span><span class="offer-line-price">1 000,00 €</span><span class="offer-line-vat">Alv 0 %</span></h2><div class="doc-group doc-group-muuta"><p class="doc-group-title">Muuta</p><p class="doc-line">Sisältää telineet.</p></div><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
+<section class="doc-section offer-section"><table class="offer-cols-head"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><thead><tr><th>Nimike</th><th class="num">Määrä</th><th>Yks.</th><th class="num">A-hinta</th><th class="num">Alv-%</th><th class="num">Yht</th></tr></thead></table><table class="offer-line-heading"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><tbody><tr><td class="offer-line-title">Ulkomaalaus</td><td class="num offer-line-qty">1</td><td class="offer-line-unit"></td><td class="num offer-line-unitprice">1 000,00 €</td><td class="num offer-line-vat">Alv 0 %</td><td class="num offer-line-price">1 000,00 €</td></tr></tbody></table><div class="doc-group doc-group-muuta"><p class="doc-group-title">Muuta</p><p class="doc-line">Sisältää telineet.</p></div><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
 <div class="price-block"><div class="col"><table><tr><td>Hinta alv0</td><td class="value">2 000,00 €</td></tr></table></div><div class="col"><table><tr class="emphasis"><td>Loppusumma</td><td class="value">2 000,00 €</td></tr></table></div></div>
 <div class="offer-seller"><h3>Myyjä:</h3><div>Puh. +358 40 938 9403<br />info@colorajaton.fi</div></div>
 <table class="offer-sign"><tr class="offer-sign-names"><td><p class="offer-sign-role">Myyjä</p><div class="offer-sign-name"><p class="offer-sign-detail">ColoRajaton Oy</p></div></td><td><p class="offer-sign-role">Tilaaja</p><div class="offer-sign-name"><p class="offer-sign-detail">Matti Meikäläinen</p></div></td></tr><tr class="offer-sign-pen"><td><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></td><td><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></td></tr><tr class="offer-sign-date"><td><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></td><td><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></td></tr></table>
@@ -178,25 +191,6 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
   .ktv-note { font-size: 9pt; color: #333; }
 
-  .offer-delivery { margin: 1mm 0 4mm 0; }
-  .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
-  .offer-vat th, .offer-vat td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
-  .offer-vat th.num, .offer-vat td.num { text-align: right; white-space: nowrap; }
-  .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
-  .offer-seller { margin: 4mm 0; }
-  .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
-  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
-  .offer-sign td + td { padding: 0 0 0 6mm; }
-  .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
-  .offer-sign-name { min-height: 12mm; }
-  .offer-sign-detail { margin: 0 0 1mm 0; }
-  .offer-sign-label { margin: 3mm 0 0 0; }
-  .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .ktv-rate-sentence { margin: 0 0 3mm 0; }
-
   .doc-section { margin: 0 0 5mm 0; }
   .doc-heading, .offer-line-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
   .doc-heading { margin: 3mm 0 1.5mm 0; font-size: 12pt; }
@@ -217,6 +211,38 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   .doc-fields td.value { text-align: right; }
   .uk-huomio { margin-top: 4mm; }
   .uk-huomio h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
+
+  .offer-delivery { margin: 1mm 0 4mm 0; }
+  .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
+  .offer-vat th, .offer-vat td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
+  .offer-vat th.num, .offer-vat td.num { text-align: right; white-space: nowrap; }
+  .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
+  .offer-seller { margin: 4mm 0; }
+  .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
+  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
+  .offer-sign td + td { padding: 0 0 0 6mm; }
+  .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
+  .offer-sign-name { min-height: 12mm; }
+  .offer-sign-detail { margin: 0 0 1mm 0; }
+  .offer-sign-label { margin: 3mm 0 0 0; }
+  .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .ktv-rate-sentence { margin: 0 0 3mm 0; }
+  table.offer-cols-head, table.offer-line-heading { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  table.offer-cols-head { margin: 3mm 0 0 0; break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
+  table.offer-line-heading { display: table; margin: 0 0 2mm 0; break-inside: avoid; page-break-inside: avoid; }
+  table.offer-cols-head .c-qty, table.offer-line-heading .c-qty { width: 18mm; }
+  table.offer-cols-head .c-unit, table.offer-line-heading .c-unit { width: 16mm; }
+  table.offer-cols-head .c-unitprice, table.offer-line-heading .c-unitprice { width: 28mm; }
+  table.offer-cols-head .c-vat, table.offer-line-heading .c-vat { width: 26mm; }
+  table.offer-cols-head .c-total, table.offer-line-heading .c-total { width: 32mm; }
+  table.offer-cols-head th, table.offer-cols-head td, table.offer-line-heading th, table.offer-line-heading td { padding: 0.6mm 1.5mm 0.6mm 0; vertical-align: baseline; text-align: left; }
+  table.offer-cols-head th.num, table.offer-cols-head td.num, table.offer-line-heading th.num, table.offer-line-heading td.num { text-align: right; white-space: nowrap; }
+  table.offer-cols-head th { font-size: 9pt; font-weight: 700; border-bottom: 1px solid #000; }
+  table.offer-line-heading td.offer-line-title { font-weight: 700; font-size: 12pt; }
+  table.offer-line-heading .offer-line-vat { font-size: 10pt; }
 </style>
 </head>
 <body>
@@ -234,7 +260,7 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
 <thead><tr><td class="spacer-top"></td></tr></thead>
 <tfoot><tr><td class="spacer-bottom"></td></tr></tfoot>
 <tbody><tr><td>
-<section class="doc-section offer-section"><h2 class="offer-line-heading"><span class="offer-line-title">Ulkomaalaus</span><span class="offer-line-leader"></span><span class="offer-line-qty">1</span><span class="offer-line-price">1 255,00 €</span></h2><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
+<section class="doc-section offer-section"><table class="offer-cols-head"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><thead><tr><th>Nimike</th><th class="num">Määrä</th><th>Yks.</th><th class="num">A-hinta</th><th class="num">Alv-%</th><th class="num">Yht</th></tr></thead></table><table class="offer-line-heading"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><tbody><tr><td class="offer-line-title">Ulkomaalaus</td><td class="num offer-line-qty">1</td><td class="offer-line-unit"></td><td class="num offer-line-unitprice">1 255,00 €</td><td class="num offer-line-vat">25,5 %</td><td class="num offer-line-price">1 255,00 €</td></tr></tbody></table><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
 <div class="price-block"><div class="col"><table><tr><td>Hinta alv0</td><td class="value">2 000,00 €</td></tr><tr><td>ALV 25,5 %</td><td class="value">510,00 €</td></tr></table></div><div class="col"><table><tr><td>Hinta alv</td><td class="value">2 510,00 €</td></tr><tr class="emphasis"><td>Loppusumma</td><td class="value">2 510,00 €</td></tr></table></div></div>
 <table class="offer-vat"><thead><tr><th>Alv-%</th><th class="num">Veroton</th><th class="num">Alv</th><th class="num">Yhteensä</th></tr></thead><tbody><tr><td>25,5 %</td><td class="num">2 000,00 €</td><td class="num">510,00 €</td><td class="num">2 510,00 €</td></tr></tbody></table>
 <div class="offer-seller"><h3>Myyjä:</h3><div>Puh. +358 40 938 9403<br />info@colorajaton.fi</div></div>
@@ -308,25 +334,6 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
   .ktv-note { font-size: 9pt; color: #333; }
 
-  .offer-delivery { margin: 1mm 0 4mm 0; }
-  .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
-  .offer-vat th, .offer-vat td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
-  .offer-vat th.num, .offer-vat td.num { text-align: right; white-space: nowrap; }
-  .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
-  .offer-seller { margin: 4mm 0; }
-  .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
-  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
-  .offer-sign td + td { padding: 0 0 0 6mm; }
-  .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
-  .offer-sign-name { min-height: 12mm; }
-  .offer-sign-detail { margin: 0 0 1mm 0; }
-  .offer-sign-label { margin: 3mm 0 0 0; }
-  .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .ktv-rate-sentence { margin: 0 0 3mm 0; }
-
   .doc-section { margin: 0 0 5mm 0; }
   .doc-heading, .offer-line-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
   .doc-heading { margin: 3mm 0 1.5mm 0; font-size: 12pt; }
@@ -347,6 +354,38 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   .doc-fields td.value { text-align: right; }
   .uk-huomio { margin-top: 4mm; }
   .uk-huomio h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
+
+  .offer-delivery { margin: 1mm 0 4mm 0; }
+  .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
+  .offer-vat th, .offer-vat td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
+  .offer-vat th.num, .offer-vat td.num { text-align: right; white-space: nowrap; }
+  .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
+  .offer-seller { margin: 4mm 0; }
+  .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
+  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
+  .offer-sign td + td { padding: 0 0 0 6mm; }
+  .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
+  .offer-sign-name { min-height: 12mm; }
+  .offer-sign-detail { margin: 0 0 1mm 0; }
+  .offer-sign-label { margin: 3mm 0 0 0; }
+  .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .ktv-rate-sentence { margin: 0 0 3mm 0; }
+  table.offer-cols-head, table.offer-line-heading { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  table.offer-cols-head { margin: 3mm 0 0 0; break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
+  table.offer-line-heading { display: table; margin: 0 0 2mm 0; break-inside: avoid; page-break-inside: avoid; }
+  table.offer-cols-head .c-qty, table.offer-line-heading .c-qty { width: 18mm; }
+  table.offer-cols-head .c-unit, table.offer-line-heading .c-unit { width: 16mm; }
+  table.offer-cols-head .c-unitprice, table.offer-line-heading .c-unitprice { width: 28mm; }
+  table.offer-cols-head .c-vat, table.offer-line-heading .c-vat { width: 26mm; }
+  table.offer-cols-head .c-total, table.offer-line-heading .c-total { width: 32mm; }
+  table.offer-cols-head th, table.offer-cols-head td, table.offer-line-heading th, table.offer-line-heading td { padding: 0.6mm 1.5mm 0.6mm 0; vertical-align: baseline; text-align: left; }
+  table.offer-cols-head th.num, table.offer-cols-head td.num, table.offer-line-heading th.num, table.offer-line-heading td.num { text-align: right; white-space: nowrap; }
+  table.offer-cols-head th { font-size: 9pt; font-weight: 700; border-bottom: 1px solid #000; }
+  table.offer-line-heading td.offer-line-title { font-weight: 700; font-size: 12pt; }
+  table.offer-line-heading .offer-line-vat { font-size: 10pt; }
 </style>
 </head>
 <body>
@@ -364,8 +403,8 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
 <thead><tr><td class="spacer-top"></td></tr></thead>
 <tfoot><tr><td class="spacer-bottom"></td></tr></tfoot>
 <tbody><tr><td>
-<section class="doc-section offer-section"><h2 class="offer-line-heading"><span class="offer-line-title">Ulkomaalaus</span><span class="offer-line-leader"></span><span class="offer-line-qty">1</span><span class="offer-line-price">1 255,00 €</span></h2><div class="doc-group doc-group-muuta"><p class="doc-group-title">Muuta</p><p class="doc-line">Sisältää telineet.</p></div><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
-<section class="doc-section offer-section"><h2 class="offer-line-heading"><span class="offer-line-title">Sokkeli</span><span class="offer-line-leader"></span><span class="offer-line-qty">1</span><span class="offer-line-price">1 255,00 €</span></h2><div class="doc-group doc-group-muuta"><p class="doc-group-title">Muuta</p><p class="doc-line">Toinen teksti</p></div><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">30 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
+<section class="doc-section offer-section"><table class="offer-cols-head"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><thead><tr><th>Nimike</th><th class="num">Määrä</th><th>Yks.</th><th class="num">A-hinta</th><th class="num">Alv-%</th><th class="num">Yht</th></tr></thead></table><table class="offer-line-heading"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><tbody><tr><td class="offer-line-title">Ulkomaalaus</td><td class="num offer-line-qty">1</td><td class="offer-line-unit"></td><td class="num offer-line-unitprice">1 255,00 €</td><td class="num offer-line-vat">25,5 %</td><td class="num offer-line-price">1 255,00 €</td></tr></tbody></table><div class="doc-group doc-group-muuta"><p class="doc-group-title">Muuta</p><p class="doc-line">Sisältää telineet.</p></div><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
+<section class="doc-section offer-section"><table class="offer-line-heading"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><tbody><tr><td class="offer-line-title">Sokkeli</td><td class="num offer-line-qty">1</td><td class="offer-line-unit"></td><td class="num offer-line-unitprice">1 255,00 €</td><td class="num offer-line-vat">25,5 %</td><td class="num offer-line-price">1 255,00 €</td></tr></tbody></table><div class="doc-group doc-group-muuta"><p class="doc-group-title">Muuta</p><p class="doc-line">Toinen teksti</p></div><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">30 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
 <div class="price-block"><div class="col"><table><tr><td>Hinta alv0</td><td class="value">2 000,00 €</td></tr><tr><td>ALV 25,5 %</td><td class="value">510,00 €</td></tr></table></div><div class="col"><table><tr><td>Hinta alv</td><td class="value">2 510,00 €</td></tr><tr class="emphasis"><td>Loppusumma</td><td class="value">2 510,00 €</td></tr></table></div></div>
 <table class="offer-vat"><thead><tr><th>Alv-%</th><th class="num">Veroton</th><th class="num">Alv</th><th class="num">Yhteensä</th></tr></thead><tbody><tr><td>25,5 %</td><td class="num">2 000,00 €</td><td class="num">510,00 €</td><td class="num">2 510,00 €</td></tr></tbody></table>
 <div class="additional-info"><h3>Lisätiedot:</h3><div>Maksuehto kuvitteellinen.</div></div>

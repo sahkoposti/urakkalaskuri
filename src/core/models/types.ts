@@ -137,7 +137,7 @@ export interface FormSnapshot {
   /**
    * Yritystarjouksen ALV koko laskelmalle. Valinnainen avain samassa `form_snapshot`-JSON:ssa
    * (ei lomakepohjan JSON:ia, ei skeemamuutosta). `'alv0'` = veroton otsikko "Alv 0 %".
-   * `'sis'` = brutto-otsikko "sis. alv X %". Puuttuva tai muu arvo = `'alv0'`.
+   * `'sis'` = bruttohinnat ja otsikon Alv-% on rivin verokanta. Puuttuva tai muu arvo = `'alv0'`.
    * Rivin `pricesIncludeVat` ei vaikuta yritystarjoukseen. Käänteinen ALV on aina `'alv0'`.
    */
   businessVatMode?: 'alv0' | 'sis';

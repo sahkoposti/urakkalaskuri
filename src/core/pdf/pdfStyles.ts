@@ -100,4 +100,17 @@ export const offerDocumentCss = `
   .offer-sign-label { margin: 3mm 0 0 0; }
   .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
   .ktv-rate-sentence { margin: 0 0 3mm 0; }
+  table.offer-cols-head, table.offer-line-heading { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  table.offer-cols-head { margin: 3mm 0 0 0; break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
+  table.offer-line-heading { display: table; margin: 0 0 2mm 0; break-inside: avoid; page-break-inside: avoid; }
+  table.offer-cols-head .c-qty, table.offer-line-heading .c-qty { width: 18mm; }
+  table.offer-cols-head .c-unit, table.offer-line-heading .c-unit { width: 16mm; }
+  table.offer-cols-head .c-unitprice, table.offer-line-heading .c-unitprice { width: 28mm; }
+  table.offer-cols-head .c-vat, table.offer-line-heading .c-vat { width: 26mm; }
+  table.offer-cols-head .c-total, table.offer-line-heading .c-total { width: 32mm; }
+  table.offer-cols-head th, table.offer-cols-head td, table.offer-line-heading th, table.offer-line-heading td { padding: 0.6mm 1.5mm 0.6mm 0; vertical-align: baseline; text-align: left; }
+  table.offer-cols-head th.num, table.offer-cols-head td.num, table.offer-line-heading th.num, table.offer-line-heading td.num { text-align: right; white-space: nowrap; }
+  table.offer-cols-head th { font-size: 9pt; font-weight: 700; border-bottom: 1px solid #000; }
+  table.offer-line-heading td.offer-line-title { font-weight: 700; font-size: 12pt; }
+  table.offer-line-heading .offer-line-vat { font-size: 10pt; }
 `;

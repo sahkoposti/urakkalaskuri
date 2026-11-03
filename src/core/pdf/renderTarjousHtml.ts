@@ -43,16 +43,23 @@ function renderDelivery(text: string): string {
   return `<p class="offer-delivery">Toimitusajankohta: ${escapeHtml(trimmed)}</p>`;
 }
 
-function renderSection(section: OfferSection): string {
-  const heading = section.heading
-    ? `<h2 class="offer-line-heading"><span class="offer-line-title">${escapeHtml(section.title)}</span><span class="offer-line-leader"></span>${
-        section.heading.quantityLabel
-          ? `<span class="offer-line-qty">${escapeHtml(section.heading.quantityLabel)}</span>`
-          : ''
-      }<span class="offer-line-price">${escapeHtml(section.heading.price)}</span>${
-        section.heading.vatLabel ? `<span class="offer-line-vat">${escapeHtml(section.heading.vatLabel)}</span>` : ''
-      }</h2>`
-    : `<h2 class="doc-heading">${escapeHtml(section.title)}</h2>`;
+function offerColGroup(): string {
+  return '<colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup>';
+}
+
+/** Sarakeotsikot kerran tarjousta kohden, ensimmäisen hinnoitellun otsikon yläpuolella. */
+function renderOfferColumnHeader(): string {
+  return `<table class="offer-cols-head">${offerColGroup()}<thead><tr><th>Nimike</th><th class="num">Määrä</th><th>Yks.</th><th class="num">A-hinta</th><th class="num">Alv-%</th><th class="num">Yht</th></tr></thead></table>`;
+}
+
+function renderHeadingRow(section: OfferSection): string {
+  const heading = section.heading;
+  if (!heading) return `<h2 class="doc-heading">${escapeHtml(section.title)}</h2>`;
+  return `<table class="offer-line-heading">${offerColGroup()}<tbody><tr><td class="offer-line-title">${escapeHtml(section.title)}</td><td class="num offer-line-qty">${escapeHtml(heading.quantity)}</td><td class="offer-line-unit">${escapeHtml(heading.unit)}</td><td class="num offer-line-unitprice">${escapeHtml(heading.unitPrice)}</td><td class="num offer-line-vat">${escapeHtml(heading.vatLabel ?? '')}</td><td class="num offer-line-price">${escapeHtml(heading.price)}</td></tr></tbody></table>`;
+}
+
+function renderSection(section: OfferSection, showColumnHeader: boolean): string {
+  const heading = `${showColumnHeader ? renderOfferColumnHeader() : ''}${renderHeadingRow(section)}`;
   const description = section.description?.trim()
     ? `<div class="doc-desc">${renderPrintedLines(section.description.trim())}</div>`
     : '';
@@ -137,10 +144,17 @@ ${bodyHtml}
 
 export function renderTarjousBody(ctx: TarjousPdfContext): string {
   // KTV-sivu aina viimeisenä (vain yksityisasiakas ilman käänteistä ALV:ta).
-  // Rivitaulukko on poistettu: hinta on rakenneosion otsikossa. Toimitus jää osioiden edelle.
+  // Sarakeotsikko kerran, ensimmäisen hinnoitellun rakenneotsikon yläpuolella.
+  // Toimitus jää osioiden edelle.
+  let columnHeaderPlaced = false;
+  const sections = ctx.sections.map((section) => {
+    const showColumnHeader = Boolean(section.heading) && !columnHeaderPlaced;
+    if (showColumnHeader) columnHeaderPlaced = true;
+    return renderSection(section, showColumnHeader);
+  });
   return [
     renderDelivery(ctx.deliveryScheduleText),
-    ...ctx.sections.map(renderSection),
+    ...sections,
     renderPriceBlock(ctx.price),
     renderVatSummary(ctx.vatSummary),
     renderAdditionalInfo(ctx.additionalInfo),
@@ -155,6 +169,6 @@ export function renderTarjousBody(ctx: TarjousPdfContext): string {
 export function renderTarjousHtml(ctx: TarjousPdfContext, options: RenderTarjousOptions = {}): string {
   return renderDocument(ctx, renderTarjousBody(ctx), options).replace(
     '</style>',
-    `${offerDocumentCss}${printedSectionCss}</style>`,
+    `${printedSectionCss}${offerDocumentCss}</style>`,
   );
 }
