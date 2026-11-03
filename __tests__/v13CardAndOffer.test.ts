@@ -3,7 +3,7 @@ import { normalizePrintSettings, resolveTargetPrint, defaultEsitys } from '../sr
 import { esitysAfterGroupChange, writePrintEditorState } from '../src/core/form/printEditorState';
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
 import { buildPrintedBody, PRINT_GROUP_TITLES } from '../src/core/pdf/printedSection';
-import { renderPrintedGroups } from '../src/core/pdf/renderPrintedSection';
+import { printedSectionCss, renderPrintedGroups } from '../src/core/pdf/renderPrintedSection';
 import {
   normalizeOfferCompanySettings,
   parseSivukulukerroinInput,
@@ -83,6 +83,7 @@ describe('print group titles', () => {
     expect(body.textGroups.find((group) => group.group === 'maali')?.items).toEqual(['Testimaali 1.000']);
     const html = renderPrintedGroups(body.textGroups);
     expect(html).toContain('class="doc-group doc-group-tieto"');
+    expect(printedSectionCss).toContain('.doc-group-tieto { margin-top: 4mm; padding-top: 2mm; border-top: 1px solid #ccc; }');
     expect(html).not.toContain('>Tieto<');
     expect(html).toContain('>Osa-alueet<');
     expect(html).toContain('>Työvaiheet<');

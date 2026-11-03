@@ -75,6 +75,7 @@ exports[`urakkakortti single line: contract, duration, crew, specs, notes area; 
   .doc-desc { margin: 0 0 3mm 0; }
   .doc-group { margin: 0 0 3mm 0; break-inside: avoid; page-break-inside: avoid; }
   .doc-group-muuta { margin-top: 4mm; }
+  .doc-group-tieto { margin-top: 4mm; padding-top: 2mm; border-top: 1px solid #ccc; }
   .doc-group-title { margin: 0 0 1mm 0; font-weight: 700; }
   .doc-line { margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
   .doc-fields { width: 100%; border-collapse: collapse; margin: 0 0 3mm 0; font-size: 10pt; }
