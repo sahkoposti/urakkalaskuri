@@ -991,7 +991,7 @@ describe('offer heading price columns', () => {
     expect(plain(ctx.price.rows[1].value)).toBe('−466,00 €');
   });
 
-  it('prints an A-hinta that multiplies back to Yht when two decimals cannot', () => {
+  it('prints A-hinta with exactly two decimals while Yht stays the rounded line total', () => {
     const rounded = {
       ...line('r', 's1', 'Räystäät'),
       quantity: 20,
@@ -1006,9 +1006,8 @@ describe('offer heading price columns', () => {
     );
     const heading = buildOfferSections(input(sis, { structures: [], offerStructureSettings: {} }))[0].heading;
     expect(plain(heading?.price ?? '')).toBe('4 643,50 €');
-    expect(plain(heading?.unitPrice ?? '')).toBe('232,175 €');
-    const unit = Number(plain(heading?.unitPrice ?? '').replace('€', '').replace(',', '.'));
-    expect(roundToCents(unit * rounded.quantity)).toBe(4643.5);
+    expect(plain(heading?.unitPrice ?? '')).toBe('232,18 €');
+    expect(plain(heading?.unitPrice ?? '')).toMatch(/,\d{2} €$/);
     const exact = { ...rounded, quantity: 12, unitPriceVat0: 80 };
     const exactSis = calculationWithBusinessVatMode(
       record({ customerType: 'business' }, { structureLines: [exact], vatPercent: 25.5 }),
