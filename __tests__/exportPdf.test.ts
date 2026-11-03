@@ -99,16 +99,15 @@ describe('exportUrakkakorttiPdf', () => {
     expect(current().offerNumber).toBeUndefined();
   });
 
-  it('prints a real zero contract in Työntekijä mode without asking for a manual sum', async () => {
+  it('asks for a manual contract when Työntekijä price is zero, same as Alihankkija', async () => {
     const rec = calculationWithUrakkakorttiMode(
       record({ name: 'Testi' }, { projectName: 'Testi', structureLines: [{ ...line('a', 's1', 'Räystäs'), contractPriceVat0: 0 }] }),
       'tyontekija',
     );
     const { deps, app, printed } = setup(rec);
-    const done = await exportUrakkakorttiPdf('c1', app, deps);
-    expect(done.status).toBe('done');
-    expect(printed).toHaveLength(1);
-    expect(printed[0].html).toMatch(/0,00\s€/);
+    const ask = await exportUrakkakorttiPdf('c1', app, deps);
+    expect(ask).toEqual({ status: 'needsManualContract', lines: [{ id: 'a', name: 'Räystäs' }] });
+    expect(printed).toHaveLength(0);
   });
 
   it('prints directly when contract sums exist; never assigns an offer number', async () => {

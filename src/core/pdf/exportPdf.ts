@@ -6,7 +6,7 @@ import { ensureStructureLines } from '../structure/legacyCalculation';
 import { buildPdfContext } from './buildPdfContext';
 import type { GeneratePdfOptions, GeneratePdfResult } from './generatePdf';
 import { linesNeedingManualContract } from './manualContract';
-import { readUrakkakorttiMode, urakkakorttiContractProblems } from './urakkakorttiCard';
+import { urakkakorttiContractProblems } from './urakkakorttiCard';
 import { offerDocumentProblems } from './offerDocument';
 import type { OfferNumberAssignment } from './offerNumber';
 import type { OfferCompanySettings, OfferStructureSettings } from './types';
@@ -106,11 +106,7 @@ export async function exportUrakkakorttiPdf(
   if (contractProblems.length > 0) {
     throw new Error(contractProblems.join('\n'));
   }
-  const mode = readUrakkakorttiMode(record.formSnapshot);
-  const missing = linesNeedingManualContract(record).filter((line) => {
-    if (mode !== 'tyontekija') return true;
-    return line.contractPriceVat0 !== 0;
-  });
+  const missing = linesNeedingManualContract(record);
   if (missing.length > 0) {
     return { status: 'needsManualContract', lines: missing.map((line) => ({ id: line.id, name: line.name })) };
   }
