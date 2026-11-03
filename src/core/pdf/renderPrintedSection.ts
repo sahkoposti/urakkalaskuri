@@ -14,7 +14,10 @@ export function renderPrintedGroups(groups: PrintedTextGroup[]): string {
   return groups
     .map((group) => {
       const lines = group.items.map((item) => renderPrintedLines(item)).join('');
-      return `<div class="doc-group doc-group-${group.group}"><p class="doc-group-title">${escapeHtml(group.title)}</p>${lines}</div>`;
+      const title = group.title.trim()
+        ? `<p class="doc-group-title">${escapeHtml(group.title)}</p>`
+        : '';
+      return `<div class="doc-group doc-group-${group.group}">${title}${lines}</div>`;
     })
     .join('');
 }

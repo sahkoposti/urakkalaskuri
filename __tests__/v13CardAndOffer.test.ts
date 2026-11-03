@@ -2,6 +2,8 @@ import type { FormField } from '../src/core/form/types';
 import { normalizePrintSettings, resolveTargetPrint, defaultEsitys } from '../src/core/form/printSettings';
 import { esitysAfterGroupChange, writePrintEditorState } from '../src/core/form/printEditorState';
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
+import { buildPrintedBody, PRINT_GROUP_TITLES } from '../src/core/pdf/printedSection';
+import { renderPrintedGroups } from '../src/core/pdf/renderPrintedSection';
 import {
   normalizeOfferCompanySettings,
   parseSivukulukerroinInput,
@@ -50,6 +52,32 @@ describe('printed integers', () => {
     expect(stripTrailingZeroDecimals('2,5')).toBe('2,5');
     expect(stripTrailingZeroDecimals('2,50')).toBe('2,50');
     expect(stripTrailingZeroDecimals('1 000,00 €')).toBe('1 000,00 €');
+  });
+});
+
+describe('print group titles', () => {
+  it('prints Osa-alueet, Työvaiheet, Muuta and Maali, and leaves Tieto without a heading', () => {
+    expect(PRINT_GROUP_TITLES.osa_alueet).toBe('Osa-alueet');
+    expect(PRINT_GROUP_TITLES.tyovaiheet).toBe('Työvaiheet');
+    expect(PRINT_GROUP_TITLES.muuta).toBe('Muuta');
+    expect(PRINT_GROUP_TITLES.maali).toBe('Maali');
+    expect(PRINT_GROUP_TITLES.tieto).toBe('');
+    const body = buildPrintedBody([
+      { key: 'a', label: 'Seinät', value: 'Kyllä', group: 'osa_alueet', order: 1, esitys: 'teksti' },
+      { key: 'b', label: 'Pesu', value: 'Kyllä', group: 'tyovaiheet', order: 1, esitys: 'teksti' },
+      { key: 'c', label: '', value: 'Peitteet', group: 'muuta', order: 1, esitys: 'teksti' },
+      { key: 'd', label: 'Kerroksia', value: 'kaksi', group: 'tieto', order: 1, esitys: 'teksti' },
+      { key: 'f', label: 'Maali', value: 'Testimaali', group: 'maali', order: 1, esitys: 'teksti' },
+    ]);
+    expect(body.textGroups.map((group) => group.title)).toEqual(['Osa-alueet', 'Työvaiheet', 'Muuta', '', 'Maali']);
+    const html = renderPrintedGroups(body.textGroups);
+    expect(html).toContain('class="doc-group doc-group-tieto"');
+    expect(html).not.toContain('>Tieto<');
+    expect(html).toContain('>Osa-alueet<');
+    expect(html).toContain('>Työvaiheet<');
+    expect(html).toContain('>Muuta<');
+    expect(html).toContain('>Maali<');
+    expect(html).toContain('Kerroksia kaksi');
   });
 });
 

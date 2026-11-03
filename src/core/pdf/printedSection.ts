@@ -10,7 +10,7 @@ export const PRINT_GROUP_TITLES: Record<PrintGroup, string> = {
   osa_alueet: 'Osa-alueet',
   tyovaiheet: 'Työvaiheet',
   muuta: 'Muuta',
-  tieto: 'Tieto',
+  tieto: '',
   maali: 'Maali',
 };
 
