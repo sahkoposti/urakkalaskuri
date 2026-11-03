@@ -5,13 +5,18 @@ import { KTV_DEFAULT_NOTE } from '../src/core/pdf/kotitalousDeduction';
 import { calculationWithKtvPersons } from '../src/core/pdf/ktvPersons';
 import { KTV_ONE_PERSON_LINE, ktvDefaultNote, ktvPersonsLine, ktvRateSentence, renderKotitalousPageHtml } from '../src/core/pdf/renderKotitalousPageHtml';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
-import { input, record } from './pdfFixtures';
+import { input, line, record } from './pdfFixtures';
+
+/** Rivin brutto täsmää tallennettuun 2 510:een, jotta KTV-kaava pysyy samana. */
+function recordAt2510() {
+  return record({}, { structureLines: [{ ...line('l1', 's1', 'Ulkomaalaus'), unitPriceVat0: 2000 }] });
+}
 
 const norm = (s: string) => s.replace(/\s/g, ' ');
 
 describe('renderKotitalousPageHtml', () => {
   it('private customer: KTV page is last, with page break and one-person estimate text', () => {
-    const ctx = buildPdfContext(input(record({})));
+    const ctx = buildPdfContext(input(recordAt2510()));
     const html = renderTarjousHtml(ctx);
     const ktvAt = html.indexOf('<section class="ktv-page page-break">');
     expect(ktvAt).toBeGreaterThan(html.indexOf('class="price-block offer-totals"'));
@@ -33,7 +38,7 @@ describe('renderKotitalousPageHtml', () => {
   });
 
   it('amounts: (2510 - 502) * 40 % = 803.20 - 150 = 653.20; cost after = 1856.80', () => {
-    const html = norm(renderKotitalousPageHtml(buildPdfContext(input(record({})))));
+    const html = norm(renderKotitalousPageHtml(buildPdfContext(input(recordAt2510()))));
     const loppu = html.indexOf('Loppusumma (sis. ALV)');
     const tyo = html.indexOf('Työn osuus');
     expect(loppu).toBeGreaterThan(-1);
@@ -53,7 +58,7 @@ describe('renderKotitalousPageHtml', () => {
 
   it('uses company settings (rate, deductible, cap) and shows the cap when applied', () => {
     const ctx = buildPdfContext(
-      input(record({}), {
+      input(recordAt2510(), {
         offerCompany: {
           ...defaultOfferCompanySettings,
           ktv: { ratePercent: 50, deductibleEur: 100, capEur: 500 },
@@ -108,7 +113,7 @@ describe('renderKotitalousPageHtml', () => {
   });
 
   it('n=2 and n=3 change the person rows and the default estimate wording', () => {
-    const two = norm(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(record({}), 2)))));
+    const two = norm(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(recordAt2510(), 2)))));
     expect(two).toContain('Omavastuu yhteensä (2 henkilöä)');
     expect(two).toContain('−300,00 €');
     expect(two).toContain('Enimmäismäärä yhteensä (2 henkilöä)');
@@ -121,7 +126,7 @@ describe('renderKotitalousPageHtml', () => {
     expect(two).not.toContain('yhdelle henkilölle');
     expect(two).not.toContain(KTV_ONE_PERSON_LINE);
 
-    const three = norm(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(record({}), 3)))));
+    const three = norm(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(recordAt2510(), 3)))));
     expect(three).toContain('Omavastuu yhteensä (3 henkilöä)');
     expect(three).toContain('−450,00 €');
     expect(three).toContain('Enimmäismäärä yhteensä (3 henkilöä)');
@@ -129,8 +134,8 @@ describe('renderKotitalousPageHtml', () => {
     expect(three).toContain('Arvioitu kotitalousvähennys (3 henkilöä)');
     expect(three).not.toContain(ktvPersonsLine(3));
     expect(three).toContain(ktvDefaultNote(3));
-    expect(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(record({}), 2))))).toMatchSnapshot();
-    expect(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(record({}), 3))))).toMatchSnapshot();
+    expect(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(recordAt2510(), 2))))).toMatchSnapshot();
+    expect(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(recordAt2510(), 3))))).toMatchSnapshot();
   });
 
   it('keeps a company note as written when n is greater than 1', () => {

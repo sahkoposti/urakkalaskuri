@@ -172,6 +172,33 @@ export function roundedOfferLineAmount(
   return amount == null ? null : roundToCents(amount);
 }
 
+/**
+ * Yhden rivin kortin summat senteissä. Veroton on pyöristetty netto, brutto pyöristetty
+ * Yht, ALV erotus. Näin yksi rivi täsmää otsikon Yht-sarakkeeseen.
+ */
+export function roundedLineCardPrices(
+  line: StructureLine,
+  reverseVat: boolean,
+): {
+  totalPriceVat0: number;
+  totalPriceVat: number;
+  vatAmount: number;
+  totalPriceVatBeforeDiscount: number;
+  totalPriceVat0BeforeDiscount: number;
+} {
+  const net = roundedOfferLineAmount(line, false, 'paid') ?? 0;
+  const gross = reverseVat ? net : (roundedOfferLineAmount(line, true, 'paid') ?? net);
+  const listNet = roundedOfferLineAmount(line, false, 'list') ?? net;
+  const listGross = reverseVat ? listNet : (roundedOfferLineAmount(line, true, 'list') ?? listNet);
+  return {
+    totalPriceVat0: net,
+    totalPriceVat: gross,
+    vatAmount: roundToCents(gross - net),
+    totalPriceVat0BeforeDiscount: listNet,
+    totalPriceVatBeforeDiscount: listGross,
+  };
+}
+
 /** Sama senttipyöristys kuin otsikon Yht-sarakkeessa. null = kelvoton rivi. */
 export function sumRoundedOfferLines(
   record: CalculationRecord,

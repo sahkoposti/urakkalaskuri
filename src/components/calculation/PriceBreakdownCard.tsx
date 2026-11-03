@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { AppCard, ResultRow } from '@/src/components/common';
 import type { CustomerInfo, FormSnapshot } from '@/src/core/models/types';
+import { cardShownTotals } from '@/src/core/pdf/buildPdfContext';
 import {
   labeledWithVatMode,
   priceBreakdownParts,
@@ -44,6 +45,7 @@ export function PriceBreakdownCard({
   const styles = useThemedStyles(createStyles);
   const includeVat = includeVatProp ?? summaryShowsVatInclusive(customer, lines, snapshot);
   const parts = priceBreakdownParts(values, includeVat);
+  const shown = cardShownTotals(values, customer);
   const durationText = formatDurationDisplayValue(displayedWorkDurationDays);
 
   return (
@@ -71,7 +73,7 @@ export function PriceBreakdownCard({
       <View style={styles.divider} />
       <ResultRow
         label={`Kokonaishinta (${vat0Tag()})`}
-        value={formatCurrency(values.totalPriceVat0)}
+        value={formatCurrency(shown.totalPriceVat0)}
         highlight={!includeVat}
       />
       {includeVat ? (
@@ -81,12 +83,12 @@ export function PriceBreakdownCard({
           ) : (
             <ResultRow
               label={`ALV (${formatPercent(parts.vatRate)})`}
-              value={formatCurrency(values.vatAmount)}
+              value={formatCurrency(shown.vatAmount)}
             />
           )}
           <ResultRow
             label={`Kokonaishinta (${vatInclTag(parts.vatRate)})`}
-            value={formatCurrency(values.totalPriceVat)}
+            value={formatCurrency(shown.totalPriceVat)}
             highlight
           />
         </>

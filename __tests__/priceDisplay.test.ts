@@ -1,3 +1,6 @@
+import { cardShownTotals, formatPrintedDisplayPrice, printedOfferAmounts } from '../src/core/pdf/buildPdfContext';
+import { roundedLineCardPrices } from '../src/core/pdf/offerDocument';
+import { formatCurrency, roundToCents } from '../src/core/utils/formatters';
 import {
   customerSeesVatInclusive,
   defaultPricesIncludeVat,
@@ -9,6 +12,7 @@ import {
   vatInclTag,
   workPriceVat0,
 } from '../src/core/utils/priceDisplay';
+import { line, record } from './pdfFixtures';
 
 describe('vat labels', () => {
   test('uses ALV 0 and ALV 25,5', () => {
@@ -72,5 +76,80 @@ describe('vat labels', () => {
     );
     expect(parts.work).toBeCloseTo(800 * 1.255, 10);
     expect(parts.materials + parts.work - parts.discountAmount).toBeCloseTo(parts.priceAfterDiscount, 10);
+  });
+});
+
+describe('printed total on screen', () => {
+  const customer = { name: 'Matti Meikäläinen', customerType: 'private' as const };
+  const plain = (value: string) => value.replace(/\s/g, ' ');
+
+  function threeLines(discountPercent: number) {
+    const storedGross = 30.03 * 1.255;
+    return record(customer, {
+      structureLines: [0, 1, 2].map((index) => ({
+        ...line(`a${index}`, 's1', `Osa ${index}`),
+        quantity: 1,
+        unitPriceVat0: 10.01,
+        discountPercent,
+        vatPercent: 25.5,
+        materialsVat0: 0,
+      })),
+      discountPercent,
+      totalPriceVat0BeforeDiscount: 30.03,
+      totalPriceVat0: discountPercent > 0 ? 27.03 : 30.03,
+      totalPriceVatBeforeDiscount: storedGross,
+      totalPriceVat: discountPercent > 0 ? 33.92 : storedGross,
+      vatAmount: (discountPercent > 0 ? 33.92 : storedGross) - (discountPercent > 0 ? 27.03 : 30.03),
+      vatPercent: 25.5,
+      materialsVat0: 0,
+    });
+  }
+
+  test('private without discount: card and history use the rounded line sum', () => {
+    const rec = threeLines(0);
+    const printed = printedOfferAmounts(rec, customer);
+    expect(printed).toEqual({ net: 30.03, vat: 7.65, gross: 37.68, source: 'lines' });
+    expect(printed.net + printed.vat).toBe(printed.gross);
+    const shown = cardShownTotals(rec, customer);
+    expect(shown).toEqual({ totalPriceVat0: 30.03, totalPriceVat: 37.68, vatAmount: 7.65, usedPrintedLines: true });
+    expect(plain(formatPrintedDisplayPrice(rec, customer))).toBe('37,68 €');
+    expect(plain(formatCurrency(rec.totalPriceVat))).toBe('37,69 €');
+  });
+
+  test('one line card reconciles Veroton + ALV to the rounded Yht', () => {
+    const prices = roundedLineCardPrices(
+      { ...line('a', 's1', 'Osa'), quantity: 1, unitPriceVat0: 10.01, discountPercent: 0, vatPercent: 25.5 },
+      false,
+    );
+    expect(prices.totalPriceVat0).toBe(10.01);
+    expect(prices.totalPriceVat).toBe(12.56);
+    expect(prices.vatAmount).toBe(2.55);
+    expect(roundToCents(prices.totalPriceVat0 + prices.vatAmount)).toBe(prices.totalPriceVat);
+  });
+
+  test('legacy record discount keeps the stored total on screen', () => {
+    const rec = record(customer, {
+      structureLines: [{ ...line('a', 's1', 'Lista'), quantity: 1, unitPriceVat0: 90.6, discountPercent: 0, vatPercent: 25.5 }],
+      discountPercent: 5,
+      totalPriceVat0BeforeDiscount: 90.6,
+      totalPriceVat0: 86.07,
+      totalPriceVatBeforeDiscount: 113.7,
+      totalPriceVat: 108.02,
+      vatAmount: 21.95,
+      vatPercent: 25.5,
+    });
+    const printed = printedOfferAmounts(rec, customer);
+    expect(printed.gross).toBe(108.02);
+    expect(printed.source).toBe('stored');
+    expect(cardShownTotals(rec, customer).totalPriceVat).toBe(108.02);
+    expect(plain(formatPrintedDisplayPrice(rec, customer))).toBe('108,02 €');
+  });
+
+  test('without structure lines the screen keeps the stored total', () => {
+    const rec = record(customer, { structureLines: [], totalPriceVat: 37.68765, totalPriceVat0: 30.03, vatAmount: 7.65765 });
+    const shown = cardShownTotals(rec, customer);
+    expect(shown.usedPrintedLines).toBe(false);
+    expect(shown.totalPriceVat).toBe(37.68765);
+    expect(plain(formatPrintedDisplayPrice(rec, customer))).toBe(plain(formatCurrency(37.68765)));
   });
 });

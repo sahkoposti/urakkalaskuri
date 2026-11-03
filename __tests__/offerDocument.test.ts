@@ -546,6 +546,7 @@ describe('offer discount, VAT summary and KTV', () => {
     const ctx = buildPdfContext(
       input(
         record({}, {
+          structureLines: [{ ...line('l1', 's1', 'Ulkomaalaus'), quantity: 1, unitPriceVat0: 4780.88, discountPercent: 0, vatPercent: vat, materialsVat0: 0 }],
           discountPercent: 0,
           totalPriceVat: 6000,
           totalPriceVatBeforeDiscount: 6000,

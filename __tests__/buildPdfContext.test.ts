@@ -58,8 +58,13 @@ describe('buildPdfContext', () => {
     expect(ctx.price.includesVat).toBe(true);
     expect(labels(ctx.price.rows)).toEqual(['Veroton', 'ALV 25,5 %', 'Loppusumma']);
     expect(ctx.price.rows.at(-1)?.emphasis).toBe(true);
+    expect(ctx.price.rows.map((row) => row.value.replace(/\s/g, ' '))).toEqual([
+      '1 000,00 €',
+      '255,00 €',
+      '1 255,00 €',
+    ]);
     expect(ctx.ktv).toEqual({
-      totalPriceVat: 2510,
+      totalPriceVat: 1255,
       materialsVat: 502,
       settings: { ratePercent: 40, deductibleEur: 150, capEur: 2100 },
       footnoteText: '',
@@ -300,6 +305,55 @@ describe('buildPdfContext', () => {
     ]);
     expect(ctx.price.rows[1].label).toBe('Alennus yhteensä 5 %');
     expect(ctx.ktv?.totalPriceVat).toBe(108.02);
+  });
+
+  it('private without discount: 3 x 10,01 uses rounded line totals, Veroton + ALV = Loppusumma, KTV matches', () => {
+    const lines = [0, 1, 2].map((index) => ({
+      ...line(`a${index}`, 's1', `Osa ${index}`),
+      quantity: 1,
+      unitPriceVat0: 10.01,
+      discountPercent: 0,
+      vatPercent: 25.5,
+      materialsVat0: 0,
+    }));
+    const storedGross = 30.03 * 1.255;
+    const ctx = buildPdfContext(
+      input(
+        record({}, {
+          structureLines: lines,
+          discountPercent: 0,
+          totalPriceVat0BeforeDiscount: 30.03,
+          totalPriceVat0: 30.03,
+          totalPriceVatBeforeDiscount: storedGross,
+          totalPriceVat: storedGross,
+          vatAmount: storedGross - 30.03,
+          vatPercent: 25.5,
+          materialsVat0: 0,
+        }),
+      ),
+    );
+    expect(ctx.sections.map((section) => section.heading?.price.replace(/\s/g, ' '))).toEqual([
+      '12,56 €',
+      '12,56 €',
+      '12,56 €',
+    ]);
+    expect(ctx.price.rows.map((row) => `${row.label}=${row.value.replace(/\s/g, ' ')}`)).toEqual([
+      'Veroton=30,03 €',
+      'ALV 25,5 %=7,65 €',
+      'Loppusumma=37,68 €',
+    ]);
+    const parseEuro = (value: string) => Number(value.replace(/[^\d,]/g, '').replace(',', '.'));
+    const [net, vat, gross] = ctx.price.rows.map((row) => parseEuro(row.value));
+    expect(net + vat).toBe(gross);
+    expect(gross).toBe(37.68);
+    expect(ctx.ktv?.totalPriceVat).toBe(37.68);
+    const html = renderTarjousHtml(ctx).replace(/\s/g, ' ');
+    const totals = html.slice(html.indexOf('class="price-block offer-totals"'), html.indexOf('class="ktv-page'));
+    const ktv = html.slice(html.indexOf('class="ktv-page'));
+    expect(totals).toContain('37,68 €');
+    expect(totals).not.toContain('37,69 €');
+    expect(ktv).toContain('37,68 €');
+    expect(ktv).not.toContain('37,69 €');
   });
 
   it('line-sum and stored total differ by 1 cent: page 1 and KTV show the line sum', () => {
