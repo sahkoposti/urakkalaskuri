@@ -12,6 +12,7 @@ import { buildFooter, customerHeaderLines, type PdfFooter, type PriceRow } from 
 import { DEFAULT_SIVUKULUKERROIN } from './defaultOfferSettings';
 import { effectiveContractVat0 } from './manualContract';
 import {
+  assertPrintableEmployeeContracts,
   effectiveHuomioitavaa,
   employeeContractAmount,
   readUrakkakorttiMode,
@@ -169,7 +170,15 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     typeof input.sivukulukerroin === 'number' && Number.isFinite(input.sivukulukerroin)
       ? input.sivukulukerroin
       : DEFAULT_SIVUKULUKERROIN;
-  const amounts = lines.map((line) => employeeContractAmount(effectiveContractVat0(line), mode, factor));
+  assertPrintableEmployeeContracts(record);
+  const amounts = lines.map((line) =>
+    employeeContractAmount(
+      mode === 'tyontekija' ? line.contractPriceVat0 : effectiveContractVat0(line),
+      mode,
+      factor,
+      line.name,
+    ),
+  );
   const contractRows: PriceRow[] = lines.map((line, index) => ({
     label: lines.length > 1 ? `Urakka: ${line.name}` : 'Urakka (alv0)',
     value: formatCurrency(amounts[index] ?? 0),

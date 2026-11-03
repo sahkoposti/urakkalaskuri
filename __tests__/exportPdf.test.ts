@@ -3,6 +3,7 @@ import { assignOfferNumber } from '../src/core/pdf/offerNumber';
 import { recordWithManualContractPrices } from '../src/core/pdf/manualContract';
 import type { GeneratePdfOptions } from '../src/core/pdf/generatePdf';
 import type { CalculationRecord } from '../src/core/models/types';
+import { calculationWithUrakkakorttiMode } from '../src/core/pdf/urakkakorttiCard';
 import { input, line, record } from './pdfFixtures';
 
 function setup(rec: CalculationRecord) {
@@ -82,6 +83,32 @@ describe('exportUrakkakorttiPdf', () => {
     expect(printed[0].fileName).toBe('Urakkakortti_Testi_2026-10-29.pdf');
     expect(printed[0].html).toMatch(/640,00\s€/);
     expect(current().offerNumber).toBeUndefined();
+  });
+
+  it('throws before PDF when Työntekijä has an invalid contract and leaves the calculation', async () => {
+    const rec = calculationWithUrakkakorttiMode(
+      record({ name: 'Testi' }, { projectName: 'Testi', structureLines: [{ ...line('a', 's1', 'Räystäs'), contractPriceVat0: Number.NaN }] }),
+      'tyontekija',
+    );
+    const { deps, app, printed, current } = setup(rec);
+    await expect(exportUrakkakorttiPdf('c1', app, deps)).rejects.toThrow(
+      'Urakkakortin rivillä Räystäs on virheellinen tai negatiivinen urakkahinta. Korjaa hinta ennen tulostusta.',
+    );
+    expect(printed).toHaveLength(0);
+    expect(current().structureLines?.[0].contractPriceVat0).toBeNaN();
+    expect(current().offerNumber).toBeUndefined();
+  });
+
+  it('prints a real zero contract in Työntekijä mode without asking for a manual sum', async () => {
+    const rec = calculationWithUrakkakorttiMode(
+      record({ name: 'Testi' }, { projectName: 'Testi', structureLines: [{ ...line('a', 's1', 'Räystäs'), contractPriceVat0: 0 }] }),
+      'tyontekija',
+    );
+    const { deps, app, printed } = setup(rec);
+    const done = await exportUrakkakorttiPdf('c1', app, deps);
+    expect(done.status).toBe('done');
+    expect(printed).toHaveLength(1);
+    expect(printed[0].html).toMatch(/0,00\s€/);
   });
 
   it('prints directly when contract sums exist; never assigns an offer number', async () => {

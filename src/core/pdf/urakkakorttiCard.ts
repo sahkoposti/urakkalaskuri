@@ -1,5 +1,6 @@
 import type { CalculationRecord, FormSnapshot } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
+import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { roundToCents } from '@/src/core/utils/formatters';
 
 import { DEFAULT_SIVUKULUKERROIN } from './defaultOfferSettings';
@@ -111,12 +112,50 @@ export function calculationWithHuomioitavaa(record: CalculationRecord, text: str
   return withSnapshot(record, { urakkakorttiHuomioitavaa: text });
 }
 
+/** Ainoa paikka Työntekijä-tilan hintaesteen tekstille. */
+export function invalidEmployeeContractWarning(lineName: string): string {
+  return `Urakkakortin rivillä ${lineName} on virheellinen tai negatiivinen urakkahinta. Korjaa hinta ennen tulostusta.`;
+}
+
+/** NaN, Infinity tai negatiivinen. Puuttuva ja tasan 0 eivät ole tätä estettä. */
+export function employeeContractPriceInvalid(amount: unknown): boolean {
+  return typeof amount === 'number' && (!Number.isFinite(amount) || amount < 0);
+}
+
+/**
+ * Työntekijä-tilan tulostusesteet. Alihankkija palauttaa tyhjän listan,
+ * jotta kortin nykyinen käytös säilyy. Ei muuta laskelmaa.
+ */
+export function urakkakorttiContractProblems(
+  record: CalculationRecord,
+  mode: UrakkakorttiMode = readUrakkakorttiMode(record.formSnapshot),
+): string[] {
+  if (mode !== 'tyontekija') return [];
+  return ensureStructureLines(record)
+    .filter((line) => employeeContractPriceInvalid(line.contractPriceVat0))
+    .map((line) => invalidEmployeeContractWarning(line.name));
+}
+
+export function assertPrintableEmployeeContracts(record: CalculationRecord): void {
+  const problems = urakkakorttiContractProblems(record);
+  if (problems.length > 0) throw new Error(problems.join('\n'));
+}
+
 /**
  * Työntekijä: rivin urakka jaetaan kertoimella ja pyöristetään senteiksi.
- * Nolla pysyy nollana. Alihankkija palauttaa summan sellaisenaan.
+ * Nolla pysyy nollana. Virheellinen tai negatiivinen summa heittää, eikä siitä tule 0,00.
+ * Alihankkija palauttaa kelvollisen summan sellaisenaan. Ei-luku palauttaa 0 vain Alihankkijalla.
  * Yhteensä lasketaan pyöristetyistä riveistä, ei jakamalla raakasummaa.
  */
-export function employeeContractAmount(amount: number, mode: UrakkakorttiMode, factor: number): number {
+export function employeeContractAmount(
+  amount: number,
+  mode: UrakkakorttiMode,
+  factor: number,
+  lineName = '',
+): number {
+  if (mode === 'tyontekija' && employeeContractPriceInvalid(amount)) {
+    throw new Error(invalidEmployeeContractWarning(lineName));
+  }
   if (!Number.isFinite(amount)) return 0;
   if (mode !== 'tyontekija') return amount;
   if (amount === 0) return 0;

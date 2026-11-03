@@ -18,7 +18,9 @@ import {
   calculationWithUrakkakorttiMode,
   effectiveHuomioitavaa,
   employeeContractAmount,
+  invalidEmployeeContractWarning,
   preserveCalculationSnapshot,
+  urakkakorttiContractProblems,
 } from '../src/core/pdf/urakkakorttiCard';
 import { formatCurrency, formatPrintedQuantity, stripTrailingZeroDecimals } from '../src/core/utils/formatters';
 import { defaultCompanyProfile } from '../src/core/company/defaultCompany';
@@ -195,6 +197,43 @@ describe('urakkakortti työntekijä and huomioitavaa', () => {
       formatCurrency(0),
       formatCurrency(200),
     ]);
+  });
+
+  it('blocks Työntekijä on NaN, Infinity and a negative contract, and keeps a real zero', () => {
+    const message = invalidEmployeeContractWarning('Räystäs');
+    expect(message).toBe(
+      'Urakkakortin rivillä Räystäs on virheellinen tai negatiivinen urakkahinta. Korjaa hinta ennen tulostusta.',
+    );
+    const priced = (amount: number) =>
+      calculationWithUrakkakorttiMode(
+        record({}, { structureLines: [{ ...line('a', 's1', 'Räystäs'), contractPriceVat0: amount }] }),
+        'tyontekija',
+      );
+    for (const amount of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -1]) {
+      const rec = priced(amount);
+      expect(urakkakorttiContractProblems(rec)).toEqual([message]);
+      expect(() => buildUrakkakorttiContext(input(rec))).toThrow(message);
+      expect(() => employeeContractAmount(amount, 'tyontekija', 1.5, 'Räystäs')).toThrow(message);
+    }
+    const zero = priced(0);
+    expect(urakkakorttiContractProblems(zero)).toEqual([]);
+    expect(employeeContractAmount(0, 'tyontekija', 1.5, 'Räystäs')).toBe(0);
+    const zeroCtx = buildUrakkakorttiContext({ ...input(zero), sivukulukerroin: 1.5 });
+    expect(zeroCtx.contractRows.map((row) => row.value)).toEqual([formatCurrency(0)]);
+    const positive = priced(3000);
+    expect(urakkakorttiContractProblems(positive)).toEqual([]);
+    expect(buildUrakkakorttiContext({ ...input(positive), sivukulukerroin: 1.5 }).contractRows[0].value).toBe(
+      formatCurrency(2000),
+    );
+
+    for (const amount of [Number.NaN, Number.POSITIVE_INFINITY, -1, 0, 3000]) {
+      const ali = record({}, { structureLines: [{ ...line('a', 's1', 'Räystäs'), contractPriceVat0: amount }] });
+      expect(urakkakorttiContractProblems(ali)).toEqual([]);
+      const ctx = buildUrakkakorttiContext(input(ali));
+      const kept = Number.isFinite(amount) && amount > 0 ? amount : 0;
+      expect(ctx.contractRows[0].value).toBe(formatCurrency(kept));
+      expect(renderUrakkakorttiHtml(ctx)).not.toContain(message);
+    }
   });
 
   it('prefills Huomioitavaa from customer notes, keeps an edit, and omits a blank section', () => {

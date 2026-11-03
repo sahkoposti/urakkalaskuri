@@ -19,6 +19,7 @@ import {
   calculationWithUrakkakorttiMode,
   huomioitavaaFieldText,
   readUrakkakorttiMode,
+  urakkakorttiContractProblems,
   type UrakkakorttiMode,
 } from '@/src/core/pdf/urakkakorttiCard';
 import { offerDocumentProblems } from '@/src/core/pdf/offerDocument';
@@ -46,6 +47,7 @@ export function PdfExportButtons({
   const [cardMode, setCardMode] = useState<UrakkakorttiMode>(() => readUrakkakorttiMode(record.formSnapshot));
   const [huomioText, setHuomioText] = useState(() => huomioitavaaFieldText(record));
   const offerProblems = offerDocumentProblems(record);
+  const cardProblems = urakkakorttiContractProblems(record, cardMode);
   const parsedPersons = parseKtvPersonsInput(personsText);
   const personsProblem = parsedPersons === 'invalid' ? KTV_PERSONS_INVALID_MESSAGE : null;
   // Ref estää tuplanapautuksen ennen kuin tila ehtii päivittyä (DB-lukko on toinen varmistus).
@@ -106,8 +108,12 @@ export function PdfExportButtons({
     });
   };
 
-  const handleUrakkakortti = (manualValues?: Record<string, number>) =>
-    run('urakkakortti', async () => {
+  const handleUrakkakortti = (manualValues?: Record<string, number>) => {
+    if (cardProblems.length > 0) {
+      showAlert('Urakkakorttia ei voi tulostaa', cardProblems.join('\n'));
+      return;
+    }
+    return run('urakkakortti', async () => {
       await persistCard(cardMode, huomioText);
       const result = await exportUrakkakorttiPdf(calculationId, app, pdfExportDeps, manualValues);
       if (result.status === 'needsManualContract') {
@@ -116,6 +122,7 @@ export function PdfExportButtons({
       }
       if (manualValues) await refreshCalculations();
     });
+  };
 
   return (
     <View>
@@ -177,10 +184,15 @@ export function PdfExportButtons({
         multiline
         placeholder="Esitäyttö asiakkaan lisätiedoista"
       />
+      {cardProblems.map((problem, index) => (
+        <Text key={`${index}:${problem}`} style={styles.warning} accessibilityRole="alert">
+          {problem}
+        </Text>
+      ))}
       <OutlinedButton
         title={busy === 'urakkakortti' ? 'Luodaan urakkakorttia…' : 'Luo urakkakortti'}
         onPress={() => handleUrakkakortti()}
-        disabled={busy !== null}
+        disabled={busy !== null || cardProblems.length > 0}
       />
       <ManualContractDialog
         visible={manualLines !== null}
