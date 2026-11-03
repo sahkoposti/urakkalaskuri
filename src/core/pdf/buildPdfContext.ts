@@ -109,61 +109,83 @@ function discountRow(record: CalculationRecord, amount: number): PriceRow {
   };
 }
 
+/** Alennus verollisesta hinnasta: prosentti × sis. alv -hinta, sentteihin. */
+function inclusiveDiscountAmount(record: CalculationRecord, priceInclVat: number): number {
+  return roundToCents((priceInclVat * record.discountPercent) / 100);
+}
+
 /**
- * Yksi summalohko. Alennus on aina veroton.
- * Verollinen: Hinta alv0 ja Alennus vain alennuksella, sitten Veroton, ALV ja Loppusumma.
- * Veroton tarjous ilman alennusta: vain Loppusumma, merkitty Alv 0 %.
- * Veroton tarjous alennuksella: Hinta alv0, Alennus ja Loppusumma.
- * Yrityksen sis. ALV: Loppusumma on otsikoiden bruttosumma.
+ * Verollinen alennuslohko. Loppusumma on otsikoiden Yht, kun rivit kantavat alennuksen,
+ * muuten tallennettu bruttosumma. Alennus on prosentti verollisesta hinnasta.
+ */
+function inclusiveDiscountRows(record: CalculationRecord, beforeGross: number, loppu: number): PriceRow[] {
+  return [
+    { label: 'Hinta (sis. alv)', value: formatCurrency(roundToCents(beforeGross)) },
+    discountRow(record, inclusiveDiscountAmount(record, beforeGross)),
+    { label: 'Loppusumma', value: formatCurrency(roundToCents(loppu)), emphasis: true },
+  ];
+}
+
+/**
+ * Yksi summalohko.
+ * Verollinen alennus: Hinta (sis. alv), Alennus verollisesta hinnasta, Loppusumma.
+ * Verollinen ilman alennusta: Veroton, ALV ja Loppusumma.
+ * ALV 0: Alennus on veroton. Ilman alennusta vain Loppusumma (Alv 0 %).
+ * Yrityksen sis. ALV ilman alennusta: Loppusumma on otsikoiden bruttosumma.
  */
 export function offerPriceBlock(record: CalculationRecord, customer: CustomerInfo): TarjousPdfContext['price'] {
   const discounted = hasOfferDiscount(record);
   const listNet = discounted ? record.totalPriceVat0BeforeDiscount : record.totalPriceVat0;
   const net = record.totalPriceVat0;
   const vatInclusive = offerIncludesVat(customer, record.formSnapshot);
-  if (vatInclusive && customer.customerType === 'business') {
-    const afterGross = sumOfferHeadingGross(record);
-    const beforeGross = sumOfferListGross(record);
-    const linesCarryDiscount = afterGross != null && beforeGross != null && beforeGross > afterGross;
-    if (afterGross != null && beforeGross != null && !(discounted && !linesCarryDiscount)) {
-      const rows: PriceRow[] = [];
-      if (discounted && linesCarryDiscount) {
-        rows.push({ label: 'Hinta alv0', value: formatCurrency(listNet) });
-        rows.push(discountRow(record, listNet - net));
-      }
-      rows.push(
+  if (!vatInclusive) {
+    if (!discounted) {
+      return {
+        includesVat: false,
+        rows: [{ label: 'Loppusumma (Alv 0 %)', value: formatCurrency(net), emphasis: true }],
+      };
+    }
+    return {
+      includesVat: false,
+      rows: [
+        { label: 'Hinta alv0', value: formatCurrency(listNet) },
+        discountRow(record, listNet - net),
+        { label: 'Loppusumma', value: formatCurrency(net), emphasis: true },
+      ],
+    };
+  }
+  const afterGross = sumOfferHeadingGross(record);
+  const beforeGross = sumOfferListGross(record);
+  const linesCarryDiscount = afterGross != null && beforeGross != null && beforeGross > afterGross;
+  if (discounted) {
+    if (linesCarryDiscount && beforeGross != null && afterGross != null) {
+      return { includesVat: true, rows: inclusiveDiscountRows(record, beforeGross, afterGross) };
+    }
+    return {
+      includesVat: true,
+      rows: inclusiveDiscountRows(
+        record,
+        roundToCents(record.totalPriceVatBeforeDiscount),
+        roundToCents(record.totalPriceVat),
+      ),
+    };
+  }
+  if (customer.customerType === 'business' && afterGross != null) {
+    return {
+      includesVat: true,
+      rows: [
         { label: 'Veroton', value: formatCurrency(net) },
         { label: `ALV ${formatPercent(record.vatPercent)}`, value: formatCurrency(roundToCents(afterGross - net)) },
         { label: 'Loppusumma', value: formatCurrency(afterGross), emphasis: true },
-      );
-      return { includesVat: true, rows };
-    }
-  }
-  if (vatInclusive) {
-    const rows: PriceRow[] = [];
-    if (discounted) {
-      rows.push({ label: 'Hinta alv0', value: formatCurrency(listNet) });
-      rows.push(discountRow(record, listNet - net));
-    }
-    rows.push(
-      { label: 'Veroton', value: formatCurrency(net) },
-      { label: `ALV ${formatPercent(record.vatPercent)}`, value: formatCurrency(roundToCents(record.totalPriceVat - net)) },
-      { label: 'Loppusumma', value: formatCurrency(record.totalPriceVat), emphasis: true },
-    );
-    return { includesVat: true, rows };
-  }
-  if (!discounted) {
-    return {
-      includesVat: false,
-      rows: [{ label: 'Loppusumma (Alv 0 %)', value: formatCurrency(net), emphasis: true }],
+      ],
     };
   }
   return {
-    includesVat: false,
+    includesVat: true,
     rows: [
-      { label: 'Hinta alv0', value: formatCurrency(listNet) },
-      discountRow(record, listNet - net),
-      { label: 'Loppusumma', value: formatCurrency(net), emphasis: true },
+      { label: 'Veroton', value: formatCurrency(net) },
+      { label: `ALV ${formatPercent(record.vatPercent)}`, value: formatCurrency(roundToCents(record.totalPriceVat - net)) },
+      { label: 'Loppusumma', value: formatCurrency(record.totalPriceVat), emphasis: true },
     ],
   };
 }

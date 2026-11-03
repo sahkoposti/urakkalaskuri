@@ -499,7 +499,7 @@ describe('offer discount, VAT summary and KTV', () => {
     );
   }
 
-  it('keeps the discount row and does not discount materials; row totals match the record', () => {
+  it('keeps a legacy record discount on the totals when lines are undiscounted, and KTV numbers stay', () => {
     const rec = moneyRecord();
     const lines = ensureStructureLines(rec);
     const rowSum = lines.reduce((sum, item) => sum + lineTotalVat0(item), 0);
@@ -508,10 +508,15 @@ describe('offer discount, VAT summary and KTV', () => {
 
     const ctx = buildPdfContext(input(rec));
     const flat = ctx.price.rows.map((row) => `${row.label}=${row.value.replace(/\s/g, ' ')}`);
-    expect(flat).toContain(`Hinta alv0=${formatCurrency(listVat0).replace(/\s/g, ' ')}`);
-    expect(flat).toContain(`Alennus 10 %=${`−${formatCurrency(roundToCents(listVat0 - paidVat0))}`.replace(/\s/g, ' ')}`);
-    expect(flat).toContain(`Veroton=${formatCurrency(paidVat0).replace(/\s/g, ' ')}`);
-    expect(flat).toContain(`Loppusumma=${formatCurrency(2232).replace(/\s/g, ' ')}`);
+    expect(flat).toEqual([
+      `Hinta (sis. alv)=${formatCurrency(2480).replace(/\s/g, ' ')}`,
+      `Alennus 10 %=−${formatCurrency(248).replace(/\s/g, ' ')}`,
+      `Loppusumma=${formatCurrency(2232).replace(/\s/g, ' ')}`,
+    ]);
+    const headingSum = roundToCents(
+      ctx.sections.reduce((sum, section) => sum + Number((section.heading?.price ?? '0').replace(/\s/g, '').replace('€', '').replace(',', '.')), 0),
+    );
+    expect(headingSum).not.toBe(2232);
     expect(ctx.vatSummary).toEqual([
       { vatPercent: vat, net: paidVat0, vat: roundToCents(2232 - paidVat0), gross: 2232 },
     ]);
@@ -960,7 +965,7 @@ describe('offer heading price columns', () => {
     expect(roundToCents(net.sections.reduce((sum, section) => sum + parseEuro(section.heading?.price ?? ''), 0))).toBe(4810);
   });
 
-  it('business sis with a line discount keeps Alennus and matches Loppusumma to the heading sum', () => {
+  it('business sis with a line discount uses an inclusive Alennus and matches Loppusumma to the heading sum', () => {
     const lines = [
       { ...line('a', 's1', 'Räystäät'), quantity: 20, unitPriceVat0: 185, vatPercent: 25.5, discountPercent: 10 },
       { ...line('b', 's1', 'Seinä'), quantity: 12, unitPriceVat0: 80, vatPercent: 25.5, discountPercent: 10 },
@@ -978,17 +983,13 @@ describe('offer heading price columns', () => {
       'sis',
     );
     const ctx = buildPdfContext(input(rec, { structures: [], offerStructureSettings: {} }));
-    expect(ctx.price.rows.map((row) => row.label)).toEqual([
-      'Hinta alv0',
-      'Alennus 10 %',
-      'Veroton',
-      'ALV 25,5 %',
-      'Loppusumma',
-    ]);
+    expect(ctx.price.rows.map((row) => row.label)).toEqual(['Hinta (sis. alv)', 'Alennus 10 %', 'Loppusumma']);
     const yht = roundToCents(ctx.sections.reduce((sum, section) => sum + parseEuro(section.heading?.price ?? ''), 0));
     expect(parseEuro(ctx.price.rows.find((row) => row.label === 'Loppusumma')?.value ?? '')).toBe(yht);
-    expect(plain(ctx.price.rows[0].value)).toBe('4 660,00 €');
-    expect(plain(ctx.price.rows[1].value)).toBe('−466,00 €');
+    expect(plain(ctx.price.rows[0].value)).toBe('5 848,30 €');
+    expect(plain(ctx.price.rows[1].value)).toBe('−584,83 €');
+    expect(plain(ctx.price.rows[2].value)).toBe('5 263,47 €');
+    expect(yht).toBe(5263.47);
   });
 
   it('prints A-hinta with exactly two decimals while Yht stays the rounded line total', () => {

@@ -1,4 +1,5 @@
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
+import { renderKotitalousPageHtml } from '../src/core/pdf/renderKotitalousPageHtml';
 import { filterOfferCards, specCardsFromSnapshot } from '../src/core/pdf/offerPageSpecs';
 import { specGridLayout } from '../src/core/pdf/specGridLayout';
 import { form, input, line, record, snapshot } from './pdfFixtures';
@@ -82,7 +83,7 @@ describe('buildPdfContext', () => {
     expect(ctx.footer.right).toEqual(['Y-tunnus: 3224017-2', 'Puh. +358 40 938 9403']);
   });
 
-  it('private customer with discount: list prices before discount, discount on its own row, Loppusumma after', () => {
+  it('private customer with a record discount and undiscounted lines: inclusive price, percent discount, stored Loppusumma', () => {
     const ctx = buildPdfContext(
       input(
         record({}, {
@@ -95,14 +96,55 @@ describe('buildPdfContext', () => {
         }),
       ),
     );
-    expect(labels(ctx.price.rows)).toEqual(['Hinta alv0', 'Alennus 10 %', 'Veroton', 'ALV 25,5 %', 'Loppusumma']);
+    expect(labels(ctx.price.rows)).toEqual(['Hinta (sis. alv)', 'Alennus 10 %', 'Loppusumma']);
     expect(ctx.price.rows.map((r) => r.value.replace(/\s/g, ' '))).toEqual([
-      '2 000,00 €',
-      '−200,00 €',
-      '1 800,00 €',
-      '459,00 €',
+      '2 510,00 €',
+      '−251,00 €',
       '2 259,00 €',
     ]);
+    expect(ctx.ktv).toMatchObject({ totalPriceVat: 2259, materialsVat: 502 });
+  });
+
+  it('private lines with 10 % discount: Hinta (sis. alv), Alennus and Loppusumma match the heading sum', () => {
+    const lines = [
+      { ...line('a', 's1', 'Pohjatyö'), quantity: 1, unit: 'erä', unitPriceVat0: 1000, discountPercent: 10, vatPercent: 25.5 },
+      { ...line('b', 's2', 'Sokkeli'), quantity: 12, unit: 'm²', unitPriceVat0: 80, discountPercent: 10, vatPercent: 25.5 },
+    ];
+    const ctx = buildPdfContext(
+      input(
+        record({}, {
+          structureLines: lines,
+          discountPercent: 10,
+          totalPriceVat0BeforeDiscount: 1960,
+          totalPriceVat0: 1764,
+          totalPriceVatBeforeDiscount: 2459.8,
+          totalPriceVat: 2213.82,
+          vatAmount: 449.82,
+          vatPercent: 25.5,
+          materialsVat0: 400,
+        }),
+      ),
+    );
+    expect(labels(ctx.price.rows)).toEqual(['Hinta (sis. alv)', 'Alennus 10 %', 'Loppusumma']);
+    expect(ctx.price.rows.map((r) => r.value.replace(/\s/g, ' '))).toEqual([
+      '2 459,80 €',
+      '−245,98 €',
+      '2 213,82 €',
+    ]);
+    const parseEuro = (value: string) => Number(value.replace(/\s/g, '').replace('€', '').replace(',', '.'));
+    const yht = Math.round(ctx.sections.reduce((sum, section) => sum + parseEuro(section.heading?.price ?? ''), 0) * 100) / 100;
+    expect(parseEuro(ctx.price.rows[2].value)).toBe(yht);
+    expect(yht).toBe(2213.82);
+    expect(ctx.ktv).toMatchObject({ totalPriceVat: 2213.82, materialsVat: 502 });
+    const ktv = renderKotitalousPageHtml(ctx).replace(/\s/g, ' ');
+    expect(ktv).toContain('Loppusumma (sis. ALV)');
+    expect(ktv).toContain('2 213,82 €');
+    expect(ktv).toContain('1 711,82 €');
+    expect(ktv).toContain('684,73 €');
+    expect(ktv).toContain('534,73 €');
+    expect(ktv).toContain('502,00 €');
+    expect(ktv).toContain('1 679,09 €');
+    expect(ktv).not.toContain('2 459,80 €');
   });
 
   it('business customer with discount: alv0 discount amount on its own row', () => {
