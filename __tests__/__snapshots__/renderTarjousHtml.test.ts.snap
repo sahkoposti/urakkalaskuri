@@ -9,7 +9,7 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
 <style>
   @page {
     size: A4 portrait;
-    margin: 10mm 14mm 12mm 2.5mm;
+    margin: 10mm 18mm 12mm 2.5mm;
     @bottom-right {
       content: "Sivu " counter(page) "/" counter(pages);
       font-family: 'IBM Plex Sans', Arial, Helvetica, sans-serif;
@@ -50,8 +50,6 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   .spec-card td.value { text-align: right; padding-left: 3mm; white-space: nowrap; }
   .price-block { display: flex; gap: 12px; margin: 2mm 0 6mm 0; page-break-inside: avoid; break-inside: avoid; }
   .price-block .col { flex: 1; }
-  .price-block.offer-totals { justify-content: flex-end; }
-  .price-block.offer-totals .col { flex: 0 1 92mm; }
   .price-block table { width: 100%; border-collapse: collapse; }
   .price-block td { padding: 0.8mm 0; }
   .price-block td.value { text-align: right; white-space: nowrap; }
@@ -62,9 +60,8 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   .ktv-page .price-block { max-width: 150mm; }
   .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
   .ktv-note { font-size: 9pt; color: #333; }
-  
-  body.doc-offer { padding-left: 11.5mm; }
-  body.doc-offer .header, body.doc-offer .footer { left: 11.5mm; }
+  body.doc-offer { padding-left: 15.5mm; }
+  body.doc-offer .header, body.doc-offer .footer { left: 15.5mm; }
 
   .doc-section { margin: 0 0 5mm 0; }
   .doc-heading, .offer-line-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
@@ -87,6 +84,8 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   .uk-huomio { margin-top: 4mm; }
   .uk-huomio h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
 
+  .price-block.offer-totals { justify-content: flex-end; }
+  .price-block.offer-totals .col { flex: 0 1 92mm; }
   .offer-delivery { margin: 1mm 0 4mm 0; }
   .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
@@ -131,7 +130,6 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
 </style>
 </head>
 <body class="doc-offer">
-
 <div class="header">
   <div class="logo-col"><img class="logo" src="data:image/png;base64,AAAA" alt="" /></div>
   <div class="customer"><div class="name">Matti Meikäläinen</div>Testitie 1, 20100 Turku<br />040 000 0000</div>
@@ -164,7 +162,7 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
 <style>
   @page {
     size: A4 portrait;
-    margin: 10mm 14mm 12mm 2.5mm;
+    margin: 10mm 18mm 12mm 2.5mm;
     @bottom-right {
       content: "Sivu " counter(page) "/" counter(pages);
       font-family: 'IBM Plex Sans', Arial, Helvetica, sans-serif;
@@ -205,8 +203,6 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   .spec-card td.value { text-align: right; padding-left: 3mm; white-space: nowrap; }
   .price-block { display: flex; gap: 12px; margin: 2mm 0 6mm 0; page-break-inside: avoid; break-inside: avoid; }
   .price-block .col { flex: 1; }
-  .price-block.offer-totals { justify-content: flex-end; }
-  .price-block.offer-totals .col { flex: 0 1 92mm; }
   .price-block table { width: 100%; border-collapse: collapse; }
   .price-block td { padding: 0.8mm 0; }
   .price-block td.value { text-align: right; white-space: nowrap; }
@@ -217,9 +213,8 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   .ktv-page .price-block { max-width: 150mm; }
   .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
   .ktv-note { font-size: 9pt; color: #333; }
-  
-  body.doc-offer { padding-left: 11.5mm; }
-  body.doc-offer .header, body.doc-offer .footer { left: 11.5mm; }
+  body.doc-offer { padding-left: 15.5mm; }
+  body.doc-offer .header, body.doc-offer .footer { left: 15.5mm; }
 
   .doc-section { margin: 0 0 5mm 0; }
   .doc-heading, .offer-line-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
@@ -242,6 +237,8 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   .uk-huomio { margin-top: 4mm; }
   .uk-huomio h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
 
+  .price-block.offer-totals { justify-content: flex-end; }
+  .price-block.offer-totals .col { flex: 0 1 92mm; }
   .offer-delivery { margin: 1mm 0 4mm 0; }
   .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
@@ -286,7 +283,6 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
 </style>
 </head>
 <body class="doc-offer">
-
 <div class="header">
   <div class="logo-col"></div>
   <div class="customer"><div class="name">Matti Meikäläinen</div>Testitie 1, 20100 Turku<br />040 000 0000</div>
@@ -326,7 +322,7 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
 <style>
   @page {
     size: A4 portrait;
-    margin: 10mm 14mm 12mm 2.5mm;
+    margin: 10mm 18mm 12mm 2.5mm;
     @bottom-right {
       content: "Sivu " counter(page) "/" counter(pages);
       font-family: 'IBM Plex Sans', Arial, Helvetica, sans-serif;
@@ -367,8 +363,6 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   .spec-card td.value { text-align: right; padding-left: 3mm; white-space: nowrap; }
   .price-block { display: flex; gap: 12px; margin: 2mm 0 6mm 0; page-break-inside: avoid; break-inside: avoid; }
   .price-block .col { flex: 1; }
-  .price-block.offer-totals { justify-content: flex-end; }
-  .price-block.offer-totals .col { flex: 0 1 92mm; }
   .price-block table { width: 100%; border-collapse: collapse; }
   .price-block td { padding: 0.8mm 0; }
   .price-block td.value { text-align: right; white-space: nowrap; }
@@ -379,9 +373,8 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   .ktv-page .price-block { max-width: 150mm; }
   .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
   .ktv-note { font-size: 9pt; color: #333; }
-  
-  body.doc-offer { padding-left: 11.5mm; }
-  body.doc-offer .header, body.doc-offer .footer { left: 11.5mm; }
+  body.doc-offer { padding-left: 15.5mm; }
+  body.doc-offer .header, body.doc-offer .footer { left: 15.5mm; }
 
   .doc-section { margin: 0 0 5mm 0; }
   .doc-heading, .offer-line-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
@@ -404,6 +397,8 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   .uk-huomio { margin-top: 4mm; }
   .uk-huomio h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
 
+  .price-block.offer-totals { justify-content: flex-end; }
+  .price-block.offer-totals .col { flex: 0 1 92mm; }
   .offer-delivery { margin: 1mm 0 4mm 0; }
   .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
@@ -448,7 +443,6 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
 </style>
 </head>
 <body class="doc-offer">
-
 <div class="header">
   <div class="logo-col"><img class="logo" src="data:image/png;base64,AAAA" alt="" /></div>
   <div class="customer"><div class="name">Matti Meikäläinen</div>Testitie 1, 20100 Turku<br />040 000 0000</div>

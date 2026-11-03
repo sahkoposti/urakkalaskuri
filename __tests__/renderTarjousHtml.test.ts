@@ -135,8 +135,8 @@ describe('renderTarjousHtml discount row', () => {
   it('draws the brand bar on the offer only, using the same accent as Loppusumma', () => {
     const html = renderTarjousHtml(buildPdfContext(input(record({}))));
     expect(html).toContain('@left-middle { content: ""; background: ' + PDF_DEFAULT_ACCENT);
-    expect(html).toContain('margin: 10mm 14mm 12mm 2.5mm');
-    expect(html).toContain('padding-left: 11.5mm');
+    expect(html).toContain('margin: 10mm 18mm 12mm 2.5mm');
+    expect(html).toContain('padding-left: 15.5mm');
     expect(html).toContain('"Sivu " counter(page) "/" counter(pages)');
     const themed = renderTarjousHtml(buildPdfContext(input(record({}))), { accentColor: '#123abc' });
     expect(themed).toContain('background: #123abc');

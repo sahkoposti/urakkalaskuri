@@ -9,11 +9,13 @@
 export const PDF_HEADER_HEIGHT_MM = 30;
 export const PDF_FOOTER_HEIGHT_MM = 16;
 export const PDF_DEFAULT_ACCENT = '#C90000';
-/** @page-marginaalit. Vasen ja oikea ovat symmetriset. */
+/** @page-marginaalit. Urakkakortti käyttää näitä sellaisenaan. */
 export const PDF_PAGE_MARGIN_TOP_MM = 10;
 export const PDF_PAGE_MARGIN_RIGHT_MM = 14;
 export const PDF_PAGE_MARGIN_BOTTOM_MM = 12;
 export const PDF_PAGE_MARGIN_LEFT_MM = 14;
+/** Tarjouksen tekstialueen sisennys paperin reunasta, vasen ja oikea. */
+export const PDF_OFFER_TEXT_INSET_X_MM = 18;
 /** Tarjouksen vasen korostus. Sama väri kuin Loppusumman viiva. */
 export const PDF_OFFER_ACCENT_BAR_MM = 2.5;
 
@@ -38,8 +40,9 @@ export function pageNumberContent(knownTotalPages?: number | null): string {
 export function pdfStyles(options: PdfStyleOptions = {}): string {
   const accent = options.accentColor && HEX.test(options.accentColor) ? options.accentColor : PDF_DEFAULT_ACCENT;
   const offerBar = options.offerAccentBar === true;
+  const marginRight = offerBar ? PDF_OFFER_TEXT_INSET_X_MM : PDF_PAGE_MARGIN_RIGHT_MM;
   const marginLeft = offerBar ? PDF_OFFER_ACCENT_BAR_MM : PDF_PAGE_MARGIN_LEFT_MM;
-  const offerInsetLeft = PDF_PAGE_MARGIN_LEFT_MM - PDF_OFFER_ACCENT_BAR_MM;
+  const offerInsetLeft = PDF_OFFER_TEXT_INSET_X_MM - PDF_OFFER_ACCENT_BAR_MM;
   const accentBoxes = offerBar
     ? `
     @top-left-corner { content: ""; background: ${accent}; }
@@ -51,7 +54,7 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   return `
   @page {
     size: A4 portrait;
-    margin: ${PDF_PAGE_MARGIN_TOP_MM}mm ${PDF_PAGE_MARGIN_RIGHT_MM}mm ${PDF_PAGE_MARGIN_BOTTOM_MM}mm ${marginLeft}mm;
+    margin: ${PDF_PAGE_MARGIN_TOP_MM}mm ${marginRight}mm ${PDF_PAGE_MARGIN_BOTTOM_MM}mm ${marginLeft}mm;
     @bottom-right {
       content: ${pageNumberContent(options.knownTotalPages)};
       font-family: 'IBM Plex Sans', Arial, Helvetica, sans-serif;
@@ -87,8 +90,6 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   .spec-card td.value { text-align: right; padding-left: 3mm; white-space: nowrap; }
   .price-block { display: flex; gap: 12px; margin: 2mm 0 6mm 0; page-break-inside: avoid; break-inside: avoid; }
   .price-block .col { flex: 1; }
-  .price-block.offer-totals { justify-content: flex-end; }
-  .price-block.offer-totals .col { flex: 0 1 92mm; }
   .price-block table { width: 100%; border-collapse: collapse; }
   .price-block td { padding: 0.8mm 0; }
   .price-block td.value { text-align: right; white-space: nowrap; }
@@ -98,8 +99,7 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   .ktv-title { margin: 0 0 4mm 0; font-size: 14pt; }
   .ktv-page .price-block { max-width: 150mm; }
   .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
-  .ktv-note { font-size: 9pt; color: #333; }
-  ${options.offerAccentBar ? `
+  .ktv-note { font-size: 9pt; color: #333; }${offerBar ? `
   body.doc-offer { padding-left: ${offerInsetLeft}mm; }
   body.doc-offer .header, body.doc-offer .footer { left: ${offerInsetLeft}mm; }` : ''}
 `;
@@ -107,6 +107,8 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
 
 /** Tarjouksen rivitaulukko ja osiot. Liitetään vain tarjous-HTML:ään, ei urakkakorttiin. */
 export const offerDocumentCss = `
+  .price-block.offer-totals { justify-content: flex-end; }
+  .price-block.offer-totals .col { flex: 0 1 92mm; }
   .offer-delivery { margin: 1mm 0 4mm 0; }
   .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }

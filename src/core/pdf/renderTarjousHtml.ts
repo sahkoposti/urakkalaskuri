@@ -123,8 +123,7 @@ export function renderDocument(
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>${pdfStyles({ accentColor: options.accentColor, knownTotalPages: options.knownTotalPages, offerAccentBar: options.offerAccentBar })}</style>
 </head>
-<body class="${options.bodyClass ?? ''}">
-${options.leadingHtml ?? ''}
+<body${options.bodyClass ? ` class="${options.bodyClass}"` : ''}>${options.leadingHtml ? `\n${options.leadingHtml}` : ''}
 ${renderHeader(ctx, options.logoDataUri)}
 ${renderFooter(ctx.footer)}
 <table class="layout">
