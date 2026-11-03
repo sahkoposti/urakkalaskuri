@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 
 import { AppCard, ResultRow } from '@/src/components/common';
-import type { CustomerInfo } from '@/src/core/models/types';
+import type { CustomerInfo, FormSnapshot } from '@/src/core/models/types';
 import {
   labeledWithVatMode,
   priceBreakdownParts,
@@ -24,6 +24,8 @@ type PriceBreakdownCardProps = {
   values: PriceBreakdownValues;
   customer: CustomerInfo;
   lines?: Array<{ pricesIncludeVat?: boolean }>;
+  /** Yrityksen ruutuyhteenveto lukee tästä `businessVatMode`. Puuttuva = ALV 0. */
+  snapshot?: Pick<FormSnapshot, 'businessVatMode'> | null;
   includeVat?: boolean;
   /** Jo säävarauksen sisältävä kokonaisluku; ei kerrota uudelleen. */
   displayedWorkDurationDays?: number;
@@ -34,12 +36,13 @@ export function PriceBreakdownCard({
   values,
   customer,
   lines,
+  snapshot,
   includeVat: includeVatProp,
   displayedWorkDurationDays,
   showDuration = false,
 }: PriceBreakdownCardProps) {
   const styles = useThemedStyles(createStyles);
-  const includeVat = includeVatProp ?? summaryShowsVatInclusive(customer, lines);
+  const includeVat = includeVatProp ?? summaryShowsVatInclusive(customer, lines, snapshot);
   const parts = priceBreakdownParts(values, includeVat);
   const durationText = formatDurationDisplayValue(displayedWorkDurationDays);
 

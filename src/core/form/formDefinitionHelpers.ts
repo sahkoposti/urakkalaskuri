@@ -5,6 +5,7 @@ import {
 } from '@/src/core/form/formula/evaluator';
 import { computedFieldDependencies } from '@/src/core/form/formula/formulaDependencies';
 import { slugifyKey } from '@/src/core/form/formKeyUtils';
+import { normalizePrintSettings } from '@/src/core/form/printSettings';
 import {
   createSystemFields,
   isSystemFieldHiddenFromUi,
@@ -266,7 +267,27 @@ export function relocateCustomerPageFields(pages: FormPage[]): FormPage[] {
   return [{ ...first, fieldIds }, ...rest].map((page, sortOrder) => ({ ...page, sortOrder }));
 }
 
-export function normalizeFormDefinition(raw: unknown): FormDefinition {
+/** print normalisoidaan vasta kun avaimet on lopulliset (quantityKey-tarkistus). */
+function normalizeUserFieldPrint(fields: FormField[]): { fields: FormField[]; warnings: string[] } {
+  const warnings: string[] = [];
+  const catalog = { fields: [...fields, ...createSystemFields()] };
+  const next = fields.map((field) => {
+    if (!field || typeof field !== 'object' || !Object.prototype.hasOwnProperty.call(field, 'print')) {
+      return field;
+    }
+    const normalized = normalizePrintSettings(field.print, field, catalog);
+    warnings.push(...normalized.warnings);
+    if (!normalized.print) {
+      const rest = { ...field };
+      delete rest.print;
+      return rest;
+    }
+    return { ...field, print: normalized.print };
+  });
+  return { fields: next, warnings };
+}
+
+export function normalizeFormDefinitionWithWarnings(raw: unknown): { form: FormDefinition; warnings: string[] } {
   const form = (raw ?? {}) as Partial<FormDefinition>;
   const legacyFields = (form.fields ?? []) as LegacyFormField[];
 
@@ -287,19 +308,27 @@ export function normalizeFormDefinition(raw: unknown): FormDefinition {
     ),
   );
 
-  const fields = mergeSystemFields(normalizedUserFields);
+  const printed = normalizeUserFieldPrint(normalizedUserFields);
+  const fields = mergeSystemFields(printed.fields);
 
   return {
-    id: form.id ?? 'default',
-    name: form.name ?? 'Julkisivumaalaus',
-    version: typeof form.version === 'number' ? form.version : 3,
-    pages: pruneMissingFieldIds(pages, fields).map((page) => ({
-      ...page,
-      title: displayWorkDurationText(page.title),
-    })),
-    fields,
-    updatedAt: form.updatedAt ?? Date.now(),
+    form: {
+      id: form.id ?? 'default',
+      name: form.name ?? 'Julkisivumaalaus',
+      version: typeof form.version === 'number' ? form.version : 3,
+      pages: pruneMissingFieldIds(pages, fields).map((page) => ({
+        ...page,
+        title: displayWorkDurationText(page.title),
+      })),
+      fields,
+      updatedAt: form.updatedAt ?? Date.now(),
+    },
+    warnings: printed.warnings,
   };
+}
+
+export function normalizeFormDefinition(raw: unknown): FormDefinition {
+  return normalizeFormDefinitionWithWarnings(raw).form;
 }
 
 export function getFieldById(form: FormDefinition, fieldId: string): FormField | undefined {

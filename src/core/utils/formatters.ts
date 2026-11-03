@@ -33,6 +33,38 @@ export function formatDebugDecimal(value: number): string {
   return debugDecimalFormatter.format(value);
 }
 
+/**
+ * Tulosteen määrä ilman tuhaterotinta.
+ * Kokonaisluku ilman desimaaleja (`12`, `100000`). Muu luku enintään kahdella desimaalilla (`2,5`, `2,50` ei synny tästä).
+ */
+export function formatPrintedQuantity(value: number): string {
+  if (!Number.isFinite(value)) return '';
+  const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
+  const sign = rounded < 0 ? '-' : '';
+  const [intPart, fracPart] = Math.abs(rounded).toFixed(2).split('.');
+  const decimals = fracPart.replace(/0+$/, '');
+  return decimals ? `${sign}${intPart},${decimals}` : `${sign}${intPart}`;
+}
+
+const PURE_ZERO_FRACTION = /^(-?\d+),0+$/;
+
+/**
+ * Kokonaisluvuksi vain, kun koko merkkijono on sovelluksen muotoilema luku (`2,0` → `2`, `14,0` → `14`).
+ * Jos `unit` on annettu, sama luku ja täsmälleen se yksikkö kelpaa (`120,0 m²` kun yksikkö on `m²`).
+ * Vapaata tekstiä ei muuteta (`1.000 m²`, `klo 8.00`). `2,5` ja `2,50` säilyvät.
+ */
+export function stripTrailingZeroDecimals(text: string, unit?: string): string {
+  const trimmed = text.trim();
+  const pure = PURE_ZERO_FRACTION.exec(trimmed);
+  if (pure) return pure[1];
+  const normalizedUnit = unit?.trim();
+  if (!normalizedUnit) return text;
+  const suffix = ` ${normalizedUnit}`;
+  if (!trimmed.endsWith(suffix)) return text;
+  const head = PURE_ZERO_FRACTION.exec(trimmed.slice(0, -suffix.length));
+  return head ? `${head[1]}${suffix}` : text;
+}
+
 export function formatPercent(value: number): string {
   return `${percentFormatter.format(value)} %`;
 }

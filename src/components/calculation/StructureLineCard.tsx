@@ -36,8 +36,13 @@ type StructureLineCardProps = {
   line: StructureLine;
   structure?: ProductStructure;
   weatherReserveFactor?: number;
-  /** Yritysasiakas: hinnat aina ALV 0, valintaa ei näytetä. */
+  /** Käänteinen ALV: hinnat aina ALV 0, valintaa ei näytetä. */
   forceVat0?: boolean;
+  /**
+   * Yritystarjouksen yhteinen ALV. Kun annettu, rivin omaa valintaa ei näytetä
+   * eikä `pricesIncludeVat` ohjaa syöttöä. Puuttuva = yksityinen rivikohtainen valinta.
+   */
+  offerIncludesVat?: boolean;
   onChange: (line: StructureLine) => void;
   onOpenForm?: () => void;
   onDelete: () => void;
@@ -48,6 +53,7 @@ export function StructureLineCard({
   structure,
   weatherReserveFactor = 1,
   forceVat0 = false,
+  offerIncludesVat,
   onChange,
   onOpenForm,
   onDelete,
@@ -57,7 +63,11 @@ export function StructureLineCard({
   const manual = isManualStructureId(priced.structureId);
   const showGear = !manual && structure ? hasStructureFormPages(structure.form) : false;
   const formIncomplete = isStructureFormIncomplete(priced, structure);
-  const includeVat = forceVat0 ? false : linePricesIncludeVat(priced);
+  const includeVat = forceVat0
+    ? false
+    : offerIncludesVat !== undefined
+      ? offerIncludesVat
+      : linePricesIncludeVat(priced);
   const vatPercent = priced.vatPercent;
   const displayedWorkDurationDays = resolveDisplayedWorkDurationDays(
     priced,
@@ -105,7 +115,7 @@ export function StructureLineCard({
         </View>
       </View>
 
-      {forceVat0 ? null : (
+      {forceVat0 || offerIncludesVat !== undefined ? null : (
         <ChoiceToggle
           label="Hinnat"
           value={includeVat}
@@ -137,6 +147,13 @@ export function StructureLineCard({
           />
         </View>
       </View>
+
+      {/* Eemil 29.10.2026 #7: tekijöiden urakka käsin muokattavissa (aina alv0); korvaa lomakkeen arvon ja laskee katteen uudelleen. */}
+      <DecimalInput
+        label="Tekijöiden urakka € (alv0)"
+        value={priced.contractPriceVat0}
+        onChangeValue={(value) => patch({ contractPriceVat0: value })}
+      />
 
       <DaysInput
         label={WORK_DURATION_DISPLAY_LABEL}

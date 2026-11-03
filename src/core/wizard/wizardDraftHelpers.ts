@@ -26,6 +26,8 @@ export type WizardFormState = {
   deliveryScheduleText?: string;
   travelTimeOneWay?: string;
   structureLines?: StructureLine[];
+  /** Yritystarjouksen yhteinen ALV. Puuttuva = alv0. */
+  businessVatMode?: 'alv0' | 'sis';
 };
 
 export type WizardDraftEditMeta = {
@@ -98,11 +100,15 @@ export function fieldValuesEqual(
 
 /** Kopio rivistä, jotta lomakkeen paikallinen tila ei jaa draftin objekteja. */
 export function cloneStructureLine(line: StructureLine): StructureLine {
-  return {
+  const cloned: StructureLine = {
     ...line,
     fieldValues: { ...(line.fieldValues ?? {}) },
     overrides: [...(line.overrides ?? [])],
   };
+  if (line.materialQuantities !== undefined) {
+    cloned.materialQuantities = line.materialQuantities.map((row) => ({ ...row }));
+  }
+  return cloned;
 }
 
 /**
@@ -136,6 +142,19 @@ function structureLineSignature(line: StructureLine) {
     formFilled: Boolean(line.formFilled),
     fieldValues: serializeFieldValues(line.fieldValues),
     pricesIncludeVat: line.pricesIncludeVat !== false,
+    ...(line.materialQuantities !== undefined
+      ? {
+          materialQuantities: line.materialQuantities.map((row) => ({
+            id: row.id,
+            productId: row.productId ?? '',
+            productName: row.productName,
+            quantity: row.quantity,
+            unit: row.unit ?? '',
+            source: row.source,
+            fieldKey: row.fieldKey ?? '',
+          })),
+        }
+      : {}),
   };
 }
 
@@ -155,6 +174,7 @@ export function composerStateSignature(state: WizardFormState): string {
     deliveryScheduleText: (state.deliveryScheduleText ?? '').trim(),
     travelTimeOneWay: (state.travelTimeOneWay ?? '').trim(),
     structureLines: (state.structureLines ?? []).map(structureLineSignature),
+    businessVatMode: state.businessVatMode === 'sis' ? 'sis' : 'alv0',
   });
 }
 
@@ -244,6 +264,7 @@ export function buildPersistedWizardDraft(
       : {}),
     ...(state.travelTimeOneWay != null ? { travelTimeOneWay: state.travelTimeOneWay } : {}),
     ...(state.structureLines ? { structureLines: state.structureLines } : {}),
+    ...(state.businessVatMode === 'sis' ? { businessVatMode: 'sis' as const } : {}),
   };
 }
 
@@ -289,6 +310,7 @@ export function persistedDraftToFormState(
     deliveryScheduleText: draft.deliveryScheduleText ?? '',
     travelTimeOneWay: draft.travelTimeOneWay ?? '',
     structureLines: draft.structureLines,
+    businessVatMode: draft.businessVatMode === 'sis' ? 'sis' : 'alv0',
   };
   const wizardDraft: WizardDraft = {
     customer: {

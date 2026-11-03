@@ -1,4 +1,4 @@
-import type { CustomerInfo } from '@/src/core/models/types';
+import type { CustomerInfo, FormSnapshot } from '@/src/core/models/types';
 import { formatCustomerType } from '@/src/core/customer/customerRegister';
 import { formatCurrency, formatVatRate } from '@/src/core/utils/formatters';
 
@@ -24,14 +24,46 @@ export function defaultPricesIncludeVat(customer: CustomerInfo): boolean {
   return customerSeesVatInclusive(customer);
 }
 
+export type BusinessVatMode = 'alv0' | 'sis';
+
 /**
- * Yhteenveto noudattaa korttien hintatilaa. Yritysasiakas on aina ALV 0.
- * Jos kaikki rivit ovat ALV 0, yhteenveto näyttää vain ALV 0.
+ * Yritystarjouksen ALV. Puuttuva, tyhjä tai muu kuin `'sis'` = `'alv0'`.
+ * Avain on laskelman `form_snapshot.businessVatMode`.
+ */
+export function readBusinessVatMode(
+  snapshot: Pick<FormSnapshot, 'businessVatMode'> | { businessVatMode?: unknown } | null | undefined,
+): BusinessVatMode {
+  return snapshot?.businessVatMode === 'sis' ? 'sis' : 'alv0';
+}
+
+/**
+ * Tarjouksen hinnat. Yksi arvo koko tarjoukselle.
+ * Yksityinen pysyy verollisena (käänteinen ALV pois lukien). Rivin lippua ei lueta.
+ * Yritys lukee vain `businessVatMode`. Puuttuva = ALV 0. Rivin `pricesIncludeVat` ohitetaan,
+ * myös vanha `true`. Käänteinen ALV on aina ALV 0, vaikka tila olisi `'sis'`.
+ */
+export function offerIncludesVat(
+  customer: CustomerInfo,
+  snapshot?: Pick<FormSnapshot, 'businessVatMode'> | { businessVatMode?: unknown } | null,
+): boolean {
+  if (customer.reverseVat) return false;
+  if ((customer.customerType ?? 'private') !== 'business') return true;
+  return readBusinessVatMode(snapshot) === 'sis';
+}
+
+/**
+ * Ruudun yhteenveto. Yksityinen ennallaan (rivin lippu).
+ * Yritys seuraa tarjouksen `businessVatMode`-arvoa, ei rivin lippua. Käänteinen ALV on ALV 0.
  */
 export function summaryShowsVatInclusive(
   customer: CustomerInfo,
-  lines?: Array<{ pricesIncludeVat?: boolean }>,
+  lines?: Array<{ pricesIncludeVat?: boolean; quantity?: number }>,
+  snapshot?: Pick<FormSnapshot, 'businessVatMode'> | { businessVatMode?: unknown } | null,
 ): boolean {
+  if (customer.reverseVat) return false;
+  if ((customer.customerType ?? 'private') === 'business') {
+    return readBusinessVatMode(snapshot) === 'sis';
+  }
   if (!customerSeesVatInclusive(customer)) return false;
   if (lines && lines.length > 0 && lines.every((line) => line.pricesIncludeVat === false)) {
     return false;

@@ -104,6 +104,43 @@ export interface FormSnapshot {
    * Tarvitaan muokkaukseen; vanhoissa tallenteissa voi puuttua.
    */
   fieldValues?: Record<string, string>;
+  /**
+   * Kotitalousvähennyksen henkilömäärä. Valinnainen avain laskelman `form_snapshot`-JSON:ssa
+   * (ei lomakepohjan JSON:ia, ei skeemamuutosta). Puuttuva avain = 1. Vanha sovellus ohittaa avaimen.
+   */
+  ktvPersons?: number;
+  /**
+   * Urakkakortin tila. Valinnainen avain samassa `form_snapshot`-JSON:ssa.
+   * Puuttuva avain = `alihankkija`. Ei lomakepohjan avain eikä SQL-migraatio.
+   */
+  urakkakorttiMode?: 'alihankkija' | 'tyontekija';
+  /**
+   * Urakkakortin Huomioitavaa-teksti. Valinnainen avain samassa `form_snapshot`-JSON:ssa.
+   * Puuttuva avain = esitäyttö asiakkaan lisätiedoista (`customer`-JSON:n `notes`).
+   * Tyhjä merkkijono = osiota ei tulosteta. Ei kuulu tarjoukseen.
+   */
+  urakkakorttiHuomioitavaa?: string;
+  /**
+   * Urakkakortti ei tulosta urakkahintoja eikä yhteensä-riviä. Valinnainen avain samassa
+   * `form_snapshot`-JSON:ssa. Puuttuva tai muu kuin `true` = hinnat näytetään.
+   * Ei lomakepohjan avain eikä SQL-migraatio. Ei kuulu tarjoukseen.
+   */
+  urakkakorttiHidePrices?: boolean;
+  /**
+   * Urakkakortin rivikohtaiset urakkahinnat (alv0) ennen sivukulukerrointa.
+   * Avain on `StructureLine.id`. Puuttuva kartta tai puuttuva rivin avain = laskettu urakka.
+   * Rivin järjestyksen vaihto ei vaihda id:tä, joten yliajo seuraa riviä.
+   * Poistetun rivin avain ohitetaan. Uusi rivi saa uuden id:n eikä peri yliajoa.
+   * Tyhjä kartta poistetaan. Ei kuulu tarjoukseen eikä SQL-migraatioon.
+   */
+  urakkakorttiRivihinnat?: Record<string, number>;
+  /**
+   * Yritystarjouksen ALV koko laskelmalle. Valinnainen avain samassa `form_snapshot`-JSON:ssa
+   * (ei lomakepohjan JSON:ia, ei skeemamuutosta). `'alv0'` = veroton otsikko "Alv 0 %".
+   * `'sis'` = brutto-otsikko "sis. alv X %". Puuttuva tai muu arvo = `'alv0'`.
+   * Rivin `pricesIncludeVat` ei vaikuta yritystarjoukseen. Käänteinen ALV on aina `'alv0'`.
+   */
+  businessVatMode?: 'alv0' | 'sis';
 }
 
 export interface CalculationRecord {
@@ -135,6 +172,8 @@ export interface CalculationRecord {
   deliveryScheduleText?: string;
   travelTimeHoursOneWay?: number;
   structureLines?: StructureLine[];
+  /** Tarjousnumero (v1.3). Myönnetään ensimmäisestä tarjous-PDF:stä; säilyy muokkauksessa. */
+  offerNumber?: number;
 }
 
 export type StructureLineOverride =
@@ -145,6 +184,21 @@ export type StructureLineOverride =
   | 'unit'
   | 'contractPrice'
   | 'workDurationDisplay';
+
+/** Urakkakortin materiaalimäärä. Tallennetaan rivin `structure_lines`-JSON:iin. */
+export interface MaterialQuantityRow {
+  id: string;
+  productId?: string;
+  productName: string;
+  quantity: number;
+  unit?: string;
+  source: 'form' | 'manual';
+  /**
+   * `product_select`-kenttä, josta esitäyttö syntyi.
+   * Muokattu lomakerivi säilyttää avaimen (`source: 'manual'`) ja estää saman kentän esitäytön.
+   */
+  fieldKey?: string;
+}
 
 export interface StructureLine {
   id: string;
@@ -176,6 +230,11 @@ export interface StructureLine {
   formVersion?: number;
   snapshot?: FormSnapshot;
   overrides: StructureLineOverride[];
+  /**
+   * Urakkakortin materiaalimäärät. Puuttuva avain = vanha laskelma (ei kirjoiteta uudelleen).
+   * Tyhjä taulukko = käyttäjä poisti rivit (taulukkoa ei tulosteta).
+   */
+  materialQuantities?: MaterialQuantityRow[];
 }
 
 export interface CustomerInfo {
@@ -277,4 +336,6 @@ export interface PersistedWizardDraft {
   deliveryScheduleText?: string;
   travelTimeOneWay?: string;
   structureLines?: StructureLine[];
+  /** Yritystarjouksen ALV. Puuttuva = alv0. Ei SQL-saraketta. */
+  businessVatMode?: 'alv0' | 'sis';
 }

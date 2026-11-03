@@ -12,7 +12,9 @@ import {
   View,
 } from 'react-native';
 
+import { MaterialQuantitiesEditor } from '@/src/components/calculation/MaterialQuantitiesEditor';
 import { StructureLineCard } from '@/src/components/calculation/StructureLineCard';
+import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { UpdateOldCalculationsDialog } from '@/src/components/UpdateOldCalculationsDialog';
 import {
@@ -32,8 +34,14 @@ import {
   type ProductStructure,
 } from '@/src/core/structure/types';
 import { isStructureFormIncomplete } from '@/src/core/structure/formPages';
-import { customerSeesVatInclusive, defaultPricesIncludeVat } from '@/src/core/utils/priceDisplay';
+import { defaultPricesIncludeVat, type BusinessVatMode } from '@/src/core/utils/priceDisplay';
+import {
+  materialQuantitiesBlockFinish,
+  materialQuantitiesSignature,
+  mergeStructureLineMaterials,
+} from '@/src/core/materials/materialQuantities';
 import { createId } from '@/src/core/utils/id';
+import { calculationWithBusinessVatMode, preserveCalculationSnapshot } from '@/src/core/pdf/urakkakorttiCard';
 import { buildCalculationRecordFromComposer } from '@/src/core/wizard/buildCalculationRecord';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
 import {
@@ -89,6 +97,8 @@ export default function CalculationComposerScreen() {
   const [deliveryScheduleText, setDeliveryScheduleText] = useState('');
   const [travelTimeOneWay, setTravelTimeOneWay] = useState('');
   const [structureLines, setStructureLines] = useState<StructureLine[]>([]);
+  const [businessVatMode, setBusinessVatMode] = useState<BusinessVatMode>('alv0');
+  const [materialIssues, setMaterialIssues] = useState<Record<string, boolean>>({});
   const [structurePickerVisible, setStructurePickerVisible] = useState(false);
   const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
   const [updateCalcsVisible, setUpdateCalcsVisible] = useState(false);
@@ -107,6 +117,22 @@ export default function CalculationComposerScreen() {
   const resumedIncompleteDraftRef = useRef(false);
   const wizardDraftRef = useRef(wizardDraft);
   wizardDraftRef.current = wizardDraft;
+  const structureLinesRef = useRef(structureLines);
+  structureLinesRef.current = structureLines;
+
+  const setMaterialLineValidity = useCallback((lineId: string, valid: boolean) => {
+    setMaterialIssues((current) => {
+      const invalid = !valid;
+      if (Boolean(current[lineId]) === invalid) return current;
+      if (!invalid) {
+        if (!(lineId in current)) return current;
+        const next = { ...current };
+        delete next[lineId];
+        return next;
+      }
+      return { ...current, [lineId]: true };
+    });
+  }, []);
 
   function buildCustomerInfo(): CustomerInfo {
     return {
@@ -141,12 +167,15 @@ export default function CalculationComposerScreen() {
       deliveryScheduleText,
       travelTimeOneWay,
       structureLines,
+      businessVatMode,
     };
   }
   const getFormStateRef = useRef(getFormState);
   getFormStateRef.current = getFormState;
   const pricesIncludeVat = defaultPricesIncludeVat(buildCustomerInfo());
-  const forceVat0 = !customerSeesVatInclusive(buildCustomerInfo());
+  const forceVat0 = Boolean(reverseVat);
+  const showBusinessVatChoice = customerType === 'business' && !reverseVat;
+  const businessOfferIncludesVat = customerType === 'business' && businessVatMode === 'sis' && !reverseVat;
 
   function markComposerSaved(state: WizardFormState) {
     const lines = hydrateLines(state, structures, settings.vatPercent);
@@ -247,9 +276,19 @@ export default function CalculationComposerScreen() {
     setCustomerId(form.customerId);
     setDeliveryScheduleText(form.deliveryScheduleText ?? '');
     setTravelTimeOneWay(form.travelTimeOneWay ?? '');
-    const lines = hydrateLines(form, structures, settings.vatPercent);
+    setBusinessVatMode(form.businessVatMode === 'sis' ? 'sis' : 'alv0');
+    const incoming = hydrateLines(form, structures, settings.vatPercent);
+    const lines = incoming.map((item) => {
+      const previous = structureLinesRef.current.find((current) => current.id === item.id);
+      const structure = structures.find((entry) => entry.id === item.structureId);
+      return mergeStructureLineMaterials(previous, item, structure?.form, products);
+    });
     setStructureLines(lines);
-    markComposerSaved({ ...form, structureLines: lines });
+    const nextForm = { ...form, structureLines: lines };
+    markComposerSaved(nextForm);
+    if (materialQuantitiesSignature(incoming) !== materialQuantitiesSignature(lines)) {
+      void persistDraft(nextForm);
+    }
   }
 
   function restoreDraftForm(draft: NonNullable<typeof wizardDraft>, resumedIncomplete: boolean) {
@@ -501,6 +540,13 @@ export default function CalculationComposerScreen() {
       showAlert('Lomake kesken', 'Täytä tuoterakenteen lomake ennen yhteenvetoa.');
       return;
     }
+    if (
+      structureLines.some((line) => materialQuantitiesBlockFinish(line.materialQuantities)) ||
+      Object.keys(materialIssues).length > 0
+    ) {
+      showAlert('Materiaalit', 'Tarkista materiaalimäärät ennen yhteenvetoa.');
+      return;
+    }
 
     if (customerId && !prompted) {
       const existing = customers.find((item) => item.id === customerId);
@@ -524,18 +570,24 @@ export default function CalculationComposerScreen() {
         ) ?? createId();
       const createdAt = originalCreatedAtRef.current ?? originalCreatedAt ?? new Date();
       bindExistingCalculation(savedId, createdAt, editFormVersion);
-      const record = buildCalculationRecordFromComposer({
-        id: savedId,
-        customer: info,
-        customerId: savedCustomerId,
-        deliveryScheduleText,
-        travelTimeOneWay,
-        structureLines,
-        settings,
-        products,
-        structures,
-        createdAt,
-      });
+      const previous = await db.getCalculation(savedId);
+      const built = preserveCalculationSnapshot(
+        buildCalculationRecordFromComposer({
+          id: savedId,
+          customer: info,
+          customerId: savedCustomerId,
+          deliveryScheduleText,
+          travelTimeOneWay,
+          structureLines,
+          settings,
+          products,
+          structures,
+          createdAt,
+        }),
+        previous?.formSnapshot,
+      );
+      const record =
+        info.customerType === 'business' ? calculationWithBusinessVatMode(built, businessVatMode) : built;
       await db.saveCalculation(record);
       await db.clearWizardDraft();
       await refreshCalculations();
@@ -557,6 +609,9 @@ export default function CalculationComposerScreen() {
       structures.find((item) => item.id === line.structureId),
     ),
   );
+  const hasInvalidMaterials =
+    Object.keys(materialIssues).length > 0 ||
+    structureLines.some((line) => materialQuantitiesBlockFinish(line.materialQuantities));
 
   function handleComposerBack() {
     if (allowExitRef.current) {
@@ -622,33 +677,60 @@ export default function CalculationComposerScreen() {
           />
 
           <SectionTitle title="Tuoterakenteet" />
-          {structureLines.map((line) => (
-            <StructureLineCard
-              key={line.id}
-              line={line}
-              structure={structures.find((item) => item.id === line.structureId)}
-              weatherReserveFactor={settings.weatherReserveFactor}
-              forceVat0={forceVat0}
-              onChange={(next) =>
-                setStructureLines((current) =>
-                  current.map((item) => (item.id === next.id ? next : item)),
-                )
-              }
-              onOpenForm={() => void openLineForm(line.id)}
-              onDelete={() => setDeleteLineId(line.id)}
+          {showBusinessVatChoice ? (
+            <ChoiceToggle
+              label="Hintojen ALV"
+              value={businessVatMode}
+              options={[
+                { value: 'alv0', label: 'ALV 0' },
+                { value: 'sis', label: 'Sis. ALV' },
+              ]}
+              onChange={setBusinessVatMode}
             />
+          ) : null}
+          {structureLines.map((line) => (
+            <View key={line.id} style={styles.lineBlock}>
+              <StructureLineCard
+                line={line}
+                structure={structures.find((item) => item.id === line.structureId)}
+                weatherReserveFactor={settings.weatherReserveFactor}
+                forceVat0={forceVat0}
+                offerIncludesVat={customerType === 'business' ? businessOfferIncludesVat : undefined}
+                onChange={(next) =>
+                  setStructureLines((current) =>
+                    current.map((item) => (item.id === next.id ? next : item)),
+                  )
+                }
+                onOpenForm={() => void openLineForm(line.id)}
+                onDelete={() => setDeleteLineId(line.id)}
+              />
+              <MaterialQuantitiesEditor
+                line={line}
+                form={structures.find((item) => item.id === line.structureId)?.form}
+                products={products}
+                onChange={(next) =>
+                  setStructureLines((current) =>
+                    current.map((item) => (item.id === next.id ? next : item)),
+                  )
+                }
+                onValidityChange={setMaterialLineValidity}
+              />
+            </View>
           ))}
 
           <OutlinedButton title="Lisää tuoterakenne" onPress={() => setStructurePickerVisible(true)} />
           <PrimaryButton
             title="Yhteenveto"
             onPress={() => void finishCalculation(false)}
-            disabled={hasIncompleteForm}
+            disabled={hasIncompleteForm || hasInvalidMaterials}
           />
           {hasIncompleteForm ? (
             <Text style={styles.incompleteHint}>
               Täytä keskeneräiset lomakkeet ennen yhteenvetoa.
             </Text>
+          ) : null}
+          {hasInvalidMaterials ? (
+            <Text style={styles.incompleteHint}>Tarkista materiaalimäärät ennen yhteenvetoa.</Text>
           ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -778,6 +860,9 @@ function createStyles(colors: AppColorPalette) {
       padding: 20,
       paddingBottom: 40,
       gap: 10,
+    },
+    lineBlock: {
+      gap: 8,
     },
     customerRow: {
       flexDirection: 'row' as const,

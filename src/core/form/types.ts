@@ -49,6 +49,49 @@ export interface FieldVisibilityCondition {
   value: string;
 }
 
+/** Milloin kentän arvo tulostetaan. */
+export type PrintWhen = 'always' | 'notEmpty' | 'ifYes';
+
+/** Tulostusryhmä tarjouksessa ja urakkakortilla. */
+export type PrintGroup = 'osa_alueet' | 'tyovaiheet' | 'muuta' | 'tieto' | 'maali';
+
+/**
+ * Kentän esitystapa tulosteessa. Lomakepohjan JSON-avain `print.offer.esitys` / `print.urakkakortti.esitys`.
+ * Puuttuva avain = ryhmän oletus: osa_alueet, työvaiheet ja muuta → teksti; tieto ja maali → taulukko.
+ */
+export type PrintEsitys = 'teksti' | 'taulukko';
+
+/** Yhden tulostuskohteen asetukset. Puuttuva avain = oletus. */
+export interface PrintTargetSettings {
+  /** Voittaa kentän `print.when`. */
+  when?: PrintWhen;
+  /** Oletus `tieto`. */
+  group?: PrintGroup;
+  /** Oletus = kentän paikka lomakkeella. */
+  order?: number;
+  /** Oletus = kentän nimi. Tyhjä merkkijono = pelkkä arvo. */
+  label?: string;
+  /**
+   * Esitystapa. Puuttuu = ryhmän oletus. Tallennetaan vain, kun se poikkeaa oletuksesta.
+   */
+  esitys?: PrintEsitys;
+}
+
+/** Urakkakortin tulostus. `quantityKey` vain ryhmässä `maali` ja `product_select`-kentällä. */
+export interface UrakkakorttiPrintSettings extends PrintTargetSettings {
+  quantityKey?: string;
+}
+
+/**
+ * Kentän tulostus. Kohde `true` tai objekti = tulostuu sinne; puuttuva kohde = ei tulostu.
+ * `{}` = ei tulostu minnekään. Ilman koko lohkoa käytetään vanhaa yhteenveto-oletusta.
+ */
+export interface FieldPrintSettings {
+  when?: PrintWhen;
+  offer?: true | PrintTargetSettings;
+  urakkakortti?: true | UrakkakorttiPrintSettings;
+}
+
 export interface FormField {
   id: string;
   key: string;
@@ -81,6 +124,13 @@ export interface FormField {
   debugExampleValue?: string;
   /** Järjestelmäkenttä (hinta, kesto…) – kaavaa ei voi poistaa */
   systemKey?: string;
+  /**
+   * Tulostus tarjoukseen / urakkakortille.
+   * Puuttuva `print` = vanha oletus (`showOnSummary` + kohdekohtaiset säännöt).
+   * Mukana oleva `print` korvaa `showOnSummary` / `showOnSummaryWhen`; wizardin `showWhen` pätee silti.
+   * `section` ja järjestelmäkentät eivät tulostu tämän kautta.
+   */
+  print?: FieldPrintSettings;
 }
 
 export interface FormPage {
