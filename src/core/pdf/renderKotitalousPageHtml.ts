@@ -26,9 +26,9 @@ export function ktvPersonsLine(persons: number): string {
  */
 export function ktvRateSentence(settings: Pick<KtvSettings, 'ratePercent' | 'capEur' | 'deductibleEur'>): string {
   return (
-    `Vähennystä saa verollisesta työn osuudesta ${formatPercent(settings.ratePercent)}, ` +
-    `max ${formatCurrency(settings.capEur)} / henkilö; ` +
-    `omavastuu ${formatCurrency(settings.deductibleEur)} vuosittain.`
+    `Vähennystä saa arvonlisäverollisesta työn osuudesta ${formatPercent(settings.ratePercent)}, ` +
+    `max ${formatCurrency(settings.capEur)} / henkilö vuodessa; ` +
+    `omavastuu ${formatCurrency(settings.deductibleEur)} / henkilö vuodessa.`
   );
 }
 

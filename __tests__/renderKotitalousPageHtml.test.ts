@@ -39,7 +39,7 @@ describe('renderKotitalousPageHtml', () => {
     expect(loppu).toBeGreaterThan(-1);
     expect(loppu).toBeLessThan(tyo);
     expect(html).toContain('2 510,00 €');
-    expect(html).toContain('Vähennystä saa verollisesta työn osuudesta 40 %, max 2 100,00 € / henkilö; omavastuu 150,00 € vuosittain.');
+    expect(html).toContain('Vähennystä saa arvonlisäverollisesta työn osuudesta 40 %, max 2 100,00 € / henkilö vuodessa; omavastuu 150,00 € / henkilö vuodessa.');
     expect(html).toContain('2 008,00 €');
     expect(html).toContain('Kotitalousvähennys (40 %)');
     expect(html).toContain('803,20 €');
@@ -63,7 +63,7 @@ describe('renderKotitalousPageHtml', () => {
     );
     const html = norm(renderKotitalousPageHtml(ctx));
     expect(html).toContain('Kotitalousvähennys (50 %)');
-    expect(html).toContain('Vähennystä saa verollisesta työn osuudesta 50 %, max 500,00 € / henkilö; omavastuu 100,00 € vuosittain.');
+    expect(html).toContain('Vähennystä saa arvonlisäverollisesta työn osuudesta 50 %, max 500,00 € / henkilö vuodessa; omavastuu 100,00 € / henkilö vuodessa.');
     expect(html).toContain('−100,00 €');
     expect(html).toContain('Enimmäismäärä / henkilö / vuosi');
     expect(html).toContain('500,00 €');
