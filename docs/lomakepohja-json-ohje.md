@@ -160,18 +160,21 @@ Vanhat `settings.*`-nimet toimivat aliaksina.
 | Muuttuja | |
 |----------|--|
 | `asetukset.alv_prosentti` | ALV % |
-| `asetukset.tuntihinta` | €/h alv0 |
+| `asetukset.tuntihinta` | €/h alv0. Tuoterakenteen tekijän tuntipalkka; tyhjä = Yleinen |
 | `asetukset.tyopaivan_pituus` | h |
 
 **Säävarauskerroin ei ole kaavamuuttuja.** Se kerrotaan vasta yhteenvedon/rivikortin **Työn arvioitu kesto** -lukuun (pyöristys ylöspäin). `tyoryhma_kesto_pv` / `_h` ja hinnoittelu käyttävät tarkkaa kestoa.
 
 Uuden rakenteen palkkio-%-oletus on Yleinen-sivulla; kaava lukee silti **tämän rakenteen** palkkion.
 
+`asetukset.tuntihinta` tulee tuoterakenteen tekijän tuntipalkasta. Tyhjä rakenne käyttää Yleinen-sivun tuntihintaa.
+
 ### Tämä tuoterakenne (ei JSONissa)
 
 | Muuttuja | Asetukset → Tuoterakenteet → [rakenne] |
 |----------|----------------------------------------|
 | `asetukset.tyoryhman_koko` | työryhmän koko |
+| `asetukset.tuntihinta` | tekijän tuntipalkka €/h alv0 (tyhjä = Yleinen) |
 | `asetukset.myyntipalkkio_prosentti` | palkkio-% |
 | `asetukset.myyntikate_prosentti` | kate % alarajalla (vanhat kaavat) |
 | `asetukset.myyntikate_alaraja_eur` | liukuvan katteen alaraja € |
@@ -179,7 +182,7 @@ Uuden rakenteen palkkio-%-oletus on Yleinen-sivulla; kaava lukee silti **tämän
 | `asetukset.myyntikate_ylaraja_eur` | yläraja € |
 | `asetukset.myyntikate_ylaraja_prosentti` | kate % ylärajalla |
 
-Eri rakenteilla eri kate, palkkio ja ryhmäkoko. Ei kaavamuuttujia: lisätiedot, oletushinta, oletus materiaalit, näytettävä arvioitu kesto.
+Eri rakenteilla eri kate, palkkio, ryhmäkoko ja tuntipalkka. Ei kaavamuuttujia: lisätiedot, oletushinta, oletus materiaalit, näytettävä arvioitu kesto.
 
 ### Laskelma
 
@@ -400,7 +403,7 @@ Ennen tuontia:
 | kenttä ei näy | `id` sivun `fieldIds`:ään. Kate, ALV €, alennus € piilotetaan aina |
 | kaava = 0 | `key`; piilotettu `showWhen` |
 | valinta ei vaikuta | option `value` numero merkkijonona |
-| hintakortti tyhjä | vie `kokonaishinta_alv0`, `urakka_hinta_alv0`, kate, palkkio, kesto. ALV/tuntihinta Yleisestä; ryhmä/palkkio/kate rakenteesta |
+| hintakortti tyhjä | vie `kokonaishinta_alv0`, `urakka_hinta_alv0`, kate, palkkio, kesto. ALV Yleisestä; tuntihinta tuoterakenteesta (tyhjä = Yleinen); ryhmä/palkkio/kate rakenteesta |
 | materiaalit 0 | `effects`; pelkkä kaava ei riitä |
 | computed € mutta kortti ei muutu | puuttuu `add_material_fixed` |
 | urakka ei muutu | oletus: `add_duration` tai kaava `tyoryhma_kesto_pv`:lle. Oma kaava: päivitä `urakka_hinta_alv0` |
