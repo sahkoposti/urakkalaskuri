@@ -90,9 +90,12 @@ export const offerDocumentCss = `
   .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
   .offer-seller { margin: 4mm 0; }
   .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
-  .offer-sign { display: flex; gap: 12mm; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign-col { flex: 1; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
+  .offer-sign td + td { padding: 0 0 0 6mm; }
   .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
+  .offer-sign-name { min-height: 12mm; }
   .offer-sign-detail { margin: 0 0 1mm 0; }
   .offer-sign-label { margin: 3mm 0 0 0; }
   .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }

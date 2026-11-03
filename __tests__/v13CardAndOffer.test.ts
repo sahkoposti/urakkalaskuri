@@ -237,6 +237,12 @@ describe('offer signature', () => {
     expect(html).toContain('Allekirjoitus');
     expect(html).toContain('Päiväys');
     expect((html.match(/class="offer-sign-line"/g) ?? []).length).toBe(4);
+    const pen = html.match(/<tr class="offer-sign-pen">([\s\S]*?)<\/tr>/);
+    const date = html.match(/<tr class="offer-sign-date">([\s\S]*?)<\/tr>/);
+    expect(pen?.[1].match(/Allekirjoitus/g)).toHaveLength(2);
+    expect(pen?.[1].match(/class="offer-sign-line"/g)).toHaveLength(2);
+    expect(date?.[1].match(/Päiväys/g)).toHaveLength(2);
+    expect(date?.[1].match(/class="offer-sign-line"/g)).toHaveLength(2);
     expect(html).toContain('break-inside: avoid');
     const at = (needle: string) => html.indexOf(needle);
     expect(at('class="offer-sign"')).toBeGreaterThan(at('Lisätiedot:'));

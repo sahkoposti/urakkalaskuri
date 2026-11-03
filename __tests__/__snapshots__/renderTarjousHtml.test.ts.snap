@@ -64,9 +64,12 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
   .offer-seller { margin: 4mm 0; }
   .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
-  .offer-sign { display: flex; gap: 12mm; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign-col { flex: 1; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
+  .offer-sign td + td { padding: 0 0 0 6mm; }
   .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
+  .offer-sign-name { min-height: 12mm; }
   .offer-sign-detail { margin: 0 0 1mm 0; }
   .offer-sign-label { margin: 3mm 0 0 0; }
   .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
@@ -111,7 +114,7 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
 <section class="doc-section offer-section"><h2 class="offer-line-heading"><span class="offer-line-title">Ulkomaalaus</span><span class="offer-line-leader"></span><span class="offer-line-qty">1</span><span class="offer-line-price">1 000,00 €</span><span class="offer-line-vat">Alv 0 %</span></h2><div class="doc-group doc-group-muuta"><p class="doc-group-title">Muuta</p><p class="doc-line">Sisältää telineet.</p></div><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
 <div class="price-block"><div class="col"><table><tr><td>Hinta alv0</td><td class="value">2 000,00 €</td></tr></table></div><div class="col"><table><tr class="emphasis"><td>Loppusumma</td><td class="value">2 000,00 €</td></tr></table></div></div>
 <div class="offer-seller"><h3>Myyjä:</h3><div>Puh. +358 40 938 9403<br />info@colorajaton.fi</div></div>
-<div class="offer-sign"><div class="offer-sign-col"><p class="offer-sign-role">Myyjä</p><p class="offer-sign-detail">ColoRajaton Oy</p><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></div><div class="offer-sign-col"><p class="offer-sign-role">Tilaaja</p><p class="offer-sign-detail">Matti Meikäläinen</p><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></div></div>
+<table class="offer-sign"><tr class="offer-sign-names"><td><p class="offer-sign-role">Myyjä</p><div class="offer-sign-name"><p class="offer-sign-detail">ColoRajaton Oy</p></div></td><td><p class="offer-sign-role">Tilaaja</p><div class="offer-sign-name"><p class="offer-sign-detail">Matti Meikäläinen</p></div></td></tr><tr class="offer-sign-pen"><td><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></td><td><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></td></tr><tr class="offer-sign-date"><td><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></td><td><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></td></tr></table>
 </td></tr></tbody>
 </table>
 </body>
@@ -182,9 +185,12 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
   .offer-seller { margin: 4mm 0; }
   .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
-  .offer-sign { display: flex; gap: 12mm; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign-col { flex: 1; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
+  .offer-sign td + td { padding: 0 0 0 6mm; }
   .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
+  .offer-sign-name { min-height: 12mm; }
   .offer-sign-detail { margin: 0 0 1mm 0; }
   .offer-sign-label { margin: 3mm 0 0 0; }
   .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
@@ -230,7 +236,7 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
 <div class="price-block"><div class="col"><table><tr><td>Hinta alv0</td><td class="value">2 000,00 €</td></tr><tr><td>ALV 25,5 %</td><td class="value">510,00 €</td></tr></table></div><div class="col"><table><tr><td>Hinta alv</td><td class="value">2 510,00 €</td></tr><tr class="emphasis"><td>Loppusumma</td><td class="value">2 510,00 €</td></tr></table></div></div>
 <table class="offer-vat"><thead><tr><th>Alv-%</th><th class="num">Veroton</th><th class="num">Alv</th><th class="num">Yhteensä</th></tr></thead><tbody><tr><td>25,5 %</td><td class="num">2 000,00 €</td><td class="num">510,00 €</td><td class="num">2 510,00 €</td></tr></tbody></table>
 <div class="offer-seller"><h3>Myyjä:</h3><div>Puh. +358 40 938 9403<br />info@colorajaton.fi</div></div>
-<div class="offer-sign"><div class="offer-sign-col"><p class="offer-sign-role">Myyjä</p><p class="offer-sign-detail">ColoRajaton Oy</p><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></div><div class="offer-sign-col"><p class="offer-sign-role">Tilaaja</p><p class="offer-sign-detail">Matti Meikäläinen</p><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></div></div>
+<table class="offer-sign"><tr class="offer-sign-names"><td><p class="offer-sign-role">Myyjä</p><div class="offer-sign-name"><p class="offer-sign-detail">ColoRajaton Oy</p></div></td><td><p class="offer-sign-role">Tilaaja</p><div class="offer-sign-name"><p class="offer-sign-detail">Matti Meikäläinen</p></div></td></tr><tr class="offer-sign-pen"><td><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></td><td><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></td></tr><tr class="offer-sign-date"><td><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></td><td><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></td></tr></table>
 <section class="ktv-page page-break">
 <h2 class="ktv-title">Kotitalousvähennys</h2>
 <p class="ktv-rate-sentence">Vähennystä saa verollisesta työn osuudesta 40 %, max 2 100,00 € / henkilö; omavastuu 150,00 € vuosittain.</p>
@@ -308,9 +314,12 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
   .offer-seller { margin: 4mm 0; }
   .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
-  .offer-sign { display: flex; gap: 12mm; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign-col { flex: 1; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
+  .offer-sign td + td { padding: 0 0 0 6mm; }
   .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
+  .offer-sign-name { min-height: 12mm; }
   .offer-sign-detail { margin: 0 0 1mm 0; }
   .offer-sign-label { margin: 3mm 0 0 0; }
   .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
@@ -358,7 +367,7 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
 <table class="offer-vat"><thead><tr><th>Alv-%</th><th class="num">Veroton</th><th class="num">Alv</th><th class="num">Yhteensä</th></tr></thead><tbody><tr><td>25,5 %</td><td class="num">2 000,00 €</td><td class="num">510,00 €</td><td class="num">2 510,00 €</td></tr></tbody></table>
 <div class="additional-info"><h3>Lisätiedot:</h3><div>Maksuehto kuvitteellinen.</div></div>
 <div class="offer-seller"><h3>Myyjä:</h3><div>Puh. +358 40 938 9403<br />info@colorajaton.fi</div></div>
-<div class="offer-sign"><div class="offer-sign-col"><p class="offer-sign-role">Myyjä</p><p class="offer-sign-detail">ColoRajaton Oy</p><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></div><div class="offer-sign-col"><p class="offer-sign-role">Tilaaja</p><p class="offer-sign-detail">Matti Meikäläinen</p><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></div></div>
+<table class="offer-sign"><tr class="offer-sign-names"><td><p class="offer-sign-role">Myyjä</p><div class="offer-sign-name"><p class="offer-sign-detail">ColoRajaton Oy</p></div></td><td><p class="offer-sign-role">Tilaaja</p><div class="offer-sign-name"><p class="offer-sign-detail">Matti Meikäläinen</p></div></td></tr><tr class="offer-sign-pen"><td><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></td><td><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></td></tr><tr class="offer-sign-date"><td><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></td><td><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></td></tr></table>
 <section class="ktv-page page-break">
 <h2 class="ktv-title">Kotitalousvähennys</h2>
 <p class="ktv-rate-sentence">Vähennystä saa verollisesta työn osuudesta 40 %, max 2 100,00 € / henkilö; omavastuu 150,00 € vuosittain.</p>
