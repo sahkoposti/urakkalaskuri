@@ -115,7 +115,8 @@ describe('renderKotitalousPageHtml', () => {
     expect(two).toContain('4 200,00 €');
     expect(two).toContain('Arvioitu kotitalousvähennys (2 henkilöä)');
     expect(two).toContain('503,20 €');
-    expect(two).toContain(ktvPersonsLine(2));
+    expect(two).not.toContain(ktvPersonsLine(2));
+    expect(two).not.toContain('class="ktv-one-person"');
     expect(two).toContain(ktvDefaultNote(2));
     expect(two).not.toContain('yhdelle henkilölle');
     expect(two).not.toContain(KTV_ONE_PERSON_LINE);
@@ -126,7 +127,8 @@ describe('renderKotitalousPageHtml', () => {
     expect(three).toContain('Enimmäismäärä yhteensä (3 henkilöä)');
     expect(three).toContain('6 300,00 €');
     expect(three).toContain('Arvioitu kotitalousvähennys (3 henkilöä)');
-    expect(three).toContain(ktvPersonsLine(3));
+    expect(three).not.toContain(ktvPersonsLine(3));
+    expect(three).toContain(ktvDefaultNote(3));
     expect(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(record({}), 2))))).toMatchSnapshot();
     expect(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(record({}), 3))))).toMatchSnapshot();
   });
@@ -143,7 +145,8 @@ describe('renderKotitalousPageHtml', () => {
     const html = renderKotitalousPageHtml(ctx);
     expect(html).toContain('Oma huomautus yhdelle henkilölle.');
     expect(html).not.toContain(KTV_DEFAULT_NOTE);
-    expect(html).toContain('Laskelma on arvio 2 henkilölle.');
+    expect(html).not.toContain('Laskelma on arvio 2 henkilölle.');
+    expect(html).not.toContain('class="ktv-one-person"');
   });
 
   it('escapes the rate sentence', () => {
