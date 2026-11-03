@@ -2,6 +2,7 @@ import type { CalculationRecord, FormSnapshot } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { roundToCents } from '@/src/core/utils/formatters';
+import type { BusinessVatMode } from '@/src/core/utils/priceDisplay';
 
 import { DEFAULT_SIVUKULUKERROIN } from './defaultOfferSettings';
 
@@ -10,6 +11,9 @@ export const URAKKAKORTTI_MODE_KEY = 'urakkakorttiMode' as const;
 
 /** Laskelman `form_snapshot`-JSON. Puuttuva avain = esitäyttö asiakkaan lisätiedoista. */
 export const URAKKAKORTTI_HUOMIO_KEY = 'urakkakorttiHuomioitavaa' as const;
+
+/** Laskelman `form_snapshot`-JSON. Puuttuva avain = alv0. */
+export const BUSINESS_VAT_MODE_KEY = 'businessVatMode' as const;
 
 export type UrakkakorttiMode = 'alihankkija' | 'tyontekija';
 
@@ -163,7 +167,27 @@ export function employeeContractAmount(
   return roundToCents(amount / divisor);
 }
 
-const SNAPSHOT_EXTRA_KEYS = ['ktvPersons', URAKKAKORTTI_MODE_KEY, URAKKAKORTTI_HUOMIO_KEY] as const;
+/** ALV 0 poistaa avaimen (puuttuva = alv0). Sis. ALV kirjoittaa `businessVatMode: 'sis'`. */
+export function calculationWithBusinessVatMode(
+  record: CalculationRecord,
+  mode: BusinessVatMode,
+): CalculationRecord {
+  if (mode !== 'alv0' && mode !== 'sis') {
+    throw new Error('Yritystarjouksen ALV on ALV 0 tai sis. ALV.');
+  }
+  const snapshot = record.formSnapshot;
+  const has = hasKey(snapshot, BUSINESS_VAT_MODE_KEY);
+  if (mode === 'alv0') {
+    if (!has || !snapshot) return record;
+    const next = { ...snapshot };
+    delete next.businessVatMode;
+    return { ...record, formSnapshot: next };
+  }
+  if (has && snapshot?.businessVatMode === 'sis') return record;
+  return withSnapshot(record, { businessVatMode: 'sis' });
+}
+
+const SNAPSHOT_EXTRA_KEYS = ['ktvPersons', URAKKAKORTTI_MODE_KEY, URAKKAKORTTI_HUOMIO_KEY, BUSINESS_VAT_MODE_KEY] as const;
 
 /** Wizardin uudelleenkirjoitus säilyttää laskelman JSON-avaimet. */
 export function preserveCalculationSnapshot(

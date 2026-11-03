@@ -38,8 +38,11 @@ type StructureLineCardProps = {
   weatherReserveFactor?: number;
   /** Käänteinen ALV: hinnat aina ALV 0, valintaa ei näytetä. */
   forceVat0?: boolean;
-  /** Yritys ilman käänteistä ALV:ta. Puuttuva lippu on ALV 0, ei yksityisasiakkaan oletus. */
-  businessVatChoice?: boolean;
+  /**
+   * Yritystarjouksen yhteinen ALV. Kun annettu, rivin omaa valintaa ei näytetä
+   * eikä `pricesIncludeVat` ohjaa syöttöä. Puuttuva = yksityinen rivikohtainen valinta.
+   */
+  offerIncludesVat?: boolean;
   onChange: (line: StructureLine) => void;
   onOpenForm?: () => void;
   onDelete: () => void;
@@ -50,7 +53,7 @@ export function StructureLineCard({
   structure,
   weatherReserveFactor = 1,
   forceVat0 = false,
-  businessVatChoice = false,
+  offerIncludesVat,
   onChange,
   onOpenForm,
   onDelete,
@@ -62,8 +65,8 @@ export function StructureLineCard({
   const formIncomplete = isStructureFormIncomplete(priced, structure);
   const includeVat = forceVat0
     ? false
-    : businessVatChoice
-      ? priced.pricesIncludeVat === true
+    : offerIncludesVat !== undefined
+      ? offerIncludesVat
       : linePricesIncludeVat(priced);
   const vatPercent = priced.vatPercent;
   const displayedWorkDurationDays = resolveDisplayedWorkDurationDays(
@@ -112,7 +115,7 @@ export function StructureLineCard({
         </View>
       </View>
 
-      {forceVat0 ? null : (
+      {forceVat0 || offerIncludesVat !== undefined ? null : (
         <ChoiceToggle
           label="Hinnat"
           value={includeVat}

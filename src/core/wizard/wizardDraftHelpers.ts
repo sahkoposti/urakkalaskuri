@@ -26,6 +26,8 @@ export type WizardFormState = {
   deliveryScheduleText?: string;
   travelTimeOneWay?: string;
   structureLines?: StructureLine[];
+  /** Yritystarjouksen yhteinen ALV. Puuttuva = alv0. */
+  businessVatMode?: 'alv0' | 'sis';
 };
 
 export type WizardDraftEditMeta = {
@@ -172,6 +174,7 @@ export function composerStateSignature(state: WizardFormState): string {
     deliveryScheduleText: (state.deliveryScheduleText ?? '').trim(),
     travelTimeOneWay: (state.travelTimeOneWay ?? '').trim(),
     structureLines: (state.structureLines ?? []).map(structureLineSignature),
+    businessVatMode: state.businessVatMode === 'sis' ? 'sis' : 'alv0',
   });
 }
 
@@ -261,6 +264,7 @@ export function buildPersistedWizardDraft(
       : {}),
     ...(state.travelTimeOneWay != null ? { travelTimeOneWay: state.travelTimeOneWay } : {}),
     ...(state.structureLines ? { structureLines: state.structureLines } : {}),
+    ...(state.businessVatMode === 'sis' ? { businessVatMode: 'sis' as const } : {}),
   };
 }
 
@@ -306,6 +310,7 @@ export function persistedDraftToFormState(
     deliveryScheduleText: draft.deliveryScheduleText ?? '',
     travelTimeOneWay: draft.travelTimeOneWay ?? '',
     structureLines: draft.structureLines,
+    businessVatMode: draft.businessVatMode === 'sis' ? 'sis' : 'alv0',
   };
   const wizardDraft: WizardDraft = {
     customer: {

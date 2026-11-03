@@ -2,8 +2,7 @@ import {
   customerSeesVatInclusive,
   defaultPricesIncludeVat,
   labeledWithVatMode,
-  offerLineIncludesVat,
-  offerTotalsIncludeVat,
+  offerIncludesVat,
   priceBreakdownParts,
   summaryShowsVatInclusive,
   vat0Tag,
@@ -37,17 +36,17 @@ describe('vat labels', () => {
     const privateCustomer = { name: 'A', customerType: 'private' as const };
     const business = { name: 'B', customerType: 'business' as const };
     const reverseBusiness = { name: 'C', customerType: 'business' as const, reverseVat: true };
-    expect(summaryShowsVatInclusive(business, [{ pricesIncludeVat: true }])).toBe(true);
+    const sis = { businessVatMode: 'sis' as const };
+    expect(summaryShowsVatInclusive(business, [{ pricesIncludeVat: true }])).toBe(false);
+    expect(summaryShowsVatInclusive(business, [{ pricesIncludeVat: true }], sis)).toBe(true);
     expect(summaryShowsVatInclusive(business, [{ pricesIncludeVat: false }])).toBe(false);
     expect(summaryShowsVatInclusive(business, [{}])).toBe(false);
-    expect(summaryShowsVatInclusive(reverseBusiness, [{ pricesIncludeVat: true }])).toBe(false);
-    expect(offerLineIncludesVat(business, {})).toBe(false);
-    expect(offerLineIncludesVat(business, { pricesIncludeVat: false })).toBe(false);
-    expect(offerLineIncludesVat(business, { pricesIncludeVat: true })).toBe(true);
-    expect(offerLineIncludesVat(reverseBusiness, { pricesIncludeVat: true })).toBe(false);
-    expect(offerLineIncludesVat(privateCustomer, { pricesIncludeVat: false })).toBe(true);
-    expect(offerTotalsIncludeVat(business, [{ pricesIncludeVat: true, quantity: 1 }])).toBe(true);
-    expect(offerTotalsIncludeVat(business, [{ pricesIncludeVat: true, quantity: 0 }])).toBe(false);
+    expect(summaryShowsVatInclusive(reverseBusiness, [{ pricesIncludeVat: true }], sis)).toBe(false);
+    expect(offerIncludesVat(business)).toBe(false);
+    expect(offerIncludesVat(business, { businessVatMode: 'alv0' })).toBe(false);
+    expect(offerIncludesVat(business, sis)).toBe(true);
+    expect(offerIncludesVat(reverseBusiness, sis)).toBe(false);
+    expect(offerIncludesVat(privateCustomer)).toBe(true);
     expect(summaryShowsVatInclusive(privateCustomer, [{ pricesIncludeVat: true }])).toBe(true);
     expect(
       summaryShowsVatInclusive(privateCustomer, [

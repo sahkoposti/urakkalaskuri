@@ -14,6 +14,7 @@ import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
 import { buildUrakkakorttiContext, urakkakorttiBodyBlocks } from '../src/core/pdf/urakkakortti';
 import {
+  calculationWithBusinessVatMode,
   calculationWithHuomioitavaa,
   calculationWithUrakkakorttiMode,
   effectiveHuomioitavaa,
@@ -289,6 +290,15 @@ describe('urakkakortti työntekijä and huomioitavaa', () => {
     expect(blocks[0]).toBe('price');
     expect(blocks.at(-1)).toBe('huomio');
     expect([...blocks, 'images']).toContain('images');
+  });
+
+  it('preserves businessVatMode across a wizard rebuild', () => {
+    const previous = calculationWithBusinessVatMode(record({ customerType: 'business' }), 'sis');
+    const rebuilt = preserveCalculationSnapshot(record({ customerType: 'business' }), previous.formSnapshot);
+    expect(rebuilt.formSnapshot?.businessVatMode).toBe('sis');
+    const cleared = calculationWithBusinessVatMode(previous, 'alv0');
+    expect(cleared.formSnapshot?.businessVatMode).toBeUndefined();
+    expect(calculationWithBusinessVatMode(cleared, 'alv0')).toBe(cleared);
   });
 });
 

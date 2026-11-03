@@ -2,6 +2,7 @@ import type { FormDefinition, FormField } from '../src/core/form/types';
 import type { StructureLine } from '../src/core/models/types';
 import { defaultCompanyProfile, parseStoredCompanyProfile } from '../src/core/company/defaultCompany';
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
+import { calculationWithBusinessVatMode } from '../src/core/pdf/urakkakorttiCard';
 import { normalizeOfferCompanySettings } from '../src/core/pdf/defaultOfferSettings';
 import { defaultOfferCompanySettings } from '../src/core/pdf/defaultOfferSettings';
 import { escapeMultiline } from '../src/core/pdf/escapeHtml';
@@ -265,54 +266,15 @@ describe('offer rows and sections', () => {
     expect(discountedHtml).not.toContain(money(lineTotalVat0(chimney), 25.5, true));
   });
 
-  it('prints Alv 0 % for a business VAT 0 line and sis. alv for a VAT-inclusive line', () => {
+  it('private headings stay gross with no VAT label', () => {
     const gross = money(lineTotalVat0(eaves), 25.5, true);
-    const net = money(lineTotalVat0(eaves), 25.5, false);
-    for (const line of [eaves, { ...eaves, pricesIncludeVat: false as const }]) {
-      const sections = buildOfferSections(groupedInput([line], { customerType: 'business' }));
-      expect(sections[0].heading?.vatLabel).toBe('Alv 0 %');
-      expect(sections[0].heading?.price).toBe(net);
-    }
-    const html0 = renderTarjousHtml(
-      buildPdfContext(groupedInput([{ ...eaves, pricesIncludeVat: false }], { customerType: 'business' })),
-    );
-    expect(html0).toContain('Alv 0 %');
-    expect(html0).toContain('>Loppusumma<');
-    expect(html0).not.toContain('sis. alv');
-    expect(html0).not.toContain('>Hinta alv<');
-
     const inclusiveLine = { ...eaves, pricesIncludeVat: true as const };
-    const inclusive = buildOfferSections(groupedInput([inclusiveLine], { customerType: 'business' }));
-    expect(inclusive[0].heading?.vatLabel).toBe('sis. alv 25,5 %');
-    expect(inclusive[0].heading?.price).toBe(gross);
-    const html = renderTarjousHtml(buildPdfContext(groupedInput([inclusiveLine], { customerType: 'business' })));
-    expect(html).not.toContain('Alv 0 %');
-    expect(html).toContain('sis. alv 25,5 %');
-    expect(html).toContain(gross);
-    expect(html).toContain('>Hinta alv<');
-    expect(html).toContain('ALV 25,5 %');
-    expect(html).not.toContain('Kotitalousvähennys');
-
     const privateLine = buildOfferSections(groupedInput([inclusiveLine]));
     expect(privateLine[0].heading?.vatLabel).toBeUndefined();
     expect(privateLine[0].heading?.price).toBe(gross);
     const privateVat0 = buildOfferSections(groupedInput([{ ...eaves, pricesIncludeVat: false }]));
     expect(privateVat0[0].heading?.vatLabel).toBeUndefined();
     expect(privateVat0[0].heading?.price).toBe(gross);
-
-    const reverseLine = { ...eaves, pricesIncludeVat: true as const };
-    const reverse = buildOfferSections(
-      groupedInput([reverseLine], { customerType: 'business', reverseVat: true }),
-    );
-    expect(reverse[0].heading?.vatLabel).toBe('Alv 0 %');
-    expect(reverse[0].heading?.price).toBe(net);
-    const reverseHtml = renderTarjousHtml(
-      buildPdfContext(groupedInput([reverseLine], { customerType: 'business', reverseVat: true })),
-    );
-    expect(reverseHtml).toContain('Alv 0 %');
-    expect(reverseHtml).not.toContain('Käänteinen ALV');
-    expect(reverseHtml).not.toContain('sis. alv');
-    expect(reverseHtml).not.toContain(gross);
   });
 
   it('gives each priced line its own heading and keeps groups as separate rows', () => {
@@ -705,5 +667,149 @@ describe('renderTarjousHtml offer order', () => {
     expect(at('class="ktv-page')).toBeGreaterThan(at('class="offer-sign"'));
     const forbidden = ['k', 'hv'].join('');
     expect(html.toLowerCase()).not.toContain(forbidden);
+  });
+});
+
+describe('businessVatMode', () => {
+  const plain = (value: string) => value.replace(/\s/g, ' ');
+  const parseEuro = (value: string) => Number(value.replace(/\s/g, '').replace('€', '').replace(',', '.'));
+  const exampleLine = (id: string, name: string, quantity: number, unitPriceVat0: number, pricesIncludeVat?: boolean): StructureLine => ({
+    ...line(id, 's1', name),
+    quantity,
+    unitPriceVat0,
+    vatPercent: 25.5,
+    discountPercent: 0,
+    ...(pricesIncludeVat === undefined ? {} : { pricesIncludeVat }),
+  });
+  const exampleLines = (pricesIncludeVat?: boolean) => [
+    exampleLine('a', 'Räystäät', 20, 185, pricesIncludeVat),
+    exampleLine('b', 'Seinä', 12, 80, pricesIncludeVat),
+    exampleLine('c', 'Nosturi', 1, 150, pricesIncludeVat),
+  ];
+
+  function exampleRecord(
+    customer: Parameters<typeof record>[0],
+    pricesIncludeVat?: boolean,
+    storedGross = 6036.56,
+  ) {
+    return record(customer, {
+      structureLines: exampleLines(pricesIncludeVat),
+      totalPriceVat0: 4810,
+      totalPriceVat0BeforeDiscount: 4810,
+      vatAmount: roundToCents(storedGross - 4810),
+      totalPriceVat: storedGross,
+      totalPriceVatBeforeDiscount: storedGross,
+      discountPercent: 0,
+      vatPercent: 25.5,
+    });
+  }
+
+  function priced(rec: ReturnType<typeof exampleRecord>) {
+    const ctx = buildPdfContext(input(rec, { structures: [], offerStructureSettings: {} }));
+    const loppu = ctx.price.right.find((row) => row.label === 'Loppusumma');
+    const headings = ctx.sections.map((section) => section.heading?.price ?? '');
+    return { ctx, loppu, headings };
+  }
+
+  it('legacy business line with pricesIncludeVat true stays alv0 and totals 4 810,00', () => {
+    const rec = exampleRecord({ customerType: 'business' }, true);
+    expect(rec.formSnapshot?.businessVatMode).toBeUndefined();
+    const { ctx, loppu, headings } = priced(rec);
+    expect(ctx.price.includesVat).toBe(false);
+    expect(ctx.sections.map((section) => section.heading?.vatLabel)).toEqual(['Alv 0 %', 'Alv 0 %', 'Alv 0 %']);
+    expect(headings.map(plain)).toEqual(['3 700,00 €', '960,00 €', '150,00 €']);
+    expect(plain(loppu?.value ?? '')).toBe('4 810,00 €');
+    expect(ctx.vatSummary).toEqual([]);
+    const html = renderTarjousHtml(ctx);
+    expect(html).toContain('Alv 0 %');
+    expect(html).not.toContain('sis. alv');
+    expect(html).not.toContain('Käänteinen ALV');
+    expect(html).not.toContain('6 036,55');
+  });
+
+  it('business sis totals 6 036,55 and heading prices sum to Loppusumma', () => {
+    const rec = calculationWithBusinessVatMode(exampleRecord({ customerType: 'business' }, true, 6036.56), 'sis');
+    expect(rec.formSnapshot?.businessVatMode).toBe('sis');
+    expect(rec.totalPriceVat).toBe(6036.56);
+    const { ctx, loppu, headings } = priced(rec);
+    expect(ctx.sections.map((section) => section.heading?.vatLabel)).toEqual([
+      'sis. alv 25,5 %',
+      'sis. alv 25,5 %',
+      'sis. alv 25,5 %',
+    ]);
+    expect(headings.map(plain)).toEqual(['4 643,50 €', '1 204,80 €', '188,25 €']);
+    expect(roundToCents(headings.reduce((sum, price) => sum + parseEuro(price), 0))).toBe(6036.55);
+    expect(plain(loppu?.value ?? '')).toBe('6 036,55 €');
+    expect(plain(ctx.price.left.find((row) => row.label === 'Hinta alv0')?.value ?? '')).toBe('4 810,00 €');
+    expect(ctx.vatSummary).toEqual([{ vatPercent: 25.5, net: 4810, vat: 1226.55, gross: 6036.55 }]);
+    const html = renderTarjousHtml(ctx);
+    expect(html).toContain('sis. alv 25,5 %');
+    expect(html).not.toContain('Alv 0 %');
+    expect(html).not.toContain('Kotitalousvähennys');
+    expect(html).not.toContain('6 036,56');
+  });
+
+  it('business alv0 prints Alv 0 % and the net total', () => {
+    const rec = calculationWithBusinessVatMode(exampleRecord({ customerType: 'business' }), 'alv0');
+    expect(rec.formSnapshot?.businessVatMode).toBeUndefined();
+    const { ctx, loppu } = priced(rec);
+    expect(ctx.price.includesVat).toBe(false);
+    expect(ctx.sections.every((section) => section.heading?.vatLabel === 'Alv 0 %')).toBe(true);
+    expect(plain(loppu?.value ?? '')).toBe('4 810,00 €');
+    expect(ctx.vatSummary).toEqual([]);
+  });
+
+  it('reverse VAT stays alv0 when businessVatMode is absent', () => {
+    const rec = exampleRecord({ customerType: 'business', reverseVat: true }, true);
+    const { ctx, loppu } = priced(rec);
+    expect(ctx.price.includesVat).toBe(false);
+    expect(ctx.sections.every((section) => section.heading?.vatLabel === 'Alv 0 %')).toBe(true);
+    expect(plain(loppu?.value ?? '')).toBe('4 810,00 €');
+    expect(JSON.stringify(ctx.price)).not.toContain('Käänteinen');
+    expect(renderTarjousHtml(ctx)).not.toContain('sis. alv');
+    expect(ctx.ktv).toBeUndefined();
+    expect(ctx.vatSummary).toEqual([]);
+  });
+
+  it('reverse VAT stays alv0 even when businessVatMode is sis', () => {
+    const rec = calculationWithBusinessVatMode(
+      exampleRecord({ customerType: 'business', reverseVat: true }, true),
+      'sis',
+    );
+    expect(rec.formSnapshot?.businessVatMode).toBe('sis');
+    const { ctx, loppu, headings } = priced(rec);
+    expect(ctx.price.includesVat).toBe(false);
+    expect(ctx.sections.every((section) => section.heading?.vatLabel === 'Alv 0 %')).toBe(true);
+    expect(headings.map(plain)).toEqual(['3 700,00 €', '960,00 €', '150,00 €']);
+    expect(plain(loppu?.value ?? '')).toBe('4 810,00 €');
+    expect(renderTarjousHtml(ctx)).not.toContain('Käänteinen ALV');
+    expect(renderTarjousHtml(ctx)).not.toContain('sis. alv');
+  });
+
+  it('business line flags cannot mix VAT; the offer mode applies to every line', () => {
+    const mixed = [
+      exampleLine('a', 'Räystäät', 20, 185, true),
+      exampleLine('b', 'Seinä', 12, 80, false),
+      exampleLine('c', 'Nosturi', 1, 150, undefined),
+    ];
+    const absent = record({ customerType: 'business' }, { structureLines: mixed, totalPriceVat0: 4810, vatPercent: 25.5 });
+    const absentSections = buildOfferSections(input(absent, { structures: [], offerStructureSettings: {} }));
+    expect(absentSections.map((section) => section.heading?.vatLabel)).toEqual(['Alv 0 %', 'Alv 0 %', 'Alv 0 %']);
+    expect(buildOfferRows(input(absent, { structures: [], offerStructureSettings: {} })).every((row) => row.vatPercent === formatPercent(0))).toBe(
+      true,
+    );
+
+    const sis = calculationWithBusinessVatMode(absent, 'sis');
+    const sisSections = buildOfferSections(input(sis, { structures: [], offerStructureSettings: {} }));
+    expect(sisSections.map((section) => section.heading?.vatLabel)).toEqual([
+      'sis. alv 25,5 %',
+      'sis. alv 25,5 %',
+      'sis. alv 25,5 %',
+    ]);
+    expect(sisSections.map((section) => plain(section.heading?.price ?? ''))).toEqual([
+      '4 643,50 €',
+      '1 204,80 €',
+      '188,25 €',
+    ]);
   });
 });

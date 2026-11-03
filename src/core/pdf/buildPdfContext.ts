@@ -2,9 +2,8 @@ import type { CompanyProfile } from '@/src/core/company/types';
 import type { AppSettings, CalculationRecord, CustomerInfo, Product } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import type { ProductStructure } from '@/src/core/structure/types';
-import { formatCurrency, formatPercent } from '@/src/core/utils/formatters';
-import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
-import { applyVat, isPrivateCustomer, offerTotalsIncludeVat } from '@/src/core/utils/priceDisplay';
+import { formatCurrency, formatPercent, roundToCents } from '@/src/core/utils/formatters';
+import { applyVat, isPrivateCustomer, offerIncludesVat } from '@/src/core/utils/priceDisplay';
 
 import {
   buildOfferRows,
@@ -12,6 +11,8 @@ import {
   offerSignatureParties,
   offerVatSummary,
   sellerContactLines,
+  sumOfferHeadingGross,
+  sumOfferListGross,
   type OfferRow,
   type OfferSection,
   type OfferVatSummaryRow,
@@ -35,7 +36,7 @@ export type TarjousPdfContext = {
   sections: OfferSection[];
   /** Laskelman toimitusajankohta. Tyhjä = ei tulosteta. */
   deliveryScheduleText: string;
-  /** ALV-erittely maksun jälkeen. Yrityksen ALV 0 ja käänteinen ALV: tyhjä. */
+  /** ALV-erittely maksun jälkeen. Yrityksen ALV 0 ja käänteinen ALV: tyhjä. Sis. ALV: otsikoiden summa. */
   vatSummary: OfferVatSummaryRow[];
   price: { includesVat: boolean; left: PriceRow[]; right: PriceRow[] };
   /** Yrityksen Lisätiedot-teksti. Tyhjä = osio pois. */
@@ -100,10 +101,51 @@ export function customerHeaderLines(customer: CustomerInfo): string[] {
  * Alennuksella "Hinta alv0", "ALV" ja "Hinta alv" näytetään ennen alennusta ja Loppusumma alennuksen jälkeen
  * (muuten Ale % -rivi näyttäisi, ettei alennusta ole huomioitu). Ilman alennusta kaikki ovat samat kuin tallennettu.
  */
+/**
+ * Yrityksen sis. ALV: Loppusumma on otsikoiden bruttosumma (rivi pyöristetään ensin).
+ * Alennusrivi säilyy, kun rivien listahinta on Loppusummaa suurempi.
+ * null = käytetään tallennettuja summia (yksityinen tai kelvoton rivi).
+ */
+function businessSisPrice(record: CalculationRecord): TarjousPdfContext['price'] | null {
+  const afterGross = sumOfferHeadingGross(record);
+  const beforeGross = sumOfferListGross(record);
+  if (afterGross == null || beforeGross == null) return null;
+  const hasDiscount = record.discountPercent > 0 && record.totalPriceVat0BeforeDiscount > record.totalPriceVat0;
+  const linesCarryDiscount = beforeGross > afterGross;
+  if (hasDiscount && !linesCarryDiscount) return null;
+  const listNet = hasDiscount && linesCarryDiscount ? record.totalPriceVat0BeforeDiscount : record.totalPriceVat0;
+  const listGross = hasDiscount && linesCarryDiscount ? beforeGross : afterGross;
+  const discountRow: PriceRow[] =
+    hasDiscount && linesCarryDiscount
+      ? [
+          {
+            label: `Alennus ${formatPercent(record.discountPercent)}`,
+            value: `−${formatCurrency(roundToCents(beforeGross - afterGross))}`,
+          },
+        ]
+      : [];
+  return {
+    includesVat: true,
+    left: [
+      { label: 'Hinta alv0', value: formatCurrency(listNet) },
+      { label: `ALV ${formatPercent(record.vatPercent)}`, value: formatCurrency(roundToCents(listGross - listNet)) },
+    ],
+    right: [
+      { label: 'Hinta alv', value: formatCurrency(listGross) },
+      ...discountRow,
+      { label: 'Loppusumma', value: formatCurrency(afterGross), emphasis: true },
+    ],
+  };
+}
+
 export function offerPriceBlock(record: CalculationRecord, customer: CustomerInfo): TarjousPdfContext['price'] {
   const hasDiscount = record.discountPercent > 0 && record.totalPriceVat0BeforeDiscount > record.totalPriceVat0;
   const listVat0 = hasDiscount ? record.totalPriceVat0BeforeDiscount : record.totalPriceVat0;
-  const vatInclusive = offerTotalsIncludeVat(customer, ensureStructureLines(record));
+  const vatInclusive = offerIncludesVat(customer, record.formSnapshot);
+  if (vatInclusive && customer.customerType === 'business') {
+    const fromHeadings = businessSisPrice(record);
+    if (fromHeadings) return fromHeadings;
+  }
   // Eemil 29.10.2026 #2: alennus omana rivinään (prosentti + euromäärä), muut rivit ennallaan.
   const discountAmount = vatInclusive
     ? record.totalPriceVatBeforeDiscount - record.totalPriceVat

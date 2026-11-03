@@ -186,6 +186,7 @@ export function CalculationDetailView({
         values={record}
         customer={customer}
         lines={structureLines}
+        snapshot={record.formSnapshot}
         displayedWorkDurationDays={totalDisplayedDuration}
         showDuration={structureLines.length <= 1}
       />
@@ -195,6 +196,7 @@ export function CalculationDetailView({
           key={line.id}
           line={line}
           customer={customer}
+          snapshot={record.formSnapshot}
           weatherReserveFactor={settings.weatherReserveFactor}
           showPriceSummary={showStructureSummaries}
           travelTimeHoursOneWay={record.travelTimeHoursOneWay}
@@ -209,12 +211,14 @@ export function CalculationDetailView({
 function LineDetail({
   line,
   customer,
+  snapshot,
   weatherReserveFactor,
   showPriceSummary,
   travelTimeHoursOneWay,
 }: {
   line: StructureLine;
   customer: CustomerInfo;
+  snapshot?: CalculationRecord['formSnapshot'];
   weatherReserveFactor: number;
   showPriceSummary: boolean;
   travelTimeHoursOneWay?: number;
@@ -251,6 +255,7 @@ function LineDetail({
           values={lineBreakdown(line, reverseVat)}
           customer={customer}
           lines={[line]}
+          snapshot={snapshot}
           displayedWorkDurationDays={displayedWorkDurationDays}
           showDuration
         />

@@ -14,6 +14,7 @@ import {
 
 import { MaterialQuantitiesEditor } from '@/src/components/calculation/MaterialQuantitiesEditor';
 import { StructureLineCard } from '@/src/components/calculation/StructureLineCard';
+import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { UpdateOldCalculationsDialog } from '@/src/components/UpdateOldCalculationsDialog';
 import {
@@ -33,14 +34,14 @@ import {
   type ProductStructure,
 } from '@/src/core/structure/types';
 import { isStructureFormIncomplete } from '@/src/core/structure/formPages';
-import { defaultPricesIncludeVat } from '@/src/core/utils/priceDisplay';
+import { defaultPricesIncludeVat, type BusinessVatMode } from '@/src/core/utils/priceDisplay';
 import {
   materialQuantitiesBlockFinish,
   materialQuantitiesSignature,
   mergeStructureLineMaterials,
 } from '@/src/core/materials/materialQuantities';
 import { createId } from '@/src/core/utils/id';
-import { preserveCalculationSnapshot } from '@/src/core/pdf/urakkakorttiCard';
+import { calculationWithBusinessVatMode, preserveCalculationSnapshot } from '@/src/core/pdf/urakkakorttiCard';
 import { buildCalculationRecordFromComposer } from '@/src/core/wizard/buildCalculationRecord';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
 import {
@@ -96,6 +97,7 @@ export default function CalculationComposerScreen() {
   const [deliveryScheduleText, setDeliveryScheduleText] = useState('');
   const [travelTimeOneWay, setTravelTimeOneWay] = useState('');
   const [structureLines, setStructureLines] = useState<StructureLine[]>([]);
+  const [businessVatMode, setBusinessVatMode] = useState<BusinessVatMode>('alv0');
   const [materialIssues, setMaterialIssues] = useState<Record<string, boolean>>({});
   const [structurePickerVisible, setStructurePickerVisible] = useState(false);
   const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
@@ -165,13 +167,15 @@ export default function CalculationComposerScreen() {
       deliveryScheduleText,
       travelTimeOneWay,
       structureLines,
+      businessVatMode,
     };
   }
   const getFormStateRef = useRef(getFormState);
   getFormStateRef.current = getFormState;
   const pricesIncludeVat = defaultPricesIncludeVat(buildCustomerInfo());
   const forceVat0 = Boolean(reverseVat);
-  const businessVatChoice = customerType === 'business' && !reverseVat;
+  const showBusinessVatChoice = customerType === 'business' && !reverseVat;
+  const businessOfferIncludesVat = customerType === 'business' && businessVatMode === 'sis' && !reverseVat;
 
   function markComposerSaved(state: WizardFormState) {
     const lines = hydrateLines(state, structures, settings.vatPercent);
@@ -272,6 +276,7 @@ export default function CalculationComposerScreen() {
     setCustomerId(form.customerId);
     setDeliveryScheduleText(form.deliveryScheduleText ?? '');
     setTravelTimeOneWay(form.travelTimeOneWay ?? '');
+    setBusinessVatMode(form.businessVatMode === 'sis' ? 'sis' : 'alv0');
     const incoming = hydrateLines(form, structures, settings.vatPercent);
     const lines = incoming.map((item) => {
       const previous = structureLinesRef.current.find((current) => current.id === item.id);
@@ -566,7 +571,7 @@ export default function CalculationComposerScreen() {
       const createdAt = originalCreatedAtRef.current ?? originalCreatedAt ?? new Date();
       bindExistingCalculation(savedId, createdAt, editFormVersion);
       const previous = await db.getCalculation(savedId);
-      const record = preserveCalculationSnapshot(
+      const built = preserveCalculationSnapshot(
         buildCalculationRecordFromComposer({
           id: savedId,
           customer: info,
@@ -581,6 +586,8 @@ export default function CalculationComposerScreen() {
         }),
         previous?.formSnapshot,
       );
+      const record =
+        info.customerType === 'business' ? calculationWithBusinessVatMode(built, businessVatMode) : built;
       await db.saveCalculation(record);
       await db.clearWizardDraft();
       await refreshCalculations();
@@ -670,6 +677,17 @@ export default function CalculationComposerScreen() {
           />
 
           <SectionTitle title="Tuoterakenteet" />
+          {showBusinessVatChoice ? (
+            <ChoiceToggle
+              label="Hintojen ALV"
+              value={businessVatMode}
+              options={[
+                { value: 'alv0', label: 'ALV 0' },
+                { value: 'sis', label: 'Sis. ALV' },
+              ]}
+              onChange={setBusinessVatMode}
+            />
+          ) : null}
           {structureLines.map((line) => (
             <View key={line.id} style={styles.lineBlock}>
               <StructureLineCard
@@ -677,7 +695,7 @@ export default function CalculationComposerScreen() {
                 structure={structures.find((item) => item.id === line.structureId)}
                 weatherReserveFactor={settings.weatherReserveFactor}
                 forceVat0={forceVat0}
-                businessVatChoice={businessVatChoice}
+                offerIncludesVat={customerType === 'business' ? businessOfferIncludesVat : undefined}
                 onChange={(next) =>
                   setStructureLines((current) =>
                     current.map((item) => (item.id === next.id ? next : item)),

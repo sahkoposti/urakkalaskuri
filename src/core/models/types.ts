@@ -120,6 +120,13 @@ export interface FormSnapshot {
    * Tyhjä merkkijono = osiota ei tulosteta. Ei kuulu tarjoukseen.
    */
   urakkakorttiHuomioitavaa?: string;
+  /**
+   * Yritystarjouksen ALV koko laskelmalle. Valinnainen avain samassa `form_snapshot`-JSON:ssa
+   * (ei lomakepohjan JSON:ia, ei skeemamuutosta). `'alv0'` = veroton otsikko "Alv 0 %".
+   * `'sis'` = brutto-otsikko "sis. alv X %". Puuttuva tai muu arvo = `'alv0'`.
+   * Rivin `pricesIncludeVat` ei vaikuta yritystarjoukseen. Käänteinen ALV on aina `'alv0'`.
+   */
+  businessVatMode?: 'alv0' | 'sis';
 }
 
 export interface CalculationRecord {
@@ -315,4 +322,6 @@ export interface PersistedWizardDraft {
   deliveryScheduleText?: string;
   travelTimeOneWay?: string;
   structureLines?: StructureLine[];
+  /** Yritystarjouksen ALV. Puuttuva = alv0. Ei SQL-saraketta. */
+  businessVatMode?: 'alv0' | 'sis';
 }

@@ -3,10 +3,12 @@ import { Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
+import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { AppInput, OutlinedButton } from '@/src/components/common';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import type { CalculationRecord } from '@/src/core/models/types';
+import { customerFromRecord } from '@/src/core/models/types';
 import { exportTarjousPdf, exportUrakkakorttiPdf } from '@/src/core/pdf/exportPdf';
 import {
   calculationWithKtvPersons,
@@ -15,6 +17,7 @@ import {
   parseKtvPersonsInput,
 } from '@/src/core/pdf/ktvPersons';
 import {
+  calculationWithBusinessVatMode,
   calculationWithHuomioitavaa,
   calculationWithUrakkakorttiMode,
   huomioitavaaFieldText,
@@ -22,6 +25,7 @@ import {
   urakkakorttiContractProblems,
   type UrakkakorttiMode,
 } from '@/src/core/pdf/urakkakorttiCard';
+import { readBusinessVatMode, type BusinessVatMode } from '@/src/core/utils/priceDisplay';
 import { offerDocumentProblems } from '@/src/core/pdf/offerDocument';
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -46,6 +50,11 @@ export function PdfExportButtons({
   const [personsText, setPersonsText] = useState(() => ktvPersonsFieldText(record.formSnapshot));
   const [cardMode, setCardMode] = useState<UrakkakorttiMode>(() => readUrakkakorttiMode(record.formSnapshot));
   const [huomioText, setHuomioText] = useState(() => huomioitavaaFieldText(record));
+  const [businessVatMode, setBusinessVatMode] = useState<BusinessVatMode>(() =>
+    readBusinessVatMode(record.formSnapshot),
+  );
+  const customer = customerFromRecord(record);
+  const showBusinessVatChoice = customer.customerType === 'business' && !customer.reverseVat;
   const offerProblems = offerDocumentProblems(record);
   const cardProblems = urakkakorttiContractProblems(record, cardMode);
   const parsedPersons = parseKtvPersonsInput(personsText);
@@ -59,6 +68,7 @@ export function PdfExportButtons({
     setPersonsText(ktvPersonsFieldText(record.formSnapshot));
     setCardMode(readUrakkakorttiMode(record.formSnapshot));
     setHuomioText(huomioitavaaFieldText(record));
+    setBusinessVatMode(readBusinessVatMode(record.formSnapshot));
   }, [record.id, record.formSnapshot, record.customer]);
 
   const persistRecord = async (next: CalculationRecord) => {
@@ -69,6 +79,10 @@ export function PdfExportButtons({
 
   const persistPersons = async (persons: number) => {
     await persistRecord(calculationWithKtvPersons(record, persons));
+  };
+
+  const persistBusinessVatMode = async (mode: BusinessVatMode) => {
+    await persistRecord(calculationWithBusinessVatMode(record, mode));
   };
 
   const persistCard = async (mode: UrakkakorttiMode, huomio: string) => {
@@ -149,6 +163,23 @@ export function PdfExportButtons({
         <Text style={styles.warning} accessibilityRole="alert">
           {personsProblem}
         </Text>
+      ) : null}
+      {showBusinessVatChoice ? (
+        <ChoiceToggle
+          label="Hintojen ALV"
+          value={businessVatMode}
+          options={[
+            { value: 'alv0', label: 'ALV 0' },
+            { value: 'sis', label: 'Sis. ALV' },
+          ]}
+          onChange={(mode) => {
+            setBusinessVatMode(mode);
+            void persistBusinessVatMode(mode).catch((error) => {
+              console.error(error);
+              showAlert('Tallennus epäonnistui', errorMessage(error));
+            });
+          }}
+        />
       ) : null}
       <OutlinedButton
         title={busy === 'tarjous' ? 'Luodaan tarjousta…' : 'Luo tarjous'}

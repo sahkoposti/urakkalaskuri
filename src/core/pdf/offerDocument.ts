@@ -5,13 +5,13 @@ import type { AppSettings, CalculationRecord, CustomerInfo, Product, StructureLi
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
-import { lineTotalVat0 } from '@/src/core/structure/linePricing';
+import { lineListPriceVat0, lineTotalVat0 } from '@/src/core/structure/linePricing';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { isManualStructureId } from '@/src/core/structure/types';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import { formatCurrency, formatPercent, formatPrintedQuantity, roundToCents } from '@/src/core/utils/formatters';
-import { applyVat, offerLineIncludesVat, offerTotalsIncludeVat } from '@/src/core/utils/priceDisplay';
+import { applyVat, offerIncludesVat } from '@/src/core/utils/priceDisplay';
 
 import { lineSpecSnapshot } from './offerPageSpecs';
 import { printableFields, type PrintRow } from './printableFields';
@@ -92,6 +92,42 @@ function formatOfferMoney(vat0: number, includesVat: boolean, vatPercent: number
   return formatCurrency(roundToCents(amount));
 }
 
+/** Sama senttipyöristys kuin otsikon hinnassa. null = kelvoton luku. */
+export function offerGrossFromVat0(vat0: number, vatPercent: number): number | null {
+  if (!Number.isFinite(vat0) || !Number.isFinite(vatPercent)) return null;
+  const amount = applyVat(vat0, vatPercent);
+  return Number.isFinite(amount) ? roundToCents(amount) : null;
+}
+
+/**
+ * Sis. ALV -otsikoiden summa. Jokainen rivi pyöristetään ensin, kuten tuloste.
+ * null, jos jokin hinnoiteltu rivi on kelvoton.
+ */
+export function sumOfferHeadingGross(record: CalculationRecord): number | null {
+  let sum = 0;
+  for (const line of ensureStructureLines(record)) {
+    if (line.quantity === 0) continue;
+    if (!Number.isFinite(line.quantity)) return null;
+    const gross = offerGrossFromVat0(lineTotalVat0(line), line.vatPercent);
+    if (gross == null) return null;
+    sum += gross;
+  }
+  return roundToCents(sum);
+}
+
+/** Listahintojen bruttosumma samalla pyöristyksellä. null = kelvoton rivi. */
+export function sumOfferListGross(record: CalculationRecord): number | null {
+  let sum = 0;
+  for (const line of ensureStructureLines(record)) {
+    if (line.quantity === 0) continue;
+    if (!Number.isFinite(line.quantity)) return null;
+    const gross = offerGrossFromVat0(lineListPriceVat0(line), line.vatPercent);
+    if (gross == null) return null;
+    sum += gross;
+  }
+  return roundToCents(sum);
+}
+
 /** Ainoa paikka varoitustekstille. Rivin nimeä ei muotoilla uudelleen. */
 export function invalidOfferPriceWarning(lineName: string): string {
   return `Tarjouksen rivillä ${lineName} on virheellinen hinta. Korjaa hinta ennen tulostusta.`;
@@ -124,7 +160,7 @@ export function offerDocumentProblems(record: CalculationRecord): string[] {
   const problems: string[] = [];
   for (const line of ensureStructureLines(record)) {
     if (line.quantity === 0) continue;
-    if (lineOfferPriceInvalid(line, offerLineIncludesVat(customer, line))) {
+    if (lineOfferPriceInvalid(line, offerIncludesVat(customer, record.formSnapshot))) {
       problems.push(invalidOfferPriceWarning(line.name));
     }
   }
@@ -208,11 +244,11 @@ function offerPrintRows(
 
 export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
   const customer = customerFromRecord(source.record);
+  const includesVat = offerIncludesVat(customer, source.record.formSnapshot);
   const lines = ensureStructureLines(source.record).filter((line) => line.quantity !== 0);
   const showDiscount = lines.some((line) => line.discountPercent > 0);
   const rows: OfferRow[] = [];
   for (const line of lines) {
-    const includesVat = offerLineIncludesVat(customer, line);
     const description = isManualOfferLine(line, source.structures) ? line.additionalInfo?.trim() ?? '' : '';
     const invalid = lineOfferPriceInvalid(line, includesVat);
     const row: OfferRow = {
@@ -233,10 +269,11 @@ export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
 export function buildOfferSections(source: OfferDocumentSource): OfferSection[] {
   const customer = customerFromRecord(source.record);
   const business = customer.customerType === 'business';
+  const includesVat = offerIncludesVat(customer, source.record.formSnapshot);
   const reverseVat = Boolean(customer.reverseVat);
   const sections: OfferSection[] = [];
   for (const line of ensureStructureLines(source.record)) {
-    const heading = offerHeading(line, offerLineIncludesVat(customer, line), business);
+    const heading = offerHeading(line, includesVat, business);
     if (isManualOfferLine(line, source.structures)) {
       const description = line.additionalInfo?.trim() || undefined;
       if (!heading && !description) continue;
@@ -260,13 +297,15 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
 }
 
 /**
- * ALV-erittely maksun jälkeen. Yksi verokanta → yksi rivi tallennetuista summista.
- * Usea verokanta: rivien verottomat osuudet ovat vain painoja; netot ja bruttot
- * summataan tallennettuun laskelmaan. Yrityksen ALV 0 ja käänteinen ALV: ei rivejä.
- * Yrityksen verollinen valinta käyttää samoja tallennettuja summia kuin yksityinen.
+ * ALV-erittely maksun jälkeen. Yksi verokanta → yksi rivi.
+ * Yksityinen käyttää tallennettuja summia. Yrityksen sis. ALV käyttää otsikoiden
+ * bruttosummaa, jotta erittely ja Loppusumma ovat samat.
+ * Usea verokanta: rivien verottomat osuudet ovat painoja. Yrityksen ALV 0 ja käänteinen ALV: ei rivejä.
  */
 export function offerVatSummary(record: CalculationRecord, customer: CustomerInfo): OfferVatSummaryRow[] {
-  if (!offerTotalsIncludeVat(customer, ensureStructureLines(record))) return [];
+  if (!offerIncludesVat(customer, record.formSnapshot)) return [];
+  const businessSis = customer.customerType === 'business';
+  const headingGross = businessSis ? sumOfferHeadingGross(record) : null;
   const lines = ensureStructureLines(record);
   const rates: number[] = [];
   const weights = new Map<number, number>();
@@ -276,14 +315,27 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
     weights.set(rate, (weights.get(rate) ?? 0) + Math.max(0, lineTotalVat0(line)));
   }
   if (rates.length <= 1) {
+    const gross = headingGross ?? record.totalPriceVat;
     return [
       {
         vatPercent: rates[0] ?? record.vatPercent,
         net: record.totalPriceVat0,
-        vat: record.vatAmount,
-        gross: record.totalPriceVat,
+        vat: headingGross == null ? record.vatAmount : roundToCents(gross - record.totalPriceVat0),
+        gross,
       },
     ];
+  }
+  if (headingGross != null) {
+    return rates.map((rate) => {
+      const group = lines.filter(
+        (line) => (Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent) === rate && line.quantity !== 0,
+      );
+      const net = roundToCents(group.reduce((sum, line) => sum + Math.max(0, lineTotalVat0(line)), 0));
+      const gross = roundToCents(
+        group.reduce((sum, line) => sum + (offerGrossFromVat0(lineTotalVat0(line), line.vatPercent) ?? 0), 0),
+      );
+      return { vatPercent: rate, net, vat: roundToCents(gross - net), gross };
+    });
   }
   const weightSum = rates.reduce((sum, rate) => sum + (weights.get(rate) ?? 0), 0);
   if (!(weightSum > 0)) {
