@@ -46,16 +46,23 @@ export function formatPrintedQuantity(value: number): string {
   return decimals ? `${sign}${intPart},${decimals}` : `${sign}${intPart}`;
 }
 
+const PURE_ZERO_FRACTION = /^(-?\d+),0+$/;
+
 /**
- * Poistaa tulostetusta tekstistä desimaaliosan, jos se on pelkkiä nollia (`120,0 m²` → `120 m²`, `14,00 kpl` → `14 kpl`).
- * `2,5` ja `2,50` säilyvät. €-merkkijonoa ei muuteta. Tuhaterotinta ei lisätä.
+ * Kokonaisluvuksi vain, kun koko merkkijono on sovelluksen muotoilema luku (`2,0` → `2`, `14,0` → `14`).
+ * Jos `unit` on annettu, sama luku ja täsmälleen se yksikkö kelpaa (`120,0 m²` kun yksikkö on `m²`).
+ * Vapaata tekstiä ei muuteta (`1.000 m²`, `klo 8.00`). `2,5` ja `2,50` säilyvät.
  */
-export function stripTrailingZeroDecimals(text: string): string {
-  if (!text || text.includes('€')) return text;
-  return text.replace(
-    /(^|[^\d])(-?\d{1,3}(?:[ \u00a0\u202f]\d{3})*|-?\d+)[.,]0+(?!\d)/g,
-    '$1$2',
-  );
+export function stripTrailingZeroDecimals(text: string, unit?: string): string {
+  const trimmed = text.trim();
+  const pure = PURE_ZERO_FRACTION.exec(trimmed);
+  if (pure) return pure[1];
+  const normalizedUnit = unit?.trim();
+  if (!normalizedUnit) return text;
+  const suffix = ` ${normalizedUnit}`;
+  if (!trimmed.endsWith(suffix)) return text;
+  const head = PURE_ZERO_FRACTION.exec(trimmed.slice(0, -suffix.length));
+  return head ? `${head[1]}${suffix}` : text;
 }
 
 export function formatPercent(value: number): string {

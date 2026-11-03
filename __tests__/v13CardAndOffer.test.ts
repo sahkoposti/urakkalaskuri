@@ -49,10 +49,15 @@ describe('printed integers', () => {
     expect(formatPrintedQuantity(14)).toBe('14');
     expect(formatPrintedQuantity(2.5)).toBe('2,5');
     expect(formatPrintedQuantity(100000)).toBe('100000');
-    expect(stripTrailingZeroDecimals('120,0 m²')).toBe('120 m²');
-    expect(stripTrailingZeroDecimals('14,00 kpl')).toBe('14 kpl');
+    expect(stripTrailingZeroDecimals('2,0')).toBe('2');
+    expect(stripTrailingZeroDecimals('14,0')).toBe('14');
+    expect(stripTrailingZeroDecimals('14,00')).toBe('14');
+    expect(stripTrailingZeroDecimals('14,00 kpl', 'kpl')).toBe('14 kpl');
+    expect(stripTrailingZeroDecimals('120,0 m²', 'm²')).toBe('120 m²');
     expect(stripTrailingZeroDecimals('2,5')).toBe('2,5');
     expect(stripTrailingZeroDecimals('2,50')).toBe('2,50');
+    expect(stripTrailingZeroDecimals('1.000 m²')).toBe('1.000 m²');
+    expect(stripTrailingZeroDecimals('klo 8.00')).toBe('klo 8.00');
     expect(stripTrailingZeroDecimals('1 000,00 €')).toBe('1 000,00 €');
   });
 });
@@ -67,11 +72,15 @@ describe('print group titles', () => {
     const body = buildPrintedBody([
       { key: 'a', label: 'Seinät', value: 'Kyllä', group: 'osa_alueet', order: 1, esitys: 'teksti' },
       { key: 'b', label: 'Pesu', value: 'Kyllä', group: 'tyovaiheet', order: 1, esitys: 'teksti' },
-      { key: 'c', label: '', value: 'Peitteet', group: 'muuta', order: 1, esitys: 'teksti' },
-      { key: 'd', label: 'Kerroksia', value: 'kaksi', group: 'tieto', order: 1, esitys: 'teksti' },
-      { key: 'f', label: 'Maali', value: 'Testimaali', group: 'maali', order: 1, esitys: 'teksti' },
+      { key: 'c', label: '', value: 'klo 8.00', group: 'muuta', order: 1, esitys: 'teksti' },
+      { key: 'd', label: 'Ala', value: '1.000 m²', group: 'tieto', order: 1, esitys: 'teksti' },
+      { key: 'e', label: 'Kerroksia', value: '2,0', unit: 'krs', group: 'tieto', order: 2, esitys: 'teksti', numeric: true },
+      { key: 'f', label: 'Maali', value: 'Testimaali 1.000', group: 'maali', order: 1, esitys: 'teksti' },
     ]);
     expect(body.textGroups.map((group) => group.title)).toEqual(['Osa-alueet', 'Työvaiheet', 'Muuta', '', 'Maali']);
+    expect(body.textGroups.find((group) => group.group === 'tieto')?.items).toEqual(['Ala 1.000 m²', 'Kerroksia 2 krs']);
+    expect(body.textGroups.find((group) => group.group === 'muuta')?.items).toEqual(['klo 8.00']);
+    expect(body.textGroups.find((group) => group.group === 'maali')?.items).toEqual(['Testimaali 1.000']);
     const html = renderPrintedGroups(body.textGroups);
     expect(html).toContain('class="doc-group doc-group-tieto"');
     expect(html).not.toContain('>Tieto<');
@@ -79,7 +88,9 @@ describe('print group titles', () => {
     expect(html).toContain('>Työvaiheet<');
     expect(html).toContain('>Muuta<');
     expect(html).toContain('>Maali<');
-    expect(html).toContain('Kerroksia kaksi');
+    expect(html).toContain('1.000 m²');
+    expect(html).toContain('klo 8.00');
+    expect(html).toContain('Kerroksia 2 krs');
   });
 });
 

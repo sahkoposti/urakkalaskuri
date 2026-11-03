@@ -30,9 +30,15 @@ export type PrintedBody = {
   tableRows: PrintedTableRow[];
 };
 
+function displayQuantity(value: string, unit: string | undefined, numeric: boolean | undefined): string {
+  const trimmed = value.trim();
+  if (!numeric) return trimmed;
+  return stripTrailingZeroDecimals(trimmed, unit);
+}
+
 function phrase(row: PrintRow): string {
   const label = row.label.trim();
-  const value = stripTrailingZeroDecimals(row.value.trim());
+  const value = displayQuantity(row.value, row.unit, row.numeric);
   if (!label) return value;
   if (!value || value === 'Kyllä' || value === label) return label;
   return `${label} ${value}`;
@@ -51,19 +57,24 @@ function withUnit(value: string, unit: string | undefined): string {
 
 function tietoLine(row: PrintRow): string {
   const label = row.label.trim();
-  const value = stripTrailingZeroDecimals(withUnit(row.value, row.unit));
+  const value = displayQuantity(withUnit(row.value, row.unit), row.unit, row.numeric);
   if (!label) return value;
   return `${label} ${value}`.trim();
 }
 
+function quantityText(quantity: NonNullable<PrintRow['quantity']>): string {
+  const unit = quantity.unit?.trim() ?? '';
+  const amount = stripTrailingZeroDecimals(quantity.value.trim(), unit);
+  if (!unit || amount.endsWith(` ${unit}`)) return amount;
+  return `${amount} ${unit}`.trim();
+}
+
 function maaliLine(row: PrintRow, includeQuantity: boolean): string {
-  const name = stripTrailingZeroDecimals(row.value.trim());
+  const name = row.value.trim();
   if (!includeQuantity) return name;
   const quantity = row.quantity;
   if (!quantity) return name;
-  const amount = stripTrailingZeroDecimals(
-    [quantity.value.trim(), quantity.unit?.trim() ?? ''].filter((part) => part.length > 0).join(' '),
-  );
+  const amount = quantityText(quantity);
   if (!amount) return name;
   return name ? `${name} ${amount}` : amount;
 }
@@ -79,8 +90,8 @@ function textItem(row: PrintRow, includePaintQuantity: boolean): string {
 }
 
 function tableValue(row: PrintRow): string {
-  if (row.group === 'maali') return stripTrailingZeroDecimals(row.value.trim());
-  return stripTrailingZeroDecimals(withUnit(row.value, row.unit));
+  if (row.group === 'maali') return row.value.trim();
+  return displayQuantity(withUnit(row.value, row.unit), row.unit, row.numeric);
 }
 
 /** Tekstiryhmät ja kaksipalstainen taulukko. Tyhjät osat jäävät pois. */

@@ -18,6 +18,8 @@ export type PrintRow = {
   order: number;
   esitys: PrintEsitys;
   quantity?: { value: string; unit?: string };
+  /** number/computed: tulosteen määrä saa pudottaa päättyvät nollat. Vapaa teksti ei. */
+  numeric?: boolean;
 };
 
 export type PrintableFieldsInput = {
@@ -153,6 +155,7 @@ function collectPrintableFields(input: PrintableFieldsInput): PrintRow[] {
         esitys: resolved.esitys,
         order: resolved.order ?? position,
         position,
+        numeric: field.type === 'number' || field.type === 'computed',
       };
       if (field.unit) row.unit = field.unit;
       const quantity = quantityFromField(resolved.quantityKey, form, fieldValues, context, products, snapshotFields);
