@@ -462,12 +462,11 @@ describe('offer signature', () => {
     expect(html).toContain('Allekirjoitus');
     expect(html).toContain('Päiväys');
     expect((html.match(/class="offer-sign-line"/g) ?? []).length).toBe(4);
-    const pen = html.match(/<tr class="offer-sign-pen">([\s\S]*?)<\/tr>/);
-    const date = html.match(/<tr class="offer-sign-date">([\s\S]*?)<\/tr>/);
-    expect(pen?.[1].match(/Allekirjoitus/g)).toHaveLength(2);
-    expect(pen?.[1].match(/class="offer-sign-line"/g)).toHaveLength(2);
-    expect(date?.[1].match(/Päiväys/g)).toHaveLength(2);
-    expect(date?.[1].match(/class="offer-sign-line"/g)).toHaveLength(2);
+    expect((html.match(/class="offer-sign-col"/g) ?? []).length).toBe(2);
+    const sign = html.slice(html.indexOf('class="offer-sign"'), html.indexOf('class="ktv-page'));
+    expect((sign.match(/>Allekirjoitus</g) ?? []).length).toBe(2);
+    expect((sign.match(/>Päiväys</g) ?? []).length).toBe(2);
+    expect(html).not.toContain('<table class="offer-sign"');
     expect(html).toContain('break-inside: avoid');
     const at = (needle: string) => html.indexOf(needle);
     expect(at('class="offer-sign"')).toBeGreaterThan(at('Lisätiedot:'));

@@ -68,7 +68,7 @@ function renderSection(section: OfferSection, showColumnHeader: boolean): string
 }
 
 function renderVatSummary(rows: OfferVatSummaryRow[]): string {
-  if (rows.length === 0) return '';
+  if (rows.length <= 1) return '';
   const body = rows
     .map(
       (row) =>
@@ -93,7 +93,7 @@ function priceTable(rows: PriceRow[]): string {
 }
 
 function renderPriceBlock(price: TarjousPdfContext['price']): string {
-  return `<div class="price-block"><div class="col">${priceTable(price.left)}</div><div class="col">${priceTable(price.right)}</div></div>`;
+  return `<div class="price-block offer-totals"><div class="col">${priceTable(price.rows)}</div></div>`;
 }
 
 function renderAdditionalInfo(text: string): string {
@@ -101,18 +101,14 @@ function renderAdditionalInfo(text: string): string {
   return `<div class="additional-info"><h3>Lisätiedot:</h3><div>${escapeMultiline(text)}</div></div>`;
 }
 
-function signatureNameCell(role: string, lines: string[]): string {
+function signatureColumn(role: string, lines: string[]): string {
   const details = lines.map((line) => `<p class="offer-sign-detail">${escapeHtml(line)}</p>`).join('');
-  return `<td><p class="offer-sign-role">${role}</p><div class="offer-sign-name">${details}</div></td>`;
-}
-
-function signatureLineCell(label: string): string {
-  return `<td><p class="offer-sign-label">${label}</p><div class="offer-sign-line"></div></td>`;
+  return `<div class="offer-sign-col"><p class="offer-sign-role">${role}</p><div class="offer-sign-name">${details}</div><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></div>`;
 }
 
 function renderSignature(signature: TarjousPdfContext['signature']): string {
   const customer = signature.customerName ? [signature.customerName] : [];
-  return `<table class="offer-sign"><tr class="offer-sign-names">${signatureNameCell('Myyjä', signature.sellerLines)}${signatureNameCell('Tilaaja', customer)}</tr><tr class="offer-sign-pen">${signatureLineCell('Allekirjoitus')}${signatureLineCell('Allekirjoitus')}</tr><tr class="offer-sign-date">${signatureLineCell('Päiväys')}${signatureLineCell('Päiväys')}</tr></table>`;
+  return `<div class="offer-sign">${signatureColumn('Myyjä', signature.sellerLines)}${signatureColumn('Tilaaja', customer)}</div>`;
 }
 
 /** Sivupohja: toistuva ylä-/alatunniste + sisältö. Käytetään myös KTV-sivulle (T8). */

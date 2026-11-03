@@ -14,7 +14,7 @@ describe('renderKotitalousPageHtml', () => {
     const ctx = buildPdfContext(input(record({})));
     const html = renderTarjousHtml(ctx);
     const ktvAt = html.indexOf('<section class="ktv-page page-break">');
-    expect(ktvAt).toBeGreaterThan(html.indexOf('class="price-block"'));
+    expect(ktvAt).toBeGreaterThan(html.indexOf('class="price-block offer-totals"'));
     expect(ktvAt).toBeGreaterThan(html.indexOf('class="offer-seller"'));
     expect(html.slice(ktvAt)).not.toContain('offer-section');
     expect(html).toContain(KTV_ONE_PERSON_LINE);

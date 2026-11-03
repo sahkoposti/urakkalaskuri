@@ -32,7 +32,7 @@ describe('renderTarjousHtml', () => {
     expect((html.match(/class="doc-section offer-section"/g) ?? []).length).toBe(2);
     expect(html).not.toContain('class="spec-grid"');
     expect(html).not.toContain('class="spec-card');
-    expect(html).toContain('Hinta alv0');
+    expect(html).toContain('Veroton');
     expect(html).toContain('Loppusumma');
     expect(html).toContain('Lisätiedot:');
     expect(html).toContain('Maksuehto kuvitteellinen.');
@@ -104,12 +104,29 @@ describe('renderTarjousHtml discount row', () => {
       })),
     );
     const html = renderTarjousHtml(ctx).replace(/\s+/g, ' ');
-    const iHinta = html.indexOf('Hinta alv<');
+    const iHinta = html.indexOf('Hinta alv0');
     const iAle = html.indexOf('Alennus 10 %');
+    const iVeroton = html.indexOf('Veroton');
     const iLoppu = html.indexOf('Loppusumma');
     expect(iHinta).toBeGreaterThan(-1);
     expect(iAle).toBeGreaterThan(iHinta);
-    expect(iLoppu).toBeGreaterThan(iAle);
-    expect(html).toMatch(/−251,00 €/);
+    expect(iVeroton).toBeGreaterThan(iAle);
+    expect(iLoppu).toBeGreaterThan(iVeroton);
+    expect(html).toMatch(/−200,00 €/);
+    expect(html).not.toContain('class="offer-vat"');
+  });
+
+  it('keeps the VAT table only when more than one rate is present', () => {
+    const single = renderTarjousHtml(buildPdfContext(input(record({}))));
+    expect(single).not.toContain('class="offer-vat"');
+    const mixed = record({}, {
+      structureLines: [
+        { ...line('a', 's1', 'A'), vatPercent: 25.5 },
+        { ...line('b', 's2', 'B'), vatPercent: 10 },
+      ],
+    });
+    const html = renderTarjousHtml(buildPdfContext(input(mixed)));
+    expect(html).toContain('class="offer-vat"');
+    expect(html).toContain('>Veroton</th>');
   });
 });

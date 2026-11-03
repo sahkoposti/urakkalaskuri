@@ -67,6 +67,8 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   .spec-card td.value { text-align: right; padding-left: 3mm; white-space: nowrap; }
   .price-block { display: flex; gap: 12px; margin: 2mm 0 6mm 0; page-break-inside: avoid; break-inside: avoid; }
   .price-block .col { flex: 1; }
+  .price-block.offer-totals { justify-content: flex-end; }
+  .price-block.offer-totals .col { flex: 0 1 92mm; }
   .price-block table { width: 100%; border-collapse: collapse; }
   .price-block td { padding: 0.8mm 0; }
   .price-block td.value { text-align: right; white-space: nowrap; }
@@ -90,10 +92,8 @@ export const offerDocumentCss = `
   .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
   .offer-seller { margin: 4mm 0; }
   .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
-  .offer-sign { width: 100%; border-collapse: collapse; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign tr, .offer-sign td { break-inside: avoid; page-break-inside: avoid; }
-  .offer-sign td { width: 50%; vertical-align: top; padding: 0 6mm 0 0; }
-  .offer-sign td + td { padding: 0 0 0 6mm; }
+  .offer-sign { display: flex; gap: 12mm; width: 100%; margin: 6mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign-col { flex: 1; min-width: 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
   .offer-sign-name { min-height: 12mm; }
   .offer-sign-detail { margin: 0 0 1mm 0; }
