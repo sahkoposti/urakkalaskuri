@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { AppPicker } from '@/src/components/AppPicker';
 import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
 import { AppInput, OutlinedButton } from '@/src/components/common';
 import { db, useApp } from '@/src/context/AppContext';
@@ -13,6 +14,13 @@ import {
   ktvPersonsFieldText,
   parseKtvPersonsInput,
 } from '@/src/core/pdf/ktvPersons';
+import {
+  calculationWithHuomioitavaa,
+  calculationWithUrakkakorttiMode,
+  huomioitavaaFieldText,
+  readUrakkakorttiMode,
+  type UrakkakorttiMode,
+} from '@/src/core/pdf/urakkakorttiCard';
 import { offerDocumentProblems } from '@/src/core/pdf/offerDocument';
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -35,6 +43,8 @@ export function PdfExportButtons({
   const { showAlert } = useThemedAlert();
   const [busy, setBusy] = useState<Busy>(null);
   const [personsText, setPersonsText] = useState(() => ktvPersonsFieldText(record.formSnapshot));
+  const [cardMode, setCardMode] = useState<UrakkakorttiMode>(() => readUrakkakorttiMode(record.formSnapshot));
+  const [huomioText, setHuomioText] = useState(() => huomioitavaaFieldText(record));
   const offerProblems = offerDocumentProblems(record);
   const parsedPersons = parseKtvPersonsInput(personsText);
   const personsProblem = parsedPersons === 'invalid' ? KTV_PERSONS_INVALID_MESSAGE : null;
@@ -45,13 +55,24 @@ export function PdfExportButtons({
 
   useEffect(() => {
     setPersonsText(ktvPersonsFieldText(record.formSnapshot));
-  }, [record.id, record.formSnapshot]);
+    setCardMode(readUrakkakorttiMode(record.formSnapshot));
+    setHuomioText(huomioitavaaFieldText(record));
+  }, [record.id, record.formSnapshot, record.customer]);
 
-  const persistPersons = async (persons: number) => {
-    const next = calculationWithKtvPersons(record, persons);
+  const persistRecord = async (next: CalculationRecord) => {
     if (next === record) return;
     await db.saveCalculation(next);
     await refreshCalculations();
+  };
+
+  const persistPersons = async (persons: number) => {
+    await persistRecord(calculationWithKtvPersons(record, persons));
+  };
+
+  const persistCard = async (mode: UrakkakorttiMode, huomio: string) => {
+    const withMode = calculationWithUrakkakorttiMode(record, mode);
+    const withNote = calculationWithHuomioitavaa(withMode, huomio);
+    await persistRecord(withNote);
   };
 
   const run = async (kind: Exclude<Busy, null>, task: () => Promise<void>) => {
@@ -87,6 +108,7 @@ export function PdfExportButtons({
 
   const handleUrakkakortti = (manualValues?: Record<string, number>) =>
     run('urakkakortti', async () => {
+      await persistCard(cardMode, huomioText);
       const result = await exportUrakkakorttiPdf(calculationId, app, pdfExportDeps, manualValues);
       if (result.status === 'needsManualContract') {
         setManualLines(result.lines);
@@ -125,6 +147,35 @@ export function PdfExportButtons({
         title={busy === 'tarjous' ? 'Luodaan tarjousta…' : 'Luo tarjous'}
         onPress={handleTarjous}
         disabled={busy !== null || offerProblems.length > 0 || personsProblem !== null}
+      />
+      <AppPicker
+        label="Urakkakortti"
+        selectedValue={cardMode}
+        onValueChange={(value) => {
+          const mode: UrakkakorttiMode = value === 'tyontekija' ? 'tyontekija' : 'alihankkija';
+          setCardMode(mode);
+          void persistCard(mode, huomioText).catch((error) => {
+            console.error(error);
+            showAlert('Tallennus epäonnistui', errorMessage(error));
+          });
+        }}
+        items={[
+          { value: 'alihankkija', label: 'Alihankkija' },
+          { value: 'tyontekija', label: 'Työntekijä' },
+        ]}
+      />
+      <AppInput
+        label="Huomioitavaa"
+        value={huomioText}
+        onChangeText={setHuomioText}
+        onBlur={() => {
+          void persistCard(cardMode, huomioText).catch((error) => {
+            console.error(error);
+            showAlert('Tallennus epäonnistui', errorMessage(error));
+          });
+        }}
+        multiline
+        placeholder="Esitäyttö asiakkaan lisätiedoista"
       />
       <OutlinedButton
         title={busy === 'urakkakortti' ? 'Luodaan urakkakorttia…' : 'Luo urakkakortti'}

@@ -2,7 +2,8 @@ import type { PdfFooter, PriceRow, TarjousPdfContext } from './buildPdfContext';
 import { escapeHtml, escapeMultiline } from './escapeHtml';
 import { renderKotitalousPageHtml } from './renderKotitalousPageHtml';
 import { offerDocumentCss, pdfStyles } from './pdfStyles';
-import type { OfferRow, OfferSection, OfferVatSummaryRow } from './offerDocument';
+import type { OfferSection, OfferVatSummaryRow } from './offerDocument';
+import { renderPrintedGroups, renderPrintedLines, renderPrintedTable, printedSectionCss } from './renderPrintedSection';
 import { formatCurrency, formatPercent } from '@/src/core/utils/formatters';
 
 export type RenderTarjousOptions = {
@@ -36,43 +37,6 @@ export function renderFooter(footer: PdfFooter): string {
 </div>`;
 }
 
-function renderOfferRows(rows: OfferRow[], includesVat: boolean): string {
-  const showDiscount = rows.some((row) => row.discountPercent !== undefined);
-  const headers = [
-    { label: 'Nimike', numeric: false },
-    { label: 'Määrä', numeric: true },
-    { label: 'Yks.', numeric: false },
-    { label: includesVat ? 'A-hinta (sis. alv)' : 'A-hinta (alv 0 %)', numeric: true },
-    { label: 'Alv-%', numeric: true },
-    ...(showDiscount ? [{ label: 'Ale %', numeric: true }] : []),
-    { label: 'Yht.', numeric: true },
-  ];
-  const head = `<thead><tr>${headers
-    .map((header) => `<th${header.numeric ? ' class="num"' : ''}>${escapeHtml(header.label)}</th>`)
-    .join('')}</tr></thead>`;
-  const body = rows
-    .map((row) => {
-      const cells: { text: string; numeric: boolean }[] = [
-        { text: row.name, numeric: false },
-        { text: row.quantity, numeric: true },
-        { text: row.unit, numeric: false },
-        { text: row.unitPrice, numeric: true },
-        { text: row.vatPercent, numeric: true },
-        ...(showDiscount ? [{ text: row.discountPercent ?? '', numeric: true }] : []),
-        { text: row.total, numeric: true },
-      ];
-      const main = `<tr>${cells
-        .map((cell) => `<td${cell.numeric ? ' class="num"' : ''}>${escapeHtml(cell.text)}</td>`)
-        .join('')}</tr>`;
-      const description = row.description
-        ? `<tr class="offer-desc"><td colspan="${cells.length}">${escapeMultiline(row.description)}</td></tr>`
-        : '';
-      return `<tbody class="offer-line">${main}${description}</tbody>`;
-    })
-    .join('');
-  return `<table class="offer-rows">${head}${body}</table>`;
-}
-
 function renderDelivery(text: string): string {
   const trimmed = text.trim();
   if (!trimmed) return '';
@@ -80,20 +44,20 @@ function renderDelivery(text: string): string {
 }
 
 function renderSection(section: OfferSection): string {
-  const parts = [`<h2>${escapeHtml(section.title)}</h2>`];
-  if (section.areas) parts.push(`<p class="offer-areas">${escapeHtml(section.areas)}</p>`);
-  if (section.phases.length > 0) {
-    const items = section.phases.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
-    parts.push(`<div class="offer-phases"><p>Työvaiheet:</p><ul>${items}</ul></div>`);
-  }
-  if (section.notes.length > 0) {
-    const notes = section.notes.map((item) => `<p>${escapeMultiline(item)}</p>`).join('');
-    parts.push(`<div class="offer-notes"><p>Muuta:</p>${notes}</div>`);
-  }
-  for (const fact of section.facts) parts.push(`<p class="offer-fact">${escapeHtml(fact)}</p>`);
-  for (const paint of section.paints) parts.push(`<p class="offer-paint">${escapeHtml(paint)}</p>`);
-  if (section.workDuration) parts.push(`<p class="offer-duration">${escapeHtml(section.workDuration)}</p>`);
-  return `<section class="offer-section">${parts.join('')}</section>`;
+  const heading = section.heading
+    ? `<h2 class="offer-line-heading"><span class="offer-line-title">${escapeHtml(section.title)}</span><span class="offer-line-leader"></span>${
+        section.heading.quantityLabel
+          ? `<span class="offer-line-qty">${escapeHtml(section.heading.quantityLabel)}</span>`
+          : ''
+      }<span class="offer-line-price">${escapeHtml(section.heading.price)}</span>${
+        section.heading.vatLabel ? `<span class="offer-line-vat">${escapeHtml(section.heading.vatLabel)}</span>` : ''
+      }</h2>`
+    : `<h2 class="doc-heading">${escapeHtml(section.title)}</h2>`;
+  const description = section.description?.trim()
+    ? `<div class="doc-desc">${renderPrintedLines(section.description.trim())}</div>`
+    : '';
+  const body = `${renderPrintedGroups(section.textGroups)}${renderPrintedTable(section.tableRows)}`;
+  return `<section class="doc-section offer-section">${heading}${description}${body}</section>`;
 }
 
 function renderVatSummary(rows: OfferVatSummaryRow[]): string {
@@ -130,6 +94,16 @@ function renderAdditionalInfo(text: string): string {
   return `<div class="additional-info"><h3>Lisätiedot:</h3><div>${escapeMultiline(text)}</div></div>`;
 }
 
+function renderSignatureParty(role: string, lines: string[]): string {
+  const details = lines.map((line) => `<p class="offer-sign-detail">${escapeHtml(line)}</p>`).join('');
+  return `<div class="offer-sign-col"><p class="offer-sign-role">${role}</p>${details}<p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div><p class="offer-sign-label">Päiväys</p><div class="offer-sign-line"></div></div>`;
+}
+
+function renderSignature(signature: TarjousPdfContext['signature']): string {
+  const customer = signature.customerName ? [signature.customerName] : [];
+  return `<div class="offer-sign">${renderSignatureParty('Myyjä', signature.sellerLines)}${renderSignatureParty('Tilaaja', customer)}</div>`;
+}
+
 /** Sivupohja: toistuva ylä-/alatunniste + sisältö. Käytetään myös KTV-sivulle (T8). */
 export function renderDocument(
   ctx: Pick<TarjousPdfContext, 'customerLines' | 'offerInfo' | 'footer'>,
@@ -159,14 +133,15 @@ ${bodyHtml}
 
 export function renderTarjousBody(ctx: TarjousPdfContext): string {
   // KTV-sivu aina viimeisenä (vain yksityisasiakas ilman käänteistä ALV:ta).
+  // Rivitaulukko on poistettu: hinta on rakenneosion otsikossa. Toimitus jää osioiden edelle.
   return [
-    renderOfferRows(ctx.rows, ctx.price.includesVat),
     renderDelivery(ctx.deliveryScheduleText),
     ...ctx.sections.map(renderSection),
     renderPriceBlock(ctx.price),
     renderVatSummary(ctx.vatSummary),
     renderAdditionalInfo(ctx.additionalInfo),
     renderSeller(ctx.sellerLines),
+    renderSignature(ctx.signature),
     renderKotitalousPageHtml(ctx),
   ]
     .filter(Boolean)
@@ -174,5 +149,8 @@ export function renderTarjousBody(ctx: TarjousPdfContext): string {
 }
 
 export function renderTarjousHtml(ctx: TarjousPdfContext, options: RenderTarjousOptions = {}): string {
-  return renderDocument(ctx, renderTarjousBody(ctx), options).replace('</style>', `${offerDocumentCss}</style>`);
+  return renderDocument(ctx, renderTarjousBody(ctx), options).replace(
+    '</style>',
+    `${offerDocumentCss}${printedSectionCss}</style>`,
+  );
 }

@@ -140,7 +140,7 @@ Sijoita sivulle (jos haluat wizardissa): `field_system_tyoryhma_kesto_pv`, `fiel
 
 #### `print` (tulostus tarjoukseen / urakkakortille)
 
-Valinnainen lohko. Kertoo, tulostuuko kenttä **tarjoukseen** ja **urakkakortille**. PDF-koostajat eivät vielä lue lohkoa: tuonti vain normalisoi sen ja pitää sen viennissä.
+Valinnainen lohko. Kertoo, tulostuuko kenttä **tarjoukseen** ja **urakkakortille**. Tarjouksen ja urakkakortin PDF lukevat lohkon. Tuonti normalisoi sen ja pitää sen viennissä.
 
 ```json
 "print": {
@@ -166,6 +166,8 @@ Kohteen `when` voittaa lohkon `when`. Oletus ilman `when`: boolean `ifYes`, muut
 | `ifYes` | vain kun tosi | sama kuin `notEmpty` | sama kuin `notEmpty` | sama kuin `notEmpty` |
 
 `group`: `osa_alueet`, `tyovaiheet`, `muuta`, `tieto` tai `maali`. Oletus `tieto`.
+
+`esitys`: `teksti` tai `taulukko`. Kenttäkohtainen avain kohteessa `print.offer` ja `print.urakkakortti`. Puuttuva avain käyttää ryhmän oletusta: `osa_alueet`, `tyovaiheet` ja `muuta` → `teksti`; `tieto` ja `maali` → `taulukko`. Teksti tulostuu ryhmän omana lohkona, yksi rivi kerrallaan. Taulukko on kaksi saraketta (nimi | arvo ja yksikkö). Tyhjä osa jätetään pois. Virheellinen `esitys` pudotetaan ja siitä tulee huomio `Kenttä "avain": virheellinen print.offer.esitys … ohitettu` (sama urakkakortille). Avain tallennetaan vain, kun se poikkeaa ryhmän oletuksesta.
 
 `order`: äärellinen luku. Oletus = sivun `sortOrder`, sitten indeksi `fieldIds`:ssä. `label`: merkkijono. Oletus = kentän nimi. `""` = pelkkä arvo.
 
@@ -445,7 +447,7 @@ Sama lohko kuin [kentän `print`](#print-tulostus-tarjoukseen--urakkakortille). 
 | `notEmpty` | sama kuin `always` | teksti ei tyhjä, numero ≠ 0, valinta tai tuote valittu |
 | `ifYes` | vain kun tosi | sama kuin `notEmpty` |
 
-Kohteen `when` voittaa lohkon `when`. Oletus: boolean `ifYes`, muut `notEmpty`. Ryhmät: `osa_alueet`, `tyovaiheet`, `muuta`, `tieto` (oletus), `maali`. `order` = luku (oletus lomakejärjestys). `label` = merkkijono (oletus kentän nimi, `""` = pelkkä arvo). `quantityKey` vain `urakkakortti` + `maali` + `product_select` + olemassa oleva `key`.
+Kohteen `when` voittaa lohkon `when`. Oletus: boolean `ifYes`, muut `notEmpty`. Ryhmät: `osa_alueet`, `tyovaiheet`, `muuta`, `tieto` (oletus), `maali`. `esitys`: `teksti` | `taulukko` kohteessa `print.offer.esitys` ja `print.urakkakortti.esitys`. Oletus ryhmän mukaan (`osa_alueet` / `tyovaiheet` / `muuta` = teksti, `tieto` / `maali` = taulukko). Puuttuva avain = oletus. `order` = luku (oletus lomakejärjestys). `label` = merkkijono (oletus kentän nimi, `""` = pelkkä arvo). `quantityKey` vain `urakkakortti` + `maali` + `product_select` + olemassa oleva `key`.
 
 `section` ja `systemKey` eivät tulostu. Mukana oleva `print` ohittaa `showOnSummary` / `showOnSummaryWhen`; `showWhen` pätee silti.
 
@@ -477,7 +479,7 @@ Ennen tuontia:
 - `key` uniikki, `a-z0-9_`
 - `select`: vähintään yksi option; `value` numero merkkijonona jos kaava käyttää
 - `showWhen` / `showOnSummaryWhen` → olemassa oleva `key`
-- `print` valinnainen objekti. Tuntematon `when`, kohde, `order`, `label` tai `quantityKey` pudotetaan; tuntematon `group` → `tieto`. Ilman `print`-objektia vanha yhteenveto (tarjous / urakkakortti). Urakkakortille ei €-rivejä. `section` ja järjestelmäkenttä eivät tulostu `print`-lohkon kautta
+- `print` valinnainen objekti. Tuntematon `when`, kohde, `order`, `label`, `quantityKey` tai `esitys` pudotetaan; tuntematon `group` → `tieto`. `esitys` on `teksti` tai `taulukko` (`print.offer.esitys`, `print.urakkakortti.esitys`); puuttuva = ryhmän oletus. Ilman `print`-objektia vanha yhteenveto (tarjous / urakkakortti). Urakkakortille ei €-rivejä. `section` ja järjestelmäkenttä eivät tulostu `print`-lohkon kautta
 - `defaultValue` merkkijono; `product_select`-id on olemassa
 - `kokonaishinta_alv0` = listahinta (ei alennusta kaavassa)
 - ei `alv_maara` / `kokonaishinta`-kaavaa

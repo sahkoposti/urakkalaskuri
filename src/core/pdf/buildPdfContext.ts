@@ -8,6 +8,7 @@ import { applyVat, customerSeesVatInclusive, isPrivateCustomer } from '@/src/cor
 import {
   buildOfferRows,
   buildOfferSections,
+  offerSignatureParties,
   offerVatSummary,
   sellerContactLines,
   type OfferRow,
@@ -40,6 +41,8 @@ export type TarjousPdfContext = {
   additionalInfo: string;
   /** Myyjän yhteystiedot. Tyhjä = lohko pois. */
   sellerLines: string[];
+  /** Allekirjoituslohko. Tyhjät nimet jätetään pois; viivat tulostetaan silti. */
+  signature: { sellerLines: string[]; customerName: string };
   footer: PdfFooter;
   /** Kotitalousvähennyssivu: vain yksityisasiakas ilman käänteistä ALV:ta. */
   ktv?: {
@@ -153,6 +156,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     price: offerPriceBlock(record, customer),
     additionalInfo: typeof offerCompany.additionalInfoText === 'string' ? offerCompany.additionalInfoText : '',
     sellerLines: sellerContactLines(company),
+    signature: offerSignatureParties(company, customer.name),
     footer: buildFooter(company),
     ktv: ktvApplicable
       ? {

@@ -385,31 +385,34 @@ describe('urakkakortti print resolver', () => {
     expect(ctx.sections).toHaveLength(1);
     const section = ctx.sections[0];
     expect(section.title).toBe('Sokkelimaalaus');
-    expect(section.areas).toBe('Osa-alueet: Sokkeli, Julkisivupinnat');
-    expect(section.phases).toEqual(['Pohjamaalaus', 'Maalinpoisto']);
-    expect(section.notes).toEqual(['Aita <portti>\n& "koira"']);
-    expect(section.facts).toEqual([
-      'Värinvaihto Ei',
-      'Ikkunat 4 kpl',
-      'Pelkkä arvo',
-      'Korttirivi Vain kortilla',
+    expect(section.textGroups).toEqual([
+      { group: 'osa_alueet', title: 'Osa-alueet', items: ['Sokkeli', 'Julkisivupinnat'] },
+      { group: 'tyovaiheet', title: 'Työvaiheet', items: ['Pohjamaalaus', 'Maalinpoisto'] },
+      { group: 'muuta', title: 'Muuta', items: ['Aita <portti>\n& "koira"'] },
     ]);
-    expect(section.paints).toEqual(['Testimaali Sininen 4 kpl', 'Pohjuste Harmaa']);
-    expect(section.notes[0]).not.toContain('elävä teksti');
+    expect(section.tableRows).toEqual([
+      { label: 'Värinvaihto', value: 'Ei' },
+      { label: 'Ikkunat', value: '4 kpl' },
+      { label: '', value: 'Pelkkä arvo' },
+      { label: 'Korttirivi', value: 'Vain kortilla' },
+      { label: 'Maali', value: 'Testimaali Sininen' },
+      { label: 'Pohjamaali', value: 'Pohjuste Harmaa' },
+    ]);
+    expect(section.textGroups[2].items[0]).not.toContain('elävä teksti');
 
     const html = renderUrakkakorttiHtml(ctx);
-    expect(html).toContain(
-      '<p class="uk-section-areas">Osa-alueet: Sokkeli, Julkisivupinnat</p>',
-    );
-    expect(html).toContain(
-      '<div class="uk-section-phases"><p>Työvaiheet:</p><ul><li>Pohjamaalaus</li><li>Maalinpoisto</li></ul></div>',
-    );
-    expect(html).toContain(
-      '<div class="uk-section-notes"><p>Muuta:</p><p>Aita &lt;portti&gt;<br />&amp; &quot;koira&quot;</p></div>',
-    );
-    expect(html).toContain('<p class="uk-section-fact">Pelkkä arvo</p>');
-    expect(html).toContain('<p class="uk-section-paint">Testimaali Sininen 4 kpl</p>');
-    expect(html).toContain('<p class="uk-section-paint">Pohjuste Harmaa</p>');
+    expect(html).toContain('class="doc-group doc-group-osa_alueet"');
+    expect(html).toContain('class="doc-line">Sokkeli</p>');
+    expect(html).toContain('class="doc-line">Julkisivupinnat</p>');
+    expect(html).not.toContain('Osa-alueet: Sokkeli, Julkisivupinnat');
+    expect(html).toContain('class="doc-line">Pohjamaalaus</p>');
+    expect(html).toContain('class="doc-line">Maalinpoisto</p>');
+    expect(html).toContain('class="doc-line">Aita &lt;portti&gt;</p>');
+    expect(html).toContain('class="doc-line">&amp; &quot;koira&quot;</p>');
+    expect(html).toContain('>Pelkkä arvo<');
+    expect(html).toContain('>Testimaali Sininen<');
+    expect(html).toContain('>Pohjuste Harmaa<');
+    expect(html).not.toContain('Testimaali Sininen 4 kpl');
     expect(html).toContain('break-inside: avoid');
     expect(html).not.toContain('Ei tulostu mihinkään');
     expect(html).not.toContain('Vain tarjouksessa');
@@ -429,8 +432,8 @@ describe('urakkakortti print resolver', () => {
       ),
     });
     const ctx = buildUrakkakorttiContext(printInput(record({}, { structureLines: [hiddenRemoval] })));
-    expect(ctx.sections[0].phases).toEqual(['Pohjamaalaus']);
-    expect(ctx.sections[0].facts).toContain('Värinvaihto Ei');
+    expect(ctx.sections[0].textGroups.find((group) => group.group === 'tyovaiheet')?.items).toEqual(['Pohjamaalaus']);
+    expect(ctx.sections[0].tableRows).toEqual(expect.arrayContaining([{ label: 'Värinvaihto', value: 'Ei' }]));
     expect(renderUrakkakorttiHtml(ctx)).not.toContain('Maalinpoisto');
   });
 
@@ -466,11 +469,8 @@ describe('urakkakortti print resolver', () => {
     );
     const ctx = buildUrakkakorttiContext(source);
     expect(ctx.specGrid.mode).toBe('none');
-    expect(ctx.sections[0].facts).toEqual(['Ikkunat 4 kpl']);
-    expect(ctx.sections[0].areas).toBeUndefined();
-    expect(ctx.sections[0].phases).toEqual([]);
-    expect(ctx.sections[0].notes).toEqual([]);
-    expect(ctx.sections[0].paints).toEqual([]);
+    expect(ctx.sections[0].tableRows).toEqual([{ label: 'Ikkunat', value: '4 kpl' }]);
+    expect(ctx.sections[0].textGroups).toEqual([]);
     const html = renderUrakkakorttiHtml(ctx);
     expect(html).not.toContain('Ei tulostu mihinkään');
     expect(html).not.toContain('Osa-alueet:');
@@ -494,9 +494,11 @@ describe('urakkakortti print resolver', () => {
       offerStructureSettings: {},
     });
     expect(offer).toHaveLength(1);
-    expect(offer[0].facts).toEqual(['Tarjousrivi Vain tarjouksessa']);
-    expect(offer[0].phases).toEqual([]);
-    expect(offer[0].paints).toEqual([]);
+    expect(offer[0].tableRows).toEqual(
+      expect.arrayContaining([{ label: 'Tarjousrivi', value: 'Vain tarjouksessa' }]),
+    );
+    expect(offer[0].textGroups).toEqual([]);
+    expect(offer[0].tableRows.map((row) => row.value)).not.toContain('Vain kortilla');
     expect(JSON.stringify(offer[0])).not.toContain('Vain kortilla');
   });
 
@@ -508,7 +510,9 @@ describe('urakkakortti print resolver', () => {
       fieldValues: { ...printValues, kaytossa: 'true' },
     });
     const ctx = buildUrakkakorttiContext(printInput(record({}, { structureLines: [shown] })));
-    expect(ctx.sections[0].facts).toContain('Piilotettu Piilossa oleva teksti');
+    expect(ctx.sections[0].tableRows).toEqual(
+      expect.arrayContaining([{ label: 'Piilotettu', value: 'Piilossa oleva teksti' }]),
+    );
   });
 
   it('drops a print.urakkakortti row whose unit is € or whose value contains €', () => {
@@ -518,7 +522,7 @@ describe('urakkakortti print resolver', () => {
     expect(html).not.toContain('99,00');
     expect(html).not.toContain('sisältää 10');
     const euroLines = html.split('\n').filter((row) => row.includes('€'));
-    expect(euroLines.every((row) => row.includes('Tekijöiden urakka'))).toBe(true);
+    expect(euroLines.every((row) => row.includes('Urakka'))).toBe(true);
     expect((html.match(/€/g) ?? []).length).toBe(1);
   });
 
@@ -538,7 +542,7 @@ describe('urakkakortti print resolver', () => {
       expect(html).not.toMatch(/ALV|Kate|Palkkio|Loppusumma|Hinta|Ale %|Kotitalous|Voimassa|Tarjousnumero|10285|Lisätiedot:/);
       expect(html).not.toMatch(/2\s510|2\s000,00|333,33|77,77|502,00/);
       const euroLines = html.split('\n').filter((row) => row.includes('€'));
-      expect(euroLines.every((row) => row.includes('Tekijöiden urakka'))).toBe(true);
+      expect(euroLines.every((row) => row.includes('Urakka'))).toBe(true);
       expect((html.match(/€/g) ?? []).length).toBe(1);
     }
   });
@@ -598,9 +602,9 @@ describe('urakkakortti print resolver', () => {
     expect(printCtx.contractRows).toEqual(legacyCtx.contractRows);
     expect(printCtx.infoRows).toEqual(legacyCtx.infoRows);
     expect(printCtx.contractRows.map((row) => row.label)).toEqual([
-      'Tekijöiden urakka: Ulkomaalaus',
-      'Tekijöiden urakka: Sokkeli',
-      'Tekijöiden urakka yhteensä (alv0)',
+      'Urakka: Ulkomaalaus',
+      'Urakka: Sokkeli',
+      'Urakka yhteensä (alv0)',
     ]);
     expect(printCtx.contractRows[2].value.replace(/\s/g, ' ')).toBe('1 450,00 €');
 
@@ -658,7 +662,10 @@ describe('urakkakortti print resolver', () => {
     );
     const ctx = buildUrakkakorttiContext(source);
     expect(ctx.specGrid.mode).toBe('none');
-    expect(ctx.sections[0].facts).toEqual(['Uusi Osio', 'Vanha yhteenveto Näkyy silti']);
+    expect(ctx.sections[0].tableRows).toEqual([
+      { label: 'Uusi', value: 'Osio' },
+      { label: 'Vanha yhteenveto', value: 'Näkyy silti' },
+    ]);
   });
 
   it('mixed calculation prints the legacy spec grid before print sections', () => {
@@ -669,7 +676,7 @@ describe('urakkakortti print resolver', () => {
     expect(ctx.sections.map((section) => section.title)).toEqual(['Sokkelimaalaus']);
     const html = renderUrakkakorttiHtml(ctx);
     const gridAt = html.indexOf('class="spec-grid"');
-    const sectionAt = html.indexOf('class="uk-section"');
+    const sectionAt = html.indexOf('class="doc-section uk-section"');
     expect(gridAt).toBeGreaterThan(-1);
     expect(sectionAt).toBeGreaterThan(gridAt);
 
@@ -687,7 +694,7 @@ describe('urakkakortti print resolver', () => {
     ]);
     expect(mixed.sections.map((section) => section.title)).toEqual(['Sokkelimaalaus']);
     const mixedHtml = renderUrakkakorttiHtml(mixed);
-    expect(mixedHtml.indexOf('class="uk-section"')).toBeGreaterThan(mixedHtml.indexOf('class="spec-grid"'));
+    expect(mixedHtml.indexOf('class="doc-section uk-section"')).toBeGreaterThan(mixedHtml.indexOf('class="spec-grid"'));
   });
 
   it('a manual line stays on the legacy path even if some other structure declares print', () => {

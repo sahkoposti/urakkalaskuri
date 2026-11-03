@@ -70,8 +70,10 @@ describe('buildPdfContext', () => {
     expect(ctx.additionalInfo).toBe('');
     expect(ctx.sections).toHaveLength(1);
     expect(ctx.sections[0].title).toBe('Ulkomaalaus');
-    expect(ctx.sections[0].notes).toEqual(['Sisältää telineet.']);
-    expect(ctx.sections[0].workDuration).toBe('Työn arvioitu kesto 4 työpäivää');
+    expect(ctx.sections[0].textGroups.find((group) => group.group === 'muuta')?.items).toEqual(['Sisältää telineet.']);
+    expect(ctx.sections[0].tableRows).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: 'Työn arvioitu kesto', value: '4 työpäivää' })]),
+    );
     expect(ctx.rows.map((row) => row.name)).toEqual(['Ulkomaalaus']);
     expect(ctx.deliveryScheduleText).toBe('');
     expect(ctx.vatSummary).toEqual([{ vatPercent: 25.5, net: 2000, vat: 510, gross: 2510 }]);
@@ -140,7 +142,9 @@ describe('buildPdfContext', () => {
         structures: [],
       }),
     );
-    expect(ctx.sections).toEqual([]);
+    expect(ctx.sections.map((section) => section.title)).toEqual(['Laskenta']);
+    expect(ctx.sections[0].textGroups).toEqual([]);
+    expect(ctx.sections[0].heading?.price).toBeTruthy();
     expect(ctx.rows.map((row) => row.name)).toEqual(['Laskenta']);
     expect(ctx).not.toHaveProperty('specGrid');
     expect(labels(ctx.offerInfo)).toEqual(['Päiväys', 'Voimassa']);
@@ -153,7 +157,10 @@ describe('buildPdfContext', () => {
     );
     expect(ctx.rows.map((row) => row.name)).toEqual(['Sokkeli', 'Ulkomaalaus']);
     expect(ctx.sections.map((section) => section.title)).toEqual(['Sokkeli', 'Ulkomaalaus']);
-    expect(ctx.sections.map((section) => section.notes)).toEqual([['Toinen teksti'], ['Sisältää telineet.']]);
+    expect(ctx.sections.map((section) => section.textGroups.find((group) => group.group === 'muuta')?.items)).toEqual([
+      ['Toinen teksti'],
+      ['Sisältää telineet.'],
+    ]);
     expect(ctx.additionalInfo).toBe('');
   });
 
@@ -166,7 +173,8 @@ describe('buildPdfContext', () => {
       }),
     );
     expect(ctx.sections).toHaveLength(1);
-    expect(ctx.sections[0].facts.some((fact) => fact.includes('120,0'))).toBe(true);
+    expect(ctx.sections[0].tableRows.some((row) => row.value.includes('120 m'))).toBe(true);
+    expect(ctx.sections[0].tableRows.some((row) => row.value.includes('120,0'))).toBe(false);
   });
 
   it('never contains margin or commission data', () => {

@@ -9,20 +9,17 @@ import type { ProductStructure } from '@/src/core/structure/types';
 import { isManualStructureId } from '@/src/core/structure/types';
 
 import { lineSpecSnapshot } from './offerPageSpecs';
-import { groupPrintRows, printableFields, type PrintRow } from './printableFields';
+import { printableFields, type PrintRow } from './printableFields';
+import { buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from './printedSection';
 
 /**
- * Urakkakortin tulostusosio (P4). Ryhmien järjestys ja muotoilu seuraavat tarjouksen
- * osioita. Tarjouksen apurit ovat yksityisiä, joten sama muotoilu on tässä.
+ * Urakkakortin tulostusosio (P4). Teksti- ja taulukko-osat ovat samat kuin tarjouksessa.
+ * Kesto ei ole kortin kenttä: se jää info-riveihin.
  */
 export type UrakkakorttiSection = {
   title: string;
-  /** "Osa-alueet: a, b". Puuttuu, kun ryhmä on tyhjä. */
-  areas?: string;
-  phases: string[];
-  notes: string[];
-  facts: string[];
-  paints: string[];
+  textGroups: PrintedTextGroup[];
+  tableRows: PrintedTableRow[];
 };
 
 export type UrakkakorttiSectionSource = {
@@ -54,37 +51,6 @@ export function lineUsesUrakkakorttiPrint(line: StructureLine, structures: Produ
   return fields.some((field) => fieldDeclaresPrint(field));
 }
 
-function phrase(row: PrintRow): string {
-  const label = row.label.trim();
-  const value = row.value.trim();
-  if (!label) return value;
-  if (!value || value === 'Kyllä' || value === label) return label;
-  return `${label} ${value}`;
-}
-
-function valueHasUnit(value: string, unit: string): boolean {
-  return value === unit || value.endsWith(` ${unit}`);
-}
-
-function tietoLine(row: PrintRow): string {
-  const label = row.label.trim();
-  let value = row.value.trim();
-  const unit = row.unit?.trim();
-  if (unit && value && !valueHasUnit(value, unit)) value = `${value} ${unit}`;
-  if (!label) return value;
-  return `${label} ${value}`.trim();
-}
-
-function maaliLine(row: PrintRow, includeQuantity = true): string {
-  const name = row.value.trim();
-  if (!includeQuantity) return name;
-  const quantity = row.quantity;
-  if (!quantity) return name;
-  const amount = [quantity.value.trim(), quantity.unit?.trim() ?? ''].filter((part) => part.length > 0).join(' ');
-  if (!amount) return name;
-  return name ? `${name} ${amount}` : amount;
-}
-
 /** Turvaverkko: €-rivi ei päädy kortille, vaikka resolveri päästäisi sen läpi. */
 export function isEuroPrintRow(row: PrintRow): boolean {
   return row.unit === '€' || (typeof row.value === 'string' && row.value.includes('€'));
@@ -95,18 +61,11 @@ export function sectionFromPrintRows(
   rows: PrintRow[],
   options?: { includePaintQuantity?: boolean },
 ): UrakkakorttiSection {
-  const includePaintQuantity = options?.includePaintQuantity !== false;
-  const grouped = groupPrintRows(rows.filter((row) => row && !isEuroPrintRow(row)));
-  const areas = grouped.osa_alueet.map(phrase).filter((item) => item.length > 0);
-  const section: UrakkakorttiSection = {
-    title,
-    phases: grouped.tyovaiheet.map(phrase).filter((item) => item.length > 0),
-    notes: grouped.muuta.map(phrase).filter((item) => item.length > 0),
-    facts: grouped.tieto.map(tietoLine).filter((item) => item.length > 0),
-    paints: grouped.maali.map((row) => maaliLine(row, includePaintQuantity)).filter((item) => item.length > 0),
-  };
-  if (areas.length > 0) section.areas = `Osa-alueet: ${areas.join(', ')}`;
-  return section;
+  const body = buildPrintedBody(
+    rows.filter((row) => row && !isEuroPrintRow(row)),
+    { includePaintQuantity: options?.includePaintQuantity !== false },
+  );
+  return { title, textGroups: body.textGroups, tableRows: body.tableRows };
 }
 
 function urakkakorttiPrintRows(

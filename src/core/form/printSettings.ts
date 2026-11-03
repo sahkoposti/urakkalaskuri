@@ -3,6 +3,7 @@ import type {
   FieldPrintSettings,
   FormDefinition,
   FormField,
+  PrintEsitys,
   PrintGroup,
   PrintTargetSettings,
   PrintWhen,
@@ -11,6 +12,16 @@ import type {
 
 const PRINT_WHENS: readonly PrintWhen[] = ['always', 'notEmpty', 'ifYes'];
 const PRINT_GROUPS: readonly PrintGroup[] = ['osa_alueet', 'tyovaiheet', 'muuta', 'tieto', 'maali'];
+const PRINT_ESITYS: readonly PrintEsitys[] = ['teksti', 'taulukko'];
+
+/** Ryhmän oletusesitys, kun `esitys` puuttuu. */
+export function defaultEsitys(group: PrintGroup): PrintEsitys {
+  return group === 'osa_alueet' || group === 'tyovaiheet' || group === 'muuta' ? 'teksti' : 'taulukko';
+}
+
+function isPrintEsitys(value: unknown): value is PrintEsitys {
+  return typeof value === 'string' && (PRINT_ESITYS as readonly string[]).includes(value);
+}
 
 /** Ratkaistu tulostus yhteen kohteeseen. `legacy` = kentällä ei ole print-objektia. */
 export type ResolvedPrint = {
@@ -19,6 +30,8 @@ export type ResolvedPrint = {
   order?: number;
   label?: string;
   quantityKey?: string;
+  /** Aina efektiivinen arvo: eksplisiittinen tai ryhmän oletus. */
+  esitys: PrintEsitys;
   legacy: boolean;
 };
 
@@ -119,8 +132,22 @@ function readTarget(
     }
   }
 
+  if ('esitys' in raw) {
+    if (isPrintEsitys(raw.esitys)) settings.esitys = raw.esitys;
+    else warnings.push(fieldWarning(field, `virheellinen print.${target}.esitys ${shown(raw.esitys)} ohitettu`));
+  }
+
   for (const key of Object.keys(raw)) {
-    if (key === 'when' || key === 'group' || key === 'order' || key === 'label' || key === 'quantityKey') continue;
+    if (
+      key === 'when' ||
+      key === 'group' ||
+      key === 'order' ||
+      key === 'label' ||
+      key === 'quantityKey' ||
+      key === 'esitys'
+    ) {
+      continue;
+    }
     warnings.push(fieldWarning(field, `tuntematon print.${target}.${key} ohitettu`));
   }
 
@@ -214,6 +241,7 @@ function legacyResolved(field: FormField, target: 'offer' | 'urakkakortti', form
   return {
     when: target === 'urakkakortti' && field.type === 'boolean' ? 'always' : defaultWhen(field),
     group: 'tieto',
+    esitys: defaultEsitys('tieto'),
     legacy: true,
   };
 }
@@ -232,6 +260,7 @@ function resolvedFromExplicit(
   const resolved: ResolvedPrint = {
     when: asWhen(settings.when, asWhen(print.when, defaultWhen(field))),
     group,
+    esitys: isPrintEsitys(settings.esitys) ? settings.esitys : defaultEsitys(group),
     legacy: false,
   };
   if (typeof settings.order === 'number' && Number.isFinite(settings.order)) resolved.order = settings.order;

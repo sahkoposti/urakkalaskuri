@@ -16,13 +16,48 @@ export const DEFAULT_KTV_SETTINGS: Readonly<KtvSettings> = Object.freeze({
   capEur: 2100,
 });
 
+/** Urakkakortin Työntekijä-tilan oletusjakaja. Näytetään pilkulla: 1,5. */
+export const DEFAULT_SIVUKULUKERROIN = 1.5;
+
+export const SIVUKULUKERROIN_INVALID_MESSAGE =
+  'Sivukulukerroin on luku, joka on suurempi kuin 1 ja enintään 3.';
+
 export const defaultOfferCompanySettings: Readonly<OfferCompanySettings> = Object.freeze({
   offerValidDays: DEFAULT_OFFER_VALID_DAYS,
   offerNumberStart: DEFAULT_OFFER_NUMBER_START,
   ktv: DEFAULT_KTV_SETTINGS,
   ktvFootnoteText: '',
   additionalInfoText: '',
+  sivukulukerroin: DEFAULT_SIVUKULUKERROIN,
 });
+
+/** Tyhjä = oletus. Muu kelvoton syöte hylätään, eikä sitä tallenneta. */
+export function parseSivukulukerroinInput(raw: string): number | 'empty' | 'invalid' {
+  const trimmed = raw.trim();
+  if (trimmed === '') return 'empty';
+  if (!/^\d+(?:[.,]\d+)?$/.test(trimmed)) return 'invalid';
+  const value = Number(trimmed.replace(',', '.'));
+  if (!Number.isFinite(value) || value <= 1 || value > 3) return 'invalid';
+  return value;
+}
+
+export function formatSivukulukerroin(value: number): string {
+  return String(value).replace('.', ',');
+}
+
+/** Tyhjä syöte ei ole virhe. Kelvoton ei-tyhjä syöte estää tallennuksen. */
+export function sivukulukerroinDraftError(raw: string): string | null {
+  return parseSivukulukerroinInput(raw) === 'invalid' ? SIVUKULUKERROIN_INVALID_MESSAGE : null;
+}
+
+function normalizeSivukulukerroin(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 1 && value <= 3) return value;
+  if (typeof value === 'string') {
+    const parsed = parseSivukulukerroinInput(value);
+    if (typeof parsed === 'number') return parsed;
+  }
+  return DEFAULT_SIVUKULUKERROIN;
+}
 
 function toNumber(value: unknown): number | undefined {
   const n = typeof value === 'string' && value.trim() !== '' ? Number(value.trim().replace(',', '.')) : value;
@@ -65,6 +100,7 @@ export function normalizeOfferCompanySettings(raw: unknown): OfferCompanySetting
     ktv: normalizeKtvSettings(src.ktv),
     ktvFootnoteText: typeof src.ktvFootnoteText === 'string' ? src.ktvFootnoteText : '',
     additionalInfoText: typeof src.additionalInfoText === 'string' ? src.additionalInfoText : '',
+    sivukulukerroin: normalizeSivukulukerroin(src.sivukulukerroin),
   };
 }
 

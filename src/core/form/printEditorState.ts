@@ -1,9 +1,10 @@
-import { normalizePrintSettings, resolveTargetPrint } from '@/src/core/form/printSettings';
+import { defaultEsitys, normalizePrintSettings, resolveTargetPrint } from '@/src/core/form/printSettings';
 import { isSystemField } from '@/src/core/form/systemFields';
 import type {
   FieldPrintSettings,
   FormDefinition,
   FormField,
+  PrintEsitys,
   PrintGroup,
   PrintWhen,
   UrakkakorttiPrintSettings,
@@ -20,6 +21,8 @@ export type TargetEditorState = {
   order?: number;
   label?: string;
   quantityKey?: string;
+  /** Puuttuu = ryhmän oletus. Tallennetaan vain, kun arvo poikkeaa oletuksesta. */
+  esitys?: PrintEsitys;
 };
 
 /**
@@ -45,6 +48,24 @@ function isPrintWhen(value: unknown): value is PrintWhen {
 
 function isPrintGroup(value: unknown): value is PrintGroup {
   return typeof value === 'string' && (PRINT_GROUPS as readonly string[]).includes(value);
+}
+
+function isPrintEsitys(value: unknown): value is PrintEsitys {
+  return value === 'teksti' || value === 'taulukko';
+}
+
+/**
+ * Ryhmän vaihto. Vanha oletus (tai puuttuva) poistetaan, jotta uusi oletus pätee.
+ * Aito poikkeama säilyy, paitsi jos se on jo uuden ryhmän oletus.
+ */
+export function esitysAfterGroupChange(
+  current: PrintEsitys | undefined,
+  from: PrintGroup,
+  to: PrintGroup,
+): PrintEsitys | undefined {
+  if (current === undefined || current === defaultEsitys(from)) return undefined;
+  if (current === defaultEsitys(to)) return undefined;
+  return current;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -81,6 +102,11 @@ function targetFromResolved(
   return state;
 }
 
+function explicitEsitys(raw: unknown, group: PrintGroup): PrintEsitys | undefined {
+  if (!isPlainObject(raw) || !isPrintEsitys(raw.esitys)) return undefined;
+  return raw.esitys === defaultEsitys(group) ? undefined : raw.esitys;
+}
+
 /** Otsikko ja järjestelmäkenttä eivät tulostu, joten editoria ei näytetä. */
 export function isPrintEditable(field: FormField): boolean {
   if (!field) return false;
@@ -115,11 +141,21 @@ export function quantityKeyOptions(form: FormDefinition, field: FormField): Quan
 export function readPrintEditorState(field: FormField, form: FormDefinition): PrintEditorState {
   const explicit = isExplicitPrint(field);
   const when = explicit && isPrintWhen(field.print.when) ? field.print.when : defaultWhen(field);
+  const offer = targetFromResolved(resolveTargetPrint(field, 'offer', form), when);
+  const urakkakortti = targetFromResolved(resolveTargetPrint(field, 'urakkakortti', form), when);
+  if (offer && explicit) {
+    const esitys = explicitEsitys(field.print.offer, offer.group);
+    if (esitys) offer.esitys = esitys;
+  }
+  if (urakkakortti && explicit) {
+    const esitys = explicitEsitys(field.print.urakkakortti, urakkakortti.group);
+    if (esitys) urakkakortti.esitys = esitys;
+  }
   return {
     legacy: !explicit,
     when,
-    offer: targetFromResolved(resolveTargetPrint(field, 'offer', form), when),
-    urakkakortti: targetFromResolved(resolveTargetPrint(field, 'urakkakortti', form), when),
+    offer,
+    urakkakortti,
   };
 }
 
@@ -144,6 +180,7 @@ function rawTarget(value: unknown): TargetEditorState | null {
   if (typeof value.label === 'string') state.label = value.label;
   const quantityKey = value.quantityKey;
   if (typeof quantityKey === 'string' && quantityKey.length > 0) state.quantityKey = quantityKey;
+  if (isPrintEsitys(value.esitys) && value.esitys !== defaultEsitys(group)) state.esitys = value.esitys;
   return state;
 }
 
@@ -185,6 +222,7 @@ function compactTarget(target: TargetEditorState | null, topWhen: PrintWhen, fie
   if (typeof target.quantityKey === 'string' && target.quantityKey.length > 0) {
     settings.quantityKey = target.quantityKey;
   }
+  if (target.esitys && target.esitys !== defaultEsitys(target.group)) settings.esitys = target.esitys;
   return Object.keys(settings).length === 0 ? true : settings;
 }
 

@@ -72,13 +72,18 @@ describe('urakkakortti', () => {
   it('single line: contract, duration, crew, specs, notes area; snapshot', () => {
     const rec = record({ notes: 'Koira pihalla' });
     const ctx = buildUrakkakorttiContext(ukInput(rec));
-    expect(ctx.contractRows).toEqual([{ label: 'Tekijöiden urakka (alv0)', value: expect.stringMatching(/1\s000,00\s€/) }]);
-    expect(ctx.infoRows.map((r) => r.label)).toEqual(['Työn arvioitu kesto', 'Työryhmän koko']);
+    expect(ctx.contractRows).toEqual([{ label: 'Urakka (alv0)', value: expect.stringMatching(/1\s000,00\s€/) }]);
+    expect(ctx.infoRows.map((r) => r.label)).toEqual(['Työn arvioitu kesto']);
+    expect(renderUrakkakorttiHtml(ctx)).not.toContain('Työryhmän koko');
     expect(ctx.specGrid.mode).toBe('single');
     const html = renderUrakkakorttiHtml(ctx);
     expect(html).toContain('Urakkakortti');
     expect(html).toContain('Koira pihalla');
-    expect(html).toContain('Muistiinpanot:');
+    expect(html).toContain('Huomioitavaa');
+    expect(html).toContain('Urakkakortti: Alihankkija');
+    expect(html).not.toContain('Muistiinpanot');
+    expect(html).not.toContain('Asiakkaan lisätiedot');
+    expect(html).not.toContain('Työryhmän koko');
     expect(html).toMatchSnapshot();
   });
 
@@ -86,9 +91,9 @@ describe('urakkakortti', () => {
     const lines = [line('a', 's1', 'Ulkomaalaus'), { ...line('b', 's2', 'Sokkeli', '30'), contractPriceVat0: 450 }];
     const ctx = buildUrakkakorttiContext(ukInput(record({}, { structureLines: lines })));
     expect(ctx.contractRows.map((r) => r.label)).toEqual([
-      'Tekijöiden urakka: Ulkomaalaus',
-      'Tekijöiden urakka: Sokkeli',
-      'Tekijöiden urakka yhteensä (alv0)',
+      'Urakka: Ulkomaalaus',
+      'Urakka: Sokkeli',
+      'Urakka yhteensä (alv0)',
     ]);
     expect(ctx.contractRows[2].value.replace(/\s/g, ' ')).toBe('1 450,00 €');
     expect(ctx.specGrid.cards.map((c) => c.title)).toEqual(['Ulkomaalaus: Pinta-alat', 'Sokkeli: Pinta-alat']);
@@ -124,7 +129,7 @@ describe('urakkakortti', () => {
       expect(html).not.toMatch(/ALV|Kate|Palkkio|Loppusumma|Hinta|Ale %|Kotitalous|Voimassa|Tarjousnumero|10285|Lisätiedot:/);
       expect(html).not.toMatch(/2\s510|2\s000,00|333,33|77,77|502,00/);
       const euroLines = html.split('\n').filter((l) => l.includes('€'));
-      expect(euroLines.every((l) => l.includes('Tekijöiden urakka'))).toBe(true);
+      expect(euroLines.every((l) => l.includes('Urakka'))).toBe(true);
       expect((html.match(/€/g) ?? []).length).toBe(1);
     }
   });

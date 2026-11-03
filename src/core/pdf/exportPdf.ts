@@ -105,7 +105,11 @@ export async function exportUrakkakorttiPdf(
   if (missing.length > 0) {
     return { status: 'needsManualContract', lines: missing.map((line) => ({ id: line.id, name: line.name })) };
   }
-  const [company, logoDataUri] = await Promise.all([deps.getCompanyProfile(), deps.loadLogoDataUri()]);
+  const [company, logoDataUri, offerCompany] = await Promise.all([
+    deps.getCompanyProfile(),
+    deps.loadLogoDataUri(),
+    deps.getOfferCompanySettings(),
+  ]);
   const generatedAt = deps.now();
   const ctx = buildUrakkakorttiContext({
     record,
@@ -114,6 +118,7 @@ export async function exportUrakkakorttiPdf(
     products: app.products,
     settings: app.settings,
     generatedAt,
+    sivukulukerroin: offerCompany.sivukulukerroin,
   });
   const html = renderUrakkakorttiHtml(ctx, { logoDataUri, accentColor: app.settings.theme?.accentColor });
   const fileName = buildPdfFileName({ kind: 'Urakkakortti', customerName: customerFromRecord(record).name, date: generatedAt });

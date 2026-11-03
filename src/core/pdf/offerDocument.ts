@@ -10,11 +10,12 @@ import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { isManualStructureId } from '@/src/core/structure/types';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
-import { formatCurrency, formatDebugDecimal, formatPercent, roundToCents } from '@/src/core/utils/formatters';
+import { formatCurrency, formatPercent, formatPrintedQuantity, roundToCents } from '@/src/core/utils/formatters';
 import { applyVat, customerSeesVatInclusive } from '@/src/core/utils/priceDisplay';
 
 import { lineSpecSnapshot } from './offerPageSpecs';
-import { groupPrintRows, printableFields, type PrintRow } from './printableFields';
+import { printableFields, type PrintRow } from './printableFields';
+import { appendPrintedText, buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from './printedSection';
 import type { OfferStructureSettings } from './types';
 
 /**
@@ -35,15 +36,23 @@ export type OfferRow = {
   description?: string;
 };
 
+export type OfferHeading = {
+  /** Määrä ja yksikkö, jos vanha taulukko olisi näyttänyt ne. Kokonaisluku ilman desimaalia. */
+  quantityLabel: string;
+  /** Rivisumma (Yht.). Tyhjä, jos hinta on kelvoton. */
+  price: string;
+  /** Vain yritysasiakas. Sama merkkijono kuin vanhan Alv-%-sarakkeen arvo, etuliitteellä "Alv ". */
+  vatLabel?: string;
+};
+
 export type OfferSection = {
   title: string;
-  /** "Osa-alueet: a, b" */
-  areas?: string;
-  phases: string[];
-  notes: string[];
-  facts: string[];
-  paints: string[];
-  workDuration?: string;
+  /** Puuttuu, kun määrä on 0 (riviä ei hinnoitella). */
+  heading?: OfferHeading;
+  /** Manuaalirivin lisätieto otsikon alla. Rakenteen Muuta on textGroupsissa. */
+  description?: string;
+  textGroups: PrintedTextGroup[];
+  tableRows: PrintedTableRow[];
 };
 
 export type OfferVatSummaryRow = {
@@ -63,8 +72,7 @@ export type OfferDocumentSource = {
 };
 
 function formatQuantity(value: number): string {
-  if (!Number.isFinite(value)) return '';
-  return formatDebugDecimal(value);
+  return formatPrintedQuantity(value);
 }
 
 /** Asiakkaalle tulostettava summa. null = NaN, Infinity tai muu kelvoton luku. */
@@ -132,25 +140,17 @@ export function isManualOfferLine(line: StructureLine, structures: ProductStruct
   return !hasOfferForm(matchingStructure(line, structures));
 }
 
-function phrase(row: PrintRow): string {
-  const label = row.label.trim();
-  const value = row.value.trim();
-  if (!label) return value;
-  if (!value || value === 'Kyllä' || value === label) return label;
-  return `${label} ${value}`;
-}
-
-function valueHasUnit(value: string, unit: string): boolean {
-  return value === unit || value.endsWith(` ${unit}`);
-}
-
-function tietoLine(row: PrintRow): string {
-  const label = row.label.trim();
-  let value = row.value.trim();
-  const unit = row.unit?.trim();
-  if (unit && value && !valueHasUnit(value, unit)) value = `${value} ${unit}`;
-  if (!label) return value;
-  return `${label} ${value}`.trim();
+function offerHeading(line: StructureLine, includesVat: boolean, business: boolean): OfferHeading | undefined {
+  if (line.quantity === 0) return undefined;
+  const invalid = lineOfferPriceInvalid(line, includesVat);
+  const quantity = formatQuantity(line.quantity);
+  const unit = line.unit?.trim() ?? '';
+  const heading: OfferHeading = {
+    quantityLabel: [quantity, unit].filter((part) => part.length > 0).join(' '),
+    price: invalid ? '' : formatOfferMoney(lineTotalVat0(line), includesVat, line.vatPercent),
+  };
+  if (business) heading.vatLabel = `Alv ${formatPercent(includesVat ? line.vatPercent : 0)}`;
+  return heading;
 }
 
 function offerPrintRows(
@@ -217,27 +217,31 @@ export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
 }
 
 export function buildOfferSections(source: OfferDocumentSource): OfferSection[] {
-  const reverseVat = Boolean(customerFromRecord(source.record).reverseVat);
+  const customer = customerFromRecord(source.record);
+  const includesVat = customerSeesVatInclusive(customer);
+  const business = customer.customerType === 'business';
+  const reverseVat = Boolean(customer.reverseVat);
   const sections: OfferSection[] = [];
   for (const line of ensureStructureLines(source.record)) {
+    const heading = offerHeading(line, includesVat, business);
+    if (isManualOfferLine(line, source.structures)) {
+      const description = line.additionalInfo?.trim() || undefined;
+      if (!heading && !description) continue;
+      sections.push({ title: line.name, heading, description, textGroups: [], tableRows: [] });
+      continue;
+    }
     const structure = matchingStructure(line, source.structures);
-    if (!hasOfferForm(structure) || isManualOfferLine(line, source.structures)) continue;
-    const grouped = groupPrintRows(offerPrintRows(line, structure, source, reverseVat));
-    const notes = grouped.muuta.map(phrase).filter((item) => item.length > 0);
+    if (!hasOfferForm(structure)) continue;
+    const body = buildPrintedBody(offerPrintRows(line, structure, source, reverseVat));
     const extra = source.offerStructureSettings[line.structureId]?.additionalInfoText?.trim() ?? '';
-    if (extra) notes.push(extra);
-    const areas = grouped.osa_alueet.map(phrase).filter((item) => item.length > 0);
+    if (extra) appendPrintedText(body, 'muuta', extra);
     const days = resolveDisplayedWorkDurationDays(line, source.settings.weatherReserveFactor);
-    const section: OfferSection = {
-      title: line.name,
-      phases: grouped.tyovaiheet.map(phrase).filter((item) => item.length > 0),
-      notes,
-      facts: grouped.tieto.map(tietoLine).filter((item) => item.length > 0),
-      paints: grouped.maali.map((row) => row.value.trim()).filter((item) => item.length > 0),
-    };
-    if (areas.length > 0) section.areas = `Osa-alueet: ${areas.join(', ')}`;
-    if (days != null && days > 0) section.workDuration = formatOfferWorkDuration(days);
-    sections.push(section);
+    if (days != null && days > 0) {
+      const unit = days === 1 ? 'työpäivä' : 'työpäivää';
+      body.tableRows.push({ label: 'Työn arvioitu kesto', value: `${days} ${unit}` });
+    }
+    if (!heading && body.textGroups.length === 0 && body.tableRows.length === 0) continue;
+    sections.push({ title: line.name, heading, textGroups: body.textGroups, tableRows: body.tableRows });
   }
   return sections;
 }
@@ -293,6 +297,21 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
     grossUsed += gross;
     return { vatPercent: rate, net, vat: roundToCents(gross - net), gross };
   });
+}
+
+/**
+ * Allekirjoituslohkon osapuolet. Ei uusia kenttiä: myyjän nimi ja yrityksen nimi
+ * tulevat samoista yritystiedoista kuin Myyjä-lohko. Titteliä ei ole asetuksissa, joten sitä ei tulosteta.
+ * Puhelin ja sähköposti jäävät Myyjä-lohkoon.
+ */
+export function offerSignatureParties(company: CompanyProfile, customerName: string | undefined): {
+  sellerLines: string[];
+  customerName: string;
+} {
+  const sellerLines = [company.sellerName, company.companyName]
+    .map((line) => (typeof line === 'string' ? line.trim() : ''))
+    .filter((line) => line.length > 0);
+  return { sellerLines, customerName: customerName?.trim() ?? '' };
 }
 
 /** Myyjän nimi, puhelin ja sähköposti. Oma numero/sähköposti voittaa yrityksen. Tyhjä lista = lohko pois. */

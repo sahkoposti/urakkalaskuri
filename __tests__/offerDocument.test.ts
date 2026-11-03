@@ -234,18 +234,16 @@ describe('offer rows and sections', () => {
     expect(rows[0].description).toBeUndefined();
 
     const html = renderTarjousHtml(buildPdfContext(source));
-    expect(html).toContain('A-hinta (sis. alv)');
-    expect(html).toContain('>Nimike</th>');
-    expect(html).toContain('>Määrä</th>');
-    expect(html).toContain('>Yks.</th>');
-    expect(html).toContain('>Alv-%</th>');
-    expect(html).toContain('>Yht.</th>');
+    expect(html).not.toContain('class="offer-rows"');
+    expect(html).not.toContain('A-hinta');
     expect(html).not.toContain('>Ale %</th>');
-    expect(html).toContain('class="offer-desc"');
+    expect(html).toContain('class="offer-line-price"');
+    expect(html).toContain('class="doc-desc"');
+    expect(html).not.toContain('Alv 0 %');
     expect((html.match(/Toimitusajankohta/g) ?? []).length).toBe(1);
     const deliveryAt = html.indexOf('Toimitusajankohta');
-    expect(deliveryAt).toBeGreaterThan(html.indexOf('class="offer-rows"'));
-    expect(deliveryAt).toBeLessThan(html.indexOf('class="offer-section"'));
+    expect(deliveryAt).toBeGreaterThan(-1);
+    expect(deliveryAt).toBeLessThan(html.indexOf('class="doc-section offer-section"'));
   });
 
   it('uses alv 0 % prices for a business customer and shows Ale % only when a line has a discount', () => {
@@ -254,53 +252,81 @@ describe('offer rows and sections', () => {
     expect(business[0].total).toBe(money(lineTotalVat0(eaves), 25.5, false));
     expect(business.every((row) => row.vatPercent === formatPercent(0))).toBe(true);
     const html = renderTarjousHtml(buildPdfContext(groupedInput([eaves, chimney, hoist], { customerType: 'business', reverseVat: true })));
-    expect(html).toContain('A-hinta (alv 0 %)');
+    expect(html).toContain('Alv 0 %');
     expect(html).not.toContain('A-hinta (sis. alv)');
+    expect(html).not.toContain('class="offer-rows"');
 
     const discounted = buildOfferRows(groupedInput([{ ...chimney, discountPercent: 10 }, eaves]));
     expect(discounted.map((row) => row.discountPercent)).toEqual([formatPercent(10), formatPercent(0)]);
-    expect(renderTarjousHtml(buildPdfContext(groupedInput([{ ...chimney, discountPercent: 10 }])))).toContain('>Ale %</th>');
+    const discountedLine = { ...chimney, discountPercent: 10 };
+    const discountedHtml = renderTarjousHtml(buildPdfContext(groupedInput([discountedLine])));
+    expect(discountedHtml).not.toContain('>Ale %</th>');
+    expect(discountedHtml).toContain(money(lineTotalVat0(discountedLine), 25.5, true));
+    expect(discountedHtml).not.toContain(money(lineTotalVat0(chimney), 25.5, true));
   });
 
-  it('gives each structure its own grouped section and leaves the manual row without one', () => {
+  it('gives each priced line its own heading and keeps groups as separate rows', () => {
     const sections = buildOfferSections(source);
     expect(sections.map((section) => section.title)).toEqual([
       'Räystäänalusten maalaus',
       'Savupiipun kyljen maalaus',
+      'Nosturivuokra',
     ]);
-    expect(sections[0].areas).toBe('Osa-alueet: Räystäät, Otsalaudat');
-    expect(sections[0].phases).toEqual(['Pohjamaalaus', 'Valmiiksimaalaus']);
-    expect(sections[0].notes).toEqual(['Kaksi kerrosta.', 'Rivi 1\nRivi <2>']);
-    expect(sections[0].facts).toEqual(['Pelkkä arvo <b>', 'Korkeus 99,0 m']);
-    expect(sections[0].paints).toEqual(['Testimaali Sininen']);
-    expect(sections[0].workDuration).toBe('Työn arvioitu kesto 4 työpäivää');
+    expect(sections[0].textGroups).toEqual([
+      { group: 'osa_alueet', title: 'Osa-alueet', items: ['Räystäät', 'Otsalaudat'] },
+      { group: 'tyovaiheet', title: 'Työvaiheet', items: ['Pohjamaalaus', 'Valmiiksimaalaus'] },
+      { group: 'muuta', title: 'Muuta', items: ['Kaksi kerrosta.', 'Rivi 1\nRivi <2>'] },
+    ]);
+    expect(sections[0].tableRows).toEqual([
+      { label: '', value: 'Pelkkä arvo <b>' },
+      { label: 'Korkeus', value: '99 m' },
+      { label: 'Maali', value: 'Testimaali Sininen' },
+      { label: 'Työn arvioitu kesto', value: '4 työpäivää' },
+    ]);
+    expect(sections[0].heading?.quantityLabel).toBe('12 m');
+    expect(sections[0].heading?.vatLabel).toBeUndefined();
     expect(offerDocumentProblems(source.record)).toEqual([]);
     expect(JSON.stringify(sections)).not.toContain('8,5');
-    expect(sections[1]).toMatchObject({
-      areas: 'Osa-alueet: Piippu',
-      phases: ['Pohjatyö'],
-      facts: ['Leveys 40 cm'],
-      notes: ['Nokihormi kuvitteellinen.'],
-      paints: [],
-      workDuration: 'Työn arvioitu kesto 2 työpäivää',
-    });
+    expect(sections[1].textGroups).toEqual([
+      { group: 'osa_alueet', title: 'Osa-alueet', items: ['Piippu'] },
+      { group: 'tyovaiheet', title: 'Työvaiheet', items: ['Pohjatyö'] },
+      { group: 'muuta', title: 'Muuta', items: ['Nokihormi kuvitteellinen.'] },
+    ]);
+    expect(sections[1].tableRows).toEqual([
+      { label: 'Leveys', value: '40 cm' },
+      { label: 'Työn arvioitu kesto', value: '2 työpäivää' },
+    ]);
+    expect(sections[2].description).toBe('Henkilönostin kuvitteelliselle pihalle.');
+    expect(sections[2].textGroups).toEqual([]);
+    expect(sections[2].tableRows).toEqual([]);
+    expect(sections[2].heading?.quantityLabel).toBe('1 erä');
 
     const html = renderTarjousHtml(buildPdfContext(source));
-    expect(html).toContain('Osa-alueet: Räystäät, Otsalaudat');
-    expect(html).toContain('<li>Pohjamaalaus</li>');
+    expect(html).toContain('class="doc-group doc-group-osa_alueet"');
+    expect(html).toContain('class="doc-line">Räystäät</p>');
+    expect(html).toContain('class="doc-line">Otsalaudat</p>');
+    expect(html).not.toContain('Osa-alueet: Räystäät, Otsalaudat');
+    expect(html).toContain('class="doc-line">Pohjamaalaus</p>');
     expect(html).toContain('Pelkkä arvo &lt;b&gt;');
     expect(html).not.toContain('Pelkkä arvo <b>');
-    expect(html).toContain('Rivi 1<br />Rivi &lt;2&gt;');
+    expect(html).toContain('class="doc-line">Rivi 1</p>');
+    expect(html).toContain('class="doc-line">Rivi &lt;2&gt;</p>');
     expect(html).toContain('Testimaali Sininen');
+    expect(html).toContain('>99 m<');
+    expect(html).not.toContain('99,0');
     expect(html).not.toContain('8,5');
-    expect((html.match(/class="offer-section"/g) ?? []).length).toBe(2);
+    expect((html.match(/class="doc-section offer-section"/g) ?? []).length).toBe(3);
   });
 
   it('uses the singular työpäivä for exactly one day and the plural otherwise', () => {
     const one = buildOfferSections(groupedInput([{ ...eaves, displayWorkDurationDays: 1 }]));
-    expect(one[0].workDuration).toBe('Työn arvioitu kesto 1 työpäivä');
+    expect(one[0].tableRows).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: 'Työn arvioitu kesto', value: '1 työpäivä' })]),
+    );
     const several = buildOfferSections(groupedInput([{ ...eaves, displayWorkDurationDays: 3 }]));
-    expect(several[0].workDuration).toBe('Työn arvioitu kesto 3 työpäivää');
+    expect(several[0].tableRows).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: 'Työn arvioitu kesto', value: '3 työpäivää' })]),
+    );
   });
 
   it('omits a zero quantity row and keeps saved totals', () => {
@@ -362,7 +388,13 @@ describe('offer rows and sections', () => {
       additionalInfo: 'Vain kuvaus.',
     };
     const built = groupedInput([orphan]);
-    expect(buildOfferSections(built)).toEqual([]);
+    expect(buildOfferSections(built)[0]).toMatchObject({
+      title: 'Irtonainen rivi',
+      description: 'Vain kuvaus.',
+      textGroups: [],
+      tableRows: [],
+    });
+    expect(buildOfferSections(built)[0].heading?.quantityLabel).toBe('1 erä');
     expect(buildOfferRows(built)[0].description).toBe('Vain kuvaus.');
   });
 });
@@ -385,16 +417,13 @@ describe('offer print defaults', () => {
     expect(grouped.muuta).toEqual([]);
     expect(grouped.maali).toEqual([]);
     expect(grouped.tieto.length).toBeGreaterThan(0);
-    expect(sections[0].facts).toEqual(
-      grouped.tieto.map((row) => {
-        const label = row.label.trim();
-        const value = row.value.trim();
-        return label ? `${label} ${value}` : value;
-      }),
+    expect(sections[0].tableRows.filter((row) => row.label !== 'Työn arvioitu kesto').map((row) => row.label)).toEqual(
+      grouped.tieto.map((row) => row.label.trim()),
     );
-    expect(sections[0].facts.some((fact) => fact.includes('Kiinteä seinäpinta-ala') && fact.includes('120,0'))).toBe(true);
-    expect(sections[0].facts.some((fact) => fact.includes('Paneeli'))).toBe(true);
-    expect(sections[0].facts.some((fact) => fact.includes('€'))).toBe(false);
+    expect(sections[0].tableRows.some((row) => row.label.includes('Kiinteä seinäpinta-ala') && row.value.includes('120 m'))).toBe(true);
+    expect(sections[0].tableRows.some((row) => row.value.includes('120,0'))).toBe(false);
+    expect(sections[0].tableRows.some((row) => row.value.includes('Paneeli'))).toBe(true);
+    expect(sections[0].tableRows.some((row) => row.value.includes('€'))).toBe(false);
   });
 
   it('print: {} prints no field rows', () => {
@@ -415,12 +444,9 @@ describe('offer print defaults', () => {
       }),
     );
     expect(sections).toHaveLength(1);
-    expect(sections[0].areas).toBeUndefined();
-    expect(sections[0].phases).toEqual([]);
-    expect(sections[0].notes).toEqual([]);
-    expect(sections[0].facts).toEqual([]);
-    expect(sections[0].paints).toEqual([]);
-    expect(sections[0].workDuration).toBeUndefined();
+    expect(sections[0].textGroups).toEqual([]);
+    expect(sections[0].tableRows).toEqual([]);
+    expect(sections[0].heading?.price).toBeTruthy();
   });
 });
 
@@ -619,13 +645,14 @@ describe('renderTarjousHtml offer order', () => {
       ),
     );
     const at = (needle: string) => html.indexOf(needle);
-    expect(at('class="offer-rows"')).toBeGreaterThan(-1);
-    expect(at('class="offer-section"')).toBeGreaterThan(at('class="offer-rows"'));
-    expect(at('class="price-block"')).toBeGreaterThan(at('class="offer-section"'));
+    expect(at('class="offer-rows"')).toBe(-1);
+    expect(at('class="doc-section offer-section"')).toBeGreaterThan(-1);
+    expect(at('class="price-block"')).toBeGreaterThan(at('class="doc-section offer-section"'));
     expect(at('class="offer-vat"')).toBeGreaterThan(at('class="price-block"'));
     expect(at('Lisätiedot:')).toBeGreaterThan(at('class="offer-vat"'));
     expect(at('class="offer-seller"')).toBeGreaterThan(at('Lisätiedot:'));
-    expect(at('class="ktv-page')).toBeGreaterThan(at('class="offer-seller"'));
+    expect(at('class="offer-sign"')).toBeGreaterThan(at('class="offer-seller"'));
+    expect(at('class="ktv-page')).toBeGreaterThan(at('class="offer-sign"'));
     const forbidden = ['k', 'hv'].join('');
     expect(html.toLowerCase()).not.toContain(forbidden);
   });

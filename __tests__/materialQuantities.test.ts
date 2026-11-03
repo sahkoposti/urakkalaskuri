@@ -418,7 +418,8 @@ describe('urakkakortti material table', () => {
     const source = ukInput(rec, { structures: [paintStructure], products: [vinha] });
     const ctx = buildUrakkakorttiContext(source);
     expect(ctx.materials).toEqual(urakkakorttiMaterials(rec));
-    expect(ctx.sections[0].paints).toContain('Tikkurila Vinha 49 litraa');
+    expect(ctx.sections[0].tableRows.map((row) => row.value)).toContain('Tikkurila Vinha');
+    expect(ctx.sections[0].tableRows.map((row) => row.value).join(' ')).not.toContain('49');
     expect(bodyOf(renderUrakkakorttiHtml(ctx))).toContain('<td>Maali X</td><td class="value">18,5</td><td>l</td>');
   });
 
@@ -432,9 +433,9 @@ describe('urakkakortti material table', () => {
   test('saved rows are the only quantity: the maali line drops the quantityKey amount', () => {
     const rec = record({}, { structureLines: [paintLine({ materialQuantities: [formRow(49)] })] });
     const ctx = buildUrakkakorttiContext(ukInput(rec, { structures: [paintStructure], products: [vinha] }));
-    expect(ctx.sections[0].paints).toEqual(['Tikkurila Vinha']);
+    expect(ctx.sections[0].tableRows.map((row) => row.value)).toEqual(['Tikkurila Vinha']);
     expect(ctx.materials).toEqual([{ product: 'Tikkurila Vinha', quantity: '49', unit: 'litraa' }]);
-    expect(ctx.sections[0].paints.join(' ')).not.toContain('€');
+    expect(ctx.sections[0].tableRows.map((row) => row.value).join(' ')).not.toContain('€');
   });
 
   test('a euro row is left out of the table', () => {

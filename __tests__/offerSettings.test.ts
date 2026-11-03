@@ -39,6 +39,7 @@ describe('offer company settings', () => {
       ktv: { ratePercent: 35, deductibleEur: 100, capEur: 1600 },
       ktvFootnoteText: 'Oma huomautus',
       additionalInfoText: '',
+      sivukulukerroin: 1.5,
     });
   });
 

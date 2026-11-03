@@ -109,6 +109,17 @@ export interface FormSnapshot {
    * (ei lomakepohjan JSON:ia, ei skeemamuutosta). Puuttuva avain = 1. Vanha sovellus ohittaa avaimen.
    */
   ktvPersons?: number;
+  /**
+   * Urakkakortin tila. Valinnainen avain samassa `form_snapshot`-JSON:ssa.
+   * Puuttuva avain = `alihankkija`. Ei lomakepohjan avain eikä SQL-migraatio.
+   */
+  urakkakorttiMode?: 'alihankkija' | 'tyontekija';
+  /**
+   * Urakkakortin Huomioitavaa-teksti. Valinnainen avain samassa `form_snapshot`-JSON:ssa.
+   * Puuttuva avain = esitäyttö asiakkaan lisätiedoista (`customer`-JSON:n `notes`).
+   * Tyhjä merkkijono = osiota ei tulosteta. Ei kuulu tarjoukseen.
+   */
+  urakkakorttiHuomioitavaa?: string;
 }
 
 export interface CalculationRecord {

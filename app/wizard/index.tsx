@@ -40,7 +40,7 @@ import {
   mergeStructureLineMaterials,
 } from '@/src/core/materials/materialQuantities';
 import { createId } from '@/src/core/utils/id';
-import { preserveKtvPersons } from '@/src/core/pdf/ktvPersons';
+import { preserveCalculationSnapshot } from '@/src/core/pdf/urakkakorttiCard';
 import { buildCalculationRecordFromComposer } from '@/src/core/wizard/buildCalculationRecord';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
 import {
@@ -565,7 +565,7 @@ export default function CalculationComposerScreen() {
       const createdAt = originalCreatedAtRef.current ?? originalCreatedAt ?? new Date();
       bindExistingCalculation(savedId, createdAt, editFormVersion);
       const previous = await db.getCalculation(savedId);
-      const record = preserveKtvPersons(
+      const record = preserveCalculationSnapshot(
         buildCalculationRecordFromComposer({
           id: savedId,
           customer: info,

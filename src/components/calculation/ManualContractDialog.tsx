@@ -14,7 +14,7 @@ type ManualContractDialogProps = {
   onCancel: () => void;
 };
 
-/** Urakkakortti: kysyy tekijöiden urakan (alv0) riveille, joilla lomaketta ei käytetty. */
+/** Urakkakortti: kysyy urakan (alv0) riveille, joilla lomaketta ei käytetty. */
 export function ManualContractDialog({ visible, lines, onSubmit, onCancel }: ManualContractDialogProps) {
   const styles = useThemedStyles(createStyles);
   const [inputs, setInputs] = useState<Record<string, string>>({});
@@ -41,7 +41,7 @@ export function ManualContractDialog({ visible, lines, onSubmit, onCancel }: Man
       <View style={styles.backdrop}>
         <Pressable style={styles.backdropPressable} onPress={onCancel} />
         <View style={styles.dialog}>
-          <Text style={styles.title}>Tekijöiden urakka</Text>
+          <Text style={styles.title}>Urakka</Text>
           <View style={styles.underline} />
           <Text style={styles.message}>
             Urakka puuttuu (lomaketta ei käytetty). Kirjaa urakka (alv0): se tallennetaan laskelman urakaksi ja kate lasketaan uudelleen. Urakkaa voi muokata myöhemmin rivikortilla.

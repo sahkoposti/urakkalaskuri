@@ -71,8 +71,7 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   .price-block td { padding: 0.8mm 0; }
   .price-block td.value { text-align: right; white-space: nowrap; }
   .price-block tr.emphasis td { font-weight: 700; font-size: 12.5pt; border-top: 2px solid ${accent}; padding-top: 1.5mm; }
-  .additional-info { page-break-inside: avoid; break-inside: avoid; }
-  .additional-info h3 { margin: 0 0 1.5mm 0; font-size: 11pt; }
+  .additional-info h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
   .page-break { page-break-before: always; break-before: page; }
   .ktv-title { margin: 0 0 4mm 0; font-size: 14pt; }
   .ktv-page .price-block { max-width: 150mm; }
@@ -83,23 +82,19 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
 
 /** Tarjouksen rivitaulukko ja osiot. Liitetään vain tarjous-HTML:ään, ei urakkakorttiin. */
 export const offerDocumentCss = `
-  .offer-rows { width: 100%; border-collapse: collapse; margin: 0 0 3mm 0; font-size: 10pt; }
-  .offer-rows th { text-align: left; font-weight: 700; font-size: 9pt; border-bottom: 1px solid #000; padding: 1mm 1.5mm 1mm 0; }
-  .offer-rows td { padding: 1mm 1.5mm 1mm 0; vertical-align: top; }
-  .offer-rows th.num, .offer-rows td.num { text-align: right; white-space: nowrap; }
-  .offer-rows tbody.offer-line, .offer-rows tr { break-inside: avoid; page-break-inside: avoid; }
-  .offer-rows tr.offer-desc td { font-size: 9pt; color: #333; padding-bottom: 2mm; }
   .offer-delivery { margin: 1mm 0 4mm 0; }
-  .offer-section { margin: 0 0 5mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-section h2 { margin: 3mm 0 1.5mm 0; font-size: 12pt; }
-  .offer-section p { margin: 0 0 1.5mm 0; }
-  .offer-section ul { margin: 0 0 2mm 4mm; padding: 0; }
-  .offer-section li { margin: 0; }
   .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
   .offer-vat th, .offer-vat td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
   .offer-vat th.num, .offer-vat td.num { text-align: right; white-space: nowrap; }
   .offer-vat th { border-bottom: 1px solid #000; font-size: 9pt; }
-  .offer-seller { margin: 4mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; }
+  .offer-seller { margin: 4mm 0; }
+  .offer-seller h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
+  .offer-sign { display: flex; gap: 12mm; margin: 8mm 0 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign-col { flex: 1; break-inside: avoid; page-break-inside: avoid; }
+  .offer-sign-role { margin: 0 0 1.5mm 0; font-weight: 700; }
+  .offer-sign-detail { margin: 0 0 1mm 0; }
+  .offer-sign-label { margin: 3mm 0 0 0; }
+  .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
   .ktv-rate-sentence { margin: 0 0 3mm 0; }
 `;

@@ -7,7 +7,9 @@ import { db } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import {
   defaultOfferCompanySettings,
+  formatSivukulukerroin,
   normalizeOfferCompanySettings,
+  sivukulukerroinDraftError,
 } from '@/src/core/pdf/defaultOfferSettings';
 import { offerNumberStartWarning } from '@/src/core/pdf/offerNumber';
 import { syncOfferPages, toOfferPageInclusions } from '@/src/core/pdf/syncOfferPages';
@@ -26,6 +28,7 @@ type CompanyDraft = {
   ktvCapEur: string;
   ktvFootnoteText: string;
   additionalInfoText: string;
+  sivukulukerroin: string;
 };
 
 function toDraft(s: OfferCompanySettings): CompanyDraft {
@@ -38,6 +41,7 @@ function toDraft(s: OfferCompanySettings): CompanyDraft {
     ktvCapEur: n(s.ktv.capEur),
     ktvFootnoteText: s.ktvFootnoteText,
     additionalInfoText: s.additionalInfoText,
+    sivukulukerroin: formatSivukulukerroin(s.sivukulukerroin),
   };
 }
 
@@ -48,6 +52,7 @@ function fromDraft(d: CompanyDraft): OfferCompanySettings {
     ktv: { ratePercent: d.ktvRatePercent, deductibleEur: d.ktvDeductibleEur, capEur: d.ktvCapEur },
     ktvFootnoteText: d.ktvFootnoteText.trim(),
     additionalInfoText: d.additionalInfoText,
+    sivukulukerroin: d.sivukulukerroin,
   });
 }
 
@@ -105,6 +110,11 @@ export default function OfferSettingsScreen() {
   );
 
   async function persist(): Promise<boolean> {
+    const factorError = sivukulukerroinDraftError(company.sivukulukerroin);
+    if (factorError) {
+      showAlert('Tarkista sivukulukerroin', factorError);
+      return false;
+    }
     try {
       const companySettings = fromDraft(company);
       await db.saveOfferCompanySettings(companySettings);
@@ -178,6 +188,20 @@ export default function OfferSettingsScreen() {
         />
         <Text style={styles.note}>
           Tulostuu tarjouksen Lisätiedot-osioon sellaisenaan (esim. maksuehto, takuu).
+        </Text>
+        <AppInput
+          label="Sivukulukerroin"
+          value={company.sivukulukerroin}
+          onChangeText={setField('sivukulukerroin')}
+          keyboardType="decimal-pad"
+          placeholder="1,5"
+        />
+        {sivukulukerroinDraftError(company.sivukulukerroin) ? (
+          <Text style={styles.note}>{sivukulukerroinDraftError(company.sivukulukerroin)}</Text>
+        ) : null}
+        <Text style={styles.note}>
+          Urakkakortin Työntekijä-tila jakaa urakan tällä. Arvoa ei tulosteta kortille. Tyhjä = 1,5. Sallittu
+          alue on suurempi kuin 1 ja enintään 3.
         </Text>
 
         <Text style={styles.sectionLabel}>Kotitalousvähennys (vain yksityisasiakas)</Text>

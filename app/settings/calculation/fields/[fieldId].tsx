@@ -41,17 +41,19 @@ import {
   legacyToExplicitState,
   printWhenOptions,
   quantityKeyOptions,
+  esitysAfterGroupChange,
   readPrintEditorState,
   stateForTypeChange,
   type PrintEditorState,
   type TargetEditorState,
 } from '@/src/core/form/printEditorState';
+import { defaultEsitys } from '@/src/core/form/printSettings';
 import { MATERIALS_CONTEXT_KEY } from '@/src/core/form/systemFields';
 import { isProductField } from '@/src/core/form/productFieldUtils';
 import { isFieldEffectComplete } from '@/src/core/form/fieldEffects';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { isSystemField, isSystemFieldHiddenFromUi, restoreSystemField } from '@/src/core/form/systemFields';
-import type { FieldType, FormDefinition, FormField, PrintGroup, PrintWhen } from '@/src/core/form/types';
+import type { FieldType, FormDefinition, FormField, PrintEsitys, PrintGroup, PrintWhen } from '@/src/core/form/types';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import { useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
@@ -845,6 +847,9 @@ function PrintSettingsEditor({
       if (patch.quantityKey === undefined && Object.prototype.hasOwnProperty.call(patch, 'quantityKey')) {
         delete next.quantityKey;
       }
+      if (patch.esitys === undefined && Object.prototype.hasOwnProperty.call(patch, 'esitys')) {
+        delete next.esitys;
+      }
       return { ...base, [target]: next };
     });
   }
@@ -872,6 +877,7 @@ function PrintSettingsEditor({
             const group = value as PrintGroup;
             patchTarget(target, {
               group,
+              esitys: esitysAfterGroupChange(settings.esitys, settings.group, group),
               quantityKey: group === 'maali' ? settings.quantityKey : undefined,
             });
           }}
@@ -950,6 +956,36 @@ function PrintSettingsEditor({
         />
       </View>
       {!cardAllowed ? <Text style={styles.printNote}>€-rivejä ei tulosteta urakkakortille.</Text> : null}
+      {offerOn && editorState.offer ? (
+        <AppPicker
+          label="Tarjouksen esitys"
+          selectedValue={editorState.offer.esitys ?? defaultEsitys(editorState.offer.group)}
+          onValueChange={(value) => {
+            const esitys = value as PrintEsitys;
+            const group = editorState.offer?.group ?? 'tieto';
+            patchTarget('offer', { esitys: esitys === defaultEsitys(group) ? undefined : esitys });
+          }}
+          items={[
+            { value: 'teksti', label: 'Teksti' },
+            { value: 'taulukko', label: 'Taulukko' },
+          ]}
+        />
+      ) : null}
+      {cardOn && editorState.urakkakortti ? (
+        <AppPicker
+          label="Urakkakortin esitys"
+          selectedValue={editorState.urakkakortti.esitys ?? defaultEsitys(editorState.urakkakortti.group)}
+          onValueChange={(value) => {
+            const esitys = value as PrintEsitys;
+            const group = editorState.urakkakortti?.group ?? 'tieto';
+            patchTarget('urakkakortti', { esitys: esitys === defaultEsitys(group) ? undefined : esitys });
+          }}
+          items={[
+            { value: 'teksti', label: 'Teksti' },
+            { value: 'taulukko', label: 'Taulukko' },
+          ]}
+        />
+      ) : null}
 
       {anyOn ? (
         <>

@@ -213,7 +213,12 @@ describe('resolveTargetPrint defaults', () => {
     const form = formOf(boolField, numberField);
     const expectDefaults = (type: FormField['type'], when: ResolvedPrint['when']) => {
       const item = field({ id: type, key: type, type, print: { offer: true } });
-      expect(resolveTargetPrint(item, 'offer', formOf(item))).toEqual({ when, group: 'tieto', legacy: false });
+      expect(resolveTargetPrint(item, 'offer', formOf(item))).toEqual({
+        when,
+        group: 'tieto',
+        esitys: 'taulukko',
+        legacy: false,
+      });
     };
     expectDefaults('boolean', 'ifYes');
     expectDefaults('number', 'notEmpty');
@@ -254,8 +259,18 @@ describe('resolveTargetPrint defaults', () => {
       { id: 'p1', title: 'Sivu', sortOrder: 1, fieldIds: ['b', 'e', 'sec', 'sys', 'h'] },
     ];
 
-    expect(resolveTargetPrint(flag, 'offer', form)).toEqual({ when: 'ifYes', group: 'tieto', legacy: true });
-    expect(resolveTargetPrint(flag, 'urakkakortti', form)).toEqual({ when: 'always', group: 'tieto', legacy: true });
+    expect(resolveTargetPrint(flag, 'offer', form)).toEqual({
+      when: 'ifYes',
+      group: 'tieto',
+      esitys: 'taulukko',
+      legacy: true,
+    });
+    expect(resolveTargetPrint(flag, 'urakkakortti', form)).toEqual({
+      when: 'always',
+      group: 'tieto',
+      esitys: 'taulukko',
+      legacy: true,
+    });
     expect(resolveTargetPrint(euro, 'offer', form)).toBeNull();
     expect(resolveTargetPrint(euro, 'urakkakortti', form)).toBeNull();
     expect(resolveTargetPrint(section, 'offer', form)).toBeNull();
@@ -264,7 +279,12 @@ describe('resolveTargetPrint defaults', () => {
     expect(resolveTargetPrint({ ...system, print: { urakkakortti: true } }, 'urakkakortti', form)).toBeNull();
     expect(resolveTargetPrint(hidden, 'offer', form)).toBeNull();
     expect(resolveTargetPrint(note, 'urakkakortti', form)).toBeNull();
-    expect(resolveTargetPrint(note, 'offer', form)).toEqual({ when: 'notEmpty', group: 'tieto', legacy: true });
+    expect(resolveTargetPrint(note, 'offer', form)).toEqual({
+      when: 'notEmpty',
+      group: 'tieto',
+      esitys: 'taulukko',
+      legacy: true,
+    });
   });
 });
 

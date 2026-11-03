@@ -6,7 +6,7 @@
  * RAKENNEKOHTAISET (`offer_settings:<structureId>`, ei lomakepohjan JSON:ssa):
  * lisäteksti tulostuu sen rakenteen osioon (Muuta). `offerPages` säilyy tallessa;
  * tarjous ei lue sivukytkimiä.
- * Lomakepohjan JSON-muoto ei muutu (kentän `print` on P1).
+ * Kentän `print.offer.esitys` ja `print.urakkakortti.esitys` ovat lomakepohjan JSON-avaimia.
  */
 
 export interface OfferPageInclusion {
@@ -35,6 +35,11 @@ export interface OfferCompanySettings {
   ktvFootnoteText: string;
   /** Lisätiedot-osio kaikille tarjouksille. Tyhjä = osio pois. Tulostetaan sellaisenaan. */
   additionalInfoText: string;
+  /**
+   * Urakkakortin Työntekijä-tilan jakaja. Oletus 1,5. Ei näy kortilla.
+   * Kelvollinen arvo on suurempi kuin 1 ja enintään 3.
+   */
+  sivukulukerroin: number;
 }
 
 /** Rakennekohtaiset tarjousasetukset (settings-avain `offer_settings:<structureId>`). */

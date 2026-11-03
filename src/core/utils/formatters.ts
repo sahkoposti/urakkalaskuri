@@ -33,6 +33,31 @@ export function formatDebugDecimal(value: number): string {
   return debugDecimalFormatter.format(value);
 }
 
+/**
+ * Tulosteen määrä ilman tuhaterotinta.
+ * Kokonaisluku ilman desimaaleja (`12`, `100000`). Muu luku enintään kahdella desimaalilla (`2,5`, `2,50` ei synny tästä).
+ */
+export function formatPrintedQuantity(value: number): string {
+  if (!Number.isFinite(value)) return '';
+  const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
+  const sign = rounded < 0 ? '-' : '';
+  const [intPart, fracPart] = Math.abs(rounded).toFixed(2).split('.');
+  const decimals = fracPart.replace(/0+$/, '');
+  return decimals ? `${sign}${intPart},${decimals}` : `${sign}${intPart}`;
+}
+
+/**
+ * Poistaa tulostetusta tekstistä desimaaliosan, jos se on pelkkiä nollia (`120,0 m²` → `120 m²`, `14,00 kpl` → `14 kpl`).
+ * `2,5` ja `2,50` säilyvät. €-merkkijonoa ei muuteta. Tuhaterotinta ei lisätä.
+ */
+export function stripTrailingZeroDecimals(text: string): string {
+  if (!text || text.includes('€')) return text;
+  return text.replace(
+    /(^|[^\d])(-?\d{1,3}(?:[ \u00a0\u202f]\d{3})*|-?\d+)[.,]0+(?!\d)/g,
+    '$1$2',
+  );
+}
+
 export function formatPercent(value: number): string {
   return `${percentFormatter.format(value)} %`;
 }

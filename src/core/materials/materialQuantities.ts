@@ -6,6 +6,7 @@ import { resolveTargetPrint } from '@/src/core/form/printSettings';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { MaterialQuantityRow, Product, StructureLine } from '@/src/core/models/types';
 import { defaultSettings } from '@/src/core/models/types';
+import { formatPrintedQuantity } from '@/src/core/utils/formatters';
 import { fieldValuesEqual } from '@/src/core/wizard/wizardDraftHelpers';
 
 /**
@@ -223,12 +224,7 @@ export function parseQuantityInput(text: string): number | null {
 
 /** fi-FI-pilkku, ilman tuhaterotinta (`49,5`, `100000`), jotta merkkijono pysyy tiukkana desimaalina. */
 export function formatQuantity(value: number): string {
-  if (!Number.isFinite(value)) return '';
-  const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
-  const sign = rounded < 0 ? '-' : '';
-  const [intPart, fracPart] = Math.abs(rounded).toFixed(2).split('.');
-  const decimals = fracPart.replace(/0+$/, '');
-  return decimals ? `${sign}${intPart},${decimals}` : `${sign}${intPart}`;
+  return formatPrintedQuantity(value);
 }
 
 export function quantityInputError(text: string): string | null {

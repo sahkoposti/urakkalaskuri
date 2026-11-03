@@ -4,7 +4,7 @@ import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelper
 import { formatFieldSummaryValue } from '@/src/core/form/formSummaryHelpers';
 import { passesPrintWhen, resolveTargetPrint } from '@/src/core/form/printSettings';
 import { isSystemField } from '@/src/core/form/systemFields';
-import type { FormDefinition, FormField, PrintGroup, PrintWhen } from '@/src/core/form/types';
+import type { FormDefinition, FormField, PrintEsitys, PrintGroup, PrintWhen } from '@/src/core/form/types';
 import type { FormSnapshot, Product } from '@/src/core/models/types';
 import { displayWorkDurationText } from '@/src/core/utils/formatters';
 
@@ -16,6 +16,7 @@ export type PrintRow = {
   unit?: string;
   group: PrintGroup;
   order: number;
+  esitys: PrintEsitys;
   quantity?: { value: string; unit?: string };
 };
 
@@ -149,6 +150,7 @@ function collectPrintableFields(input: PrintableFieldsInput): PrintRow[] {
         label: resolved.label !== undefined ? resolved.label : displayWorkDurationText(field.label),
         value,
         group: resolved.group,
+        esitys: resolved.esitys,
         order: resolved.order ?? position,
         position,
       };

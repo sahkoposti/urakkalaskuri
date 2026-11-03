@@ -27,8 +27,9 @@ describe('renderTarjousHtml', () => {
       }),
     );
     const html = renderTarjousHtml(ctx, { logoDataUri: LOGO });
-    expect(html).toContain('class="offer-rows"');
-    expect((html.match(/class="offer-section"/g) ?? []).length).toBe(2);
+    expect(html).not.toContain('class="offer-rows"');
+    expect(html).toContain('class="offer-line-heading"');
+    expect((html.match(/class="doc-section offer-section"/g) ?? []).length).toBe(2);
     expect(html).not.toContain('class="spec-grid"');
     expect(html).not.toContain('class="spec-card');
     expect(html).toContain('Hinta alv0');
@@ -44,7 +45,8 @@ describe('renderTarjousHtml', () => {
   it('business customer: only alv0, no reverse VAT text, no margin/commission', () => {
     const ctx = buildPdfContext(input(record({ customerType: 'business', reverseVat: true })));
     const html = renderTarjousHtml(ctx, { logoDataUri: LOGO });
-    expect(html).toContain('A-hinta (alv 0 %)');
+    expect(html).toContain('Alv 0 %');
+    expect(html).not.toContain('class="offer-rows"');
     const content = html.replace(/<style>[\s\S]*?<\/style>/, '');
     expect(content).not.toContain('spec-card');
     expect(content).not.toMatch(/Hinta alv<|ALV \d{2}|Käänteinen|Kate|Palkkio|margin|commission/i);
@@ -60,8 +62,8 @@ describe('renderTarjousHtml', () => {
       }),
     );
     const html = renderTarjousHtml(ctx);
-    expect(html).toContain('class="offer-rows"');
-    expect(html).toContain('class="offer-section"');
+    expect(html).not.toContain('class="offer-rows"');
+    expect(html).toContain('class="doc-section offer-section"');
     expect(html).not.toContain('class="spec-grid"');
     expect(html).not.toContain('Lisätiedot:');
     expect(html).not.toContain('<img');
