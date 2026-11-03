@@ -55,6 +55,11 @@ export type UrakkakorttiContext = {
   mode: UrakkakorttiMode;
   /** Kortin otsikko: "Urakkakortti: Alihankkija" tai "Urakkakortti: Työntekijä". */
   modeLabel: string;
+  /**
+   * Otsikon urakan summa. Sama muotoilu kuin taulukon yhteensä-rivillä.
+   * null, kun hintoja ei näytetä tai urakkarivejä ei ole.
+   */
+  contractSum: string | null;
   footer: PdfFooter;
 };
 
@@ -198,6 +203,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
       });
     }
   }
+  const contractSum = contractRows.find((row) => row.emphasis)?.value ?? contractRows[0]?.value ?? null;
   const duration =
     lines.length === 1
       ? resolveDisplayedWorkDurationDays(lines[0], settings.weatherReserveFactor)
@@ -225,6 +231,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     huomioitavaa: effectiveHuomioitavaa(record),
     mode,
     modeLabel: urakkakorttiModeLabel(mode),
+    contractSum,
     footer: buildFooter(input.company),
   };
 }

@@ -130,7 +130,7 @@ describe('urakkakortti', () => {
       expect(html).not.toMatch(/2\s510|2\s000,00|333,33|77,77|502,00/);
       const euroLines = html.split('\n').filter((l) => l.includes('€'));
       expect(euroLines.every((l) => l.includes('Urakka'))).toBe(true);
-      expect((html.match(/€/g) ?? []).length).toBe(1);
+      expect((html.match(/€/g) ?? []).length).toBe(2);
     }
   });
 
@@ -207,5 +207,28 @@ describe('urakkakortti', () => {
     expect(ctx.sections[0].textGroups.map((group) => group.group)).toEqual(['osa_alueet', 'muuta']);
     expect(ctx.sections[0].textGroups[1].items).toEqual(['Koko muuta-teksti.']);
     expect(renderUrakkakorttiHtml(ctx)).toContain('Portti auki');
+  });
+
+  it('highlights Urakan summa in the title with the same amount as the table total', () => {
+    const single = buildUrakkakorttiContext(ukInput(record({})));
+    expect(single.contractSum).toBe(single.contractRows[0].value);
+    const singleHtml = renderUrakkakorttiHtml(single);
+    expect(singleHtml).toContain('Urakan summa');
+    expect(singleHtml).toContain(`class="uk-sum-value">${single.contractSum}</span>`);
+    expect(singleHtml.indexOf('uk-title')).toBeLessThan(singleHtml.indexOf('class="price-block"'));
+
+    const lines = [line('a', 's1', 'Ulkomaalaus'), { ...line('b', 's2', 'Sokkeli'), contractPriceVat0: 450 }];
+    const multi = buildUrakkakorttiContext(ukInput(record({}, { structureLines: lines })));
+    const total = multi.contractRows.find((row) => row.emphasis);
+    expect(multi.contractSum).toBe(total?.value);
+    expect(multi.contractSum?.replace(/\s/g, ' ')).toBe('1 450,00 €');
+    expect(renderUrakkakorttiHtml(multi)).toContain(`class="uk-sum-value">${multi.contractSum}</span>`);
+
+    const hidden = buildUrakkakorttiContext(
+      ukInput(record({}, { formSnapshot: { formId: '', formVersion: 0, fields: [], urakkakorttiHidePrices: true } })),
+    );
+    expect(hidden.contractRows).toEqual([]);
+    expect(hidden.contractSum).toBeNull();
+    expect(renderUrakkakorttiHtml(hidden)).not.toContain('Urakan summa');
   });
 });
