@@ -38,6 +38,8 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 type CalculationDetailViewProps = {
   record: CalculationRecord;
   formDefinition: FormDefinition;
+  /** Näytetään, kun laskelmalla on uudempi muokkausluonnos. */
+  unsavedChangesNotice?: string | null;
   onCopy?: () => void;
   onFooterPress: () => void;
   onDeletePress?: () => void;
@@ -56,6 +58,7 @@ function lineBreakdown(line: StructureLine, reverseVat: boolean) {
 export function CalculationDetailView({
   record,
   formDefinition,
+  unsavedChangesNotice,
   onCopy,
   onFooterPress,
   onDeletePress,
@@ -98,6 +101,12 @@ export function CalculationDetailView({
         </View>
         <View style={styles.titleUnderline} />
       </View>
+
+      {unsavedChangesNotice ? (
+        <View style={styles.pendingNotice}>
+          <Text style={styles.pendingNoticeText}>{unsavedChangesNotice}</Text>
+        </View>
+      ) : null}
 
       {mismatchLine && snapshotVersion != null ? (
         <View style={styles.versionWarning}>
@@ -316,6 +325,18 @@ function createStyles(colors: AppColorPalette) {
       width: 40,
       height: 3,
       backgroundColor: colors.accent,
+    },
+    pendingNotice: {
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderRadius: 5,
+      backgroundColor: colors.surface,
+    },
+    pendingNoticeText: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 15,
+      color: colors.accent,
     },
     deleteButton: {
       padding: 4,

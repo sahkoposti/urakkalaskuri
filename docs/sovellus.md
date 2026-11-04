@@ -1,6 +1,6 @@
 # Urakkalaskuri – sovelluksen kuvaus
 
-ColoRajatonin tarjouslaskuri (Expo / React Native, Android). Pakettiversio **v1.2.5**. Laskelma = asiakas + toimitusajankohta + matka-aika yhteen suuntaan + tuoterakennerivit.
+ColoRajattoman tarjouslaskuri (Expo / React Native, Android). Pakettiversio **v1.2.12**. Laskelma = asiakas + toimitusajankohta + matka-aika yhteen suuntaan + tuoterakennerivit.
 
 Tämä sivu kuvaa **miten sovellus toimii nyt**. JSON-kentät ja kaavat: [lomakepohja-json-ohje.md](./lomakepohja-json-ohje.md). Tuoterakenteiden malli: [tuoterakenteet.md](./tuoterakenteet.md). Kehitysympäristö: [README.md](../README.md).
 

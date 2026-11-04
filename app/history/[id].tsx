@@ -1,9 +1,14 @@
-import { router, Stack, useLocalSearchParams, useNavigation } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, Stack, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 
 import { CalculationDetailView } from '@/src/components/calculation/CalculationDetailView';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { ScreenLoading, ScreenMessage } from '@/src/components/common';
+import {
+  PENDING_EDIT_NOTICE,
+  hasPendingEditDraft,
+  shouldClearDraftOnDetailClose,
+} from '@/src/core/history/detailDraftPolicy';
 import { customerFromRecord, type CalculationRecord } from '@/src/core/models/types';
 import { resetToHistoryList } from '@/src/core/navigation/appStack';
 import { db, useApp } from '@/src/context/AppContext';
@@ -24,29 +29,39 @@ export default function HistoryDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [record, setRecord] = useState<CalculationRecord | null>(null);
   const [deleteVisible, setDeleteVisible] = useState(false);
+  const loadedIdRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const loaded = await db.getCalculation(calcId);
-      if (active) {
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      if (loadedIdRef.current !== (calcId ?? null)) {
+        setLoading(true);
+      }
+      (async () => {
+        const loaded = await db.getCalculation(calcId);
+        if (!active) return;
+        loadedIdRef.current = calcId ?? null;
         setRecord(loaded);
         setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [calcId]);
+      })();
+      return () => {
+        active = false;
+      };
+    }, [calcId]),
+  );
 
   function goToHistoryList() {
     resetToHistoryList(navigation);
   }
 
   async function handleClose() {
-    const fromFinishedCalculation =
-      fromWizard || wizardDraft?.editCalculationId === calcId;
-    if (fromFinishedCalculation) {
+    if (
+      shouldClearDraftOnDetailClose({
+        fromWizard,
+        draftEditId: wizardDraft?.editCalculationId,
+        calcId,
+      })
+    ) {
       await db.clearWizardDraft();
       await refreshWizardDraft();
       goToHistoryList();
@@ -86,6 +101,9 @@ export default function HistoryDetailScreen() {
       <CalculationDetailView
         record={record}
         formDefinition={formDefinition}
+        unsavedChangesNotice={
+          hasPendingEditDraft(record, wizardDraft) ? PENDING_EDIT_NOTICE : null
+        }
         onCopy={() => showAlert('Kopioitu', 'Tieto kopioitu leikepöydälle.')}
         onFooterPress={() => {
           void handleClose();
