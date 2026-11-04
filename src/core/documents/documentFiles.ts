@@ -1,5 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
+import { documentRelativePathFromUris } from './documentStorage';
+
 /** Suhteellinen polku Paths.document-juuresta. Tietokantaan tallennetaan tämä. */
 export function documentRelativePath(calculationId: string, documentId: string): string {
   return `documents/${calculationId}/${documentId}.pdf`;
@@ -32,12 +34,6 @@ export function removeStoredPdf(relativePath: string): void {
   if (file.exists) file.delete();
 }
 
-function entryName(uri: string): string {
-  const decoded = decodeURIComponent(uri);
-  const cut = Math.max(decoded.lastIndexOf('/'), decoded.lastIndexOf(':'));
-  return decoded.slice(cut + 1);
-}
-
 /** Suhteelliset polut `documents/<laskelma>/<tiedosto>.pdf`. */
 export function listDocumentDiskPaths(): string[] {
   const root = new Directory(Paths.document, 'documents');
@@ -45,11 +41,9 @@ export function listDocumentDiskPaths(): string[] {
   const paths: string[] = [];
   for (const entry of root.list()) {
     if (typeof (entry as Directory).list !== 'function') continue;
-    const calculationId = entryName(entry.uri);
     for (const file of (entry as Directory).list()) {
-      const name = entryName(file.uri);
-      if (!name.toLowerCase().endsWith('.pdf')) continue;
-      paths.push(`documents/${calculationId}/${name}`);
+      const relative = documentRelativePathFromUris(entry.uri, file.uri);
+      if (relative) paths.push(relative);
     }
   }
   return paths;

@@ -1,4 +1,29 @@
 /**
+ * Nimi `file://`-URIsta.
+ *
+ * expo-file-system 19.0.24: hakemiston uri päättyy aina `/`-merkkiin.
+ * Android `FileSystemDirectory.asString` ja `listAsRecords` lisäävät vinoviivan
+ * (`FileSystemDirectory.kt`, myös tiedostoille listauksessa).
+ * iOS `FileSystemDirectory.validatePath` vaatii `url.hasDirectoryPath`, ja
+ * `listAsRecords` käyttää `absoluteString`-arvoa (`FileSystemDirectory.swift`).
+ * `Directory.name` käyttää `Paths.basename`-funktiota, joka ohittaa loppuvinoviivan.
+ * Pelkkä viimeinen `/` antaa tyhjän nimen.
+ */
+export function fileSystemEntryName(uri: string): string {
+  const decoded = decodeURIComponent(uri).replace(/\/+$/, '');
+  const cut = Math.max(decoded.lastIndexOf('/'), decoded.lastIndexOf(':'));
+  return decoded.slice(cut + 1);
+}
+
+/** `documents/<laskelma>/<tiedosto>.pdf` kahdesta listaus-URIsta. */
+export function documentRelativePathFromUris(folderUri: string, fileUri: string): string | null {
+  const calculationId = fileSystemEntryName(folderUri);
+  const name = fileSystemEntryName(fileUri);
+  if (!calculationId || !name.toLowerCase().endsWith('.pdf')) return null;
+  return `documents/${calculationId}/${name}`;
+}
+
+/**
  * Käynnistyksen siivous.
  * Levyllä oleva tiedosto ilman tietokantariviä poistetaan (orpo).
  * Rivi, jonka tiedosto puuttuu, jätetään paikalleen ja raportoidaan.

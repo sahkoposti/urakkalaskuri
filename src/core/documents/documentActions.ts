@@ -3,7 +3,7 @@ import { printAsync } from 'expo-print';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
 
 import { DOCUMENT_SHARE_UNAVAILABLE } from './documentLabels';
-import { shareStoredPdf } from './documentShare';
+import { shareCopyUrisToDelete, shareStoredPdf } from './documentShare';
 
 /**
  * Android: järjestelmän tulostus- ja esikatseluikkuna tallennetulle PDF:lle.
@@ -20,6 +20,22 @@ function copyStoredPdfToCache(storedUri: string, shareName: string): string {
   if (target.exists) target.delete();
   new File(storedUri).copy(target);
   return target.uri;
+}
+
+/** Poistaa Paths.cache/document-share -kansiosta kynnystä vanhemmat kopiot. */
+export function deleteExpiredShareCopies(nowMs: number = Date.now()): void {
+  const folder = new Directory(Paths.cache, 'document-share');
+  if (!folder.exists) return;
+  const files: { uri: string; modifiedAtMs: number | null }[] = [];
+  for (const entry of folder.list()) {
+    if (typeof (entry as Directory).list === 'function') continue;
+    const file = entry as File;
+    files.push({ uri: file.uri, modifiedAtMs: file.modificationTime });
+  }
+  for (const uri of shareCopyUrisToDelete(files, nowMs)) {
+    const file = new File(uri);
+    if (file.exists) file.delete();
+  }
 }
 
 /** Jakaa välimuistikopion luettavalla nimellä. Tallennettu uuid-tiedosto jää. */
