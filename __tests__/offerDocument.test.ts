@@ -732,7 +732,7 @@ describe('businessVatMode', () => {
 
   function priced(rec: ReturnType<typeof exampleRecord>) {
     const ctx = buildPdfContext(input(rec, { structures: [], offerStructureSettings: {} }));
-    const loppu = ctx.price.rows.find((row) => row.label.startsWith('Loppusumma'));
+    const loppu = ctx.price.rows.find((row) => row.emphasis);
     const headings = ctx.sections.map((section) => section.heading?.price ?? '');
     return { ctx, loppu, headings };
   }
@@ -766,12 +766,15 @@ describe('businessVatMode', () => {
     expect(headings.map(plain)).toEqual(['4 643,50 €', '1 204,80 €', '188,25 €']);
     expect(roundToCents(headings.reduce((sum, price) => sum + parseEuro(price), 0))).toBe(6036.55);
     expect(plain(loppu?.value ?? '')).toBe('6 036,55 €');
-    expect(plain(ctx.price.rows.find((row) => row.label === 'Veroton')?.value ?? '')).toBe('4 810,00 €');
+    expect(loppu?.label).toBe('Yhteensä sis. alv');
+    expect(plain(ctx.price.rows.find((row) => row.label === 'Yhteensä alv 0')?.value ?? '')).toBe('4 810,00 €');
+    expect(plain(ctx.price.rows.find((row) => row.label === 'Alv 25,5 %')?.value ?? '')).toBe('1 226,55 €');
     expect(ctx.vatSummary).toEqual([{ vatPercent: 25.5, net: 4810, vat: 1226.55, gross: 6036.55 }]);
     const html = renderTarjousHtml(ctx);
     expect(html).toContain('>Alv-%</th>');
     expect(html).toContain('>25,5 %</td>');
-    expect(html).not.toContain('sis. alv');
+    expect(html).toContain('Yhteensä sis. alv');
+    expect(html).not.toContain('class="offer-vat"');
     expect(html).not.toContain('Alv 0 %');
     expect(html).not.toContain('Kotitalousvähennys');
     expect(html).not.toContain('6 036,56');
@@ -955,7 +958,7 @@ describe('offer heading price columns', () => {
     const yht = ctx.sections.map((section) => parseEuro(section.heading?.price ?? ''));
     expect(yht.map((value) => value.toFixed(2))).toEqual(['4643.50', '1204.80', '188.25']);
     expect(roundToCents(yht.reduce((sum, value) => sum + value, 0))).toBe(6036.55);
-    expect(plain(ctx.price.rows.find((row) => row.label === 'Loppusumma')?.value ?? '')).toBe('6 036,55 €');
+    expect(plain(ctx.price.rows.find((row) => row.label === 'Yhteensä sis. alv')?.value ?? '')).toBe('6 036,55 €');
     const alv0 = record({ customerType: 'business' }, {
       structureLines: lines,
       totalPriceVat0: 4810,
@@ -991,16 +994,17 @@ describe('offer heading price columns', () => {
     );
     const ctx = buildPdfContext(input(rec, { structures: [], offerStructureSettings: {} }));
     expect(ctx.price.rows.map((row) => row.label)).toEqual([
-      'Rivit yhteensä',
+      'Yhteensä alv 0',
+      'Alv 25,5 %',
+      'Yhteensä sis. alv',
       'Alennus yhteensä 10 %',
       'Alennettu hinta yhteensä',
-      'Sisältää ALV 25,5 %',
     ]);
     const yht = roundToCents(ctx.sections.reduce((sum, section) => sum + parseEuro(section.heading?.price ?? ''), 0));
     expect(yht).toBe(5848.3);
-    expect(plain(ctx.price.rows[0].value)).toBe('5 848,30 €');
-    expect(plain(ctx.price.rows[1].value)).toBe('−584,83 €');
-    expect(plain(ctx.price.rows[2].value)).toBe('5 263,47 €');
+    expect(plain(ctx.price.rows.find((row) => row.label === 'Yhteensä sis. alv')?.value ?? '')).toBe('5 848,30 €');
+    expect(plain(ctx.price.rows.find((row) => row.label.startsWith('Alennus'))?.value ?? '')).toBe('−584,83 €');
+    expect(plain(ctx.price.rows.find((row) => row.label === 'Alennettu hinta yhteensä')?.value ?? '')).toBe('5 263,47 €');
     expect(roundToCents(5848.3 - 584.83)).toBe(5263.47);
     expect(plain(ctx.sections.map((section) => section.heading?.price ?? '').join(' '))).toBe('4 643,50 € 1 204,80 €');
   });

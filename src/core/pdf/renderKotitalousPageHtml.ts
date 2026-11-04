@@ -86,7 +86,7 @@ export function renderKotitalousPageHtml(ctx: Pick<TarjousPdfContext, 'ktv'>): s
     ? ''
     : `<p class="ktv-one-person">${escapeHtml(ktvPersonsLine(result.persons))}</p>\n`;
   return `<section class="ktv-page page-break">
-<h2 class="ktv-title">Kotitalousvähennys</h2>
+<h2 class="ktv-title">Kotitalousvähennyslaskelma (${result.persons} hlö)</h2>
 <p class="ktv-rate-sentence">${escapeHtml(ktvRateSentence(s))}</p>
 <div class="price-block"><div class="col"><table>${rows}</table></div></div>
 ${personsLine}<p class="ktv-note">${escapeMultiline(note)}</p>

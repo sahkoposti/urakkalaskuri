@@ -56,7 +56,7 @@ describe('buildPdfContext', () => {
   it('private customer: VAT-inclusive price block, no Ale row at 0 %, KTV data present', () => {
     const ctx = buildPdfContext(input(record({})));
     expect(ctx.price.includesVat).toBe(true);
-    expect(labels(ctx.price.rows)).toEqual(['Veroton', 'ALV 25,5 %', 'Loppusumma']);
+    expect(labels(ctx.price.rows)).toEqual(['Yhteensä alv 0', 'Alv 25,5 %', 'Yhteensä sis. alv']);
     expect(ctx.price.rows.at(-1)?.emphasis).toBe(true);
     expect(ctx.price.rows.map((row) => row.value.replace(/\s/g, ' '))).toEqual([
       '1 000,00 €',
@@ -142,24 +142,30 @@ describe('buildPdfContext', () => {
       ),
     );
     expect(labels(ctx.price.rows)).toEqual([
-      'Rivit yhteensä',
+      'Yhteensä alv 0',
+      'Alv 25,5 %',
+      'Yhteensä sis. alv',
       'Alennus yhteensä 10 %',
       'Alennettu hinta yhteensä',
-      'Sisältää ALV 25,5 %',
     ]);
     expect(ctx.price.rows.map((r) => r.value.replace(/\s/g, ' '))).toEqual([
+      '1 960,00 €',
+      '499,80 €',
       '2 459,80 €',
       '−245,98 €',
       '2 213,82 €',
-      '449,82 €',
     ]);
     const parseEuro = (value: string) => Number(value.replace(/\s/g, '').replace('€', '').replace(',', '.'));
     const yht = Math.round(ctx.sections.reduce((sum, section) => sum + parseEuro(section.heading?.price ?? ''), 0) * 100) / 100;
     expect(yht).toBe(2459.8);
     expect(ctx.sections.map((section) => section.heading?.price.replace(/\s/g, ' '))).toEqual(['1 255,00 €', '1 204,80 €']);
-    expect(parseEuro(ctx.price.rows[0].value)).toBe(yht);
-    const alennus = Number(ctx.price.rows[1].value.replace(/[^\d,]/g, '').replace(',', '.'));
-    expect(Math.round((parseEuro(ctx.price.rows[0].value) - alennus) * 100) / 100).toBe(2213.82);
+    const sis = ctx.price.rows.find((row) => row.label === 'Yhteensä sis. alv');
+    const ale = ctx.price.rows.find((row) => row.label.startsWith('Alennus'));
+    const after = ctx.price.rows.find((row) => row.label === 'Alennettu hinta yhteensä');
+    expect(parseEuro(sis?.value ?? '')).toBe(yht);
+    const alennus = Number((ale?.value ?? '').replace(/[^\d,]/g, '').replace(',', '.'));
+    expect(Math.round((parseEuro(sis?.value ?? '') - alennus) * 100) / 100).toBe(2213.82);
+    expect(parseEuro(after?.value ?? '')).toBe(2213.82);
     expect(ctx.ktv).toMatchObject({ totalPriceVat: 2213.82, materialsVat: 502 });
     const ktv = renderKotitalousPageHtml(ctx).replace(/\s/g, ' ');
     expect(ktv).toContain('Loppusumma (sis. ALV)');
@@ -267,12 +273,13 @@ describe('buildPdfContext', () => {
       ),
     );
     expect(ctx.price.rows.map((row) => `${row.label}=${row.value.replace(/\s/g, ' ')}`)).toEqual([
-      'Rivit yhteensä=70,25 €',
+      'Yhteensä alv 0=55,98 €',
+      'Alv 25,5 %=14,27 €',
+      'Yhteensä sis. alv=70,25 €',
       'Alennus yhteensä 10 %=−7,02 €',
       'Alennettu hinta yhteensä=63,23 €',
-      'Sisältää ALV 25,5 %=12,85 €',
     ]);
-    expect(ctx.price.rows[2].emphasis).toBe(true);
+    expect(ctx.price.rows.find((row) => row.label === 'Alennettu hinta yhteensä')?.emphasis).toBe(true);
     expect(ctx.ktv?.totalPriceVat).toBe(63.23);
     const html = renderTarjousHtml(ctx).replace(/\s/g, ' ');
     const ktv = html.slice(html.indexOf('class="ktv-page'));
@@ -381,9 +388,9 @@ describe('buildPdfContext', () => {
       '12,56 €',
     ]);
     expect(ctx.price.rows.map((row) => `${row.label}=${row.value.replace(/\s/g, ' ')}`)).toEqual([
-      'Veroton=30,03 €',
-      'ALV 25,5 %=7,65 €',
-      'Loppusumma=37,68 €',
+      'Yhteensä alv 0=30,03 €',
+      'Alv 25,5 %=7,65 €',
+      'Yhteensä sis. alv=37,68 €',
     ]);
     const parseEuro = (value: string) => Number(value.replace(/[^\d,]/g, '').replace(',', '.'));
     const [net, vat, gross] = ctx.price.rows.map((row) => parseEuro(row.value));
@@ -421,8 +428,8 @@ describe('buildPdfContext', () => {
         }),
       ),
     );
-    expect(ctx.price.rows[2].value.replace(/\s/g, ' ')).toBe('33,93 €');
-    expect(ctx.price.rows[1].value.replace(/\s/g, ' ')).toBe('−3,75 €');
+    expect(ctx.price.rows.find((row) => row.label === 'Alennettu hinta yhteensä')?.value.replace(/\s/g, ' ')).toBe('33,93 €');
+    expect(ctx.price.rows.find((row) => row.label.startsWith('Alennus'))?.value.replace(/\s/g, ' ')).toBe('−3,75 €');
     expect(ctx.ktv?.totalPriceVat).toBe(33.93);
     const html = renderTarjousHtml(ctx).replace(/\s/g, ' ');
     const totals = html.slice(html.indexOf('class="price-block offer-totals"'), html.indexOf('class="ktv-page'));
@@ -448,10 +455,11 @@ describe('buildPdfContext', () => {
     );
     const ctx = buildPdfContext(input(rec));
     expect(ctx.price.rows.map((row) => `${row.label}=${row.value.replace(/\s/g, ' ')}`)).toEqual([
-      'Rivit yhteensä=70,25 €',
+      'Yhteensä alv 0=55,98 €',
+      'Alv 25,5 %=14,27 €',
+      'Yhteensä sis. alv=70,25 €',
       'Alennus yhteensä 10 %=−7,02 €',
       'Alennettu hinta yhteensä=63,23 €',
-      'Sisältää ALV 25,5 %=12,85 €',
     ]);
     expect(ctx.ktv).toBeUndefined();
     expect(ctx.sections[0].heading?.price.replace(/\s/g, ' ')).toBe('70,25 €');
@@ -472,9 +480,9 @@ describe('buildPdfContext', () => {
       ),
     );
     expect(ctx.price.rows.map((row) => `${row.label}=${row.value.replace(/\s/g, ' ')}`)).toEqual([
-      'Rivit yhteensä=33,35 €',
+      'Yhteensä alv 0=33,35 €',
       'Alennus yhteensä 10 %=−3,33 €',
-      'Alennettu hinta yhteensä=30,02 €',
+      'Loppusumma (Alv 0 %)=30,02 €',
     ]);
   });
 
@@ -514,7 +522,7 @@ describe('buildPdfContext', () => {
     expect(buildPdfContext(input(cases[1])).ktv).toBeUndefined();
   });
 
-  it('multi-rate discount lists Sisältää ALV once per rate', () => {
+  it('multi-rate line discount lists list-price VAT rows, then the discount, and a list-price VAT table', () => {
     const ctx = buildPdfContext(
       input(
         record({}, {
@@ -533,19 +541,28 @@ describe('buildPdfContext', () => {
       ),
     );
     expect(ctx.price.rows.map((row) => row.label)).toEqual([
-      'Rivit yhteensä',
+      'Yhteensä alv 0',
+      'Alv 25,5 %',
+      'Alv 10 %',
+      'Yhteensä sis. alv',
       'Alennus yhteensä 10 %',
       'Alennettu hinta yhteensä',
-      'Sisältää ALV 25,5 %',
-      'Sisältää ALV 10 %',
     ]);
     expect(ctx.price.rows.map((row) => row.value.replace(/\s/g, ' '))).toEqual([
+      '200,00 €',
+      '25,50 €',
+      '10,00 €',
       '235,50 €',
       '−23,55 €',
       '211,95 €',
-      '22,95 €',
-      '9,00 €',
     ]);
+    expect(ctx.vatSummary).toEqual([
+      { vatPercent: 25.5, net: 100, vat: 25.5, gross: 125.5 },
+      { vatPercent: 10, net: 100, vat: 10, gross: 110 },
+    ]);
+    const html = renderTarjousHtml(ctx);
+    expect(html.indexOf('class="offer-vat"')).toBeLessThan(html.indexOf('Yhteensä alv 0'));
+    expect(html).toContain('>Netto</th>');
   });
 
   it('urakkakortti does not reuse the offer discount block', () => {

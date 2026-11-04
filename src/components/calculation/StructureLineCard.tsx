@@ -148,9 +148,9 @@ export function StructureLineCard({
         </View>
       </View>
 
-      {/* Eemil 29.10.2026 #7: tekijöiden urakka käsin muokattavissa (aina alv0); korvaa lomakkeen arvon ja laskee katteen uudelleen. */}
+      {/* Eemil 29.10.2026 #7: urakkahinta käsin muokattavissa (aina alv0); korvaa lomakkeen arvon ja laskee katteen uudelleen. */}
       <DecimalInput
-        label="Tekijöiden urakka € (alv0)"
+        label="Urakkahinta € (alv0)"
         value={priced.contractPriceVat0}
         onChangeValue={(value) => patch({ contractPriceVat0: value })}
       />

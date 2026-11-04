@@ -108,9 +108,9 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
 /** Tarjouksen rivitaulukko ja osiot. Liitetään vain tarjous-HTML:ään, ei urakkakorttiin. */
 export const offerDocumentCss = `
   .price-block.offer-totals { justify-content: flex-end; }
-  .price-block.offer-totals .col { flex: 0 1 92mm; }
+  .price-block.offer-totals .col { flex: 0 1 118mm; }
   .offer-delivery { margin: 1mm 0 4mm 0; }
-  .offer-vat { width: 100%; max-width: 140mm; border-collapse: collapse; margin: 2mm 0 6mm 0; break-inside: avoid; page-break-inside: avoid; }
+  .offer-vat { width: 100%; border-collapse: collapse; margin: 0 0 3mm 0; break-inside: avoid; page-break-inside: avoid; }
   .offer-vat tr { break-inside: avoid; page-break-inside: avoid; }
   .offer-vat th, .offer-vat td { padding: 0.8mm 2mm 0.8mm 0; text-align: left; }
   .offer-vat th.num, .offer-vat td.num { text-align: right; white-space: nowrap; }

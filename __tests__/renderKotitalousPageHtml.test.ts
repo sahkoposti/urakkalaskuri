@@ -23,6 +23,7 @@ describe('renderKotitalousPageHtml', () => {
     expect(ktvAt).toBeGreaterThan(html.indexOf('class="offer-sign"'));
     expect(html.slice(ktvAt)).not.toContain('offer-section');
     expect(html).toContain(KTV_ONE_PERSON_LINE);
+    expect(html).toContain('Kotitalousvähennyslaskelma (1 hlö)');
     expect(html).toContain('arvio yhdelle henkilölle');
     expect(renderKotitalousPageHtml(ctx)).toMatchSnapshot();
   });
@@ -114,6 +115,8 @@ describe('renderKotitalousPageHtml', () => {
 
   it('n=2 and n=3 change the person rows and the default estimate wording', () => {
     const two = norm(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(recordAt2510(), 2)))));
+    expect(two).toContain('Kotitalousvähennyslaskelma (2 hlö)');
+    expect(two).not.toContain('Kotitalousvähennyslaskelma (1 hlö)');
     expect(two).toContain('Omavastuu yhteensä (2 henkilöä)');
     expect(two).toContain('−300,00 €');
     expect(two).toContain('Enimmäismäärä yhteensä (2 henkilöä)');
@@ -127,6 +130,7 @@ describe('renderKotitalousPageHtml', () => {
     expect(two).not.toContain(KTV_ONE_PERSON_LINE);
 
     const three = norm(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(recordAt2510(), 3)))));
+    expect(three).toContain('Kotitalousvähennyslaskelma (3 hlö)');
     expect(three).toContain('Omavastuu yhteensä (3 henkilöä)');
     expect(three).toContain('−450,00 €');
     expect(three).toContain('Enimmäismäärä yhteensä (3 henkilöä)');
