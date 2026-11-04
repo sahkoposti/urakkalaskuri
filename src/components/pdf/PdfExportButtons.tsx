@@ -1,10 +1,16 @@
+import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
 import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
-import { AppInput, OutlinedButton } from '@/src/components/common';
+import { AppInput, OutlinedButton, PrimaryButton } from '@/src/components/common';
+import {
+  CONTINUE_EDIT_LABEL,
+  EXPORT_BLOCKED_BY_DRAFT_MESSAGE,
+  isExportBlockedByEditDraft,
+} from '@/src/core/history/detailDraftPolicy';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import type { CalculationRecord } from '@/src/core/models/types';
@@ -60,7 +66,8 @@ export function PdfExportButtons({
   record: CalculationRecord;
 }) {
   const styles = useThemedStyles(createStyles);
-  const { settings, products, structures, refreshCalculations } = useApp();
+  const { settings, products, structures, refreshCalculations, wizardDraft } = useApp();
+  const exportBlocked = isExportBlockedByEditDraft(wizardDraft, calculationId);
   const { showAlert } = useThemedAlert();
   const [busy, setBusy] = useState<Busy>(null);
   const [personsText, setPersonsText] = useState(() => ktvPersonsFieldText(record.formSnapshot));
@@ -180,6 +187,7 @@ export function PdfExportButtons({
   };
 
   const handleTarjous = () => {
+    if (exportBlocked) return;
     const blocked = [...offerProblems, ...(personsProblem ? [personsProblem] : []), ...(validDaysProblem ? [validDaysProblem] : [])];
     if (blocked.length > 0) {
       showAlert('Tarjousta ei voi tulostaa', blocked.join('\n'));
@@ -201,6 +209,7 @@ export function PdfExportButtons({
   };
 
   const handleUrakkakortti = (manualValues?: Record<string, number>) => {
+    if (exportBlocked) return;
     if (cardProblems.length > 0) {
       showAlert('Urakkakorttia ei voi tulostaa', cardProblems.join('\n'));
       return;
@@ -218,6 +227,17 @@ export function PdfExportButtons({
 
   return (
     <View>
+      {exportBlocked ? (
+        <View style={styles.blocked}>
+          <Text style={styles.blockedText} accessibilityRole="alert">
+            {EXPORT_BLOCKED_BY_DRAFT_MESSAGE}
+          </Text>
+          <PrimaryButton
+            title={CONTINUE_EDIT_LABEL}
+            onPress={() => router.push({ pathname: '/wizard', params: { editId: calculationId } })}
+          />
+        </View>
+      ) : null}
       <AppInput
         label="Henkilöiden määrä (kotitalousvähennys)"
         value={personsText}
@@ -298,6 +318,7 @@ export function PdfExportButtons({
         title={busy === 'tarjous' ? 'Luodaan tarjousta…' : 'Luo tarjous'}
         onPress={handleTarjous}
         disabled={
+          exportBlocked ||
           busy !== null ||
           companyValidDays == null ||
           offerProblems.length > 0 ||
@@ -384,7 +405,7 @@ export function PdfExportButtons({
       <OutlinedButton
         title={busy === 'urakkakortti' ? 'Luodaan urakkakorttia…' : 'Luo urakkakortti'}
         onPress={() => handleUrakkakortti()}
-        disabled={busy !== null || cardProblems.length > 0}
+        disabled={exportBlocked || busy !== null || cardProblems.length > 0}
       />
       <ManualContractDialog
         visible={manualLines !== null}
@@ -415,6 +436,21 @@ function createStyles(colors: AppColorPalette) {
       borderColor: colors.accent,
       borderRadius: 5,
       backgroundColor: colors.surface,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.text,
+    },
+    blocked: {
+      marginBottom: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderRadius: 5,
+      backgroundColor: colors.surface,
+      gap: 10,
+    },
+    blockedText: {
       fontFamily: 'IBMPlexSans_400Regular',
       fontSize: 14,
       lineHeight: 20,
