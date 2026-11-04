@@ -1,6 +1,6 @@
 # Lomakepohjan JSON-ohje
 
-Urakkalaskuri **v1.2.11**. Jokaisella tuoterakenteella on oma `FormDefinition`. Tämä tiedosto riittää pohjan **luontiin, muokkaukseen, tuontiin ja vientiin**.
+Urakkalaskuri **v1.2.14**. Jokaisella tuoterakenteella on oma `FormDefinition`. Tämä tiedosto riittää pohjan **luontiin, muokkaukseen, tuontiin ja vientiin**.
 
 | | |
 |--|--|

@@ -22,6 +22,10 @@ import {
   SectionTitle,
 } from '@/src/components/common';
 import { previewFormContext } from '@/src/core/calculation/calculationPipeline';
+import {
+  CONTINUE_EDIT_LABEL,
+  EXPORT_BLOCKED_BY_DRAFT_MESSAGE,
+} from '@/src/core/history/detailDraftPolicy';
 import { buildCalculationFormulaContext, formatTravelTimeHoursOneWay } from '@/src/core/form/calculationFormulaContext';
 import { lineFormSnapshot } from '@/src/core/form/formSummaryHelpers';
 import {
@@ -47,6 +51,8 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 type CalculationDetailViewProps = {
   record: CalculationRecord;
   formDefinition: FormDefinition;
+  /** Näytetään, kun laskelmalla on uudempi muokkausluonnos. */
+  unsavedChangesNotice?: string | null;
   onCopy?: () => void;
   onFooterPress: () => void;
   onDeletePress?: () => void;
@@ -65,6 +71,7 @@ function lineBreakdown(line: StructureLine, reverseVat: boolean) {
 export function CalculationDetailView({
   record,
   formDefinition,
+  unsavedChangesNotice,
   onCopy,
   onFooterPress,
   onDeletePress,
@@ -115,10 +122,25 @@ export function CalculationDetailView({
         <View style={styles.titleUnderline} />
       </View>
 
+      {unsavedChangesNotice ? (
+        <View style={styles.pendingNotice}>
+          <Text style={styles.pendingNoticeText}>{unsavedChangesNotice}</Text>
+        </View>
+      ) : null}
+
       <DetailTabBar value={tab} onChange={setTab} />
 
       {tab === 'dokumentit' ? (
         <View style={styles.documents}>
+          {pdf.exportBlocked ? (
+            <View style={styles.pendingNotice}>
+              <Text style={styles.pendingNoticeText}>{EXPORT_BLOCKED_BY_DRAFT_MESSAGE}</Text>
+              <PrimaryButton
+                title={CONTINUE_EDIT_LABEL}
+                onPress={() => router.push({ pathname: '/wizard', params: { editId: record.id } })}
+              />
+            </View>
+          ) : null}
           {DOKUMENTTI_ACTIONS.map((action) => (
             <AppCard key={action.id} style={styles.documentCard}>
               <Text style={styles.documentTitle}>
@@ -126,7 +148,9 @@ export function CalculationDetailView({
               </Text>
               <OutlinedButton
                 title={action.label}
+                disabled={pdf.exportBlocked}
                 onPress={() => {
+                  if (pdf.exportBlocked) return;
                   pdf.resyncSheet();
                   setOpenDocument(action.id);
                 }}
@@ -144,9 +168,15 @@ export function CalculationDetailView({
             documents={pdf.documents}
             platform={pdf.phonePlatform}
             onPreview={pdf.previewDocument}
-            onShare={pdf.shareDocument}
+            onShare={(document) => {
+              if (pdf.exportBlocked) return;
+              pdf.shareDocument(document);
+            }}
             onDelete={pdf.confirmDeleteDocument}
-            onSaveToPhone={pdf.retryPhoneSave}
+            onSaveToPhone={(document) => {
+              if (pdf.exportBlocked) return;
+              pdf.retryPhoneSave(document);
+            }}
           />
           <OutlinedButton title="Sulje" onPress={onFooterPress} />
         </View>
@@ -268,12 +298,14 @@ export function CalculationDetailView({
       phone={pdf.readyPhone}
       platform={pdf.phonePlatform}
       onPreview={() => pdf.readyDocument && pdf.previewDocument({ uri: pdf.readyDocument.path })}
-      onShare={() => pdf.readyShare && pdf.shareDocument(pdf.readyShare)}
-      onSaveToPhone={() =>
-        pdf.readyShare &&
-        pdf.readyDocument &&
-        pdf.retryPhoneSave({ ...pdf.readyShare, id: pdf.readyDocument.id })
-      }
+      onShare={() => {
+        if (pdf.exportBlocked || !pdf.readyShare) return;
+        pdf.shareDocument(pdf.readyShare);
+      }}
+      onSaveToPhone={() => {
+        if (pdf.exportBlocked || !pdf.readyShare || !pdf.readyDocument) return;
+        pdf.retryPhoneSave({ ...pdf.readyShare, id: pdf.readyDocument.id });
+      }}
       onClose={pdf.dismissReady}
     />
     <ManualContractDialog
@@ -404,6 +436,18 @@ function createStyles(colors: AppColorPalette) {
       width: 40,
       height: 3,
       backgroundColor: colors.accent,
+    },
+    pendingNotice: {
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderRadius: 5,
+      backgroundColor: colors.surface,
+    },
+    pendingNoticeText: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 15,
+      color: colors.accent,
     },
     deleteButton: {
       padding: 4,

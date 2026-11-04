@@ -1,5 +1,9 @@
 import { Text, TextInput, View } from 'react-native';
 
+import { textInputPropsFor } from '@/src/components/textInputProps';
+
+const decimalInputProps = textInputPropsFor('decimal');
+
 import { AppPicker } from '@/src/components/AppPicker';
 import { AppSwitch } from '@/src/components/common';
 import {
@@ -169,7 +173,7 @@ export function FieldVisibilityEditor({
                   style={styles.numberInput}
                   value={condition.value}
                   onChangeText={(value) => patch({ value })}
-                  keyboardType="decimal-pad"
+                  {...decimalInputProps}
                   placeholder={
                     isNumericVisibilityOperator(condition.operator) ? 'esim. 100' : '0'
                   }

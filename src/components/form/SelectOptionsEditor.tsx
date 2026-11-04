@@ -62,13 +62,14 @@ export function SelectOptionsEditor({ fieldKey, options, onChange }: SelectOptio
               label="Nimi"
               value={option.label}
               onChangeText={(label) => updateOption(index, { label })}
+              kind="words"
               compact
             />
             <AppInput
               label="Arvo"
               value={option.value}
               onChangeText={(value) => updateOption(index, { value: value.replace(',', '.') })}
-              keyboardType="decimal-pad"
+              kind="decimal"
               placeholder="1.15"
               compact
             />

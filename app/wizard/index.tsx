@@ -55,6 +55,7 @@ import {
   type WizardDraftEditMeta,
   type WizardFormState,
 } from '@/src/core/wizard/wizardDraftHelpers';
+import { decideComposerFocusRestore } from '@/src/core/wizard/composerFocusRestore';
 import { hasFieldValueContent } from '@/src/core/wizard/wizardPageHelpers';
 import { resetToHistoryDetail } from '@/src/core/navigation/appStack';
 import { db, useApp } from '@/src/context/AppContext';
@@ -305,17 +306,27 @@ export default function CalculationComposerScreen() {
   useFocusEffect(
     useCallback(() => {
       allowExitRef.current = false;
+      // Viimeisin luonnos refistä. Callbackin riippuvuuksissa ei ole wizardDraftia,
+      // joten closureen jäänyt avaushetken luonnos ylikirjoittaisi Valmis-paluun.
+      const latestDraft = wizardDraftRef.current;
+      const decision = decideComposerFocusRestore({
+        routeEditId,
+        loadedEditId: loadedEditIdRef.current,
+        latestDraft,
+        lastAppliedUpdatedAt: lastDraftUpdatedAtRef.current,
+        hydrated: hydratedRef.current,
+      });
 
       if (routeEditId) {
         bindExistingCalculation(routeEditId);
-        if (loadedEditIdRef.current === routeEditId) {
+        if (decision === 'none') {
           return;
         }
         loadedEditIdRef.current = routeEditId;
 
-        if (wizardDraft?.editCalculationId === routeEditId) {
+        if (decision === 'restoreDraft' && latestDraft) {
           hydratedRef.current = true;
-          restoreDraftForm(wizardDraft, true);
+          restoreDraftForm(latestDraft, true);
           return;
         }
 
@@ -344,13 +355,15 @@ export default function CalculationComposerScreen() {
 
       loadedEditIdRef.current = null;
 
-      if (wizardDraft) {
+      if (latestDraft) {
         hydratedRef.current = true;
-        restoreDraftForm(wizardDraft, true);
+        if (decision === 'restoreDraft') {
+          restoreDraftForm(latestDraft, true);
+        }
         return;
       }
 
-      if (!hydratedRef.current) {
+      if (decision === 'hydrateEmpty') {
         resumedIncompleteDraftRef.current = false;
         rememberOrigin(getFormStateRef.current());
         hydratedRef.current = true;
@@ -665,13 +678,14 @@ export default function CalculationComposerScreen() {
             label="Toimitusajankohta"
             value={deliveryScheduleText}
             onChangeText={setDeliveryScheduleText}
+            kind="sentence"
             placeholder="Esim. viikko 42"
           />
           <AppInput
             label="Matka-aika yhteen suuntaan"
             value={travelTimeOneWay}
             onChangeText={setTravelTimeOneWay}
-            keyboardType="decimal-pad"
+            kind="decimal"
             placeholder="Esim. 0,75"
             trailing={<Text style={styles.unitHint}>h</Text>}
           />

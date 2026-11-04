@@ -78,11 +78,12 @@ export function MaterialQuantitiesEditor({
                   label="Tuote"
                   value={row.productName}
                   onChangeText={(value) => commit(editMaterialQuantity(baseRows(), row.id, { productName: value }))}
+                  kind="words"
                 />
                 <AppInput
                   label="Määrä"
                   value={text}
-                  keyboardType="decimal-pad"
+                  kind="decimal"
                   onChangeText={(value) => {
                     setTexts((current) => ({ ...current, [row.id]: value }));
                     const parsed = parseQuantityInput(value);
@@ -96,6 +97,7 @@ export function MaterialQuantitiesEditor({
                   onChangeText={(value) =>
                     commit(editMaterialQuantity(baseRows(), row.id, { unit: value.trim() ? value : undefined }))
                   }
+                  kind="code"
                 />
                 <Pressable
                   onPress={() => commit(removeMaterialRow(baseRows(), row.id))}

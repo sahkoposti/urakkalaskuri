@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { db, useApp } from '@/src/context/AppContext';
+import { isExportBlockedByEditDraft } from '@/src/core/history/detailDraftPolicy';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import type { CalculationRecord } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
@@ -107,7 +108,8 @@ function offerDateFromNow(): Date {
  * kuin aiemmassa näkymässä. KTV-kytkin päällä pitää tarjouksen PDF:n ennallaan.
  */
 export function usePdfExportForm(calculationId: string, record: CalculationRecord) {
-  const { settings, products, structures, refreshCalculations } = useApp();
+  const { settings, products, structures, refreshCalculations, wizardDraft } = useApp();
+  const exportBlocked = isExportBlockedByEditDraft(wizardDraft, calculationId);
   const { showAlert } = useThemedAlert();
   const [busy, setBusy] = useState<Busy>(null);
   const [personsText, setPersonsText] = useState(() => ktvPersonsFieldText(record.formSnapshot));
@@ -277,6 +279,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     target: ShareTarget,
     manual: boolean,
   ): Promise<PhoneSaveOutcome> => {
+    if (exportBlocked) return { status: 'skipped', phoneUri: null, error: null };
     const fileName = shareDocumentFileName({
       kind: target.kind,
       offerNumber: target.offerNumber,
@@ -416,6 +419,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   };
 
   const handleTarjous = () => {
+    if (exportBlocked) return;
     if (blockingMessages.length > 0) {
       showAlert('Tarjousta ei voi tulostaa', blockingMessages.join('\n'));
       return;
@@ -444,6 +448,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   };
 
   const handleUrakkakortti = (manualValues?: Record<string, number>) => {
+    if (exportBlocked) return;
     if (cardProblems.length > 0) {
       showAlert('Urakkakorttia ei voi tulostaa', cardProblems.join('\n'));
       return;
@@ -519,6 +524,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       setReadyPhone(null);
     },
     retryPhoneSave: (document: ShareTarget & { id: string }) => {
+      if (exportBlocked) return;
       void copyPhoneDocument(document.id, document, true).then((phone) => {
         if (readyIdRef.current === document.id) setReadyPhone(phone);
       });
@@ -530,6 +536,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       });
     },
     shareDocument: (target: ShareTarget) => {
+      if (exportBlocked) return;
       const shareName = shareDocumentFileName({
         kind: target.kind,
         offerNumber: target.offerNumber,
@@ -566,6 +573,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       dirtyRef.current = synced.dirty;
       applyDraft(synced.draft);
     },
+    exportBlocked,
     offer: {
       showKtvPageChoice: fields.showKtvPageChoice,
       ktvPageIncluded,
@@ -617,11 +625,13 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       },
       offerProblems,
       createTitle: dokumenttiCreateTitle('tarjous', busy === 'tarjous'),
-      createDisabled: tarjousCreateDisabled({
-        busy: anyBusy,
-        companyValidDaysLoaded: companyValidDays != null,
-        blockingMessages,
-      }),
+      createDisabled:
+        exportBlocked ||
+        tarjousCreateDisabled({
+          busy: anyBusy,
+          companyValidDaysLoaded: companyValidDays != null,
+          blockingMessages,
+        }),
       onCreate: handleTarjous,
     },
     card: {
@@ -670,7 +680,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       },
       cardProblems,
       createTitle: dokumenttiCreateTitle('urakkakortti', busy === 'urakkakortti'),
-      createDisabled: urakkakorttiCreateDisabled({ busy: anyBusy, cardProblems }),
+      createDisabled: exportBlocked || urakkakorttiCreateDisabled({ busy: anyBusy, cardProblems }),
       onCreate: () => handleUrakkakortti(),
     },
   };
