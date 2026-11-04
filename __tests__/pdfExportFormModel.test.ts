@@ -3,7 +3,9 @@ import {
   DOKUMENTTI_ACTIONS,
   TARJOUS_SNAPSHOT_KEYS,
   URAKKAKORTTI_SNAPSHOT_KEYS,
+  calculationForUrakkakorttiCreate,
   cleanPdfFormDirty,
+  dirtyAfterUrakkakorttiSave,
   dokumenttiCreateTitle,
   draftCardPriceProblems,
   offerFormFields,
@@ -18,6 +20,7 @@ import {
   validDaysHint,
 } from '../src/components/pdf/pdfExportFormModel';
 import { invalidEmployeeContractWarning } from '../src/core/pdf/urakkakorttiCard';
+import { record } from './pdfFixtures';
 import type { CustomerInfo } from '../src/core/models/types';
 
 const privateCustomer: CustomerInfo = { name: 'Maija Malli', customerType: 'private' };
@@ -213,3 +216,59 @@ const savedFromOutside: PdfFormDraft = {
   rowPriceText: { 'line-1': '80,00' },
   ktvPageIncluded: true,
 };
+
+describe('urakkakortti create draft', () => {
+  const saved = record(
+    {},
+    {
+      formSnapshot: {
+        formId: 'f',
+        formVersion: 1,
+        fields: [],
+        urakkakorttiHuomioitavaa: 'Vanha huomio',
+        urakkakorttiRivihinnat: { l1: 100 },
+      },
+    },
+  );
+
+  it('uses the typed row price in the card that will be generated', () => {
+    const next = calculationForUrakkakorttiCreate(saved, {
+      mode: 'alihankkija',
+      hidePrices: false,
+      dirtyHuomio: true,
+      dirtyRowPrices: true,
+      typedHuomio: 'Telineet mukaan',
+      typedRowPrices: { l1: '250,50' },
+    });
+    expect(next.formSnapshot?.urakkakorttiRivihinnat).toEqual({ l1: 250.5 });
+    expect(next.formSnapshot?.urakkakorttiHuomioitavaa).toBe('Telineet mukaan');
+  });
+
+  it('leaves a field that is not dirty unchanged', () => {
+    const next = calculationForUrakkakorttiCreate(saved, {
+      mode: 'alihankkija',
+      hidePrices: false,
+      dirtyHuomio: false,
+      dirtyRowPrices: false,
+      typedHuomio: 'Kirjoitettu mutta ei tallennettu',
+      typedRowPrices: { l1: '999,00' },
+    });
+    expect(next.formSnapshot?.urakkakorttiHuomioitavaa).toBe('Vanha huomio');
+    expect(next.formSnapshot?.urakkakorttiRivihinnat).toEqual({ l1: 100 });
+  });
+
+  it('does not mark the card fields saved when the save failed', () => {
+    const dirty: PdfFormDirty = {
+      personsText: true,
+      validDays: false,
+      huomioText: true,
+      rowPriceText: true,
+    };
+    expect(dirtyAfterUrakkakorttiSave(dirty, false)).toEqual(dirty);
+    expect(dirtyAfterUrakkakorttiSave(dirty, false)).not.toBe(dirty);
+    const cleared = dirtyAfterUrakkakorttiSave(dirty, true);
+    expect(cleared.huomioText).toBe(false);
+    expect(cleared.rowPriceText).toBe(false);
+    expect(cleared.personsText).toBe(true);
+  });
+});
