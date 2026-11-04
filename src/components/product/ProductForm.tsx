@@ -1,4 +1,5 @@
 import { AppInput } from '@/src/components/common';
+import { NAME_FIELD_KIND } from '@/src/components/textInputProps';
 import {
   attributeFieldValues,
   ProductAttributeFields,
@@ -34,7 +35,7 @@ type ProductFormFieldsProps = {
 export function ProductFormFields({ values, onChange, structures }: ProductFormFieldsProps) {
   return (
     <>
-      <AppInput label="Nimi *" value={values.name} onChangeText={(name) => onChange({ name })} kind="name" />
+      <AppInput label="Nimi *" value={values.name} onChangeText={(name) => onChange({ name })} kind={NAME_FIELD_KIND.productName} />
       <AppInput label="Yksikkö *" value={values.unit} onChangeText={(unit) => onChange({ unit })} kind="code" />
       <ProductPriceFields
         purchasePrice={values.purchasePrice}

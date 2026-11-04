@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { AppPicker } from '@/src/components/AppPicker';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { AppInput } from '@/src/components/common';
+import { NAME_FIELD_KIND } from '@/src/components/textInputProps';
 import {
   lookupPostalLocality,
   normalizePostalCode,
@@ -71,7 +72,7 @@ export function CustomerStep({
 
   return (
     <View>
-      <AppInput label="Nimi *" value={name} onChangeText={onNameChange} kind="name" />
+      <AppInput label="Nimi *" value={name} onChangeText={onNameChange} kind={NAME_FIELD_KIND.customerName} />
       {nameMatches.length > 0 && onPickCustomer ? (
         <View style={styles.matches}>
           {nameMatches.map((customer) => (

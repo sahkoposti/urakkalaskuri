@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { AppInput, BrandLogo, PrimaryButton, ScreenLoading } from '@/src/components/common';
-import type { TextInputKind } from '@/src/components/textInputProps';
+import { NAME_FIELD_KIND, type TextInputKind } from '@/src/components/textInputProps';
 import {
   cleanCompanyProfile,
   companyProfilesEqual,
@@ -24,7 +24,7 @@ const FIELDS: {
   kind: TextInputKind;
   placeholder?: string;
 }[] = [
-  { key: 'companyName', label: 'Yrityksen nimi', kind: 'name' },
+  { key: 'companyName', label: 'Yrityksen nimi', kind: NAME_FIELD_KIND.companyName },
   { key: 'address', label: 'Katuosoite', kind: 'words' },
   { key: 'postalCode', label: 'Postinumero', kind: 'postalCode' },
   { key: 'postalLocality', label: 'Postitoimipaikka', kind: 'words' },
@@ -32,7 +32,7 @@ const FIELDS: {
   { key: 'email', label: 'Sähköposti', kind: 'email' },
   { key: 'businessId', label: 'Y-tunnus', kind: 'businessId' },
   { key: 'phone', label: 'Puhelin', kind: 'phone' },
-  { key: 'sellerName', label: 'Myyjän nimi', kind: 'name' },
+  { key: 'sellerName', label: 'Myyjän nimi', kind: NAME_FIELD_KIND.sellerName },
   {
     key: 'sellerPhone',
     label: 'Myyjän puhelin',

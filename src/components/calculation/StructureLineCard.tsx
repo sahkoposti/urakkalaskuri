@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { AppCard, AppInput } from '@/src/components/common';
+import { NAME_FIELD_KIND } from '@/src/components/textInputProps';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
 import { patchStructureLine } from '@/src/core/structure/applyFormToLine';
@@ -94,7 +95,7 @@ export function StructureLineCard({
         label="Nimi"
         value={priced.name}
         onChangeText={(value) => patch({ name: value })}
-        kind="name"
+        kind={NAME_FIELD_KIND.lineName}
         placeholder="Tuoterakenne"
       />
       {formIncomplete ? <Text style={styles.incomplete}>Keskeneräinen lomake</Text> : null}

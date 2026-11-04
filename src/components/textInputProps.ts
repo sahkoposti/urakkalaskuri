@@ -106,3 +106,16 @@ const TABLE: Record<TextInputKind, TextInputKindProps> = {
 export function textInputPropsFor(kind: TextInputKind): TextInputKindProps {
   return TABLE[kind];
 }
+
+/**
+ * Henkilön nimi saa nimitäydennyksen. Yrityksen, tuotteen, rakenteen ja rivin
+ * nimet ovat sanoja ilman henkilön autofillia.
+ */
+export const NAME_FIELD_KIND = {
+  customerName: 'name',
+  sellerName: 'name',
+  companyName: 'words',
+  productName: 'words',
+  structureName: 'words',
+  lineName: 'words',
+} as const satisfies Record<string, TextInputKind>;

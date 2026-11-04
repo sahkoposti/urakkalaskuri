@@ -12,6 +12,7 @@ import {
   ScreenMessage,
 } from '@/src/components/common';
 import { SettingsNavCard } from '@/src/components/SettingsNavCard';
+import { NAME_FIELD_KIND } from '@/src/components/textInputProps';
 import { createDefaultFormDefinition } from '@/src/core/form/defaultFormDefinition';
 import { normalizeFormDefinition } from '@/src/core/form/formDefinitionHelpers';
 import { calculationSettingsHref } from '@/src/core/navigation/calculationSettings';
@@ -341,7 +342,7 @@ export default function ProductStructureDetailScreen() {
         options={{ title: isNew ? 'Uusi tuoterakenne' : (structure?.name ?? 'Tuoterakenne') }}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        <AppInput label="Nimi" value={name} onChangeText={setName} kind="name" />
+        <AppInput label="Nimi" value={name} onChangeText={setName} kind={NAME_FIELD_KIND.structureName} />
         <AppInput label="Yksikkö" value={unit} onChangeText={setUnit} kind="code" placeholder="Valinnainen" />
         <AppInput
           label="Myyntipalkkio %"

@@ -1,4 +1,11 @@
-import { textInputPropsFor, type TextInputKind } from '../src/components/textInputProps';
+import fs from 'fs';
+import path from 'path';
+
+import {
+  NAME_FIELD_KIND,
+  textInputPropsFor,
+  type TextInputKind,
+} from '../src/components/textInputProps';
 
 const KINDS: TextInputKind[] = [
   'email',
@@ -54,9 +61,54 @@ describe('textInputPropsFor', () => {
   });
 
   test('names and addresses stay capitalized by word, free text by sentence', () => {
-    expect(textInputPropsFor('name').autoCapitalize).toBe('words');
-    expect(textInputPropsFor('words').autoCapitalize).toBe('words');
+    expect(textInputPropsFor('name')).toMatchObject({
+      autoCapitalize: 'words',
+      autoComplete: 'name',
+      textContentType: 'name',
+    });
+    expect(textInputPropsFor('words')).toMatchObject({
+      autoCapitalize: 'words',
+      autoComplete: 'off',
+      textContentType: 'none',
+    });
     expect(textInputPropsFor('sentence').autoCapitalize).toBe('sentences');
+  });
+
+  test('only a real person name uses name autofill', () => {
+    expect(NAME_FIELD_KIND).toEqual({
+      customerName: 'name',
+      sellerName: 'name',
+      companyName: 'words',
+      productName: 'words',
+      structureName: 'words',
+      lineName: 'words',
+    });
+    expect(textInputPropsFor(NAME_FIELD_KIND.customerName).autoComplete).toBe('name');
+    expect(textInputPropsFor(NAME_FIELD_KIND.sellerName).textContentType).toBe('name');
+    for (const field of ['companyName', 'productName', 'structureName', 'lineName'] as const) {
+      const props = textInputPropsFor(NAME_FIELD_KIND[field]);
+      expect(props.autoCapitalize).toBe('words');
+      expect(props.autoComplete).not.toBe('name');
+      expect(props.textContentType).not.toBe('name');
+    }
+  });
+
+  test('the real name fields import the shared mapping', () => {
+    const uses: Record<string, string> = {
+      'src/components/form/CustomerStep.tsx': 'NAME_FIELD_KIND.customerName',
+      'app/settings/company.tsx': 'NAME_FIELD_KIND.sellerName',
+      'src/components/product/ProductForm.tsx': 'NAME_FIELD_KIND.productName',
+      'app/settings/structures/[id].tsx': 'NAME_FIELD_KIND.structureName',
+      'src/components/calculation/StructureLineCard.tsx': 'NAME_FIELD_KIND.lineName',
+    };
+    for (const [file, token] of Object.entries(uses)) {
+      const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+      expect(source).toContain("from '@/src/components/textInputProps'");
+      expect(source).toContain(token);
+      expect(source).not.toContain('kind="name"');
+    }
+    const company = fs.readFileSync(path.join(__dirname, '../app/settings/company.tsx'), 'utf8');
+    expect(company).toContain('NAME_FIELD_KIND.companyName');
   });
 
   test('every non-prose kind disables autocapitalize', () => {
