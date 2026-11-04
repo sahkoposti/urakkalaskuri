@@ -61,6 +61,7 @@ import {
   getDocument,
   insertDocument,
   listDocumentsByCalculation,
+  updateDocumentPhoneSave,
 } from '../src/core/documents/documentsRepository';
 import type { NewDocumentInput } from '../src/core/documents/types';
 
@@ -109,6 +110,64 @@ describe('documents repository', () => {
     expect(kept?.user_version).toBe(5);
   });
 
+  it('adds the phone error column to a version 1 table without lowering a newer version', async () => {
+    const legacy = adapt(new DatabaseSync(':memory:'));
+    await legacy.execAsync(`
+      CREATE TABLE documents (
+        id TEXT PRIMARY KEY,
+        calculation_id TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        offer_number INTEGER,
+        version INTEGER NOT NULL,
+        file_rel_path TEXT NOT NULL,
+        file_name TEXT NOT NULL,
+        inputs_json TEXT,
+        summary_json TEXT,
+        app_version TEXT,
+        created_at TEXT NOT NULL,
+        phone_save_status TEXT NOT NULL DEFAULT 'skipped',
+        phone_uri TEXT
+      );
+    `);
+    await legacy.execAsync('PRAGMA user_version = 1');
+    await ensureDocumentsTable(legacy);
+    const columns = await legacy.getAllAsync('PRAGMA table_info(documents)');
+    expect(columns.map((column) => column.name)).toContain('phone_save_error');
+    const version = await legacy.getFirstAsync('PRAGMA user_version');
+    expect(version?.user_version).toBe(DOCUMENT_SCHEMA_VERSION);
+
+    await legacy.execAsync('PRAGMA user_version = 5');
+    await ensureDocumentsTable(legacy);
+    const kept = await legacy.getFirstAsync('PRAGMA user_version');
+    expect(kept?.user_version).toBe(5);
+  });
+
+  it('stores a failed phone copy and a later success', async () => {
+    await insertDocument(draft());
+    await updateDocumentPhoneSave('doc-1', {
+      status: 'failed',
+      phoneUri: null,
+      error: 'disk full',
+    });
+    expect(await getDocument('doc-1')).toMatchObject({
+      phoneSaveStatus: 'failed',
+      phoneUri: null,
+      phoneSaveError: 'disk full',
+      fileRelPath: 'documents/calc-a/doc-1.pdf',
+    });
+    await updateDocumentPhoneSave('doc-1', {
+      status: 'ok',
+      phoneUri: 'content://tree/primary:Urakkalaskuri/Tarjous.pdf',
+      error: null,
+    });
+    expect(await getDocument('doc-1')).toMatchObject({
+      phoneSaveStatus: 'ok',
+      phoneUri: 'content://tree/primary:Urakkalaskuri/Tarjous.pdf',
+      phoneSaveError: null,
+      fileRelPath: 'documents/calc-a/doc-1.pdf',
+    });
+  });
+
   it('creates the table twice without dropping rows', async () => {
     await insertDocument(draft());
     await ensureDocumentsTable(current);
@@ -138,6 +197,7 @@ describe('documents repository', () => {
     expect(card.offerNumber).toBeNull();
     expect(card.phoneSaveStatus).toBe('skipped');
     expect(card.phoneUri).toBeNull();
+    expect(card.phoneSaveError).toBeNull();
     const offer = await getDocument('new');
     expect(offer?.version).toBe(2);
     expect(offer?.inputs).toEqual({

@@ -117,21 +117,31 @@ CREATE TABLE IF NOT EXISTS documents (
   app_version TEXT,
   created_at TEXT NOT NULL,
   phone_save_status TEXT NOT NULL DEFAULT 'skipped' CHECK (phone_save_status IN ('ok', 'failed', 'skipped')),
-  phone_uri TEXT
+  phone_uri TEXT,
+  phone_save_error TEXT
 );
 CREATE INDEX IF NOT EXISTS documents_calculation_id_idx ON documents (calculation_id);
 `;
 
-/** documents-taulun skeema. Nosto on idempotentti eikä laske versiota. */
-export const DOCUMENT_SCHEMA_VERSION = 1;
+/**
+ * documents-taulun skeema. 2 lisää phone_save_error-sarakkeen.
+ * Nosto on idempotentti eikä laske versiota.
+ */
+export const DOCUMENT_SCHEMA_VERSION = 2;
 
 type DocumentsDb = {
   execAsync(sql: string): Promise<void>;
   getFirstAsync(sql: string, ...args: unknown[]): Promise<Record<string, unknown> | null>;
+  getAllAsync(sql: string, ...args: unknown[]): Promise<readonly Record<string, unknown>[]>;
 };
 
 export async function ensureDocumentsTable(db: DocumentsDb): Promise<void> {
   await db.execAsync(DOCUMENTS_SCHEMA_SQL);
+  const columns = await db.getAllAsync('PRAGMA table_info(documents)');
+  const names = columns.map((column) => String(column.name ?? ''));
+  if (!names.includes('phone_save_error')) {
+    await db.execAsync('ALTER TABLE documents ADD COLUMN phone_save_error TEXT');
+  }
   const row = await db.getFirstAsync('PRAGMA user_version');
   const current = Number(row?.user_version ?? 0);
   if (!Number.isFinite(current) || current < DOCUMENT_SCHEMA_VERSION) {
