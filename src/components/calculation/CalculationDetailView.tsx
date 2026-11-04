@@ -257,9 +257,7 @@ export function CalculationDetailView({
     <DocumentReadySheet
       document={pdf.readyDocument}
       onPreview={() => pdf.readyDocument && pdf.previewDocument({ uri: pdf.readyDocument.path })}
-      onShare={() =>
-        pdf.readyDocument && pdf.shareDocument({ uri: pdf.readyDocument.path, fileName: pdf.readyDocument.fileName })
-      }
+      onShare={() => pdf.readyShare && pdf.shareDocument(pdf.readyShare)}
       onClose={pdf.dismissReady}
     />
     <ManualContractDialog

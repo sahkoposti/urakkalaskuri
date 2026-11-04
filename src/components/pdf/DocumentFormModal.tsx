@@ -20,13 +20,15 @@ type DocumentFormModalProps = {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /** Valmis-näkymässä yksi Sulje. Lomakkeilla otsikko ja alareuna. */
+  singleClose?: boolean;
 };
 
 /**
  * Yhden dokumentin pohjalevy. Näppäimistö nostaa levyn kuten laskentalomake.
  * Suljetaan painikkeesta, otsikosta, taustasta tai paluusta.
  */
-export function DocumentFormModal({ visible, title, onClose, children }: DocumentFormModalProps) {
+export function DocumentFormModal({ visible, title, onClose, children, singleClose = false }: DocumentFormModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
 
@@ -37,13 +39,19 @@ export function DocumentFormModal({ visible, title, onClose, children }: Documen
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.backdrop}>
-          <Pressable style={styles.backdropPressable} onPress={onClose} accessibilityLabel="Sulje" />
+          <Pressable
+            style={styles.backdropPressable}
+            onPress={onClose}
+            accessibilityLabel={singleClose ? 'Tausta' : 'Sulje'}
+          />
           <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
             <View style={styles.header}>
               <Text style={styles.title}>{title}</Text>
-              <Pressable onPress={onClose} accessibilityLabel="Sulje" hitSlop={8}>
-                <Text style={styles.close}>Sulje</Text>
-              </Pressable>
+              {singleClose ? null : (
+                <Pressable onPress={onClose} accessibilityLabel="Sulje" hitSlop={8}>
+                  <Text style={styles.close}>Sulje</Text>
+                </Pressable>
+              )}
             </View>
             <View style={styles.underline} />
             <ScrollView

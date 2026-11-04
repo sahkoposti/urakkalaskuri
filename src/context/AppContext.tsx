@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import * as db from '@/src/core/database/database';
+import { cleanupDocumentsOnStartup } from '@/src/core/documents/documentStartup';
 import type {
   AppSettings,
   CalculationRecord,
@@ -108,6 +109,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     async function loadAll() {
+      await cleanupDocumentsOnStartup().catch((error) => {
+        console.error(error);
+      });
       await refreshSettings();
       await refreshStructures();
       await refreshProducts();

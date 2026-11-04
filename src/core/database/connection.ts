@@ -122,8 +122,21 @@ CREATE TABLE IF NOT EXISTS documents (
 CREATE INDEX IF NOT EXISTS documents_calculation_id_idx ON documents (calculation_id);
 `;
 
-export async function ensureDocumentsTable(db: { execAsync(sql: string): Promise<void> }): Promise<void> {
+/** documents-taulun skeema. Nosto on idempotentti eikä laske versiota. */
+export const DOCUMENT_SCHEMA_VERSION = 1;
+
+type DocumentsDb = {
+  execAsync(sql: string): Promise<void>;
+  getFirstAsync(sql: string, ...args: unknown[]): Promise<Record<string, unknown> | null>;
+};
+
+export async function ensureDocumentsTable(db: DocumentsDb): Promise<void> {
   await db.execAsync(DOCUMENTS_SCHEMA_SQL);
+  const row = await db.getFirstAsync('PRAGMA user_version');
+  const current = Number(row?.user_version ?? 0);
+  if (!Number.isFinite(current) || current < DOCUMENT_SCHEMA_VERSION) {
+    await db.execAsync(`PRAGMA user_version = ${DOCUMENT_SCHEMA_VERSION}`);
+  }
 }
 
 async function migrateProductPrices(db: SQLite.SQLiteDatabase): Promise<void> {

@@ -30,13 +30,22 @@ import {
 } from '@/src/core/pdf/offerValidDays';
 import { formatFinnishDate, validUntil } from '@/src/core/pdf/validUntil';
 import { previewSavedPdf, shareSavedPdf } from '@/src/core/documents/documentActions';
+import { shareDocumentFileName } from '@/src/core/documents/documentShare';
 import { storedPdfUri } from '@/src/core/documents/documentFiles';
 import {
   DOCUMENT_DELETE_TITLE,
   DOCUMENT_PREVIEW_FAILED,
 } from '@/src/core/documents/documentLabels';
 import { deleteDocument, listDocumentsByCalculation } from '@/src/core/documents/documentsRepository';
-import type { ExportedDocument } from '@/src/core/documents/types';
+import type { DocumentKind, ExportedDocument } from '@/src/core/documents/types';
+
+type ShareTarget = {
+  uri: string;
+  kind: DocumentKind;
+  offerNumber: number | null;
+  version: number;
+  createdAt: string;
+};
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
 import type { ListedDocument } from './CalculationDocumentList';
 import {
@@ -183,6 +192,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   const [manualLines, setManualLines] = useState<{ id: string; name: string }[] | null>(null);
   const [documents, setDocuments] = useState<ListedDocument[]>([]);
   const [readyDocument, setReadyDocument] = useState<ExportedDocument | null>(null);
+  const [readyShare, setReadyShare] = useState<ShareTarget | null>(null);
   const app = { settings, products, structures };
 
   useEffect(() => {
@@ -215,6 +225,20 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   const reloadDocuments = async () => {
     const rows = await listDocumentsByCalculation(calculationId);
     setDocuments(rows.map((row) => ({ ...row, uri: storedPdfUri(row.fileRelPath) })));
+    return rows;
+  };
+
+  const showReady = async (saved: ExportedDocument) => {
+    const rows = await reloadDocuments();
+    const row = rows.find((item) => item.id === saved.id);
+    setReadyDocument(saved);
+    setReadyShare({
+      uri: saved.path,
+      kind: saved.kind,
+      offerNumber: row?.offerNumber ?? saved.offerNumber,
+      version: row?.version ?? 1,
+      createdAt: row?.createdAt ?? new Date().toISOString(),
+    });
   };
 
   useEffect(() => {
@@ -327,8 +351,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
         markDirty({ validDays: false });
       }
       const saved = await exportTarjousPdf(calculationId, app, pdfExportDeps);
-      setReadyDocument(saved);
-      await reloadDocuments();
+      await showReady(saved);
       await refreshCalculations();
     });
   };
@@ -359,8 +382,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
         setManualLines(result.lines);
         return;
       }
-      setReadyDocument(result);
-      await reloadDocuments();
+      await showReady(result);
       if (manualValues) await refreshCalculations();
     });
   };
@@ -376,15 +398,25 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     },
     documents,
     readyDocument,
-    dismissReady: () => setReadyDocument(null),
+    readyShare,
+    dismissReady: () => {
+      setReadyDocument(null);
+      setReadyShare(null);
+    },
     previewDocument: (target: { uri: string }) => {
       void previewSavedPdf(target.uri).catch((error) => {
         console.error(error);
         showAlert('Esikatselu epäonnistui', DOCUMENT_PREVIEW_FAILED);
       });
     },
-    shareDocument: (target: { uri: string; fileName: string }) => {
-      void shareSavedPdf(target.uri, target.fileName).catch((error) => {
+    shareDocument: (target: ShareTarget) => {
+      const shareName = shareDocumentFileName({
+        kind: target.kind,
+        offerNumber: target.offerNumber,
+        version: target.version,
+        createdAt: new Date(target.createdAt),
+      });
+      void shareSavedPdf(target.uri, shareName).catch((error) => {
         console.error(error);
         showAlert('Jakaminen epäonnistui', errorMessage(error));
       });

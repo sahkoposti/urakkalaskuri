@@ -54,7 +54,7 @@ jest.mock('../src/core/database/connection', () => {
   };
 });
 
-import { ensureDocumentsTable } from '../src/core/database/connection';
+import { DOCUMENT_SCHEMA_VERSION, ensureDocumentsTable } from '../src/core/database/connection';
 import { deleteCalculation } from '../src/core/database/database';
 import {
   deleteDocument,
@@ -93,6 +93,20 @@ describe('documents repository', () => {
     current = adapt(db);
     await ensureDocumentsTable(current);
     await ensureDocumentsTable(current);
+  });
+
+  it('sets the schema version once and does not lower a newer version', async () => {
+    const version = await current.getFirstAsync('PRAGMA user_version');
+    expect(version?.user_version).toBe(DOCUMENT_SCHEMA_VERSION);
+    await ensureDocumentsTable(current);
+    const again = await current.getFirstAsync('PRAGMA user_version');
+    expect(again?.user_version).toBe(DOCUMENT_SCHEMA_VERSION);
+
+    const newer = adapt(new DatabaseSync(':memory:'));
+    await newer.execAsync('PRAGMA user_version = 5');
+    await ensureDocumentsTable(newer);
+    const kept = await newer.getFirstAsync('PRAGMA user_version');
+    expect(kept?.user_version).toBe(5);
   });
 
   it('creates the table twice without dropping rows', async () => {

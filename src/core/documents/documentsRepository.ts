@@ -99,6 +99,14 @@ export async function insertDocument(input: NewDocumentInput): Promise<SavedDocu
   };
 }
 
+export async function listDocumentFilePaths(): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ file_rel_path: string }>(
+    'SELECT file_rel_path FROM documents',
+  );
+  return rows.map((row) => row.file_rel_path);
+}
+
 export async function listDocumentsByCalculation(calculationId: string): Promise<SavedDocument[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<DocumentRow>(

@@ -32,6 +32,29 @@ export function removeStoredPdf(relativePath: string): void {
   if (file.exists) file.delete();
 }
 
+function entryName(uri: string): string {
+  const decoded = decodeURIComponent(uri);
+  const cut = Math.max(decoded.lastIndexOf('/'), decoded.lastIndexOf(':'));
+  return decoded.slice(cut + 1);
+}
+
+/** Suhteelliset polut `documents/<laskelma>/<tiedosto>.pdf`. */
+export function listDocumentDiskPaths(): string[] {
+  const root = new Directory(Paths.document, 'documents');
+  if (!root.exists) return [];
+  const paths: string[] = [];
+  for (const entry of root.list()) {
+    if (typeof (entry as Directory).list !== 'function') continue;
+    const calculationId = entryName(entry.uri);
+    for (const file of (entry as Directory).list()) {
+      const name = entryName(file.uri);
+      if (!name.toLowerCase().endsWith('.pdf')) continue;
+      paths.push(`documents/${calculationId}/${name}`);
+    }
+  }
+  return paths;
+}
+
 export function deleteCalculationDocumentFolder(calculationId: string): void {
   const folder = new Directory(Paths.document, 'documents', calculationId);
   if (folder.exists) folder.delete();

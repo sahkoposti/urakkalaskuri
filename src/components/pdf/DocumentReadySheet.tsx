@@ -26,6 +26,7 @@ export function DocumentReadySheet({ document, onPreview, onShare, onClose }: Do
       visible={document != null}
       title={document ? documentReadyTitle(document.kind) : ''}
       onClose={onClose}
+      singleClose
     >
       {document ? (
         <View style={styles.body}>
@@ -34,7 +35,6 @@ export function DocumentReadySheet({ document, onPreview, onShare, onClose }: Do
           <Text style={styles.saved}>{DOCUMENT_SAVED_IN_APP}</Text>
           <PrimaryButton title="Esikatsele" onPress={onPreview} />
           <OutlinedButton title="Jaa" onPress={onShare} />
-          <OutlinedButton title="Sulje" onPress={onClose} />
         </View>
       ) : null}
     </DocumentFormModal>
