@@ -1,3 +1,8 @@
+import { randomUUID } from 'expo-crypto';
+
+import { readAppVersion } from '../documents/appVersion';
+import { removeStoredPdf } from '../documents/documentFiles';
+import { insertDocument } from '../documents/documentsRepository';
 import {
   assignOfferNumberForCalculation,
   getCalculation,
@@ -28,5 +33,9 @@ export const pdfExportDeps: PdfExportDeps = {
     }
   },
   generatePdf,
+  newDocumentId: () => randomUUID(),
+  appVersion: () => readAppVersion(),
+  insertDocument,
+  removeStoredPdf,
   now: () => new Date(),
 };

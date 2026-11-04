@@ -29,7 +29,25 @@ import {
   parseOfferValidDaysInput,
 } from '@/src/core/pdf/offerValidDays';
 import { formatFinnishDate, validUntil } from '@/src/core/pdf/validUntil';
+import { previewSavedPdf, shareSavedPdf } from '@/src/core/documents/documentActions';
+import { shareDocumentFileName } from '@/src/core/documents/documentShare';
+import { storedPdfUri } from '@/src/core/documents/documentFiles';
+import {
+  DOCUMENT_DELETE_TITLE,
+  DOCUMENT_PREVIEW_FAILED,
+} from '@/src/core/documents/documentLabels';
+import { deleteDocument, listDocumentsByCalculation } from '@/src/core/documents/documentsRepository';
+import type { DocumentKind, ExportedDocument } from '@/src/core/documents/types';
+
+type ShareTarget = {
+  uri: string;
+  kind: DocumentKind;
+  offerNumber: number | null;
+  version: number;
+  createdAt: string;
+};
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
+import type { ListedDocument } from './CalculationDocumentList';
 import {
   calculationWithBusinessVatMode,
   calculationWithHuomioitavaa,
@@ -173,6 +191,9 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   // Ref estää tuplanapautuksen ennen kuin tila ehtii päivittyä (DB-lukko on toinen varmistus).
   const busyRef = useRef(false);
   const [manualLines, setManualLines] = useState<{ id: string; name: string }[] | null>(null);
+  const [documents, setDocuments] = useState<ListedDocument[]>([]);
+  const [readyDocument, setReadyDocument] = useState<ExportedDocument | null>(null);
+  const [readyShare, setReadyShare] = useState<ShareTarget | null>(null);
   const app = { settings, products, structures };
 
   useEffect(() => {
@@ -201,6 +222,39 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       cancelled = true;
     };
   }, [record.id, record.formSnapshot]);
+
+  const reloadDocuments = async () => {
+    const rows = await listDocumentsByCalculation(calculationId);
+    setDocuments(rows.map((row) => ({ ...row, uri: storedPdfUri(row.fileRelPath) })));
+    return rows;
+  };
+
+  const showReady = async (saved: ExportedDocument) => {
+    const rows = await reloadDocuments();
+    const row = rows.find((item) => item.id === saved.id);
+    setReadyDocument(saved);
+    setReadyShare({
+      uri: saved.path,
+      kind: saved.kind,
+      offerNumber: row?.offerNumber ?? saved.offerNumber,
+      version: row?.version ?? 1,
+      createdAt: row?.createdAt ?? new Date().toISOString(),
+    });
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    listDocumentsByCalculation(calculationId)
+      .then((rows) => {
+        if (!cancelled) setDocuments(rows.map((row) => ({ ...row, uri: storedPdfUri(row.fileRelPath) })));
+      })
+      .catch((error) => {
+        if (!cancelled) showAlert('Dokumentteja ei voitu lukea', errorMessage(error));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [calculationId, showAlert]);
 
   const reportSaveError = (error: unknown) => {
     console.error(error);
@@ -297,7 +351,8 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
         await persistValidDays(days);
         markDirty({ validDays: false });
       }
-      await exportTarjousPdf(calculationId, app, pdfExportDeps);
+      const saved = await exportTarjousPdf(calculationId, app, pdfExportDeps);
+      await showReady(saved);
       await refreshCalculations();
     });
   };
@@ -333,6 +388,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
         setManualLines(result.lines);
         return;
       }
+      await showReady(result);
       if (manualValues) await refreshCalculations();
     });
   };
@@ -345,6 +401,50 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     submitManual: (values: Record<string, number>) => {
       setManualLines(null);
       void handleUrakkakortti(values);
+    },
+    documents,
+    readyDocument,
+    readyShare,
+    dismissReady: () => {
+      setReadyDocument(null);
+      setReadyShare(null);
+    },
+    previewDocument: (target: { uri: string }) => {
+      void previewSavedPdf(target.uri).catch((error) => {
+        console.error(error);
+        showAlert('Esikatselu epäonnistui', DOCUMENT_PREVIEW_FAILED);
+      });
+    },
+    shareDocument: (target: ShareTarget) => {
+      const shareName = shareDocumentFileName({
+        kind: target.kind,
+        offerNumber: target.offerNumber,
+        version: target.version,
+        createdAt: new Date(target.createdAt),
+      });
+      void shareSavedPdf(target.uri, shareName).catch((error) => {
+        console.error(error);
+        showAlert('Jakaminen epäonnistui', errorMessage(error));
+      });
+    },
+    confirmDeleteDocument: (document: ListedDocument) => {
+      showAlert(DOCUMENT_DELETE_TITLE, document.fileName, [
+        { text: 'Peruuta', style: 'cancel' },
+        {
+          text: 'Poista',
+          style: 'destructive',
+          onPress: () => {
+            void deleteDocument(document.id)
+              .then(async () => {
+                setReadyDocument((current) => (current?.id === document.id ? null : current));
+                await reloadDocuments();
+              })
+              .catch((error) => {
+                showAlert('Poisto epäonnistui', errorMessage(error));
+              });
+          },
+        },
+      ]);
     },
     resyncSheet: () => {
       const synced = syncPdfFormDraft(draftRef.current, savedDraft(record), dirtyRef.current, 'reopen');

@@ -402,9 +402,12 @@ export function copyCalculationRecord(
 export async function deleteCalculation(id: string): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM documents WHERE calculation_id = ?', id);
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', id);
     await db.runAsync('DELETE FROM calculations WHERE id = ?', id);
   });
+  const { deleteCalculationDocumentFolder } = await import('../documents/documentFiles');
+  deleteCalculationDocumentFolder(id);
 }
 
 const WIZARD_DRAFT_ID = 'current';
