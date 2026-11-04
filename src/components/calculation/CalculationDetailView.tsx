@@ -1,8 +1,15 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { PdfExportButtons } from '@/src/components/pdf/PdfExportButtons';
+import { DetailTabBar } from '@/src/components/calculation/DetailTabBar';
+import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
+import { DocumentFormModal } from '@/src/components/pdf/DocumentFormModal';
+import { DOKUMENTTI_ACTIONS, type DetailTab } from '@/src/components/pdf/pdfExportFormModel';
+import { TarjousExportForm } from '@/src/components/pdf/TarjousExportForm';
+import { UrakkakorttiExportForm } from '@/src/components/pdf/UrakkakorttiExportForm';
+import { usePdfExportForm } from '@/src/components/pdf/usePdfExportForm';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
 import { PriceBreakdownCard } from '@/src/components/calculation/PriceBreakdownCard';
 import {
@@ -62,6 +69,9 @@ export function CalculationDetailView({
 }: CalculationDetailViewProps) {
   const styles = useThemedStyles(createStyles);
   const { settings, structures } = useApp();
+  const [tab, setTab] = useState<DetailTab>('laskelma');
+  const [openDocument, setOpenDocument] = useState<'tarjous' | 'urakkakortti' | null>(null);
+  const pdf = usePdfExportForm(record.id, record);
   const customer = customerFromRecord(record);
   const privateCustomer = isPrivateCustomer(customer);
   const structureLines = ensureStructureLines(record);
@@ -81,6 +91,7 @@ export function CalculationDetailView({
   const currentVersion = formDefinition.version;
 
   return (
+    <>
     <ScrollView contentContainerStyle={styles.content}>
       <View>
         <View style={styles.titleRow}>
@@ -99,6 +110,21 @@ export function CalculationDetailView({
         <View style={styles.titleUnderline} />
       </View>
 
+      <DetailTabBar value={tab} onChange={setTab} />
+
+      {tab === 'dokumentit' ? (
+        <View style={styles.documents}>
+          {DOKUMENTTI_ACTIONS.map((action) => (
+            <AppCard key={action.id} style={styles.documentCard}>
+              <Text style={styles.documentTitle}>
+                {action.id === 'tarjous' ? 'Tarjous' : 'Urakkakortti'}
+              </Text>
+              <OutlinedButton title={action.label} onPress={() => setOpenDocument(action.id)} />
+            </AppCard>
+          ))}
+        </View>
+      ) : (
+        <>
       {mismatchLine && snapshotVersion != null ? (
         <View style={styles.versionWarning}>
           <Text style={styles.versionWarningTitle}>Lomakepohja on muuttunut</Text>
@@ -113,7 +139,6 @@ export function CalculationDetailView({
           title="Muokkaa"
           onPress={() => router.push({ pathname: '/wizard', params: { editId: record.id } })}
         />
-        <PdfExportButtons calculationId={record.id} record={record} />
       </View>
 
       <AppCard style={styles.card}>
@@ -194,7 +219,30 @@ export function CalculationDetailView({
       ))}
 
       <OutlinedButton title="Sulje" onPress={onFooterPress} />
+        </>
+      )}
     </ScrollView>
+    <DocumentFormModal
+      visible={openDocument === 'tarjous'}
+      title="Tarjous"
+      onClose={() => setOpenDocument(null)}
+    >
+      <TarjousExportForm offer={pdf.offer} />
+    </DocumentFormModal>
+    <DocumentFormModal
+      visible={openDocument === 'urakkakortti' && pdf.manualLines === null}
+      title="Urakkakortti"
+      onClose={() => setOpenDocument(null)}
+    >
+      <UrakkakorttiExportForm card={pdf.card} />
+    </DocumentFormModal>
+    <ManualContractDialog
+      visible={pdf.manualLines !== null}
+      lines={pdf.manualLines ?? []}
+      onCancel={pdf.cancelManual}
+      onSubmit={pdf.submitManual}
+    />
+    </>
   );
 }
 
@@ -344,6 +392,17 @@ function createStyles(colors: AppColorPalette) {
     },
     actions: {
       marginTop: 8,
+    },
+    documents: {
+      gap: 16,
+    },
+    documentCard: {
+      gap: 12,
+    },
+    documentTitle: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 18,
+      color: colors.primary,
     },
     card: {
       marginTop: 8,
