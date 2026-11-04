@@ -1,7 +1,13 @@
-import type { CustomerInfo } from '@/src/core/models/types';
+import type { CalculationRecord, CustomerInfo } from '@/src/core/models/types';
 import {
+  calculationWithHuomioitavaa,
+  calculationWithUrakkakorttiHidePrices,
+  calculationWithUrakkakorttiMode,
+  calculationWithUrakkakorttiRivihinnat,
   invalidEmployeeContractWarning,
   parseCardPriceInput,
+  urakkakorttiRivihinnatFromFieldTexts,
+  type UrakkakorttiMode,
 } from '@/src/core/pdf/urakkakorttiCard';
 import { isPrivateCustomer } from '@/src/core/utils/priceDisplay';
 
@@ -190,4 +196,37 @@ export function syncPdfFormDraft(
     },
     dirty: { ...dirty },
   };
+}
+
+/**
+ * Luo urakkakortti käyttää kesken olevat kentät. Puhdas kenttä jää
+ * tallennetuksi. Rivihinta kirjoitetaan vain, jos käyttäjä on muuttanut sitä.
+ */
+export function calculationForUrakkakorttiCreate(
+  record: CalculationRecord,
+  input: {
+    mode: UrakkakorttiMode;
+    hidePrices: boolean;
+    dirtyHuomio: boolean;
+    dirtyRowPrices: boolean;
+    typedHuomio: string;
+    typedRowPrices: Record<string, string>;
+  },
+): CalculationRecord {
+  let next = calculationWithUrakkakorttiMode(record, input.mode);
+  next = calculationWithUrakkakorttiHidePrices(next, input.hidePrices);
+  if (input.dirtyHuomio) next = calculationWithHuomioitavaa(next, input.typedHuomio);
+  if (input.dirtyRowPrices) {
+    next = calculationWithUrakkakorttiRivihinnat(
+      next,
+      urakkakorttiRivihinnatFromFieldTexts(next, input.typedRowPrices, input.mode),
+    );
+  }
+  return next;
+}
+
+/** Likaisuus poistuu vasta, kun tietueen tallennus on onnistunut. */
+export function dirtyAfterUrakkakorttiSave(dirty: PdfFormDirty, saved: boolean): PdfFormDirty {
+  if (!saved) return { ...dirty };
+  return { ...dirty, huomioText: false, rowPriceText: false };
 }

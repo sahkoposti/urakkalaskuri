@@ -56,7 +56,9 @@ import {
 import { readBusinessVatMode, type BusinessVatMode } from '@/src/core/utils/priceDisplay';
 
 import {
+  calculationForUrakkakorttiCreate,
   cleanPdfFormDirty,
+  dirtyAfterUrakkakorttiSave,
   dokumenttiCreateTitle,
   draftCardPriceProblems,
   offerFormFields,
@@ -337,8 +339,21 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       return;
     }
     return run('urakkakortti', async () => {
-      await persistCard(cardMode, huomioText, hidePrices);
-      markDirty({ huomioText: false, rowPriceText: false });
+      const next = calculationForUrakkakorttiCreate(record, {
+        mode: cardMode,
+        hidePrices,
+        dirtyHuomio: dirtyRef.current.huomioText,
+        dirtyRowPrices: dirtyRef.current.rowPriceText,
+        typedHuomio: huomioText,
+        typedRowPrices: overrideTextRef.current,
+      });
+      let saved = false;
+      try {
+        await persistRecord(next);
+        saved = true;
+      } finally {
+        dirtyRef.current = dirtyAfterUrakkakorttiSave(dirtyRef.current, saved);
+      }
       const result = await exportUrakkakorttiPdf(calculationId, app, pdfExportDeps, manualValues);
       if (result.status === 'needsManualContract') {
         setManualLines(result.lines);
