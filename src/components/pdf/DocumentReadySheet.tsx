@@ -6,6 +6,7 @@ import {
   documentPageCountLabel,
   documentReadyTitle,
   phoneSaveActionLabel,
+  phoneSaveDetail,
   phoneStatusLabel,
 } from '@/src/core/documents/documentLabels';
 import type { PhonePlatform, PhoneSaveOutcome } from '@/src/core/documents/phoneSave';
@@ -49,10 +50,12 @@ export function DocumentReadySheet({
           <Text style={styles.saved}>{DOCUMENT_SAVED_IN_APP}</Text>
           {phone ? (
             <Text style={phone.status === 'failed' ? styles.error : styles.saved}>
-              {phoneStatusLabel(phone.status)}
+              {phoneStatusLabel(phone.status, phone.error)}
             </Text>
           ) : null}
-          {phone?.status === 'failed' && phone.error ? <Text style={styles.meta}>{phone.error}</Text> : null}
+          {phone?.status === 'failed' && phoneSaveDetail(phone.error) ? (
+            <Text style={styles.meta}>{phoneSaveDetail(phone.error)}</Text>
+          ) : null}
           <PrimaryButton title="Esikatsele" onPress={onPreview} />
           {phone && phoneSaveActionLabel(phone.status, platform) ? (
             <OutlinedButton

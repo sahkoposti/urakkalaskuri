@@ -43,7 +43,6 @@ import {
 import { deleteDocument, listDocumentsByCalculation, updateDocumentPhoneSave } from '@/src/core/documents/documentsRepository';
 import { copySavedPdfToPhone, pickPhoneDirectory as pickSafDirectory } from '@/src/core/documents/phoneFolderIo';
 import {
-  PHONE_SAVE_FAILED,
   type PhoneDirectory,
   type PhonePlatform,
   type PhoneSaveOutcome,
@@ -257,7 +256,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     };
     setReadyDocument(saved);
     setReadyShare(shareTarget);
-    setReadyPhone(await copyPhoneDocument(saved.id, shareTarget));
+    setReadyPhone(await copyPhoneDocument(saved.id, shareTarget, false));
   };
 
   const pickPhoneDirectory = () =>
@@ -273,7 +272,11 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       ]);
     });
 
-  const copyPhoneDocument = async (id: string, target: ShareTarget): Promise<PhoneSaveOutcome> => {
+  const copyPhoneDocument = async (
+    id: string,
+    target: ShareTarget,
+    manual: boolean,
+  ): Promise<PhoneSaveOutcome> => {
     const fileName = shareDocumentFileName({
       kind: target.kind,
       offerNumber: target.offerNumber,
@@ -287,10 +290,11 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
         fileName,
         appFileUri: target.uri,
         pickDirectory: pickPhoneDirectory,
+        manual,
       });
     } catch (error) {
       console.error(error);
-      phone = { status: 'failed', phoneUri: null, error: PHONE_SAVE_FAILED };
+      phone = { status: 'failed', phoneUri: null, error: 'unknown' };
     }
     try {
       await updateDocumentPhoneSave(id, {
@@ -515,7 +519,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       setReadyPhone(null);
     },
     retryPhoneSave: (document: ShareTarget & { id: string }) => {
-      void copyPhoneDocument(document.id, document).then((phone) => {
+      void copyPhoneDocument(document.id, document, true).then((phone) => {
         if (readyIdRef.current === document.id) setReadyPhone(phone);
       });
     },

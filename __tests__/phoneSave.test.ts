@@ -13,9 +13,16 @@ import {
   phoneStatusLabel,
 } from '../src/core/documents/documentLabels';
 import {
-  PHONE_FOLDER_NOT_CHOSEN,
+  PHONE_FOLDER_MISSING,
   PHONE_FOLDER_PERMISSION,
+  PHONE_NOT_SAVED_ON_PHONE,
+  PHONE_SAVE_FAILED,
   copyPdfIntoDirectory,
+  missingPhoneFolderError,
+  phoneFolderChoiceWasDeclined,
+  phoneSaveErrorCode,
+  phoneSaveErrorText,
+  resetPhoneFolderChoice,
   savePdfToPhoneFolder,
   uniquePhoneFileName,
   wrapPhoneDirectory,
@@ -123,6 +130,10 @@ describe('copyPdfIntoDirectory', () => {
 });
 
 describe('savePdfToPhoneFolder', () => {
+  beforeEach(() => {
+    resetPhoneFolderChoice();
+  });
+
   it('copies on Android and returns ok', async () => {
     const directory = fakeDirectory('content://tree/primary:Urakkalaskuri/', []);
     const input = deps({
@@ -160,7 +171,9 @@ describe('savePdfToPhoneFolder', () => {
         openDirectory: () => directory,
       }),
     );
-    expect(outcome).toEqual({ status: 'failed', phoneUri: null, error: 'disk full' });
+    expect(outcome).toEqual({ status: 'failed', phoneUri: null, error: 'write_failed' });
+    expect(phoneSaveErrorText(outcome.error)).toBe(PHONE_SAVE_FAILED);
+    expect(outcome.error).not.toContain('disk');
     expect(source.deleted).toBe(false);
     expect(source.bytes).toEqual(bytes);
     expect(names).toEqual([shareName]);
@@ -184,7 +197,7 @@ describe('savePdfToPhoneFolder', () => {
     const input = deps({ openDirectory: () => directory });
     const first = await savePdfToPhoneFolder(input);
     expect(first.status).toBe('failed');
-    expect(first.error).toBe('disk full');
+    expect(first.error).toBe('write_failed');
     fail = false;
     const second = await savePdfToPhoneFolder(input);
     expect(second).toEqual({
@@ -219,7 +232,39 @@ describe('savePdfToPhoneFolder', () => {
         pickDirectory: async () => null,
       }),
     );
-    expect(outcome).toEqual({ status: 'failed', phoneUri: null, error: PHONE_FOLDER_NOT_CHOSEN });
+    expect(outcome).toEqual({ status: 'skipped', phoneUri: null, error: 'cancelled' });
+    expect(phoneFolderChoiceWasDeclined()).toBe(true);
+    expect(phoneSaveErrorText(outcome.error)).toBe(PHONE_NOT_SAVED_ON_PHONE);
+  });
+
+  it('does not open the picker again after a cancel, until the user asks', async () => {
+    let picks = 0;
+    const input = deps({
+      getFolderUri: () => null,
+      pickDirectory: async () => {
+        picks += 1;
+        return null;
+      },
+    });
+    const first = await savePdfToPhoneFolder(input);
+    const second = await savePdfToPhoneFolder(input);
+    expect(first.error).toBe('cancelled');
+    expect(second).toEqual({ status: 'skipped', phoneUri: null, error: 'cancelled' });
+    expect(picks).toBe(1);
+    const picked = fakeDirectory('content://tree/primary:Uusi/', []);
+    const manual = await savePdfToPhoneFolder(
+      deps({
+        getFolderUri: () => null,
+        pickDirectory: async () => {
+          picks += 1;
+          return picked;
+        },
+      }),
+      { manual: true },
+    );
+    expect(picks).toBe(2);
+    expect(manual.status).toBe('ok');
+    expect(phoneFolderChoiceWasDeclined()).toBe(false);
   });
 
   it('clears a lost folder permission and asks for the folder again', async () => {
@@ -264,8 +309,42 @@ describe('savePdfToPhoneFolder', () => {
         pickDirectory: async () => null,
       }),
     );
-    expect(outcome).toEqual({ status: 'failed', phoneUri: null, error: PHONE_FOLDER_PERMISSION });
+    expect(outcome).toEqual({ status: 'failed', phoneUri: null, error: 'permission' });
+    expect(phoneSaveErrorText(outcome.error)).toBe(PHONE_FOLDER_PERMISSION);
     expect(stored).toBeNull();
+  });
+
+  it('clears a missing folder and asks again with its own reason', async () => {
+    const picked = fakeDirectory('content://tree/primary:Uusi/', []);
+    const sets: Array<string | null> = [];
+    const replaced = await savePdfToPhoneFolder(
+      deps({
+        openDirectory: () => {
+          throw missingPhoneFolderError();
+        },
+        setFolderUri: (uri) => {
+          sets.push(uri);
+        },
+        pickDirectory: async () => picked,
+      }),
+    );
+    expect(phoneSaveErrorCode(missingPhoneFolderError())).toBe('folder_missing');
+    expect(sets).toEqual([null, 'content://tree/primary:Uusi/']);
+    expect(replaced.status).toBe('ok');
+
+    resetPhoneFolderChoice();
+    const declined = await savePdfToPhoneFolder(
+      deps({
+        openDirectory: () => {
+          throw missingPhoneFolderError();
+        },
+        pickDirectory: async () => null,
+      }),
+    );
+    expect(declined).toEqual({ status: 'failed', phoneUri: null, error: 'folder_missing' });
+    expect(phoneSaveErrorText('folder_missing')).toBe(PHONE_FOLDER_MISSING);
+    expect(phoneSaveErrorText('Permission denied: /storage/emulated/0')).toBe(PHONE_SAVE_FAILED);
+    expect(phoneSaveErrorText('no_folder')).toBe('Kansiota ei valittu.');
   });
 
   it('skips the phone copy on iOS without opening the picker', async () => {
@@ -296,6 +375,8 @@ describe('phone status labels', () => {
     expect(phoneStatusLabel('ok')).toBe('Puhelimessa');
     expect(phoneStatusLabel('skipped')).toBe(PHONE_STATUS_SKIPPED);
     expect(phoneStatusLabel('skipped')).toBe('Ei puhelimessa');
+    expect(phoneStatusLabel('skipped', 'cancelled')).toBe(PHONE_NOT_SAVED_ON_PHONE);
+    expect(phoneSaveActionLabel('skipped', 'android')).toBe(PHONE_SAVE_TO_PHONE);
     expect(phoneStatusLabel('failed')).toBe(PHONE_STATUS_FAILED);
     expect(phoneStatusLabel('failed')).toBe('Puhelimeen tallennus epäonnistui');
     expect(phoneSaveActionLabel('ok', 'android')).toBeNull();

@@ -8,6 +8,7 @@ import {
   PHONE_FOLDER_EXPLANATION,
   documentListLabel,
   phoneSaveActionLabel,
+  phoneSaveDetail,
   phoneStatusLabel,
 } from '@/src/core/documents/documentLabels';
 import type { PhonePlatform } from '@/src/core/documents/phoneSave';
@@ -78,10 +79,10 @@ export function CalculationDocumentList({
             })}
           </Text>
           <Text style={document.phoneSaveStatus === 'failed' ? styles.failed : styles.hint}>
-            {phoneStatusLabel(document.phoneSaveStatus)}
+            {phoneStatusLabel(document.phoneSaveStatus, document.phoneSaveError)}
           </Text>
-          {document.phoneSaveStatus === 'failed' && document.phoneSaveError ? (
-            <Text style={styles.hint}>{document.phoneSaveError}</Text>
+          {document.phoneSaveStatus === 'failed' && phoneSaveDetail(document.phoneSaveError) ? (
+            <Text style={styles.hint}>{phoneSaveDetail(document.phoneSaveError)}</Text>
           ) : null}
           <View style={styles.actions}>
             <Pressable onPress={() => onPreview(document)} accessibilityLabel="Esikatsele">

@@ -6,7 +6,7 @@ import {
 } from '@/src/core/database/database';
 
 import {
-  PHONE_SAVE_FAILED,
+  missingPhoneFolderError,
   savePdfToPhoneFolder,
   wrapPhoneDirectory,
   type PhoneDirectory,
@@ -24,24 +24,28 @@ export async function copySavedPdfToPhone(input: {
   fileName: string;
   appFileUri: string;
   pickDirectory: () => Promise<PhoneDirectory | null>;
+  manual?: boolean;
 }): Promise<PhoneSaveOutcome> {
   try {
-    return await savePdfToPhoneFolder({
-      platform: input.platform,
-      fileName: input.fileName,
-      readBytes: () => new File(input.appFileUri).bytesSync(),
-      getFolderUri: () => getPhoneDocumentsDirectoryUri(),
-      setFolderUri: (uri) => savePhoneDocumentsDirectoryUri(uri),
-      openDirectory: (uri) => {
-        const dir = new Directory(uri);
-        if (!dir.exists) throw new Error('Permission denied');
-        return wrapPhoneDirectory(dir);
+    return await savePdfToPhoneFolder(
+      {
+        platform: input.platform,
+        fileName: input.fileName,
+        readBytes: () => new File(input.appFileUri).bytesSync(),
+        getFolderUri: () => getPhoneDocumentsDirectoryUri(),
+        setFolderUri: (uri) => savePhoneDocumentsDirectoryUri(uri),
+        openDirectory: (uri) => {
+          const dir = new Directory(uri);
+          if (!dir.exists) throw missingPhoneFolderError();
+          return wrapPhoneDirectory(dir);
+        },
+        pickDirectory: input.pickDirectory,
       },
-      pickDirectory: input.pickDirectory,
-    });
+      { manual: input.manual },
+    );
   } catch (error) {
     console.error(error);
-    return { status: 'failed', phoneUri: null, error: PHONE_SAVE_FAILED };
+    return { status: 'failed', phoneUri: null, error: 'unknown' };
   }
 }
 

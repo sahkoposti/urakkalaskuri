@@ -3,7 +3,54 @@ import type { PhoneSaveStatus } from './types';
 
 export const PHONE_FOLDER_NOT_CHOSEN = 'Kansiota ei valittu.';
 export const PHONE_FOLDER_PERMISSION = 'Kansion käyttöoikeus puuttuu.';
+export const PHONE_FOLDER_MISSING = 'Kansiota ei löytynyt. Valitse kansio uudelleen.';
+export const PHONE_NOT_SAVED_ON_PHONE = 'Ei tallennettu puhelimeen';
 export const PHONE_SAVE_FAILED = 'Puhelimeen tallennus epäonnistui.';
+
+/** Tietokantaan tallennettava syy. Suomenkielinen teksti tulee näyttövaiheessa. */
+export const PHONE_SAVE_ERROR_CODES = [
+  'no_folder',
+  'cancelled',
+  'permission',
+  'folder_missing',
+  'write_failed',
+  'unknown',
+] as const;
+
+export type PhoneSaveErrorCode = (typeof PHONE_SAVE_ERROR_CODES)[number];
+
+const PHONE_SAVE_ERROR_TEXT: Record<PhoneSaveErrorCode, string> = {
+  no_folder: PHONE_FOLDER_NOT_CHOSEN,
+  cancelled: PHONE_NOT_SAVED_ON_PHONE,
+  permission: PHONE_FOLDER_PERMISSION,
+  folder_missing: PHONE_FOLDER_MISSING,
+  write_failed: PHONE_SAVE_FAILED,
+  unknown: PHONE_SAVE_FAILED,
+};
+
+export function isPhoneSaveErrorCode(value: string): value is PhoneSaveErrorCode {
+  return (PHONE_SAVE_ERROR_CODES as readonly string[]).includes(value);
+}
+
+/**
+ * Koodi näytetään suomeksi. Vanha vapaa teksti ei ole koodi: yleinen suomenkielinen virhe.
+ */
+export function phoneSaveErrorText(stored: string | null | undefined): string | null {
+  if (!stored?.trim()) return null;
+  if (isPhoneSaveErrorCode(stored)) return PHONE_SAVE_ERROR_TEXT[stored];
+  return PHONE_SAVE_FAILED;
+}
+
+/** Istunnon muisti: käyttäjä peruutti kansiovalinnan. Ei tallennu tietokantaan. */
+let phoneFolderChoiceDeclined = false;
+
+export function phoneFolderChoiceWasDeclined(): boolean {
+  return phoneFolderChoiceDeclined;
+}
+
+export function resetPhoneFolderChoice(): void {
+  phoneFolderChoiceDeclined = false;
+}
 
 export type PhonePlatform = 'android' | 'ios';
 
@@ -35,6 +82,11 @@ export type PhoneSaveDeps = {
   pickDirectory(): Promise<PhoneDirectory | null>;
 };
 
+export type PhoneSaveOptions = {
+  /** Käyttäjän Tallenna puhelimeen -painike avaa valitsimen, vaikka valinta olisi peruttu. */
+  manual?: boolean;
+};
+
 const PERMISSION_ERROR = /permission|securityexception|not granted|access denied|eacces/i;
 
 export function isPhoneFolderPermissionError(error: unknown): boolean {
@@ -42,11 +94,19 @@ export function isPhoneFolderPermissionError(error: unknown): boolean {
   return PERMISSION_ERROR.test(message);
 }
 
-function shortReason(error: unknown): string {
-  if (isPhoneFolderPermissionError(error)) return PHONE_FOLDER_PERMISSION;
-  const message = error instanceof Error ? error.message.trim() : '';
-  if (!message) return PHONE_SAVE_FAILED;
-  return message.length > 120 ? `${message.slice(0, 117)}…` : message;
+export function phoneSaveErrorCode(error: unknown): PhoneSaveErrorCode {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  if (message === 'folder_missing' || /enoent|no such file|does not exist/i.test(message)) {
+    return 'folder_missing';
+  }
+  if (isPhoneFolderPermissionError(error)) return 'permission';
+  if (!message.trim()) return 'unknown';
+  return 'write_failed';
+}
+
+/** Puuttuva kansio ei ole käyttöoikeusvirhe. Sovitin heittää tämän, kun exists on epätosi. */
+export function missingPhoneFolderError(): Error {
+  return new Error('folder_missing');
 }
 
 /** `Tarjous.pdf` on jo kansiossa → `Tarjous (2).pdf`. Alkuperäistä nimeä ei korvata. */
@@ -107,6 +167,11 @@ export function copyPdfIntoDirectory(
   return { phoneUri: file.uri, storedName };
 }
 
+function declinedChoice(): PhoneSaveOutcome {
+  phoneFolderChoiceDeclined = true;
+  return { status: 'skipped', phoneUri: null, error: 'cancelled' };
+}
+
 async function directoryFromStoredUri(
   deps: PhoneSaveDeps,
   uri: string,
@@ -114,23 +179,31 @@ async function directoryFromStoredUri(
   try {
     return deps.openDirectory(uri);
   } catch (error) {
-    if (!isPhoneFolderPermissionError(error)) {
-      return { status: 'failed', phoneUri: null, error: shortReason(error) };
+    const code = phoneSaveErrorCode(error);
+    if (code !== 'permission' && code !== 'folder_missing') {
+      return { status: 'failed', phoneUri: null, error: code };
     }
-    return askAgain(deps);
+    return askAgain(deps, code);
   }
 }
 
-async function askAgain(deps: PhoneSaveDeps): Promise<PhoneDirectory | PhoneSaveOutcome> {
+async function askAgain(
+  deps: PhoneSaveDeps,
+  code: 'permission' | 'folder_missing',
+): Promise<PhoneDirectory | PhoneSaveOutcome> {
   await deps.setFolderUri(null);
   const picked = await deps.pickDirectory();
-  if (!picked) return { status: 'failed', phoneUri: null, error: PHONE_FOLDER_PERMISSION };
+  if (!picked) {
+    phoneFolderChoiceDeclined = true;
+    return { status: 'failed', phoneUri: null, error: code };
+  }
+  phoneFolderChoiceDeclined = false;
   await deps.setFolderUri(picked.uri);
   return picked;
 }
 
 function failedOutcome(error: unknown): PhoneSaveOutcome {
-  return { status: 'failed', phoneUri: null, error: shortReason(error) };
+  return { status: 'failed', phoneUri: null, error: phoneSaveErrorCode(error) };
 }
 
 /**
@@ -138,7 +211,10 @@ function failedOutcome(error: unknown): PhoneSaveOutcome {
  * Ei poista lähdettä. Virhe palautetaan tilana, ei heitetä.
  * iOS ohitetaan ilman kansiovalintaa.
  */
-export async function savePdfToPhoneFolder(deps: PhoneSaveDeps): Promise<PhoneSaveOutcome> {
+export async function savePdfToPhoneFolder(
+  deps: PhoneSaveDeps,
+  options: PhoneSaveOptions = {},
+): Promise<PhoneSaveOutcome> {
   if (deps.platform !== 'android') {
     return { status: 'skipped', phoneUri: null, error: null };
   }
@@ -153,8 +229,10 @@ export async function savePdfToPhoneFolder(deps: PhoneSaveDeps): Promise<PhoneSa
   let directory: PhoneDirectory;
   const stored = await deps.getFolderUri();
   if (!stored) {
+    if (!options.manual && phoneFolderChoiceDeclined) return declinedChoice();
     const picked = await deps.pickDirectory();
-    if (!picked) return { status: 'failed', phoneUri: null, error: PHONE_FOLDER_NOT_CHOSEN };
+    if (!picked) return declinedChoice();
+    phoneFolderChoiceDeclined = false;
     await deps.setFolderUri(picked.uri);
     directory = picked;
   } else {
@@ -167,8 +245,9 @@ export async function savePdfToPhoneFolder(deps: PhoneSaveDeps): Promise<PhoneSa
     const placed = copyPdfIntoDirectory(deps.fileName, bytes, directory);
     return { status: 'ok', phoneUri: placed.phoneUri, error: null };
   } catch (error) {
-    if (!isPhoneFolderPermissionError(error)) return failedOutcome(error);
-    const again = await askAgain(deps);
+    const code = phoneSaveErrorCode(error);
+    if (code !== 'permission' && code !== 'folder_missing') return failedOutcome(error);
+    const again = await askAgain(deps, code);
     if (!('listNames' in again)) return again;
     try {
       const placed = copyPdfIntoDirectory(deps.fileName, bytes, again);

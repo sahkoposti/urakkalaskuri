@@ -51,7 +51,7 @@ function setup(rec: CalculationRecord) {
       };
     },
     newDocumentId: () => `doc-${++documentSeq}`,
-    appVersion: () => '1.2.11',
+    appVersion: () => '0.0.0-test',
     insertDocument: async (row) => {
       if (failInsert) throw new Error('Dokumentin tallennus epäonnistui.');
       inserted.push(row);

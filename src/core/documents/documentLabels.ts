@@ -1,7 +1,7 @@
 import { formatCurrency } from '@/src/core/utils/formatters';
 
 import { fileSystemEntryName } from './documentStorage';
-import type { PhonePlatform } from './phoneSave';
+import { phoneSaveErrorText, type PhonePlatform } from './phoneSave';
 import type { DocumentKind, PhoneSaveStatus } from './types';
 
 export const PHONE_STATUS_OK = 'Puhelimessa';
@@ -51,10 +51,19 @@ export function documentListLabel(input: {
   return `${title} · v${input.version} · ${formatDocumentCreatedAt(input.createdAt)}${price}`;
 }
 
-export function phoneStatusLabel(status: PhoneSaveStatus): string {
+export function phoneStatusLabel(status: PhoneSaveStatus, error?: string | null): string {
   if (status === 'ok') return PHONE_STATUS_OK;
   if (status === 'failed') return PHONE_STATUS_FAILED;
+  if (error === 'cancelled' || error === 'no_folder') return phoneSaveErrorText(error) ?? PHONE_STATUS_SKIPPED;
   return PHONE_STATUS_SKIPPED;
+}
+
+/** Lisärivi epäonnistuneelle kopiolle. Peruutus ja yleinen kirjoitusvirhe eivät toista otsikkoa. */
+export function phoneSaveDetail(error: string | null | undefined): string | null {
+  if (!error || error === 'cancelled' || error === 'no_folder' || error === 'write_failed' || error === 'unknown') {
+    return null;
+  }
+  return phoneSaveErrorText(error);
 }
 
 /** iOS ei tarjoa puhelinkopiota. Onnistunut rivi ei kaipaa nappia. */
