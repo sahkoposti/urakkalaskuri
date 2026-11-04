@@ -225,6 +225,18 @@ export function calculationForUrakkakorttiCreate(
   return next;
 }
 
+/**
+ * Kortin luonti: tallennus ensin, PDF vasta sen jälkeen.
+ * Tallennuksen heitto ei käynnistä luontia.
+ */
+export async function saveThenGeneratePdf<T>(
+  save: () => Promise<void>,
+  generate: () => Promise<T>,
+): Promise<T> {
+  await save();
+  return generate();
+}
+
 /** Likaisuus poistuu vasta, kun tietueen tallennus on onnistunut. */
 export function dirtyAfterUrakkakorttiSave(dirty: PdfFormDirty, saved: boolean): PdfFormDirty {
   if (!saved) return { ...dirty };

@@ -68,6 +68,7 @@ import {
   calculationForUrakkakorttiCreate,
   cleanPdfFormDirty,
   dirtyAfterUrakkakorttiSave,
+  saveThenGeneratePdf,
   dokumenttiCreateTitle,
   draftCardPriceProblems,
   offerFormFields,
@@ -371,13 +372,18 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
         typedRowPrices: overrideTextRef.current,
       });
       let saved = false;
+      let result: Awaited<ReturnType<typeof exportUrakkakorttiPdf>>;
       try {
-        await persistRecord(next);
-        saved = true;
+        result = await saveThenGeneratePdf(
+          async () => {
+            await persistRecord(next);
+            saved = true;
+          },
+          () => exportUrakkakorttiPdf(calculationId, app, pdfExportDeps, manualValues),
+        );
       } finally {
         dirtyRef.current = dirtyAfterUrakkakorttiSave(dirtyRef.current, saved);
       }
-      const result = await exportUrakkakorttiPdf(calculationId, app, pdfExportDeps, manualValues);
       if (result.status === 'needsManualContract') {
         setManualLines(result.lines);
         return;
