@@ -341,13 +341,13 @@ export default function ProductStructureDetailScreen() {
         options={{ title: isNew ? 'Uusi tuoterakenne' : (structure?.name ?? 'Tuoterakenne') }}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        <AppInput label="Nimi" value={name} onChangeText={setName} />
-        <AppInput label="Yksikkö" value={unit} onChangeText={setUnit} placeholder="Valinnainen" />
+        <AppInput label="Nimi" value={name} onChangeText={setName} kind="name" />
+        <AppInput label="Yksikkö" value={unit} onChangeText={setUnit} kind="code" placeholder="Valinnainen" />
         <AppInput
           label="Myyntipalkkio %"
           value={commission}
           onChangeText={setCommission}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <Text style={styles.sectionHint}>
           Kate on yrityksen osuus myyntihinnasta (ALV 0). Palkkio tulee lisäksi. Kate liukuu
@@ -358,7 +358,7 @@ export default function ProductStructureDetailScreen() {
           label="Pienen urakan raja (€, ALV 0)"
           value={marginLowAmount}
           onChangeText={setMarginLowAmount}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <AppPercentSlider
           label="Kate pienellä urakalla (%)"
@@ -372,7 +372,7 @@ export default function ProductStructureDetailScreen() {
           label="Suuren urakan raja (€, ALV 0)"
           value={marginHighAmount}
           onChangeText={setMarginHighAmount}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <AppPercentSlider
           label="Kate suurella urakalla (%)"
@@ -386,7 +386,7 @@ export default function ProductStructureDetailScreen() {
           label="Työryhmän koko"
           value={crewSize}
           onChangeText={setCrewSize}
-          keyboardType="numeric"
+          kind="integer"
           placeholder="Henkilöä"
         />
         <AppInput
@@ -398,7 +398,7 @@ export default function ProductStructureDetailScreen() {
               parseHourlyRateInput(text) === 'invalid' ? HOURLY_RATE_FIELD.invalid : null,
             );
           }}
-          keyboardType="decimal-pad"
+          kind="decimal"
           placeholder={hourlyRatePlaceholder(settings.defaultHourlyRate)}
         />
         <Text style={styles.sectionHint}>{HOURLY_RATE_FIELD.help}</Text>
@@ -407,6 +407,7 @@ export default function ProductStructureDetailScreen() {
           label="Lisätiedot"
           value={additionalInfo}
           onChangeText={setAdditionalInfo}
+          kind="sentence"
           multiline
           placeholder="Oletusteksti riville (valinnainen)"
         />
@@ -414,21 +415,21 @@ export default function ProductStructureDetailScreen() {
           label="Oletushinta alv0"
           value={defaultUnitPrice}
           onChangeText={setDefaultUnitPrice}
-          keyboardType="decimal-pad"
+          kind="decimal"
           placeholder="Valinnainen"
         />
         <AppInput
           label={WORK_DURATION_DISPLAY_LABEL}
           value={defaultDisplayWorkDuration}
           onChangeText={setDefaultDisplayWorkDuration}
-          keyboardType="decimal-pad"
+          kind="decimal"
           placeholder="Valinnainen, säävaraus mukana"
         />
         <AppInput
           label="Oletus materiaalit alv0"
           value={defaultMaterials}
           onChangeText={setDefaultMaterials}
-          keyboardType="decimal-pad"
+          kind="decimal"
           placeholder="Valinnainen"
         />
         <PrimaryButton title="Tallenna" onPress={() => void handleSave()} />

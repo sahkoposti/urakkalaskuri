@@ -678,13 +678,14 @@ export default function CalculationComposerScreen() {
             label="Toimitusajankohta"
             value={deliveryScheduleText}
             onChangeText={setDeliveryScheduleText}
+            kind="sentence"
             placeholder="Esim. viikko 42"
           />
           <AppInput
             label="Matka-aika yhteen suuntaan"
             value={travelTimeOneWay}
             onChangeText={setTravelTimeOneWay}
-            keyboardType="decimal-pad"
+            kind="decimal"
             placeholder="Esim. 0,75"
             trailing={<Text style={styles.unitHint}>h</Text>}
           />

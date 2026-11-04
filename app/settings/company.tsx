@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { AppInput, BrandLogo, PrimaryButton, ScreenLoading } from '@/src/components/common';
+import type { TextInputKind } from '@/src/components/textInputProps';
 import {
   cleanCompanyProfile,
   companyProfilesEqual,
@@ -20,28 +21,28 @@ type TextKey = Exclude<keyof CompanyProfile, 'logoUri'>;
 const FIELDS: {
   key: TextKey;
   label: string;
-  keyboardType?: 'default' | 'phone-pad' | 'email-address' | 'numeric';
+  kind: TextInputKind;
   placeholder?: string;
 }[] = [
-  { key: 'companyName', label: 'Yrityksen nimi' },
-  { key: 'address', label: 'Katuosoite' },
-  { key: 'postalCode', label: 'Postinumero', keyboardType: 'numeric' },
-  { key: 'postalLocality', label: 'Postitoimipaikka' },
-  { key: 'website', label: 'Www-sivu' },
-  { key: 'email', label: 'Sähköposti', keyboardType: 'email-address' },
-  { key: 'businessId', label: 'Y-tunnus' },
-  { key: 'phone', label: 'Puhelin', keyboardType: 'phone-pad' },
-  { key: 'sellerName', label: 'Myyjän nimi' },
+  { key: 'companyName', label: 'Yrityksen nimi', kind: 'name' },
+  { key: 'address', label: 'Katuosoite', kind: 'words' },
+  { key: 'postalCode', label: 'Postinumero', kind: 'postalCode' },
+  { key: 'postalLocality', label: 'Postitoimipaikka', kind: 'words' },
+  { key: 'website', label: 'Www-sivu', kind: 'url' },
+  { key: 'email', label: 'Sähköposti', kind: 'email' },
+  { key: 'businessId', label: 'Y-tunnus', kind: 'businessId' },
+  { key: 'phone', label: 'Puhelin', kind: 'phone' },
+  { key: 'sellerName', label: 'Myyjän nimi', kind: 'name' },
   {
     key: 'sellerPhone',
     label: 'Myyjän puhelin',
-    keyboardType: 'phone-pad',
+    kind: 'phone',
     placeholder: 'Tyhjä = yrityksen puhelin/sähköposti',
   },
   {
     key: 'sellerEmail',
     label: 'Myyjän sähköposti',
-    keyboardType: 'email-address',
+    kind: 'email',
     placeholder: 'Tyhjä = yrityksen puhelin/sähköposti',
   },
 ];
@@ -117,7 +118,7 @@ export default function CompanySettingsScreen() {
             key={field.key}
             label={field.label}
             value={draft[field.key] ?? ''}
-            keyboardType={field.keyboardType}
+            kind={field.kind}
             onChangeText={(value) => setDraft((prev) => ({ ...prev, [field.key]: value }))}
             placeholder={field.placeholder ?? 'Valinnainen'}
           />

@@ -71,7 +71,7 @@ export function CustomerStep({
 
   return (
     <View>
-      <AppInput label="Nimi *" value={name} onChangeText={onNameChange} />
+      <AppInput label="Nimi *" value={name} onChangeText={onNameChange} kind="name" />
       {nameMatches.length > 0 && onPickCustomer ? (
         <View style={styles.matches}>
           {nameMatches.map((customer) => (
@@ -89,32 +89,34 @@ export function CustomerStep({
         label="Puh."
         value={phone}
         onChangeText={onPhoneChange}
-        keyboardType="phone-pad"
+        kind="phone"
       />
       <AppInput
         label="Sähköposti"
         value={email}
         onChangeText={onEmailChange}
-        keyboardType="email-address"
+        kind="email"
       />
-      <AppInput label="Osoite" value={address} onChangeText={onAddressChange} />
+      <AppInput label="Osoite" value={address} onChangeText={onAddressChange} kind="words" />
       <AppInput
         label="Postinumero"
         value={postalCode}
         onChangeText={handlePostalCodeChange}
-        keyboardType="numeric"
+        kind="postalCode"
         placeholder="Esim. 20100"
       />
       <AppInput
         label="Postitoimipaikka"
         value={postalLocality}
         onChangeText={onPostalLocalityChange}
+        kind="words"
         placeholder="Täyttyy postinumerosta"
       />
       <AppInput
         label="Lisätiedot"
         value={notes}
         onChangeText={onNotesChange}
+        kind="sentence"
         multiline
         placeholder="Valinnainen"
       />

@@ -94,6 +94,7 @@ export function StructureLineCard({
         label="Nimi"
         value={priced.name}
         onChangeText={(value) => patch({ name: value })}
+        kind="name"
         placeholder="Tuoterakenne"
       />
       {formIncomplete ? <Text style={styles.incomplete}>Keskeneräinen lomake</Text> : null}
@@ -111,6 +112,7 @@ export function StructureLineCard({
             label="Yksikkö"
             value={priced.unit ?? ''}
             onChangeText={(value) => patch({ unit: value })}
+            kind="code"
           />
         </View>
       </View>
@@ -171,6 +173,7 @@ export function StructureLineCard({
         label="Lisätiedot"
         value={priced.additionalInfo ?? ''}
         onChangeText={(value) => patch({ additionalInfo: value })}
+        kind="sentence"
         multiline
         placeholder="Valinnainen"
       />
@@ -216,7 +219,7 @@ function DaysInput({
     <AppInput
       label={label}
       value={text}
-      keyboardType="decimal-pad"
+      kind="decimal"
       placeholder="Valinnainen"
       onChangeText={(raw) => {
         const next = limitDecimalInput(raw, 0);
@@ -265,7 +268,7 @@ function DecimalInput({
     <AppInput
       label={label}
       value={text}
-      keyboardType="decimal-pad"
+      kind="decimal"
       onChangeText={(raw) => {
         const next = limitDecimalInput(raw);
         setText(next);

@@ -99,6 +99,7 @@ export default function FormPagesSettingsScreen() {
                   label="Sivun nimi"
                   value={page.title}
                   onChangeText={(title) => handleRenamePage(page.id, title)}
+                  kind="words"
                 />
                 <Text style={styles.fieldCount}>
                   {fieldsForPage(draft, page.id).length} kenttää tällä sivulla
