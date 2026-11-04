@@ -29,7 +29,16 @@ import {
   parseOfferValidDaysInput,
 } from '@/src/core/pdf/offerValidDays';
 import { formatFinnishDate, validUntil } from '@/src/core/pdf/validUntil';
+import { previewSavedPdf, shareSavedPdf } from '@/src/core/documents/documentActions';
+import { storedPdfUri } from '@/src/core/documents/documentFiles';
+import {
+  DOCUMENT_DELETE_TITLE,
+  DOCUMENT_PREVIEW_FAILED,
+} from '@/src/core/documents/documentLabels';
+import { deleteDocument, listDocumentsByCalculation } from '@/src/core/documents/documentsRepository';
+import type { ExportedDocument } from '@/src/core/documents/types';
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
+import type { ListedDocument } from './CalculationDocumentList';
 import {
   calculationWithBusinessVatMode,
   calculationWithHuomioitavaa,
@@ -170,6 +179,8 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   // Ref estää tuplanapautuksen ennen kuin tila ehtii päivittyä (DB-lukko on toinen varmistus).
   const busyRef = useRef(false);
   const [manualLines, setManualLines] = useState<{ id: string; name: string }[] | null>(null);
+  const [documents, setDocuments] = useState<ListedDocument[]>([]);
+  const [readyDocument, setReadyDocument] = useState<ExportedDocument | null>(null);
   const app = { settings, products, structures };
 
   useEffect(() => {
@@ -198,6 +209,25 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       cancelled = true;
     };
   }, [record.id, record.formSnapshot]);
+
+  const reloadDocuments = async () => {
+    const rows = await listDocumentsByCalculation(calculationId);
+    setDocuments(rows.map((row) => ({ ...row, uri: storedPdfUri(row.fileRelPath) })));
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    listDocumentsByCalculation(calculationId)
+      .then((rows) => {
+        if (!cancelled) setDocuments(rows.map((row) => ({ ...row, uri: storedPdfUri(row.fileRelPath) })));
+      })
+      .catch((error) => {
+        if (!cancelled) showAlert('Dokumentteja ei voitu lukea', errorMessage(error));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [calculationId, showAlert]);
 
   const reportSaveError = (error: unknown) => {
     console.error(error);
@@ -294,7 +324,9 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
         await persistValidDays(days);
         markDirty({ validDays: false });
       }
-      await exportTarjousPdf(calculationId, app, pdfExportDeps);
+      const saved = await exportTarjousPdf(calculationId, app, pdfExportDeps);
+      setReadyDocument(saved);
+      await reloadDocuments();
       await refreshCalculations();
     });
   };
@@ -312,6 +344,8 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
         setManualLines(result.lines);
         return;
       }
+      setReadyDocument(result);
+      await reloadDocuments();
       if (manualValues) await refreshCalculations();
     });
   };
@@ -324,6 +358,40 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     submitManual: (values: Record<string, number>) => {
       setManualLines(null);
       void handleUrakkakortti(values);
+    },
+    documents,
+    readyDocument,
+    dismissReady: () => setReadyDocument(null),
+    previewDocument: (target: { uri: string }) => {
+      void previewSavedPdf(target.uri).catch((error) => {
+        console.error(error);
+        showAlert('Esikatselu epäonnistui', DOCUMENT_PREVIEW_FAILED);
+      });
+    },
+    shareDocument: (target: { uri: string; fileName: string }) => {
+      void shareSavedPdf(target.uri, target.fileName).catch((error) => {
+        console.error(error);
+        showAlert('Jakaminen epäonnistui', errorMessage(error));
+      });
+    },
+    confirmDeleteDocument: (document: ListedDocument) => {
+      showAlert(DOCUMENT_DELETE_TITLE, document.fileName, [
+        { text: 'Peruuta', style: 'cancel' },
+        {
+          text: 'Poista',
+          style: 'destructive',
+          onPress: () => {
+            void deleteDocument(document.id)
+              .then(async () => {
+                setReadyDocument((current) => (current?.id === document.id ? null : current));
+                await reloadDocuments();
+              })
+              .catch((error) => {
+                showAlert('Poisto epäonnistui', errorMessage(error));
+              });
+          },
+        },
+      ]);
     },
     resyncSheet: () => {
       const synced = syncPdfFormDraft(draftRef.current, savedDraft(record), dirtyRef.current, 'reopen');

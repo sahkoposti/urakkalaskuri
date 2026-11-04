@@ -1,0 +1,88 @@
+import { Pressable, Text, View } from 'react-native';
+
+import { AppCard } from '@/src/components/common';
+import { DOCUMENT_EMPTY_LIST, documentListLabel } from '@/src/core/documents/documentLabels';
+import type { SavedDocument } from '@/src/core/documents/types';
+import type { AppColorPalette } from '@/src/theme/colors';
+import { useThemedStyles } from '@/src/theme/useThemedStyles';
+
+export type ListedDocument = SavedDocument & { uri: string };
+
+type CalculationDocumentListProps = {
+  documents: ListedDocument[];
+  onPreview: (document: ListedDocument) => void;
+  onShare: (document: ListedDocument) => void;
+  onDelete: (document: ListedDocument) => void;
+};
+
+export function CalculationDocumentList({
+  documents,
+  onPreview,
+  onShare,
+  onDelete,
+}: CalculationDocumentListProps) {
+  const styles = useThemedStyles(createStyles);
+  if (documents.length === 0) {
+    return <Text style={styles.empty}>{DOCUMENT_EMPTY_LIST}</Text>;
+  }
+  return (
+    <View style={styles.list}>
+      {documents.map((document) => (
+        <AppCard key={document.id} style={styles.card}>
+          <Text style={styles.label}>
+            {documentListLabel({
+              kind: document.kind,
+              offerNumber: document.offerNumber,
+              version: document.version,
+              createdAt: new Date(document.createdAt),
+              total: document.summary?.total ?? null,
+            })}
+          </Text>
+          <View style={styles.actions}>
+            <Pressable onPress={() => onPreview(document)} accessibilityLabel="Esikatsele">
+              <Text style={styles.action}>Esikatsele</Text>
+            </Pressable>
+            <Pressable onPress={() => onShare(document)} accessibilityLabel="Jaa">
+              <Text style={styles.action}>Jaa</Text>
+            </Pressable>
+            <Pressable onPress={() => onDelete(document)} accessibilityLabel="Poista">
+              <Text style={styles.action}>Poista</Text>
+            </Pressable>
+          </View>
+        </AppCard>
+      ))}
+    </View>
+  );
+}
+
+function createStyles(colors: AppColorPalette) {
+  return {
+    list: {
+      gap: 12,
+    },
+    card: {
+      gap: 10,
+    },
+    label: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.text,
+    },
+    actions: {
+      flexDirection: 'row' as const,
+      flexWrap: 'wrap' as const,
+      gap: 16,
+    },
+    action: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 15,
+      color: colors.accent,
+    },
+    empty: {
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 15,
+      color: colors.text,
+    },
+  };
+}

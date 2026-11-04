@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { DetailTabBar } from '@/src/components/calculation/DetailTabBar';
 import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
+import { CalculationDocumentList } from '@/src/components/pdf/CalculationDocumentList';
 import { DocumentFormModal } from '@/src/components/pdf/DocumentFormModal';
+import { DocumentReadySheet } from '@/src/components/pdf/DocumentReadySheet';
 import { DOKUMENTTI_ACTIONS, type DetailTab } from '@/src/components/pdf/pdfExportFormModel';
 import { TarjousExportForm } from '@/src/components/pdf/TarjousExportForm';
 import { UrakkakorttiExportForm } from '@/src/components/pdf/UrakkakorttiExportForm';
@@ -72,6 +74,9 @@ export function CalculationDetailView({
   const [tab, setTab] = useState<DetailTab>('laskelma');
   const [openDocument, setOpenDocument] = useState<'tarjous' | 'urakkakortti' | null>(null);
   const pdf = usePdfExportForm(record.id, record);
+  useEffect(() => {
+    if (pdf.readyDocument) setOpenDocument(null);
+  }, [pdf.readyDocument]);
   const customer = customerFromRecord(record);
   const privateCustomer = isPrivateCustomer(customer);
   const structureLines = ensureStructureLines(record);
@@ -128,6 +133,12 @@ export function CalculationDetailView({
               />
             </AppCard>
           ))}
+          <CalculationDocumentList
+            documents={pdf.documents}
+            onPreview={pdf.previewDocument}
+            onShare={pdf.shareDocument}
+            onDelete={pdf.confirmDeleteDocument}
+          />
           <OutlinedButton title="Sulje" onPress={onFooterPress} />
         </View>
       ) : (
@@ -243,6 +254,14 @@ export function CalculationDetailView({
     >
       <UrakkakorttiExportForm card={pdf.card} />
     </DocumentFormModal>
+    <DocumentReadySheet
+      document={pdf.readyDocument}
+      onPreview={() => pdf.readyDocument && pdf.previewDocument({ uri: pdf.readyDocument.path })}
+      onShare={() =>
+        pdf.readyDocument && pdf.shareDocument({ uri: pdf.readyDocument.path, fileName: pdf.readyDocument.fileName })
+      }
+      onClose={pdf.dismissReady}
+    />
     <ManualContractDialog
       visible={pdf.manualLines !== null}
       lines={pdf.manualLines ?? []}
