@@ -6,6 +6,7 @@ import {
   calculationForUrakkakorttiCreate,
   cleanPdfFormDirty,
   dirtyAfterUrakkakorttiSave,
+  saveThenGeneratePdf,
   dokumenttiCreateTitle,
   draftCardPriceProblems,
   offerFormFields,
@@ -270,5 +271,35 @@ describe('urakkakortti create draft', () => {
     expect(cleared.huomioText).toBe(false);
     expect(cleared.rowPriceText).toBe(false);
     expect(cleared.personsText).toBe(true);
+  });
+
+  it('saves the card before the PDF is generated', async () => {
+    const order: string[] = [];
+    const pdf = await saveThenGeneratePdf(
+      async () => {
+        order.push('save');
+      },
+      async () => {
+        order.push('generate');
+        return 'card-pdf';
+      },
+    );
+    expect(order).toEqual(['save', 'generate']);
+    expect(pdf).toBe('card-pdf');
+
+    const failed: string[] = [];
+    await expect(
+      saveThenGeneratePdf(
+        async () => {
+          failed.push('save');
+          throw new Error('tallennus epäonnistui');
+        },
+        async () => {
+          failed.push('generate');
+          return 'card-pdf';
+        },
+      ),
+    ).rejects.toThrow('tallennus epäonnistui');
+    expect(failed).toEqual(['save']);
   });
 });
