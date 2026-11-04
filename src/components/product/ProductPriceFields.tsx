@@ -31,13 +31,13 @@ export function ProductPriceFields({
         label="Ostohinta (ALV 0) € * · kaavassa ostohinta"
         value={purchasePrice}
         onChangeText={onPurchasePriceChange}
-        keyboardType="decimal-pad"
+        kind="decimal"
       />
       <AppInput
         label="Myyntihinta (ALV 0) € * · kaavassa myyntihinta"
         value={salePrice}
         onChangeText={onSalePriceChange}
-        keyboardType="decimal-pad"
+        kind="decimal"
       />
       <AppCard>
         <ResultRow

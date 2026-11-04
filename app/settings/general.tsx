@@ -106,13 +106,13 @@ export default function GeneralSettingsScreen() {
           label="ALV (%)"
           value={vatPercent}
           onChangeText={setVatPercent}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <AppInput
           label="Uuden tuoterakenteen myyntipalkkio (%)"
           value={defaultCommissionPercent}
           onChangeText={setDefaultCommissionPercent}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <Text style={styles.sectionHint}>
           Palkkio ja kate asetetaan jokaiselle tuoterakenteelle erikseen. Tämä arvo kopioidaan
@@ -122,19 +122,19 @@ export default function GeneralSettingsScreen() {
           label="Tuntihinta (ALV 0) €/h"
           value={defaultHourlyRate}
           onChangeText={setDefaultHourlyRate}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <AppInput
           label="Työpäivän pituus (h)"
           value={workdayHours}
           onChangeText={setWorkdayHours}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <AppInput
           label="Säävarauskerroin työn kestolle"
           value={weatherReserveFactor}
           onChangeText={setWeatherReserveFactor}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <Text style={styles.sectionHint}>
           Kerroin vaikuttaa vain yhteenvedon arvioituun työn kestoon. Se kerrotaan kestolla ennen

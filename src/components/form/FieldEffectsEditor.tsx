@@ -137,7 +137,7 @@ export function FieldEffectsEditor({ field, onChange }: FieldEffectsEditorProps)
                       quantityRef: undefined,
                     });
                   }}
-                  keyboardType="decimal-pad"
+                  kind="decimal"
                   placeholder={effectValuePlaceholder(effect.type)}
                 />
               ) : (

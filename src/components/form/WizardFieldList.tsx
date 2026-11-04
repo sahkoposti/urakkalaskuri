@@ -184,7 +184,7 @@ export function WizardFieldList({
           label={label}
           value={resolveFieldRawValue(field, fieldValues)}
           onChangeText={(value) => onChange(field.key, value)}
-          keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
+          kind={field.type === 'number' ? 'decimal' : 'sentence'}
           placeholder={
             field.type === 'number' ? (field.unit === '%' ? 'Esim. 0' : 'Esim. 120') : undefined
           }
@@ -245,7 +245,7 @@ function ComputedOverrideInput({
         setFocused(true);
       }}
       onBlur={() => setFocused(false)}
-      keyboardType="decimal-pad"
+      kind="decimal"
       placeholder={isOverridden ? 'Esim. 5' : computedText || 'Esim. 5'}
       trailing={
         <Pressable

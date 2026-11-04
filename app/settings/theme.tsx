@@ -91,23 +91,24 @@ export default function ThemeSettingsScreen() {
       <Stack.Screen options={{ title: 'Teema' }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionLabel}>Värit</Text>
-        <AppInput label="Korostusväri (hex)" value={accentColor} onChangeText={setAccentColor} />
-        <AppInput label="Pääväri (hex)" value={primaryColor} onChangeText={setPrimaryColor} />
-        <AppInput label="Tekstiväri (hex)" value={textColor} onChangeText={setTextColor} />
-        <AppInput label="Pintaväri (hex)" value={surfaceColor} onChangeText={setSurfaceColor} />
+        <AppInput label="Korostusväri (hex)" value={accentColor} onChangeText={setAccentColor} kind="code" />
+        <AppInput label="Pääväri (hex)" value={primaryColor} onChangeText={setPrimaryColor} kind="code" />
+        <AppInput label="Tekstiväri (hex)" value={textColor} onChangeText={setTextColor} kind="code" />
+        <AppInput label="Pintaväri (hex)" value={surfaceColor} onChangeText={setSurfaceColor} kind="code" />
 
         <Text style={styles.sectionLabel}>Taustakuva</Text>
         <AppInput
           label="Taustakuvan polku / URI"
           value={backgroundImageUri}
           onChangeText={setBackgroundImageUri}
+          kind="url"
           placeholder="Valinnainen"
         />
         <AppInput
           label="Taustakuvan himmeys (0–100 %)"
           value={backgroundOpacity}
           onChangeText={setBackgroundOpacity}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <Text style={styles.note}>
           Taustakuvan esikatselu ja valinta galleriasta tulevat myöhemmin. Himmeys 100 = täysin

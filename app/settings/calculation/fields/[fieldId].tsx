@@ -341,6 +341,7 @@ export default function FormFieldEditorScreen() {
           label="Näyttönimi"
           value={field.label}
           onChangeText={(label) => updateFieldState({ label })}
+          kind="words"
           placeholder="Esimerkki: Kiinteä seinäpinta-ala"
           compact
         />
@@ -349,6 +350,7 @@ export default function FormFieldEditorScreen() {
             label="Muuttuja (key)"
             value={field.key}
             onChangeText={(key) => updateFieldState({ key: sanitizeKeyInput(key) })}
+            kind="code"
             placeholder="esim. pinta_ala"
             compact
           />
@@ -361,6 +363,7 @@ export default function FormFieldEditorScreen() {
             label="Yksikkö"
             value={field.unit ?? ''}
             onChangeText={(unit) => updateFieldState({ unit })}
+            kind="code"
             placeholder="esim. m²"
             compact
           />
@@ -382,6 +385,7 @@ export default function FormFieldEditorScreen() {
               label={isSystem ? 'Järjestelmäkaava' : 'Kaava'}
               value={field.formula ?? ''}
               onChangeText={(formula) => updateFieldState({ formula })}
+              kind="code"
               multiline
               placeholder="laskenta_seinapinta_ala_m2 / kaytettava_maali.menekki"
               compact
@@ -521,7 +525,7 @@ export default function FormFieldEditorScreen() {
               value={field.debugExampleValue ?? ''}
               onChangeText={(debugExampleValue) => updateFieldState({ debugExampleValue })}
               placeholder={field.type === 'number' ? 'Esim. 120' : 'Esimerkkiarvo'}
-              keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
+              kind={field.type === 'number' ? 'decimal' : 'sentence'}
               compact
             />
           )
@@ -570,6 +574,7 @@ export default function FormFieldEditorScreen() {
           label="Ohjeteksti (valinnainen)"
           value={field.helpText ?? ''}
           onChangeText={(helpText) => updateFieldState({ helpText })}
+          kind="sentence"
           multiline
           placeholder="Näytetään kentän alla laskennassa"
           compact
@@ -782,7 +787,7 @@ function PrintOrderField({
       label="Järjestys"
       value={shown}
       placeholder="Lomakkeen järjestys"
-      keyboardType="decimal-pad"
+      kind="decimal"
       compact
       onChangeText={(value) => {
         setDraft(value);
@@ -892,6 +897,7 @@ function PrintSettingsEditor({
           label="Tulostusteksti"
           value={settings.label === '' ? '' : (settings.label ?? '')}
           onChangeText={(label) => patchTarget(target, { label: label.length === 0 ? undefined : label })}
+          kind="words"
           placeholder="Kentän nimi"
           compact
         />

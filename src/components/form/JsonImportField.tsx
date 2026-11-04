@@ -1,6 +1,8 @@
 import { createElement, useEffect, useRef } from 'react';
 import { Platform, TextInput, type StyleProp, type TextStyle } from 'react-native';
 
+import { textInputPropsFor } from '@/src/components/textInputProps';
+
 type JsonImportFieldProps = {
   fieldKey: string;
   onChangeText: (text: string) => void;
@@ -30,6 +32,8 @@ export function JsonImportField({
     latest.current(text);
   }
 
+  const codeProps = textInputPropsFor('code');
+
   if (Platform.OS === 'web') {
     return createElement('textarea', {
       key: fieldKey,
@@ -37,7 +41,8 @@ export function JsonImportField({
         setText(event.currentTarget.value);
       },
       spellCheck: false,
-      autoComplete: 'off',
+      autoCapitalize: codeProps.autoCapitalize,
+      autoComplete: codeProps.autoComplete,
       autoCorrect: 'off',
       placeholder,
       style: {
@@ -71,8 +76,11 @@ export function JsonImportField({
       multiline
       scrollEnabled
       maxLength={MAX_JSON_LENGTH}
-      autoCapitalize="none"
-      autoCorrect={false}
+      keyboardType={codeProps.keyboardType}
+      autoCapitalize={codeProps.autoCapitalize}
+      autoCorrect={codeProps.autoCorrect}
+      autoComplete={codeProps.autoComplete}
+      textContentType={codeProps.textContentType}
       placeholder={placeholder}
       placeholderTextColor={placeholderColor}
       textAlignVertical="top"

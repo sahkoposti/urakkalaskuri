@@ -161,7 +161,7 @@ export default function OfferSettingsScreen() {
       <Stack.Screen options={{ title: 'Tarjous' }} />
       <ScrollView contentContainerStyle={styles.content}>
         <SectionTitle title={structure?.name ? `Tämä rakenne: ${structure.name}` : 'Tämä rakenne'} />
-        <AppInput label="Lisätiedot" value={info} onChangeText={setInfo} multiline placeholder="Valinnainen" />
+        <AppInput label="Lisätiedot" value={info} onChangeText={setInfo} kind="sentence" multiline placeholder="Valinnainen" />
         <Text style={styles.note}>Tulostuu tämän rakenteen osioon tarjouksessa (Muuta).</Text>
 
         <SectionTitle title="Yhteiset (kaikki tuoterakenteet)" />
@@ -169,20 +169,21 @@ export default function OfferSettingsScreen() {
           label="Tarjousnumeron aloitus"
           value={company.offerNumberStart}
           onChangeText={setField('offerNumberStart')}
-          keyboardType="numeric"
+          kind="integer"
         />
         {startWarning ? <Text style={styles.note}>{startWarning}</Text> : null}
         <AppInput
           label="Voimassaolo (pv)"
           value={company.offerValidDays}
           onChangeText={setField('offerValidDays')}
-          keyboardType="numeric"
+          kind="integer"
         />
         <Text style={styles.note}>Päättymispäivä lasketaan tarjouksen päiväyksestä.</Text>
         <AppInput
           label="Lisätiedot (kaikki tarjoukset)"
           value={company.additionalInfoText}
           onChangeText={setField('additionalInfoText')}
+          kind="sentence"
           multiline
           placeholder="Valinnainen"
         />
@@ -193,7 +194,7 @@ export default function OfferSettingsScreen() {
           label="Sivukulukerroin"
           value={company.sivukulukerroin}
           onChangeText={setField('sivukulukerroin')}
-          keyboardType="decimal-pad"
+          kind="decimal"
           placeholder="1,5"
         />
         {sivukulukerroinDraftError(company.sivukulukerroin) ? (
@@ -209,24 +210,25 @@ export default function OfferSettingsScreen() {
           label="Vähennys % työn osuudesta (sis. ALV)"
           value={company.ktvRatePercent}
           onChangeText={setField('ktvRatePercent')}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <AppInput
           label="Omavastuu € / henkilö / vuosi"
           value={company.ktvDeductibleEur}
           onChangeText={setField('ktvDeductibleEur')}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <AppInput
           label="Enimmäismäärä € / henkilö / vuosi"
           value={company.ktvCapEur}
           onChangeText={setField('ktvCapEur')}
-          keyboardType="decimal-pad"
+          kind="decimal"
         />
         <AppInput
           label="Huomautus KTV-sivulle"
           value={company.ktvFootnoteText}
           onChangeText={setField('ktvFootnoteText')}
+          kind="sentence"
           multiline
           placeholder="Tyhjä = oletusteksti"
         />

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { AppCard, AppInput } from '@/src/components/common';
+import { NAME_FIELD_KIND } from '@/src/components/textInputProps';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
 import { patchStructureLine } from '@/src/core/structure/applyFormToLine';
@@ -94,6 +95,7 @@ export function StructureLineCard({
         label="Nimi"
         value={priced.name}
         onChangeText={(value) => patch({ name: value })}
+        kind={NAME_FIELD_KIND.lineName}
         placeholder="Tuoterakenne"
       />
       {formIncomplete ? <Text style={styles.incomplete}>Keskeneräinen lomake</Text> : null}
@@ -111,6 +113,7 @@ export function StructureLineCard({
             label="Yksikkö"
             value={priced.unit ?? ''}
             onChangeText={(value) => patch({ unit: value })}
+            kind="code"
           />
         </View>
       </View>
@@ -171,6 +174,7 @@ export function StructureLineCard({
         label="Lisätiedot"
         value={priced.additionalInfo ?? ''}
         onChangeText={(value) => patch({ additionalInfo: value })}
+        kind="sentence"
         multiline
         placeholder="Valinnainen"
       />
@@ -216,7 +220,7 @@ function DaysInput({
     <AppInput
       label={label}
       value={text}
-      keyboardType="decimal-pad"
+      kind="decimal"
       placeholder="Valinnainen"
       onChangeText={(raw) => {
         const next = limitDecimalInput(raw, 0);
@@ -265,7 +269,7 @@ function DecimalInput({
     <AppInput
       label={label}
       value={text}
-      keyboardType="decimal-pad"
+      kind="decimal"
       onChangeText={(raw) => {
         const next = limitDecimalInput(raw);
         setText(next);

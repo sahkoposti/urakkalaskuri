@@ -249,7 +249,7 @@ export function PdfExportButtons({
             showAlert('Tallennus epäonnistui', errorMessage(error));
           });
         }}
-        keyboardType="numeric"
+        kind="integer"
         compact
       />
       {offerProblems.map((problem, index) => (
@@ -284,7 +284,7 @@ export function PdfExportButtons({
             showAlert('Tallennus epäonnistui', errorMessage(error));
           });
         }}
-        keyboardType="numeric"
+        kind="integer"
         compact
       />
       <Text style={styles.hint}>
@@ -380,7 +380,7 @@ export function PdfExportButtons({
                   showAlert('Tallennus epäonnistui', errorMessage(error));
                 });
               }}
-              keyboardType="decimal-pad"
+              kind="decimal"
               compact
             />
           ))}
@@ -388,6 +388,7 @@ export function PdfExportButtons({
         label="Huomioitavaa"
         value={huomioText}
         onChangeText={setHuomioText}
+        kind="sentence"
         onBlur={() => {
           void persistCard(cardMode, huomioText, hidePrices).catch((error) => {
             console.error(error);
