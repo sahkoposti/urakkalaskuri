@@ -461,12 +461,12 @@ describe('offer signature', () => {
     expect(html).toContain('>Tilaaja<');
     expect(html).toContain('Allekirjoitus');
     expect(html).toContain('Päiväys');
-    expect((html.match(/class="offer-sign-line"/g) ?? []).length).toBe(4);
+    expect((html.match(/class="offer-sign-line"/g) ?? []).length).toBe(2);
     expect(html).toContain('.offer-sign { display: grid;');
     expect(html).not.toContain('offer-sign-col');
     const sign = html.slice(html.indexOf('class="offer-sign"'), html.indexOf('class="ktv-page'));
     expect((sign.match(/>Allekirjoitus</g) ?? []).length).toBe(2);
-    expect((sign.match(/>Päiväys</g) ?? []).length).toBe(2);
+    expect((sign.match(/>Päiväys</g) ?? []).length).toBe(0);
     expect(html).not.toContain('<table class="offer-sign"');
     expect(html).toContain('break-inside: avoid');
     const at = (needle: string) => html.indexOf(needle);
@@ -502,7 +502,8 @@ describe('offer signature', () => {
     expect(block).not.toContain('undefined');
     expect(block).not.toContain('null');
     expect((block.match(/class="offer-sign-detail"/g) ?? []).length).toBe(0);
-    expect((block.match(/class="offer-sign-line"/g) ?? []).length).toBe(4);
+    expect((block.match(/class="offer-sign-line"/g) ?? []).length).toBe(2);
+    expect(block).not.toContain('Päiväys');
     expect(html.match(/class="offer-sign"/g)).toHaveLength(1);
   });
 });

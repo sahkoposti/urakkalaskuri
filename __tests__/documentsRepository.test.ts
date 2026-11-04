@@ -80,7 +80,7 @@ function draft(overrides: Partial<NewDocumentInput> = {}): NewDocumentInput {
       businessVatMode: 'alv0',
     },
     summary: { total: 1255, pages: 2 },
-    appVersion: '1.2.9',
+    appVersion: '1.2.11',
     createdAt: '2026-11-03T14:40:00.000Z',
     ...overrides,
   };

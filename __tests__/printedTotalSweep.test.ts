@@ -107,18 +107,39 @@ describe('printed total sweep', () => {
         if (discount === 'none') {
           expect(headingSum).toBe(closing);
           if (inclusive) {
-            const veroton = ctx.price.rows.find((row) => row.label === 'Veroton');
-            const alv = ctx.price.rows.find((row) => row.label.startsWith('ALV '));
-            expect(veroton && alv).toBeTruthy();
-            expect(euros(veroton!.value)).toBe(sumRoundedOfferLines(rec, false, 'paid'));
-            expect(roundToCents(euros(veroton!.value) + euros(alv!.value))).toBe(closing);
+            const net = ctx.price.rows.find((row) => row.label === 'Yhteensä alv 0');
+            const alvRows = ctx.price.rows.filter((row) => row.label.startsWith('Alv '));
+            const sis = ctx.price.rows.find((row) => row.label === 'Yhteensä sis. alv');
+            expect(net && sis && alvRows.length > 0).toBeTruthy();
+            expect(euros(net!.value)).toBe(sumRoundedOfferLines(rec, false, 'paid'));
+            expect(roundToCents(euros(net!.value) + alvRows.reduce((sum, row) => sum + euros(row.value), 0))).toBe(euros(sis!.value));
+            expect(euros(sis!.value)).toBe(closing);
+            expect(sis!.emphasis).toBe(true);
           }
+        } else if (inclusive) {
+          const net = ctx.price.rows.find((row) => row.label === 'Yhteensä alv 0');
+          const alvRows = ctx.price.rows.filter((row) => row.label.startsWith('Alv '));
+          const sis = ctx.price.rows.find((row) => row.label === 'Yhteensä sis. alv');
+          const ale = ctx.price.rows.find((row) => row.label.startsWith('Alennus'));
+          const after = ctx.price.rows.find((row) => row.label === 'Alennettu hinta yhteensä');
+          expect(net && sis && ale && after && alvRows.length > 0).toBeTruthy();
+          expect(roundToCents(euros(net!.value) + alvRows.reduce((sum, row) => sum + euros(row.value), 0))).toBe(euros(sis!.value));
+          expect(roundToCents(euros(sis!.value) - Math.abs(euros(ale!.value)))).toBe(euros(after!.value));
+          expect(headingSum).toBe(euros(sis!.value));
+          expect(euros(after!.value)).toBe(closing);
+          expect(after!.emphasis).toBe(true);
+          expect(sis!.emphasis).not.toBe(true);
+          expect(closing).toBe(sumRoundedOfferLines(rec, true, 'paid'));
         } else {
-          const rivit = euros(ctx.price.rows[0].value);
-          const alennus = Math.abs(euros(ctx.price.rows[1].value));
-          expect(headingSum).toBe(rivit);
-          expect(roundToCents(rivit - alennus)).toBe(closing);
-          expect(closing).toBe(sumRoundedOfferLines(rec, inclusive, 'paid'));
+          const net = ctx.price.rows.find((row) => row.label === 'Yhteensä alv 0');
+          const ale = ctx.price.rows.find((row) => row.label.startsWith('Alennus'));
+          const after = ctx.price.rows.find((row) => row.label === 'Loppusumma (Alv 0 %)');
+          expect(net && ale && after).toBeTruthy();
+          expect(ctx.price.rows.some((row) => row.label.startsWith('Alv ') || row.label.includes('sis. alv'))).toBe(false);
+          expect(headingSum).toBe(euros(net!.value));
+          expect(roundToCents(euros(net!.value) - Math.abs(euros(ale!.value)))).toBe(euros(after!.value));
+          expect(euros(after!.value)).toBe(closing);
+          expect(closing).toBe(sumRoundedOfferLines(rec, false, 'paid'));
         }
       }
 
@@ -186,8 +207,14 @@ describe('printed total sweep', () => {
         ctx.sections.reduce((sum, section) => sum + (section.heading?.price ? euros(section.heading.price) : 0), 0),
       );
       expect(headingSum).toBe(closing);
+      const sis = ctx.price.rows.find((row) => row.label === 'Yhteensä sis. alv');
+      const net = ctx.price.rows.find((row) => row.label === 'Yhteensä alv 0');
+      const alvRows = ctx.price.rows.filter((row) => row.label.startsWith('Alv '));
+      expect(sis && net && alvRows.length > 1).toBeTruthy();
+      expect(roundToCents(euros(net!.value) + alvRows.reduce((sum, row) => sum + euros(row.value), 0))).toBe(euros(sis!.value));
+      expect(euros(sis!.value)).toBe(closing);
       expect(ctx.vatSummary.length).toBeGreaterThan(1);
-      expect(roundToCents(ctx.vatSummary.reduce((sum, row) => sum + row.gross, 0))).toBe(closing);
+      expect(roundToCents(ctx.vatSummary.reduce((sum, row) => sum + row.gross, 0))).toBe(euros(sis!.value));
       for (const row of ctx.vatSummary) expect(roundToCents(row.net + row.vat)).toBe(row.gross);
       const html = renderTarjousHtml(ctx);
       expect(html).toContain('class="offer-vat"');
