@@ -34,7 +34,8 @@ describe('renderTarjousHtml', () => {
     expect((html.match(/class="doc-section offer-section"/g) ?? []).length).toBe(2);
     expect(html).not.toContain('class="spec-grid"');
     expect(html).not.toContain('class="spec-card');
-    expect(html).toContain('Veroton');
+    expect(html).toContain('Yhteensä alv 0');
+    expect(html).toContain('Yhteensä sis. alv');
     expect(html).toContain('Loppusumma');
     expect(html).toContain('Lisätiedot:');
     expect(html).toContain('Maksuehto kuvitteellinen.');
@@ -139,7 +140,9 @@ describe('renderTarjousHtml discount row', () => {
     });
     const html = renderTarjousHtml(buildPdfContext(input(mixed)));
     expect(html).toContain('class="offer-vat"');
-    expect(html).toContain('>Veroton</th>');
+    expect(html).toContain('>Netto</th>');
+    expect(html.indexOf('class="offer-vat"')).toBeLessThan(html.indexOf('Yhteensä alv 0'));
+    expect(html.indexOf('Yhteensä sis. alv')).toBeLessThan(html.indexOf('class="offer-sign"'));
   });
 
   it('draws the brand bar on the offer only, using the same accent as Loppusumma', () => {

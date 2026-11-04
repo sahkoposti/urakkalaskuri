@@ -37,6 +37,8 @@ export type SavedDocument = {
   createdAt: string;
   phoneSaveStatus: PhoneSaveStatus;
   phoneUri: string | null;
+  /** Lyhyt syy, kun phoneSaveStatus on failed. Ei näytetä onnistuneella rivillä. */
+  phoneSaveError: string | null;
 };
 
 export type NewDocumentInput = {

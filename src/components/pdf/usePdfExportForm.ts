@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
@@ -29,14 +30,23 @@ import {
   parseOfferValidDaysInput,
 } from '@/src/core/pdf/offerValidDays';
 import { formatFinnishDate, validUntil } from '@/src/core/pdf/validUntil';
+import { getPhoneDocumentsDirectoryUri, savePhoneDocumentsDirectoryUri } from '@/src/core/database/database';
 import { previewSavedPdf, shareSavedPdf } from '@/src/core/documents/documentActions';
 import { shareDocumentFileName } from '@/src/core/documents/documentShare';
 import { storedPdfUri } from '@/src/core/documents/documentFiles';
 import {
   DOCUMENT_DELETE_TITLE,
   DOCUMENT_PREVIEW_FAILED,
+  PHONE_FOLDER_EXPLANATION,
+  phoneFolderRowLabel,
 } from '@/src/core/documents/documentLabels';
-import { deleteDocument, listDocumentsByCalculation } from '@/src/core/documents/documentsRepository';
+import { deleteDocument, listDocumentsByCalculation, updateDocumentPhoneSave } from '@/src/core/documents/documentsRepository';
+import { copySavedPdfToPhone, pickPhoneDirectory as pickSafDirectory } from '@/src/core/documents/phoneFolderIo';
+import {
+  type PhoneDirectory,
+  type PhonePlatform,
+  type PhoneSaveOutcome,
+} from '@/src/core/documents/phoneSave';
 import type { DocumentKind, ExportedDocument } from '@/src/core/documents/types';
 
 type ShareTarget = {
@@ -194,6 +204,11 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   const [documents, setDocuments] = useState<ListedDocument[]>([]);
   const [readyDocument, setReadyDocument] = useState<ExportedDocument | null>(null);
   const [readyShare, setReadyShare] = useState<ShareTarget | null>(null);
+  const [readyPhone, setReadyPhone] = useState<PhoneSaveOutcome | null>(null);
+  const readyIdRef = useRef<string | null>(null);
+  readyIdRef.current = readyDocument?.id ?? null;
+  const [phoneFolderUri, setPhoneFolderUri] = useState<string | null>(null);
+  const phonePlatform: PhonePlatform = Platform.OS === 'android' ? 'android' : 'ios';
   const app = { settings, products, structures };
 
   useEffect(() => {
@@ -232,14 +247,71 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   const showReady = async (saved: ExportedDocument) => {
     const rows = await reloadDocuments();
     const row = rows.find((item) => item.id === saved.id);
-    setReadyDocument(saved);
-    setReadyShare({
+    const shareTarget: ShareTarget = {
       uri: saved.path,
       kind: saved.kind,
       offerNumber: row?.offerNumber ?? saved.offerNumber,
       version: row?.version ?? 1,
       createdAt: row?.createdAt ?? new Date().toISOString(),
+    };
+    setReadyDocument(saved);
+    setReadyShare(shareTarget);
+    setReadyPhone(await copyPhoneDocument(saved.id, shareTarget, false));
+  };
+
+  const pickPhoneDirectory = () =>
+    new Promise<PhoneDirectory | null>((resolve) => {
+      showAlert('Puhelimen kansio', PHONE_FOLDER_EXPLANATION, [
+        { text: 'Peruuta', style: 'cancel', onPress: () => resolve(null) },
+        {
+          text: 'Valitse kansio',
+          onPress: () => {
+            void pickSafDirectory().then(resolve);
+          },
+        },
+      ]);
     });
+
+  const copyPhoneDocument = async (
+    id: string,
+    target: ShareTarget,
+    manual: boolean,
+  ): Promise<PhoneSaveOutcome> => {
+    const fileName = shareDocumentFileName({
+      kind: target.kind,
+      offerNumber: target.offerNumber,
+      version: target.version,
+      createdAt: new Date(target.createdAt),
+    });
+    let phone: PhoneSaveOutcome;
+    try {
+      phone = await copySavedPdfToPhone({
+        platform: phonePlatform,
+        fileName,
+        appFileUri: target.uri,
+        pickDirectory: pickPhoneDirectory,
+        manual,
+      });
+    } catch (error) {
+      console.error(error);
+      phone = { status: 'failed', phoneUri: null, error: 'unknown' };
+    }
+    try {
+      await updateDocumentPhoneSave(id, {
+        status: phone.status,
+        phoneUri: phone.phoneUri,
+        error: phone.error,
+      });
+      await reloadDocuments();
+    } catch (error) {
+      console.error(error);
+    }
+    try {
+      setPhoneFolderUri(await getPhoneDocumentsDirectoryUri());
+    } catch (error) {
+      console.error(error);
+    }
+    return phone;
   };
 
   useEffect(() => {
@@ -255,6 +327,20 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       cancelled = true;
     };
   }, [calculationId, showAlert]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getPhoneDocumentsDirectoryUri()
+      .then((uri) => {
+        if (!cancelled) setPhoneFolderUri(uri);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [calculationId]);
 
   const reportSaveError = (error: unknown) => {
     console.error(error);
@@ -403,11 +489,39 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       void handleUrakkakortti(values);
     },
     documents,
+    phonePlatform,
+    showPhoneFolder: phonePlatform === 'android',
+    phoneFolderLabel: phoneFolderRowLabel(phoneFolderUri),
+    changePhoneFolder: () => {
+      void pickSafDirectory().then(async (directory) => {
+        if (!directory) return;
+        try {
+          await savePhoneDocumentsDirectoryUri(directory.uri);
+          setPhoneFolderUri(directory.uri);
+        } catch (error) {
+          showAlert('Kansiota ei voitu tallentaa', errorMessage(error));
+        }
+      });
+    },
+    clearPhoneFolder: () => {
+      void savePhoneDocumentsDirectoryUri(null)
+        .then(() => setPhoneFolderUri(null))
+        .catch((error) => {
+          showAlert('Kansiota ei voitu tyhjentää', errorMessage(error));
+        });
+    },
     readyDocument,
     readyShare,
+    readyPhone,
     dismissReady: () => {
       setReadyDocument(null);
       setReadyShare(null);
+      setReadyPhone(null);
+    },
+    retryPhoneSave: (document: ShareTarget & { id: string }) => {
+      void copyPhoneDocument(document.id, document, true).then((phone) => {
+        if (readyIdRef.current === document.id) setReadyPhone(phone);
+      });
     },
     previewDocument: (target: { uri: string }) => {
       void previewSavedPdf(target.uri).catch((error) => {
@@ -437,6 +551,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
             void deleteDocument(document.id)
               .then(async () => {
                 setReadyDocument((current) => (current?.id === document.id ? null : current));
+                setReadyPhone((current) => (readyIdRef.current === document.id ? null : current));
                 await reloadDocuments();
               })
               .catch((error) => {

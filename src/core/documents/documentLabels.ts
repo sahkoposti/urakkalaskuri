@@ -1,6 +1,18 @@
 import { formatCurrency } from '@/src/core/utils/formatters';
 
-import type { DocumentKind } from './types';
+import { fileSystemEntryName } from './documentStorage';
+import { phoneSaveErrorText, type PhonePlatform } from './phoneSave';
+import type { DocumentKind, PhoneSaveStatus } from './types';
+
+export const PHONE_STATUS_OK = 'Puhelimessa';
+export const PHONE_STATUS_SKIPPED = 'Ei puhelimessa';
+export const PHONE_STATUS_FAILED = 'Puhelimeen tallennus epäonnistui';
+export const PHONE_SAVE_RETRY = 'Yritä uudelleen';
+export const PHONE_SAVE_TO_PHONE = 'Tallenna puhelimeen';
+export const PHONE_FOLDER_CHANGE = 'Vaihda';
+export const PHONE_FOLDER_CLEAR = 'Tyhjennä';
+export const PHONE_FOLDER_EXPLANATION =
+  'Valitse tai luo puhelimeen kansio nimeltä Urakkalaskuri. Tarjoukset ja urakkakortit kopioidaan sinne.';
 
 export const DOCUMENT_SAVED_IN_APP = 'Tallennettu sovellukseen: Dokumentit';
 export const DOCUMENT_EMPTY_LIST = 'Ei tallennettuja dokumentteja.';
@@ -37,4 +49,38 @@ export function documentListLabel(input: {
       : 'Urakkakortti';
   const price = input.total == null ? '' : ` · ${formatCurrency(input.total)}`;
   return `${title} · v${input.version} · ${formatDocumentCreatedAt(input.createdAt)}${price}`;
+}
+
+export function phoneStatusLabel(status: PhoneSaveStatus, error?: string | null): string {
+  if (status === 'ok') return PHONE_STATUS_OK;
+  if (status === 'failed') return PHONE_STATUS_FAILED;
+  if (error === 'cancelled' || error === 'no_folder') return phoneSaveErrorText(error) ?? PHONE_STATUS_SKIPPED;
+  return PHONE_STATUS_SKIPPED;
+}
+
+/** Lisärivi epäonnistuneelle kopiolle. Peruutus ja yleinen kirjoitusvirhe eivät toista otsikkoa. */
+export function phoneSaveDetail(error: string | null | undefined): string | null {
+  if (!error || error === 'cancelled' || error === 'no_folder' || error === 'write_failed' || error === 'unknown') {
+    return null;
+  }
+  return phoneSaveErrorText(error);
+}
+
+/** iOS ei tarjoa puhelinkopiota. Onnistunut rivi ei kaipaa nappia. */
+export function phoneSaveActionLabel(status: PhoneSaveStatus, platform: PhonePlatform): string | null {
+  if (platform !== 'android' || status === 'ok') return null;
+  return status === 'failed' ? PHONE_SAVE_RETRY : PHONE_SAVE_TO_PHONE;
+}
+
+export function phoneFolderDisplayName(uri: string | null): string {
+  if (!uri?.trim()) return 'ei valittu';
+  try {
+    return fileSystemEntryName(uri.trim()) || 'valittu';
+  } catch {
+    return 'valittu';
+  }
+}
+
+export function phoneFolderRowLabel(uri: string | null): string {
+  return `Puhelimen kansio: ${phoneFolderDisplayName(uri)}`;
 }

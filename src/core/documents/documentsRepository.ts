@@ -24,6 +24,7 @@ type DocumentRow = {
   created_at: string;
   phone_save_status: string;
   phone_uri: string | null;
+  phone_save_error: string | null;
 };
 
 function parseJson<T>(raw: string | null): T | null {
@@ -58,6 +59,7 @@ function mapRow(row: DocumentRow): SavedDocument {
     createdAt: row.created_at,
     phoneSaveStatus: isPhoneStatus(row.phone_save_status) ? row.phone_save_status : 'skipped',
     phoneUri: row.phone_uri,
+    phoneSaveError: row.phone_save_error,
   };
 }
 
@@ -96,7 +98,24 @@ export async function insertDocument(input: NewDocumentInput): Promise<SavedDocu
     summary: input.summary,
     phoneSaveStatus: 'skipped',
     phoneUri: null,
+    phoneSaveError: null,
   };
+}
+
+export async function updateDocumentPhoneSave(
+  id: string,
+  update: { status: PhoneSaveStatus; phoneUri: string | null; error: string | null },
+): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `UPDATE documents
+     SET phone_save_status = ?, phone_uri = ?, phone_save_error = ?
+     WHERE id = ?`,
+    update.status,
+    update.phoneUri,
+    update.error,
+    id,
+  );
 }
 
 export async function listDocumentFilePaths(): Promise<string[]> {

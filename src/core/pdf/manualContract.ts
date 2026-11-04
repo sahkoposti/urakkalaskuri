@@ -7,7 +7,7 @@ import { roundToCents } from '@/src/core/utils/formatters';
 
 const positive = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0;
 
-/** Tekijöiden urakka (alv0) = rivin contractPriceVat0 (lomakkeesta tai käsin kirjattu). */
+/** Urakkahinta (alv0) = rivin contractPriceVat0 (lomakkeesta tai käsin kirjattu). */
 export function effectiveContractVat0(line: Pick<StructureLine, 'contractPriceVat0'>): number {
   return positive(line.contractPriceVat0) ? line.contractPriceVat0 : 0;
 }

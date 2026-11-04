@@ -5,7 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { DetailTabBar } from '@/src/components/calculation/DetailTabBar';
 import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
-import { CalculationDocumentList } from '@/src/components/pdf/CalculationDocumentList';
+import { CalculationDocumentList, PhoneFolderBar } from '@/src/components/pdf/CalculationDocumentList';
 import { DocumentFormModal } from '@/src/components/pdf/DocumentFormModal';
 import { DocumentReadySheet } from '@/src/components/pdf/DocumentReadySheet';
 import { DOKUMENTTI_ACTIONS, type DetailTab } from '@/src/components/pdf/pdfExportFormModel';
@@ -133,11 +133,20 @@ export function CalculationDetailView({
               />
             </AppCard>
           ))}
+          {pdf.showPhoneFolder ? (
+            <PhoneFolderBar
+              label={pdf.phoneFolderLabel}
+              onChange={pdf.changePhoneFolder}
+              onClear={pdf.clearPhoneFolder}
+            />
+          ) : null}
           <CalculationDocumentList
             documents={pdf.documents}
+            platform={pdf.phonePlatform}
             onPreview={pdf.previewDocument}
             onShare={pdf.shareDocument}
             onDelete={pdf.confirmDeleteDocument}
+            onSaveToPhone={pdf.retryPhoneSave}
           />
           <OutlinedButton title="Sulje" onPress={onFooterPress} />
         </View>
@@ -256,8 +265,15 @@ export function CalculationDetailView({
     </DocumentFormModal>
     <DocumentReadySheet
       document={pdf.readyDocument}
+      phone={pdf.readyPhone}
+      platform={pdf.phonePlatform}
       onPreview={() => pdf.readyDocument && pdf.previewDocument({ uri: pdf.readyDocument.path })}
       onShare={() => pdf.readyShare && pdf.shareDocument(pdf.readyShare)}
+      onSaveToPhone={() =>
+        pdf.readyShare &&
+        pdf.readyDocument &&
+        pdf.retryPhoneSave({ ...pdf.readyShare, id: pdf.readyDocument.id })
+      }
       onClose={pdf.dismissReady}
     />
     <ManualContractDialog
