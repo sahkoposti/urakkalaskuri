@@ -13,6 +13,17 @@ export function TarjousExportForm({ offer }: { offer: PdfExportFormState['offer'
 
   return (
     <>
+      {offer.showKtvPageChoice ? (
+        <ChoiceToggle
+          label="Sisällytä kotitalousvähennyslaskelma (KTV-sivu)"
+          value={offer.ktvPageIncluded}
+          options={[
+            { value: true, label: 'Kyllä' },
+            { value: false, label: 'Ei' },
+          ]}
+          onChange={offer.onKtvPageIncludedChange}
+        />
+      ) : null}
       {offer.showKtvPersons ? (
         <AppInput
           label="Henkilöiden määrä (kotitalousvähennys)"
@@ -45,6 +56,19 @@ export function TarjousExportForm({ offer }: { offer: PdfExportFormState['offer'
       {offer.validDaysProblem ? (
         <Text style={styles.warning} accessibilityRole="alert">
           {offer.validDaysProblem}
+        </Text>
+      ) : null}
+      <AppInput
+        label="Voimassa asti"
+        value={offer.validDateText}
+        onChangeText={offer.onValidDateChange}
+        onBlur={offer.onValidDateBlur}
+        placeholder="pp.kk.vvvv"
+        compact
+      />
+      {offer.expiryDateProblem ? (
+        <Text style={styles.warning} accessibilityRole="alert">
+          {offer.expiryDateProblem}
         </Text>
       ) : null}
       {offer.showBusinessVatChoice ? (

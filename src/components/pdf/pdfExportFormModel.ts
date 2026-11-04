@@ -24,7 +24,7 @@ export type DokumenttiKind = (typeof DOKUMENTTI_ACTIONS)[number]['id'];
  * Tarjouslomakkeen `form_snapshot`-avaimet (viimeksi käytetty).
  * Henkilömäärä tallennetaan vain, kun kenttä on käytössä.
  */
-export const TARJOUS_SNAPSHOT_KEYS = ['ktvPersons', 'offerValidDays', 'businessVatMode'] as const;
+export const TARJOUS_SNAPSHOT_KEYS = ['ktvPersons', 'ktvPageIncluded', 'offerValidDays', 'businessVatMode'] as const;
 
 /** Urakkakorttilomakkeen `form_snapshot`-avaimet (viimeksi käytetty). */
 export const URAKKAKORTTI_SNAPSHOT_KEYS = [
@@ -38,12 +38,18 @@ export const URAKKAKORTTI_SNAPSHOT_KEYS = [
  * Tarjouksen kentät. Kotitalousvähennyksen henkilömäärä vain yksityisasiakkaalle.
  * Yrityksen ALV-valinta vain, kun kyseessä on yritys eikä käänteinen ALV.
  */
-export function offerFormFields(customer: CustomerInfo): {
+export function offerFormFields(
+  customer: CustomerInfo,
+  ktvPageIncluded = true,
+): {
+  showKtvPageChoice: boolean;
   showKtvPersons: boolean;
   showBusinessVatChoice: boolean;
 } {
+  const showKtvPageChoice = isPrivateCustomer(customer) && !customer.reverseVat;
   return {
-    showKtvPersons: isPrivateCustomer(customer),
+    showKtvPageChoice,
+    showKtvPersons: showKtvPageChoice && ktvPageIncluded,
     showBusinessVatChoice: (customer.customerType ?? 'private') === 'business' && !customer.reverseVat,
   };
 }
@@ -59,11 +65,13 @@ export function tarjousBlockingMessages(input: {
   offerProblems: readonly string[];
   personsProblem: string | null;
   validDaysProblem: string | null;
+  expiryDateProblem: string | null;
 }): string[] {
   return [
     ...input.offerProblems,
     ...(input.personsProblem ? [input.personsProblem] : []),
     ...(input.validDaysProblem ? [input.validDaysProblem] : []),
+    ...(input.expiryDateProblem ? [input.expiryDateProblem] : []),
   ];
 }
 
@@ -112,4 +120,27 @@ export function draftCardPriceProblems(
 export function dokumenttiCreateTitle(kind: DokumenttiKind, busy: boolean): string {
   if (kind === 'tarjous') return busy ? 'Luodaan tarjousta…' : 'Luo tarjous';
   return busy ? 'Luodaan urakkakorttia…' : 'Luo urakkakortti';
+}
+
+/** Teksti, joka elää hookin tilassa. Blur tallentaa; sulkeminen ei. */
+export type SheetDraftText = {
+  personsText: string;
+  validDaysText: string;
+  validDateText: string;
+  huomioText: string;
+  rowPriceText: Record<string, string>;
+};
+
+/**
+ * Pohjalevy suljetaan ennen bluria. Luonnos jää näkyviin, eikä sitä
+ * korvata viimeksi tallennetulla tekstillä.
+ */
+export function sheetDraftAfterClose(draft: SheetDraftText): SheetDraftText {
+  return {
+    personsText: draft.personsText,
+    validDaysText: draft.validDaysText,
+    validDateText: draft.validDateText,
+    huomioText: draft.huomioText,
+    rowPriceText: { ...draft.rowPriceText },
+  };
 }

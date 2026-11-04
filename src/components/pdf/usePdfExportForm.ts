@@ -12,7 +12,15 @@ import {
   ktvPersonsFieldText,
   parseKtvPersonsInput,
 } from '@/src/core/pdf/ktvPersons';
+import { calculationWithKtvPageIncluded, readKtvPageIncluded } from '@/src/core/pdf/ktvPageIncluded';
 import { offerDocumentProblems } from '@/src/core/pdf/offerDocument';
+import {
+  daysTextForExpiryDate,
+  expiryDateTextForDays,
+  formatOfferExpiryDate,
+  offerExpiryDateProblem,
+  parseOfferValidDateInput,
+} from '@/src/core/pdf/offerExpiryDate';
 import {
   calculationWithOfferValidDays,
   companyOfferValidDays,
@@ -21,6 +29,7 @@ import {
   offerValidDaysForSave,
   parseOfferValidDaysInput,
 } from '@/src/core/pdf/offerValidDays';
+import { validUntil } from '@/src/core/pdf/validUntil';
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
 import {
   calculationWithBusinessVatMode,
@@ -42,6 +51,7 @@ import {
   dokumenttiCreateTitle,
   draftCardPriceProblems,
   offerFormFields,
+  sheetDraftAfterClose,
   tarjousBlockingMessages,
   tarjousCreateDisabled,
   urakkakorttiCreateDisabled,
@@ -52,9 +62,15 @@ type Busy = 'tarjous' | 'urakkakortti' | null;
 
 const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
+/** Tarjouksen päiväys lomakkeella: tämä kalenteripäivä, sama sääntö kuin tulosteen Voimassa. */
+function offerDateFromNow(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
 /**
  * Tarjouksen ja urakkakortin lomaketila. Sama tallennus, numerointi ja jako
- * kuin aiemmassa yhteisessä painikenäkymässä. PDF-tavut eivät muutu.
+ * kuin aiemmassa näkymässä. KTV-kytkin päällä pitää tarjouksen PDF:n ennallaan.
  */
 export function usePdfExportForm(calculationId: string, record: CalculationRecord) {
   const { settings, products, structures, refreshCalculations } = useApp();
@@ -70,13 +86,20 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   const [overrideText, setOverrideText] = useState(() => cardPriceFieldTexts(record));
   const [companyValidDays, setCompanyValidDays] = useState<number | null>(null);
   const [validDaysText, setValidDaysText] = useState(() => offerValidDaysFieldText(record.formSnapshot, null));
+  const [validDateText, setValidDateText] = useState(() =>
+    expiryDateTextForDays(offerValidDaysFieldText(record.formSnapshot, null), offerDateFromNow(), ''),
+  );
+  const [ktvPageIncluded, setKtvPageIncluded] = useState(() => readKtvPageIncluded(record.formSnapshot));
   const validDaysDirty = useRef(false);
+  const offerDateRef = useRef<Date | null>(null);
+  if (offerDateRef.current == null) offerDateRef.current = offerDateFromNow();
+  const offerDate = offerDateRef.current;
   const companyDaysRef = useRef<number | null>(null);
   companyDaysRef.current = companyValidDays;
   const overrideTextRef = useRef(overrideText);
   overrideTextRef.current = overrideText;
   const customer = customerFromRecord(record);
-  const fields = offerFormFields(customer);
+  const fields = offerFormFields(customer, ktvPageIncluded);
   const offerProblems = offerDocumentProblems(record);
   const cardLines = ensureStructureLines(record);
   const draftOverrideProblems = draftCardPriceProblems(cardLines, overrideText, hidePrices);
@@ -89,10 +112,12 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     fields.showKtvPersons && parsedPersons === 'invalid' ? KTV_PERSONS_INVALID_MESSAGE : null;
   const parsedValidDays = parseOfferValidDaysInput(validDaysText);
   const validDaysProblem = parsedValidDays === 'invalid' ? OFFER_VALID_DAYS_INVALID_MESSAGE : null;
+  const expiryProblem = offerExpiryDateProblem(validDateText, offerDate, validDaysText);
   const blockingMessages = tarjousBlockingMessages({
     offerProblems,
     personsProblem,
     validDaysProblem,
+    expiryDateProblem: expiryProblem,
   });
   // Ref estää tuplanapautuksen ennen kuin tila ehtii päivittyä (DB-lukko on toinen varmistus).
   const busyRef = useRef(false);
@@ -106,8 +131,11 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     setBusinessVatMode(readBusinessVatMode(record.formSnapshot));
     setHidePrices(readUrakkakorttiHidePrices(record.formSnapshot));
     setOverrideText(cardPriceFieldTexts(record));
+    setKtvPageIncluded(readKtvPageIncluded(record.formSnapshot));
     validDaysDirty.current = false;
-    setValidDaysText(offerValidDaysFieldText(record.formSnapshot, companyDaysRef.current));
+    const nextDays = offerValidDaysFieldText(record.formSnapshot, companyDaysRef.current);
+    setValidDaysText(nextDays);
+    setValidDateText(expiryDateTextForDays(nextDays, offerDateRef.current ?? offerDateFromNow(), ''));
   }, [record.id, record.formSnapshot, record.customer]);
 
   useEffect(() => {
@@ -117,7 +145,9 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       const days = companyOfferValidDays(offerSettings.offerValidDays);
       setCompanyValidDays(days);
       if (!validDaysDirty.current && !Object.prototype.hasOwnProperty.call(record.formSnapshot ?? {}, 'offerValidDays')) {
-        setValidDaysText(String(days));
+        const text = String(days);
+        setValidDaysText(text);
+        setValidDateText(formatOfferExpiryDate(validUntil(offerDateRef.current ?? offerDateFromNow(), days)));
       }
     }).catch((error) => {
       console.error(error);
@@ -145,6 +175,24 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   const persistValidDays = async (days: number) => {
     if (companyValidDays == null) return;
     await persistRecord(calculationWithOfferValidDays(record, days, companyValidDays));
+  };
+
+  const persistKtvPageIncluded = async (included: boolean) => {
+    await persistRecord(calculationWithKtvPageIncluded(record, included));
+  };
+
+  const commitValidDays = (daysText: string) => {
+    const days = offerValidDaysForSave({
+      snapshot: record.formSnapshot,
+      fieldText: daysText,
+      companyDefault: companyValidDays,
+      touched: validDaysDirty.current,
+    });
+    if (typeof days !== 'number') return;
+    setValidDaysText(String(days));
+    setValidDateText(formatOfferExpiryDate(validUntil(offerDate, days)));
+    validDaysDirty.current = false;
+    void persistValidDays(days).catch(reportSaveError);
   };
 
   const persistBusinessVatMode = async (mode: BusinessVatMode) => {
@@ -188,7 +236,8 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     }
     if (companyValidDays == null) return;
     return run('tarjous', async () => {
-      if (parsedPersons !== 'invalid') await persistPersons(parsedPersons);
+      if (fields.showKtvPageChoice) await persistKtvPageIncluded(ktvPageIncluded);
+      if (fields.showKtvPersons && parsedPersons !== 'invalid') await persistPersons(parsedPersons);
       const days = offerValidDaysForSave({
         snapshot: record.formSnapshot,
         fieldText: validDaysText,
@@ -226,7 +275,28 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       setManualLines(null);
       void handleUrakkakortti(values);
     },
+    keepSheetDraft: () => {
+      const kept = sheetDraftAfterClose({
+        personsText,
+        validDaysText,
+        validDateText,
+        huomioText,
+        rowPriceText: overrideTextRef.current,
+      });
+      setPersonsText(kept.personsText);
+      setValidDaysText(kept.validDaysText);
+      setValidDateText(kept.validDateText);
+      setHuomioText(kept.huomioText);
+      setOverrideText(kept.rowPriceText);
+      overrideTextRef.current = kept.rowPriceText;
+    },
     offer: {
+      showKtvPageChoice: fields.showKtvPageChoice,
+      ktvPageIncluded,
+      onKtvPageIncludedChange: (included: boolean) => {
+        setKtvPageIncluded(included);
+        void persistKtvPageIncluded(included).catch(reportSaveError);
+      },
       showKtvPersons: fields.showKtvPersons,
       personsText,
       onPersonsChange: setPersonsText,
@@ -239,21 +309,25 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       onValidDaysChange: (value: string) => {
         validDaysDirty.current = true;
         setValidDaysText(value);
+        setValidDateText(expiryDateTextForDays(value, offerDate, validDateText));
       },
       onValidDaysBlur: () => {
-        const days = offerValidDaysForSave({
-          snapshot: record.formSnapshot,
-          fieldText: validDaysText,
-          companyDefault: companyValidDays,
-          touched: validDaysDirty.current,
-        });
-        if (typeof days !== 'number') return;
-        setValidDaysText(String(days));
-        validDaysDirty.current = false;
-        void persistValidDays(days).catch(reportSaveError);
+        commitValidDays(validDaysText);
       },
       validDaysHint: validDaysHint(companyValidDays),
       validDaysProblem,
+      validDateText,
+      onValidDateChange: (value: string) => {
+        validDaysDirty.current = true;
+        setValidDateText(value);
+        setValidDaysText(daysTextForExpiryDate(value, offerDate, validDaysText));
+      },
+      onValidDateBlur: () => {
+        const days = parseOfferValidDateInput(validDateText, offerDate);
+        if (typeof days !== 'number') return;
+        commitValidDays(String(days));
+      },
+      expiryDateProblem: expiryProblem,
       showBusinessVatChoice: fields.showBusinessVatChoice,
       businessVatMode,
       onBusinessVatModeChange: (mode: BusinessVatMode) => {

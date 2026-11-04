@@ -225,14 +225,20 @@ export function CalculationDetailView({
     <DocumentFormModal
       visible={openDocument === 'tarjous'}
       title="Tarjous"
-      onClose={() => setOpenDocument(null)}
+      onClose={() => {
+        pdf.keepSheetDraft();
+        setOpenDocument(null);
+      }}
     >
       <TarjousExportForm offer={pdf.offer} />
     </DocumentFormModal>
     <DocumentFormModal
       visible={openDocument === 'urakkakortti' && pdf.manualLines === null}
       title="Urakkakortti"
-      onClose={() => setOpenDocument(null)}
+      onClose={() => {
+        pdf.keepSheetDraft();
+        setOpenDocument(null);
+      }}
     >
       <UrakkakorttiExportForm card={pdf.card} />
     </DocumentFormModal>

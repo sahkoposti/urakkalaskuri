@@ -110,6 +110,12 @@ export interface FormSnapshot {
    */
   ktvPersons?: number;
   /**
+   * Tulostetaanko kotitalousvähennyslaskelma omalle sivulleen.
+   * Valinnainen avain laskelman `form_snapshot`-JSON:ssa (ei lomakepohjan JSON:ia, ei skeemamuutosta).
+   * Puuttuva avain = true. Vain `false` jättää KTV-sivun pois. Henkilömäärä on yhä `ktvPersons`.
+   */
+  ktvPageIncluded?: boolean;
+  /**
    * Urakkakortin tila. Valinnainen avain samassa `form_snapshot`-JSON:ssa.
    * Puuttuva avain = `alihankkija`. Ei lomakepohjan avain eikä SQL-migraatio.
    */

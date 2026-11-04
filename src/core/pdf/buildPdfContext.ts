@@ -26,6 +26,7 @@ import {
   type OfferVatSummaryRow,
 } from './offerDocument';
 import type { KtvSettings, OfferCompanySettings, OfferStructureSettings } from './types';
+import { readKtvPageIncluded } from './ktvPageIncluded';
 import { readKtvPersons } from './ktvPersons';
 import { readOfferValidDays } from './offerValidDays';
 import { formatFinnishDate, validUntil } from './validUntil';
@@ -335,7 +336,8 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     { label: 'Päiväys', value: formatFinnishDate(generatedAt) },
     { label: 'Voimassa', value: formatFinnishDate(validUntil(generatedAt, readOfferValidDays(record.formSnapshot, offerCompany.offerValidDays))) },
   ];
-  const ktvApplicable = isPrivateCustomer(customer) && !customer.reverseVat;
+  const ktvApplicable =
+    isPrivateCustomer(customer) && !customer.reverseVat && readKtvPageIncluded(record.formSnapshot);
   const payable = printedOfferAmounts(record, customer).gross;
   return {
     kind: 'tarjous',

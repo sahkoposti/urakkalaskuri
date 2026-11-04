@@ -6,7 +6,9 @@ import {
   dokumenttiCreateTitle,
   draftCardPriceProblems,
   offerFormFields,
+  sheetDraftAfterClose,
   showCardRowPrices,
+  type SheetDraftText,
   tarjousBlockingMessages,
   tarjousCreateDisabled,
   urakkakorttiCreateDisabled,
@@ -26,7 +28,7 @@ describe('pdfExportFormModel', () => {
   });
 
   it('keeps tarjous and urakkakortti snapshot keys separate', () => {
-    expect(TARJOUS_SNAPSHOT_KEYS).toEqual(['ktvPersons', 'offerValidDays', 'businessVatMode']);
+    expect(TARJOUS_SNAPSHOT_KEYS).toEqual(['ktvPersons', 'ktvPageIncluded', 'offerValidDays', 'businessVatMode']);
     expect(URAKKAKORTTI_SNAPSHOT_KEYS).toEqual([
       'urakkakorttiMode',
       'urakkakorttiHuomioitavaa',
@@ -39,20 +41,33 @@ describe('pdfExportFormModel', () => {
     expect(overlap).toEqual([]);
   });
 
-  it('shows kotitalousvähennys persons only for a private customer', () => {
+  it('shows kotitalousvähennys persons only for a private customer while the KTV page is on', () => {
     expect(offerFormFields(privateCustomer)).toEqual({
+      showKtvPageChoice: true,
       showKtvPersons: true,
       showBusinessVatChoice: false,
     });
+    expect(offerFormFields(privateCustomer, false)).toEqual({
+      showKtvPageChoice: true,
+      showKtvPersons: false,
+      showBusinessVatChoice: false,
+    });
     expect(offerFormFields({ name: 'Ilman tyyppiä' }).showKtvPersons).toBe(true);
+    expect(offerFormFields({ name: 'Yksityinen käänteinen', customerType: 'private', reverseVat: true })).toEqual({
+      showKtvPageChoice: false,
+      showKtvPersons: false,
+      showBusinessVatChoice: false,
+    });
   });
 
   it('shows the business VAT choice only for a business customer without reverse VAT', () => {
     expect(offerFormFields(businessCustomer)).toEqual({
+      showKtvPageChoice: false,
       showKtvPersons: false,
       showBusinessVatChoice: true,
     });
     expect(offerFormFields(reverseVatCustomer)).toEqual({
+      showKtvPageChoice: false,
       showKtvPersons: false,
       showBusinessVatChoice: false,
     });
@@ -64,14 +79,21 @@ describe('pdfExportFormModel', () => {
         offerProblems: ['Tarjouksen rivillä Seinä on virheellinen hinta. Korjaa hinta ennen tulostusta.'],
         personsProblem: 'Henkilöiden määrä on kokonaisluku väliltä 1–10.',
         validDaysProblem: 'Tarjous voimassa on kokonaisluku väliltä 1–365.',
+        expiryDateProblem: 'Voimassa asti on päivämäärä muodossa pp.kk.vvvv, 1–365 päivää tarjouksen päiväyksestä. Mennyttä päivää ei voi valita.',
       }),
     ).toEqual([
       'Tarjouksen rivillä Seinä on virheellinen hinta. Korjaa hinta ennen tulostusta.',
       'Henkilöiden määrä on kokonaisluku väliltä 1–10.',
       'Tarjous voimassa on kokonaisluku väliltä 1–365.',
+      'Voimassa asti on päivämäärä muodossa pp.kk.vvvv, 1–365 päivää tarjouksen päiväyksestä. Mennyttä päivää ei voi valita.',
     ]);
     expect(
-      tarjousBlockingMessages({ offerProblems: [], personsProblem: null, validDaysProblem: null }),
+      tarjousBlockingMessages({
+        offerProblems: [],
+        personsProblem: null,
+        validDaysProblem: null,
+        expiryDateProblem: null,
+      }),
     ).toEqual([]);
   });
 
@@ -107,5 +129,35 @@ describe('pdfExportFormModel', () => {
     expect(dokumenttiCreateTitle('tarjous', true)).toBe('Luodaan tarjousta…');
     expect(dokumenttiCreateTitle('urakkakortti', false)).toBe('Luo urakkakortti');
     expect(dokumenttiCreateTitle('urakkakortti', true)).toBe('Luodaan urakkakorttia…');
+  });
+
+  it('hides the KTV persons field for a business customer', () => {
+    expect(offerFormFields(businessCustomer).showKtvPersons).toBe(false);
+    expect(offerFormFields(businessCustomer).showKtvPageChoice).toBe(false);
+    expect(offerFormFields(reverseVatCustomer).showKtvPersons).toBe(false);
+    expect(offerFormFields(privateCustomer).showKtvPersons).toBe(true);
+  });
+
+  it('keeps typed sheet text when the sheet closes before blur', () => {
+    const committed: SheetDraftText = {
+      personsText: '1',
+      validDaysText: '31',
+      validDateText: '10.11.2026',
+      huomioText: 'Esitäyttö',
+      rowPriceText: { 'line-1': '100,00' },
+    };
+    const draft: SheetDraftText = {
+      personsText: '2',
+      validDaysText: '14',
+      validDateText: '24.10.2026',
+      huomioText: 'Telineet mukaan',
+      rowPriceText: { 'line-1': '150,50' },
+    };
+    const kept = sheetDraftAfterClose(draft);
+    expect(kept).toEqual(draft);
+    expect(kept).not.toEqual(committed);
+    expect(kept.rowPriceText).not.toBe(draft.rowPriceText);
+    kept.rowPriceText['line-1'] = '0';
+    expect(draft.rowPriceText['line-1']).toBe('150,50');
   });
 });

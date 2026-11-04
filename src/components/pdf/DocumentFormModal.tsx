@@ -1,7 +1,17 @@
 import type { ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { OutlinedButton } from '@/src/components/common';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -12,38 +22,53 @@ type DocumentFormModalProps = {
   children: ReactNode;
 };
 
-/** Yhden dokumentin lomake. Suljetaan taustasta, otsikon painikkeesta tai paluusta. */
+/**
+ * Yhden dokumentin pohjalevy. Näppäimistö nostaa levyn kuten laskentalomake.
+ * Suljetaan painikkeesta, otsikosta, taustasta tai paluusta.
+ */
 export function DocumentFormModal({ visible, title, onClose, children }: DocumentFormModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable style={styles.backdropPressable} onPress={onClose} accessibilityLabel="Sulje" />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
-            <Pressable onPress={onClose} accessibilityLabel="Sulje" hitSlop={8}>
-              <Text style={styles.close}>Sulje</Text>
-            </Pressable>
+      <KeyboardAvoidingView
+        style={styles.avoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.backdrop}>
+          <Pressable style={styles.backdropPressable} onPress={onClose} accessibilityLabel="Sulje" />
+          <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <View style={styles.header}>
+              <Text style={styles.title}>{title}</Text>
+              <Pressable onPress={onClose} accessibilityLabel="Sulje" hitSlop={8}>
+                <Text style={styles.close}>Sulje</Text>
+              </Pressable>
+            </View>
+            <View style={styles.underline} />
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              automaticallyAdjustKeyboardInsets
+              style={styles.list}
+              contentContainerStyle={styles.content}
+            >
+              {children}
+            </ScrollView>
+            <View style={styles.footer}>
+              <OutlinedButton title="Sulje" onPress={onClose} />
+            </View>
           </View>
-          <View style={styles.underline} />
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            style={styles.list}
-            contentContainerStyle={styles.content}
-          >
-            {children}
-          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 function createStyles(colors: AppColorPalette) {
   return {
+    avoid: {
+      flex: 1,
+    },
     backdrop: {
       flex: 1,
       justifyContent: 'flex-end' as const,
@@ -52,6 +77,7 @@ function createStyles(colors: AppColorPalette) {
     backdropPressable: { ...StyleSheet.absoluteFillObject },
     sheet: {
       width: '100%' as const,
+      maxHeight: '88%' as const,
       height: '88%' as const,
       backgroundColor: colors.secondary,
       borderTopLeftRadius: 5,
@@ -89,7 +115,10 @@ function createStyles(colors: AppColorPalette) {
       flex: 1,
     },
     content: {
-      paddingBottom: 12,
+      paddingBottom: 32,
+    },
+    footer: {
+      paddingTop: 8,
     },
   };
 }
