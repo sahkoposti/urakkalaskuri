@@ -119,9 +119,16 @@ export function CalculationDetailView({
               <Text style={styles.documentTitle}>
                 {action.id === 'tarjous' ? 'Tarjous' : 'Urakkakortti'}
               </Text>
-              <OutlinedButton title={action.label} onPress={() => setOpenDocument(action.id)} />
+              <OutlinedButton
+                title={action.label}
+                onPress={() => {
+                  pdf.resyncSheet();
+                  setOpenDocument(action.id);
+                }}
+              />
             </AppCard>
           ))}
+          <OutlinedButton title="Sulje" onPress={onFooterPress} />
         </View>
       ) : (
         <>
