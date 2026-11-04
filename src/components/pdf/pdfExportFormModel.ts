@@ -122,25 +122,72 @@ export function dokumenttiCreateTitle(kind: DokumenttiKind, busy: boolean): stri
   return busy ? 'Luodaan urakkakorttia…' : 'Luo urakkakortti';
 }
 
-/** Teksti, joka elää hookin tilassa. Blur tallentaa; sulkeminen ei. */
-export type SheetDraftText = {
+/** Lomakkeen näkyvä luonnos. Kytkimet tulevat tallenteesta, teksti voi olla kesken. */
+export type PdfFormDraft = {
   personsText: string;
   validDaysText: string;
   validDateText: string;
   huomioText: string;
   rowPriceText: Record<string, string>;
+  cardMode: 'alihankkija' | 'tyontekija';
+  businessVatMode: 'alv0' | 'sis';
+  hidePrices: boolean;
+  ktvPageIncluded: boolean;
 };
 
+/** Kenttä, jota ei ole vielä blurattu tallenteeseen. */
+export type PdfFormDirty = {
+  personsText: boolean;
+  validDays: boolean;
+  huomioText: boolean;
+  rowPriceText: boolean;
+};
+
+/** `snapshot` = tallennus lomakkeesta tai ulkoa. `reopen` ja `calculation` hylkäävät luonnosten. */
+export type PdfFormSyncReason = 'snapshot' | 'reopen' | 'calculation';
+
+export function cleanPdfFormDirty(): PdfFormDirty {
+  return { personsText: false, validDays: false, huomioText: false, rowPriceText: false };
+}
+
+/** Uusi laskelma nollaa. Sama id ja muuttunut snapshot ei. */
+export function pdfFormSyncReason(
+  previousCalculationId: string | null,
+  calculationId: string,
+): PdfFormSyncReason {
+  return previousCalculationId !== calculationId ? 'calculation' : 'snapshot';
+}
+
+function copyPdfFormDraft(draft: PdfFormDraft): PdfFormDraft {
+  return { ...draft, rowPriceText: { ...draft.rowPriceText } };
+}
+
 /**
- * Pohjalevy suljetaan ennen bluria. Luonnos jää näkyviin, eikä sitä
- * korvata viimeksi tallennetulla tekstillä.
+ * KTV-kytkin ja muut lomakkeen tallennukset päivittävät snapshotin.
+ * Likainen kenttä jää. Puhdas kenttä seuraa tallennetta.
+ * Pohjalevyn avaus ja laskelman vaihto hakevat kaiken tallenteesta.
  */
-export function sheetDraftAfterClose(draft: SheetDraftText): SheetDraftText {
+export function syncPdfFormDraft(
+  current: PdfFormDraft,
+  saved: PdfFormDraft,
+  dirty: PdfFormDirty,
+  reason: PdfFormSyncReason,
+): { draft: PdfFormDraft; dirty: PdfFormDirty } {
+  if (reason === 'reopen' || reason === 'calculation') {
+    return { draft: copyPdfFormDraft(saved), dirty: cleanPdfFormDirty() };
+  }
   return {
-    personsText: draft.personsText,
-    validDaysText: draft.validDaysText,
-    validDateText: draft.validDateText,
-    huomioText: draft.huomioText,
-    rowPriceText: { ...draft.rowPriceText },
+    draft: {
+      personsText: dirty.personsText ? current.personsText : saved.personsText,
+      validDaysText: dirty.validDays ? current.validDaysText : saved.validDaysText,
+      validDateText: dirty.validDays ? current.validDateText : saved.validDateText,
+      huomioText: dirty.huomioText ? current.huomioText : saved.huomioText,
+      rowPriceText: dirty.rowPriceText ? { ...current.rowPriceText } : { ...saved.rowPriceText },
+      cardMode: saved.cardMode,
+      businessVatMode: saved.businessVatMode,
+      hidePrices: saved.hidePrices,
+      ktvPageIncluded: saved.ktvPageIncluded,
+    },
+    dirty: { ...dirty },
   };
 }

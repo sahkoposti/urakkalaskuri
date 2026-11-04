@@ -1,3 +1,4 @@
+import { hasFormVersionMismatch } from '../src/core/form/formVersion';
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
 import {
   calculationWithKtvPageIncluded,
@@ -5,6 +6,7 @@ import {
 } from '../src/core/pdf/ktvPageIncluded';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { preserveCalculationSnapshot } from '../src/core/pdf/urakkakorttiCard';
+import { ensureStructureLines } from '../src/core/structure/legacyCalculation';
 import { input, record } from './pdfFixtures';
 
 function priced() {
@@ -58,13 +60,27 @@ describe('ktvPageIncluded', () => {
     expect(withoutStyle(offHtml)).not.toContain('page-break');
     expect(withoutStyle(offHtml)).not.toContain('Kotitalousvähennys');
     expect(priceBlock(onHtml)).toBe(priceBlock(offHtml));
-    expect(priceBlock(onHtml)).toContain('Loppusumma');
+    expect(priceBlock(onHtml)).toMatch(/\d[\d\u00a0\u202f]*[,.]\d{2}/);
   });
 
   it('prints the same HTML when the switch is turned back on', () => {
     const base = priced();
     const restored = calculationWithKtvPageIncluded(calculationWithKtvPageIncluded(base, false), true);
     expect(renderTarjousHtml(buildPdfContext(input(restored)))).toBe(renderTarjousHtml(buildPdfContext(input(base))));
+  });
+
+  it('stores only the flag when the calculation has no form snapshot', () => {
+    const bare = record({});
+    delete bare.formSnapshot;
+    delete bare.structureLines;
+    const off = calculationWithKtvPageIncluded(bare, false);
+    expect(off.formSnapshot).toEqual({ ktvPageIncluded: false });
+    expect(readKtvPageIncluded(off.formSnapshot)).toBe(false);
+    const line = ensureStructureLines(off)[0];
+    expect(line.formFilled).toBe(false);
+    expect(line.formVersion).toBeUndefined();
+    expect(hasFormVersionMismatch(line.formVersion ?? line.snapshot?.formVersion, 3)).toBe(false);
+    expect(line.snapshot?.ktvPageIncluded).toBe(false);
   });
 
   it('still omits the page for a business customer even if the key is absent', () => {

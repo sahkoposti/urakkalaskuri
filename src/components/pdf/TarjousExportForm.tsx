@@ -63,7 +63,7 @@ export function TarjousExportForm({ offer }: { offer: PdfExportFormState['offer'
         value={offer.validDateText}
         onChangeText={offer.onValidDateChange}
         onBlur={offer.onValidDateBlur}
-        placeholder="pp.kk.vvvv"
+        placeholder="p.k.vvvv"
         compact
       />
       {offer.expiryDateProblem ? (

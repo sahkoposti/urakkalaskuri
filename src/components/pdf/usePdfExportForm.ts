@@ -17,7 +17,6 @@ import { offerDocumentProblems } from '@/src/core/pdf/offerDocument';
 import {
   daysTextForExpiryDate,
   expiryDateTextForDays,
-  formatOfferExpiryDate,
   offerExpiryDateProblem,
   parseOfferValidDateInput,
 } from '@/src/core/pdf/offerExpiryDate';
@@ -29,7 +28,7 @@ import {
   offerValidDaysForSave,
   parseOfferValidDaysInput,
 } from '@/src/core/pdf/offerValidDays';
-import { validUntil } from '@/src/core/pdf/validUntil';
+import { formatFinnishDate, validUntil } from '@/src/core/pdf/validUntil';
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
 import {
   calculationWithBusinessVatMode,
@@ -48,14 +47,18 @@ import {
 import { readBusinessVatMode, type BusinessVatMode } from '@/src/core/utils/priceDisplay';
 
 import {
+  cleanPdfFormDirty,
   dokumenttiCreateTitle,
   draftCardPriceProblems,
   offerFormFields,
-  sheetDraftAfterClose,
+  pdfFormSyncReason,
+  syncPdfFormDraft,
   tarjousBlockingMessages,
   tarjousCreateDisabled,
   urakkakorttiCreateDisabled,
   validDaysHint,
+  type PdfFormDraft,
+  type PdfFormDirty,
 } from './pdfExportFormModel';
 
 type Busy = 'tarjous' | 'urakkakortti' | null;
@@ -90,7 +93,8 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     expiryDateTextForDays(offerValidDaysFieldText(record.formSnapshot, null), offerDateFromNow(), ''),
   );
   const [ktvPageIncluded, setKtvPageIncluded] = useState(() => readKtvPageIncluded(record.formSnapshot));
-  const validDaysDirty = useRef(false);
+  const dirtyRef = useRef<PdfFormDirty>(cleanPdfFormDirty());
+  const seenCalculationId = useRef<string | null>(null);
   const offerDateRef = useRef<Date | null>(null);
   if (offerDateRef.current == null) offerDateRef.current = offerDateFromNow();
   const offerDate = offerDateRef.current;
@@ -98,6 +102,50 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   companyDaysRef.current = companyValidDays;
   const overrideTextRef = useRef(overrideText);
   overrideTextRef.current = overrideText;
+  const draftRef = useRef<PdfFormDraft>(null!);
+  draftRef.current = {
+    personsText,
+    validDaysText,
+    validDateText,
+    huomioText,
+    rowPriceText: overrideText,
+    cardMode,
+    businessVatMode,
+    hidePrices,
+    ktvPageIncluded,
+  };
+
+  const savedDraft = (source: CalculationRecord): PdfFormDraft => {
+    const days = offerValidDaysFieldText(source.formSnapshot, companyDaysRef.current);
+    return {
+      personsText: ktvPersonsFieldText(source.formSnapshot),
+      validDaysText: days,
+      validDateText: expiryDateTextForDays(days, offerDateRef.current ?? offerDateFromNow(), ''),
+      huomioText: huomioitavaaFieldText(source),
+      rowPriceText: cardPriceFieldTexts(source),
+      cardMode: readUrakkakorttiMode(source.formSnapshot),
+      businessVatMode: readBusinessVatMode(source.formSnapshot),
+      hidePrices: readUrakkakorttiHidePrices(source.formSnapshot),
+      ktvPageIncluded: readKtvPageIncluded(source.formSnapshot),
+    };
+  };
+
+  const applyDraft = (draft: PdfFormDraft) => {
+    setPersonsText(draft.personsText);
+    setValidDaysText(draft.validDaysText);
+    setValidDateText(draft.validDateText);
+    setHuomioText(draft.huomioText);
+    setOverrideText(draft.rowPriceText);
+    overrideTextRef.current = draft.rowPriceText;
+    setCardMode(draft.cardMode);
+    setBusinessVatMode(draft.businessVatMode);
+    setHidePrices(draft.hidePrices);
+    setKtvPageIncluded(draft.ktvPageIncluded);
+  };
+
+  const markDirty = (patch: Partial<PdfFormDirty>) => {
+    dirtyRef.current = { ...dirtyRef.current, ...patch };
+  };
   const customer = customerFromRecord(record);
   const fields = offerFormFields(customer, ktvPageIncluded);
   const offerProblems = offerDocumentProblems(record);
@@ -125,17 +173,11 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   const app = { settings, products, structures };
 
   useEffect(() => {
-    setPersonsText(ktvPersonsFieldText(record.formSnapshot));
-    setCardMode(readUrakkakorttiMode(record.formSnapshot));
-    setHuomioText(huomioitavaaFieldText(record));
-    setBusinessVatMode(readBusinessVatMode(record.formSnapshot));
-    setHidePrices(readUrakkakorttiHidePrices(record.formSnapshot));
-    setOverrideText(cardPriceFieldTexts(record));
-    setKtvPageIncluded(readKtvPageIncluded(record.formSnapshot));
-    validDaysDirty.current = false;
-    const nextDays = offerValidDaysFieldText(record.formSnapshot, companyDaysRef.current);
-    setValidDaysText(nextDays);
-    setValidDateText(expiryDateTextForDays(nextDays, offerDateRef.current ?? offerDateFromNow(), ''));
+    const reason = pdfFormSyncReason(seenCalculationId.current, record.id);
+    seenCalculationId.current = record.id;
+    const synced = syncPdfFormDraft(draftRef.current, savedDraft(record), dirtyRef.current, reason);
+    dirtyRef.current = synced.dirty;
+    applyDraft(synced.draft);
   }, [record.id, record.formSnapshot, record.customer]);
 
   useEffect(() => {
@@ -144,10 +186,10 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       if (cancelled) return;
       const days = companyOfferValidDays(offerSettings.offerValidDays);
       setCompanyValidDays(days);
-      if (!validDaysDirty.current && !Object.prototype.hasOwnProperty.call(record.formSnapshot ?? {}, 'offerValidDays')) {
+      if (!dirtyRef.current.validDays && !Object.prototype.hasOwnProperty.call(record.formSnapshot ?? {}, 'offerValidDays')) {
         const text = String(days);
         setValidDaysText(text);
-        setValidDateText(formatOfferExpiryDate(validUntil(offerDateRef.current ?? offerDateFromNow(), days)));
+        setValidDateText(formatFinnishDate(validUntil(offerDateRef.current ?? offerDateFromNow(), days)));
       }
     }).catch((error) => {
       console.error(error);
@@ -186,13 +228,14 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       snapshot: record.formSnapshot,
       fieldText: daysText,
       companyDefault: companyValidDays,
-      touched: validDaysDirty.current,
+      touched: dirtyRef.current.validDays,
     });
     if (typeof days !== 'number') return;
     setValidDaysText(String(days));
-    setValidDateText(formatOfferExpiryDate(validUntil(offerDate, days)));
-    validDaysDirty.current = false;
-    void persistValidDays(days).catch(reportSaveError);
+    setValidDateText(formatFinnishDate(validUntil(offerDate, days)));
+    void persistValidDays(days)
+      .then(() => markDirty({ validDays: false }))
+      .catch(reportSaveError);
   };
 
   const persistBusinessVatMode = async (mode: BusinessVatMode) => {
@@ -237,14 +280,20 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     if (companyValidDays == null) return;
     return run('tarjous', async () => {
       if (fields.showKtvPageChoice) await persistKtvPageIncluded(ktvPageIncluded);
-      if (fields.showKtvPersons && parsedPersons !== 'invalid') await persistPersons(parsedPersons);
+      if (fields.showKtvPersons && parsedPersons !== 'invalid') {
+        await persistPersons(parsedPersons);
+        markDirty({ personsText: false });
+      }
       const days = offerValidDaysForSave({
         snapshot: record.formSnapshot,
         fieldText: validDaysText,
         companyDefault: companyValidDays,
-        touched: validDaysDirty.current,
+        touched: dirtyRef.current.validDays,
       });
-      if (typeof days === 'number') await persistValidDays(days);
+      if (typeof days === 'number') {
+        await persistValidDays(days);
+        markDirty({ validDays: false });
+      }
       await exportTarjousPdf(calculationId, app, pdfExportDeps);
       await refreshCalculations();
     });
@@ -257,6 +306,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     }
     return run('urakkakortti', async () => {
       await persistCard(cardMode, huomioText, hidePrices);
+      markDirty({ huomioText: false, rowPriceText: false });
       const result = await exportUrakkakorttiPdf(calculationId, app, pdfExportDeps, manualValues);
       if (result.status === 'needsManualContract') {
         setManualLines(result.lines);
@@ -275,20 +325,10 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       setManualLines(null);
       void handleUrakkakortti(values);
     },
-    keepSheetDraft: () => {
-      const kept = sheetDraftAfterClose({
-        personsText,
-        validDaysText,
-        validDateText,
-        huomioText,
-        rowPriceText: overrideTextRef.current,
-      });
-      setPersonsText(kept.personsText);
-      setValidDaysText(kept.validDaysText);
-      setValidDateText(kept.validDateText);
-      setHuomioText(kept.huomioText);
-      setOverrideText(kept.rowPriceText);
-      overrideTextRef.current = kept.rowPriceText;
+    resyncSheet: () => {
+      const synced = syncPdfFormDraft(draftRef.current, savedDraft(record), dirtyRef.current, 'reopen');
+      dirtyRef.current = synced.dirty;
+      applyDraft(synced.draft);
     },
     offer: {
       showKtvPageChoice: fields.showKtvPageChoice,
@@ -299,15 +339,20 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       },
       showKtvPersons: fields.showKtvPersons,
       personsText,
-      onPersonsChange: setPersonsText,
+      onPersonsChange: (value: string) => {
+        markDirty({ personsText: true });
+        setPersonsText(value);
+      },
       onPersonsBlur: () => {
         if (parsedPersons === 'invalid') return;
-        void persistPersons(parsedPersons).catch(reportSaveError);
+        void persistPersons(parsedPersons)
+          .then(() => markDirty({ personsText: false }))
+          .catch(reportSaveError);
       },
       personsProblem,
       validDaysText,
       onValidDaysChange: (value: string) => {
-        validDaysDirty.current = true;
+        markDirty({ validDays: true });
         setValidDaysText(value);
         setValidDateText(expiryDateTextForDays(value, offerDate, validDateText));
       },
@@ -318,7 +363,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       validDaysProblem,
       validDateText,
       onValidDateChange: (value: string) => {
-        validDaysDirty.current = true;
+        markDirty({ validDays: true });
         setValidDateText(value);
         setValidDaysText(daysTextForExpiryDate(value, offerDate, validDaysText));
       },
@@ -348,6 +393,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       onCardModeChange: (value: string) => {
         const mode: UrakkakorttiMode = value === 'tyontekija' ? 'tyontekija' : 'alihankkija';
         const texts = cardPriceFieldTexts(record, mode);
+        markDirty({ rowPriceText: false });
         setCardMode(mode);
         setOverrideText(texts);
         overrideTextRef.current = texts;
@@ -364,6 +410,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
         priceText: overrideText[line.id] ?? '',
       })),
       onRowPriceChange: (lineId: string, value: string) => {
+        markDirty({ rowPriceText: true });
         setOverrideText((current) => {
           const next = { ...current, [lineId]: value };
           overrideTextRef.current = next;
@@ -371,12 +418,19 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
         });
       },
       onRowPricesBlur: () => {
-        void persistOverrides(overrideTextRef.current).catch(reportSaveError);
+        void persistOverrides(overrideTextRef.current)
+          .then(() => markDirty({ rowPriceText: false }))
+          .catch(reportSaveError);
       },
       huomioText,
-      onHuomioChange: setHuomioText,
+      onHuomioChange: (value: string) => {
+        markDirty({ huomioText: true });
+        setHuomioText(value);
+      },
       onHuomioBlur: () => {
-        void persistCard(cardMode, huomioText, hidePrices).catch(reportSaveError);
+        void persistCard(cardMode, huomioText, hidePrices)
+          .then(() => markDirty({ huomioText: false }))
+          .catch(reportSaveError);
       },
       cardProblems,
       createTitle: dokumenttiCreateTitle('urakkakortti', busy === 'urakkakortti'),

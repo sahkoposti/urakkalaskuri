@@ -30,8 +30,10 @@ export function calculationWithKtvPageIncluded(record: CalculationRecord, includ
     return { ...record, formSnapshot: next };
   }
   if (has && snapshot.ktvPageIncluded === false) return record;
-  const nextSnapshot: FormSnapshot = snapshot
-    ? { ...snapshot, ktvPageIncluded: false }
-    : { formId: '', formVersion: 0, fields: [], ktvPageIncluded: false };
+  // Ei keksitä formId/formVersion/fields -kuorta. Tyhjä formId ja versio 0
+  // näyttäisi legacy-rivillä täytetyltä lomakkeelta ja versiovaroitukselta.
+  const nextSnapshot = (
+    snapshot ? { ...snapshot, ktvPageIncluded: false } : { ktvPageIncluded: false }
+  ) as FormSnapshot;
   return { ...record, formSnapshot: nextSnapshot };
 }

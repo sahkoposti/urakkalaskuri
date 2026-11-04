@@ -3,12 +3,15 @@ import {
   DOKUMENTTI_ACTIONS,
   TARJOUS_SNAPSHOT_KEYS,
   URAKKAKORTTI_SNAPSHOT_KEYS,
+  cleanPdfFormDirty,
   dokumenttiCreateTitle,
   draftCardPriceProblems,
   offerFormFields,
-  sheetDraftAfterClose,
+  pdfFormSyncReason,
   showCardRowPrices,
-  type SheetDraftText,
+  syncPdfFormDraft,
+  type PdfFormDirty,
+  type PdfFormDraft,
   tarjousBlockingMessages,
   tarjousCreateDisabled,
   urakkakorttiCreateDisabled,
@@ -79,13 +82,13 @@ describe('pdfExportFormModel', () => {
         offerProblems: ['Tarjouksen rivillä Seinä on virheellinen hinta. Korjaa hinta ennen tulostusta.'],
         personsProblem: 'Henkilöiden määrä on kokonaisluku väliltä 1–10.',
         validDaysProblem: 'Tarjous voimassa on kokonaisluku väliltä 1–365.',
-        expiryDateProblem: 'Voimassa asti on päivämäärä muodossa pp.kk.vvvv, 1–365 päivää tarjouksen päiväyksestä. Mennyttä päivää ei voi valita.',
+        expiryDateProblem: 'Voimassa asti on päivämäärä muodossa p.k.vvvv, 1–365 päivää tarjouksen päiväyksestä. Mennyttä päivää ei voi valita.',
       }),
     ).toEqual([
       'Tarjouksen rivillä Seinä on virheellinen hinta. Korjaa hinta ennen tulostusta.',
       'Henkilöiden määrä on kokonaisluku väliltä 1–10.',
       'Tarjous voimassa on kokonaisluku väliltä 1–365.',
-      'Voimassa asti on päivämäärä muodossa pp.kk.vvvv, 1–365 päivää tarjouksen päiväyksestä. Mennyttä päivää ei voi valita.',
+      'Voimassa asti on päivämäärä muodossa p.k.vvvv, 1–365 päivää tarjouksen päiväyksestä. Mennyttä päivää ei voi valita.',
     ]);
     expect(
       tarjousBlockingMessages({
@@ -138,26 +141,75 @@ describe('pdfExportFormModel', () => {
     expect(offerFormFields(privateCustomer).showKtvPersons).toBe(true);
   });
 
-  it('keeps typed sheet text when the sheet closes before blur', () => {
-    const committed: SheetDraftText = {
-      personsText: '1',
-      validDaysText: '31',
-      validDateText: '10.11.2026',
-      huomioText: 'Esitäyttö',
-      rowPriceText: { 'line-1': '100,00' },
+  it('keeps a dirty persons field when the snapshot changes from the KTV switch', () => {
+    const dirty = cleanPdfFormDirty();
+    dirty.personsText = true;
+    const synced = syncPdfFormDraft(typedDraft, savedAfterKtvSwitch, dirty, 'snapshot');
+    expect(synced.draft.personsText).toBe('2');
+    expect(synced.draft.ktvPageIncluded).toBe(false);
+    expect(synced.draft.huomioText).toBe('Esitäyttö');
+    expect(synced.dirty.personsText).toBe(true);
+  });
+
+  it('updates a clean field when the snapshot changes from outside', () => {
+    const synced = syncPdfFormDraft(typedDraft, savedFromOutside, cleanPdfFormDirty(), 'snapshot');
+    expect(synced.draft.personsText).toBe('3');
+    expect(synced.draft.huomioText).toBe('Ulkoa');
+    expect(synced.draft.rowPriceText).toEqual({ 'line-1': '80,00' });
+    expect(synced.dirty).toEqual(cleanPdfFormDirty());
+  });
+
+  it('re-syncs every field when the sheet opens again', () => {
+    const dirty: PdfFormDirty = {
+      personsText: true,
+      validDays: true,
+      huomioText: true,
+      rowPriceText: true,
     };
-    const draft: SheetDraftText = {
-      personsText: '2',
-      validDaysText: '14',
-      validDateText: '24.10.2026',
-      huomioText: 'Telineet mukaan',
-      rowPriceText: { 'line-1': '150,50' },
-    };
-    const kept = sheetDraftAfterClose(draft);
-    expect(kept).toEqual(draft);
-    expect(kept).not.toEqual(committed);
-    expect(kept.rowPriceText).not.toBe(draft.rowPriceText);
-    kept.rowPriceText['line-1'] = '0';
-    expect(draft.rowPriceText['line-1']).toBe('150,50');
+    const synced = syncPdfFormDraft(typedDraft, savedAfterKtvSwitch, dirty, 'reopen');
+    expect(synced.draft).toEqual({ ...savedAfterKtvSwitch, rowPriceText: { ...savedAfterKtvSwitch.rowPriceText } });
+    expect(synced.draft.rowPriceText).not.toBe(savedAfterKtvSwitch.rowPriceText);
+    expect(synced.dirty).toEqual(cleanPdfFormDirty());
+  });
+
+  it('resets drafts when the calculation id changes', () => {
+    expect(pdfFormSyncReason(null, 'calc-a')).toBe('calculation');
+    expect(pdfFormSyncReason('calc-a', 'calc-a')).toBe('snapshot');
+    expect(pdfFormSyncReason('calc-a', 'calc-b')).toBe('calculation');
+    const dirty: PdfFormDirty = { personsText: true, validDays: true, huomioText: true, rowPriceText: true };
+    const synced = syncPdfFormDraft(typedDraft, savedFromOutside, dirty, pdfFormSyncReason('calc-a', 'calc-b'));
+    expect(synced.draft.personsText).toBe('3');
+    expect(synced.draft.validDaysText).toBe('7');
+    expect(synced.dirty).toEqual(cleanPdfFormDirty());
   });
 });
+
+const typedDraft: PdfFormDraft = {
+  personsText: '2',
+  validDaysText: '14',
+  validDateText: '24.10.2026',
+  huomioText: 'Telineet mukaan',
+  rowPriceText: { 'line-1': '150,50' },
+  cardMode: 'alihankkija',
+  businessVatMode: 'alv0',
+  hidePrices: false,
+  ktvPageIncluded: true,
+};
+
+const savedAfterKtvSwitch: PdfFormDraft = {
+  ...typedDraft,
+  personsText: '1',
+  huomioText: 'Esitäyttö',
+  rowPriceText: { 'line-1': '100,00' },
+  ktvPageIncluded: false,
+};
+
+const savedFromOutside: PdfFormDraft = {
+  ...savedAfterKtvSwitch,
+  personsText: '3',
+  validDaysText: '7',
+  validDateText: '17.10.2026',
+  huomioText: 'Ulkoa',
+  rowPriceText: { 'line-1': '80,00' },
+  ktvPageIncluded: true,
+};

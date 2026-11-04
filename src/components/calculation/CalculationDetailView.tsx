@@ -119,9 +119,16 @@ export function CalculationDetailView({
               <Text style={styles.documentTitle}>
                 {action.id === 'tarjous' ? 'Tarjous' : 'Urakkakortti'}
               </Text>
-              <OutlinedButton title={action.label} onPress={() => setOpenDocument(action.id)} />
+              <OutlinedButton
+                title={action.label}
+                onPress={() => {
+                  pdf.resyncSheet();
+                  setOpenDocument(action.id);
+                }}
+              />
             </AppCard>
           ))}
+          <OutlinedButton title="Sulje" onPress={onFooterPress} />
         </View>
       ) : (
         <>
@@ -225,20 +232,14 @@ export function CalculationDetailView({
     <DocumentFormModal
       visible={openDocument === 'tarjous'}
       title="Tarjous"
-      onClose={() => {
-        pdf.keepSheetDraft();
-        setOpenDocument(null);
-      }}
+      onClose={() => setOpenDocument(null)}
     >
       <TarjousExportForm offer={pdf.offer} />
     </DocumentFormModal>
     <DocumentFormModal
       visible={openDocument === 'urakkakortti' && pdf.manualLines === null}
       title="Urakkakortti"
-      onClose={() => {
-        pdf.keepSheetDraft();
-        setOpenDocument(null);
-      }}
+      onClose={() => setOpenDocument(null)}
     >
       <UrakkakorttiExportForm card={pdf.card} />
     </DocumentFormModal>

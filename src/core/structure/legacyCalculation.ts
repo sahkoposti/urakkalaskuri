@@ -21,6 +21,8 @@ export function structureLineFromLegacyRecord(
   structureName = 'Laskenta',
   structureId = DEFAULT_STRUCTURE_ID,
 ): StructureLine {
+  const snapshot = record.formSnapshot;
+  const hasForm = typeof snapshot?.formId === 'string' && snapshot.formId.length > 0;
   return withDerivedLinePricing({
     id: `${record.id}_line`,
     structureId,
@@ -36,10 +38,10 @@ export function structureLineFromLegacyRecord(
     commissionEur: record.commissionEur,
     marginEur: record.marginEur,
     marginPercent: record.marginPercent,
-    fieldValues: record.formSnapshot?.fieldValues ?? {},
-    formFilled: Boolean(record.formSnapshot),
-    formVersion: record.formSnapshot?.formVersion,
-    snapshot: record.formSnapshot,
+    fieldValues: snapshot?.fieldValues ?? {},
+    formFilled: hasForm,
+    formVersion: hasForm ? snapshot?.formVersion : undefined,
+    snapshot,
     overrides: [],
   });
 }

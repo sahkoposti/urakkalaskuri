@@ -1,15 +1,8 @@
 import { parseOfferValidDaysInput } from './offerValidDays';
-import { validUntil } from './validUntil';
+import { formatFinnishDate, validUntil } from './validUntil';
 
 export const OFFER_EXPIRY_DATE_INVALID_MESSAGE =
-  'Voimassa asti on päivämäärä muodossa pp.kk.vvvv, 1–365 päivää tarjouksen päiväyksestä. Mennyttä päivää ei voi valita.';
-
-/** Lomakkeen päiväys `pp.kk.vvvv`. Tuloste käyttää yhä `formatFinnishDate` (`p.k.vvvv`). */
-export function formatOfferExpiryDate(date: Date): string {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${day}.${month}.${date.getFullYear()}`;
-}
+  'Voimassa asti on päivämäärä muodossa p.k.vvvv, 1–365 päivää tarjouksen päiväyksestä. Mennyttä päivää ei voi valita.';
 
 /** Kalenteripäivien erotus. Kesäaika ei siirrä lukua, koska vertailu on päiväyksissä. */
 export function calendarDaysBetween(start: Date, end: Date): number {
@@ -48,7 +41,7 @@ export function daysTextForExpiryDate(dateText: string, offerDate: Date, current
 export function expiryDateTextForDays(daysText: string, offerDate: Date, currentDateText: string): string {
   const parsed = parseOfferValidDaysInput(daysText);
   if (typeof parsed !== 'number') return currentDateText;
-  return formatOfferExpiryDate(validUntil(offerDate, parsed));
+  return formatFinnishDate(validUntil(offerDate, parsed));
 }
 
 /**
