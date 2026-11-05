@@ -174,9 +174,9 @@ describe('attachments', () => {
     ]);
   });
 
-  it('stores a new attachment as none, caps the caption, and orders by sort_order', async () => {
+  it('stores a new attachment on the card, caps the caption, and orders by sort_order', async () => {
     const first = await addAttachment(draft({ caption: '  Julkisivu  ' }));
-    expect(first).toMatchObject({ destination: 'none', caption: 'Julkisivu', sortOrder: 0, width: 800 });
+    expect(first).toMatchObject({ destination: 'card', caption: 'Julkisivu', sortOrder: 0, width: 800 });
     await addAttachment(draft({
       id: 'a2',
       kind: 'pdf',
@@ -210,6 +210,11 @@ describe('attachments', () => {
 
     await updateAttachment('a1', { caption: 'Sokkeli', destination: 'offer' });
     expect(await getAttachment('a1')).toMatchObject({ caption: 'Sokkeli', destination: 'offer', sortOrder: 1 });
+  });
+
+  it('keeps an explicit none destination', async () => {
+    const kept = await addAttachment(draft({ id: 'none-1', destination: 'none', fileRelPath: 'attachments/calc-a/none.jpg' }));
+    expect(kept.destination).toBe('none');
   });
 
   it('builds the relative path and reads a folder uri with or without a trailing slash', () => {

@@ -21,6 +21,8 @@ import {
   missingPhoneFolderError,
   phoneFolderChoiceWasDeclined,
   phoneSaveErrorCode,
+  PHONE_DOWNLOAD_SAVED,
+  phoneDownloadNotice,
   phoneSaveErrorText,
   resetPhoneFolderChoice,
   savePdfToPhoneFolder,
@@ -395,5 +397,13 @@ describe('phone status labels', () => {
     ).toBe('Urakkalaskuri');
     expect(phoneFolderRowLabel(null)).toBe('Puhelimen kansio: ei valittu');
     expect(PHONE_FOLDER_CHANGE).toBe('Vaihda');
+    expect(phoneDownloadNotice({ status: 'ok' })).toEqual({
+      kind: 'success',
+      message: PHONE_DOWNLOAD_SAVED,
+    });
+    expect(phoneDownloadNotice({ status: 'failed', error: 'no_folder' })).toEqual({
+      kind: 'error',
+      message: 'Kansiota ei valittu.',
+    });
   });
 });

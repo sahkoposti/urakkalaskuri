@@ -65,8 +65,11 @@ export const ATTACHMENT_CAMERA_DENIED_MESSAGE = 'Kameran käyttöä ei sallittu.
 
 export const ATTACHMENT_COPY_FAILED_MESSAGE = 'Laskelman kopiointi epäonnistui.';
 
-export const ATTACHMENT_NEXT_PDF_NOTE =
-  'Uusi liite tulee mukaan vasta seuraavaan luotuun PDF:ään.';
+export const ATTACHMENT_ADD_LABEL = 'Lisää liite';
+
+export function attachmentFormCountLabel(count: number): string {
+  return `Liitteet: ${count}`;
+}
 
 export const ATTACHMENT_REMOVE_COPIED_LABEL = 'Poista kopioidut liitteet';
 

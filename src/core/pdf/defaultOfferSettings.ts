@@ -45,9 +45,29 @@ export function formatSivukulukerroin(value: number): string {
   return String(value).replace('.', ',');
 }
 
+/**
+ * Yleinen-näytön tallennus. Vaihtaa vain sivukulukertoimen.
+ * Tyhjä kenttä palauttaa oletuksen 1,5. Kelvoton arvo ei päädy tänne.
+ */
+export function withSivukulukerroin(settings: OfferCompanySettings, raw: string): OfferCompanySettings {
+  const parsed = parseSivukulukerroinInput(raw);
+  return {
+    ...settings,
+    sivukulukerroin: typeof parsed === 'number' ? parsed : DEFAULT_SIVUKULUKERROIN,
+  };
+}
+
 /** Tyhjä syöte ei ole virhe. Kelvoton ei-tyhjä syöte estää tallennuksen. */
 export function sivukulukerroinDraftError(raw: string): string | null {
   return parseSivukulukerroinInput(raw) === 'invalid' ? SIVUKULUKERROIN_INVALID_MESSAGE : null;
+}
+
+/**
+ * Tulosteen kerroin. Sama normalisointi kuin asetusten tallennuksessa:
+ * kelvollinen arvo (suurempi kuin 1 ja enintään 3) säilyy, muuten oletus 1,5.
+ */
+export function printSivukulukerroin(value: unknown): number {
+  return normalizeSivukulukerroin(value);
 }
 
 function normalizeSivukulukerroin(value: unknown): number {

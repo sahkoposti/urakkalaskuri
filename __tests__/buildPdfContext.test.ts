@@ -144,7 +144,15 @@ describe('offerMaterialsVatIncluded', () => {
 
 describe('buildPdfContext', () => {
   it('private customer: VAT-inclusive price block, no Ale row at 0 %, KTV data present', () => {
-    const ctx = buildPdfContext(input(record({})));
+    const base = input(
+      record({}, { structureLines: [{ ...line('l1', 's1', 'Ulkomaalaus'), additionalInfo: 'Sisältää telineet.' }] }),
+    );
+    const ctx = buildPdfContext({
+      ...base,
+      structures: base.structures.map((item) =>
+        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'ELAVA_OLETUS_EI_TULOSTU' } : item,
+      ),
+    });
     expect(ctx.price.includesVat).toBe(true);
     expect(labels(ctx.price.rows)).toEqual(['Yhteensä alv 0', 'Alv 25,5 %', 'Yhteensä sis. alv']);
     expect(ctx.price.rows.at(-1)?.emphasis).toBe(true);
@@ -171,6 +179,7 @@ describe('buildPdfContext', () => {
     expect(ctx.sections).toHaveLength(1);
     expect(ctx.sections[0].title).toBe('Ulkomaalaus');
     expect(ctx.sections[0].textGroups.find((group) => group.group === 'muuta')?.items).toEqual(['Sisältää telineet.']);
+    expect(JSON.stringify(ctx.sections)).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
     expect(ctx.sections[0].tableRows).toEqual(
       expect.arrayContaining([expect.objectContaining({ label: 'Työn arvioitu kesto', value: '4 työpäivää' })]),
     );
@@ -274,7 +283,7 @@ describe('buildPdfContext', () => {
     expect(ktv).toContain('554,81 €');
     expect(ktv).toContain('451,80 €');
     expect(ktv).toContain('Arvioitu hinta vähennyksen jälkeen');
-    expect(ktv).toContain('2 213,82 € − 554,81 €');
+    expect(ktv).not.toContain('Peruste');
     expect(ktv).toContain('1 659,01 €');
     expect(ktv).not.toContain('Asiakkaan maksettavaksi');
     expect(ktv).not.toContain('Enimmäismäärä');
@@ -336,15 +345,29 @@ describe('buildPdfContext', () => {
   });
 
   it('multi-structure: each structure section gets its own Tarjous text', () => {
-    const ctx = buildPdfContext(
-      input(record({}, { structureLines: [line('l2', 's2', 'Sokkeli', '30'), line('l1', 's1', 'Ulkomaalaus')] })),
+    const base = input(
+      record({}, {
+        structureLines: [
+          line('l2', 's2', 'Sokkeli', '30'),
+          { ...line('l1', 's1', 'Ulkomaalaus'), additionalInfo: 'Sisältää telineet.' },
+        ],
+      }),
     );
+    const ctx = buildPdfContext({
+      ...base,
+      structures: base.structures.map((item) =>
+        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'ELAVA_OLETUS_EI_TULOSTU' } : item,
+      ),
+    });
     expect(ctx.rows.map((row) => row.name)).toEqual(['Sokkeli', 'Ulkomaalaus']);
     expect(ctx.sections.map((section) => section.title)).toEqual(['Sokkeli', 'Ulkomaalaus']);
     expect(ctx.sections.map((section) => section.textGroups.find((group) => group.group === 'muuta')?.items)).toEqual([
-      ['Toinen teksti'],
+      undefined,
       ['Sisältää telineet.'],
     ]);
+    expect(JSON.stringify(ctx.sections)).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
+    expect(JSON.stringify(ctx.sections)).not.toContain('Toinen teksti');
+    expect(JSON.stringify(ctx.sections)).not.toContain('VANHA_EI_TULOSTU');
     expect(ctx.additionalInfo).toBe('');
   });
 

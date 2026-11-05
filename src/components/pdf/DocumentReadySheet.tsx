@@ -5,7 +5,6 @@ import {
   DOCUMENT_SAVED_IN_APP,
   documentPageCountLabel,
   documentReadyTitle,
-  phoneSaveActionLabel,
   phoneSaveDetail,
   phoneStatusLabel,
 } from '@/src/core/documents/documentLabels';
@@ -29,7 +28,7 @@ type DocumentReadySheetProps = {
 export function DocumentReadySheet({
   document,
   phone,
-  platform,
+  platform: _platform,
   onPreview,
   onShare,
   onSaveToPhone,
@@ -62,12 +61,7 @@ export function DocumentReadySheet({
             <Text style={styles.meta}>{phoneSaveDetail(phone.error)}</Text>
           ) : null}
           <PrimaryButton title="Esikatsele" onPress={onPreview} />
-          {phone && phoneSaveActionLabel(phone.status, platform) ? (
-            <OutlinedButton
-              title={phoneSaveActionLabel(phone.status, platform) ?? ''}
-              onPress={onSaveToPhone}
-            />
-          ) : null}
+          <OutlinedButton title="Lataa" onPress={onSaveToPhone} />
           <OutlinedButton title="Jaa" onPress={onShare} />
         </View>
       ) : null}

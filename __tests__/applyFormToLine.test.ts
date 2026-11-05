@@ -1,3 +1,7 @@
+import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
+import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
+import { applyRefreshedStructurePrices, cardHeaderPrices } from '../src/core/pdf/urakkakorttiCard';
+import { input, record } from './pdfFixtures';
 import { applyFormResultToLine, patchStructureLine, saveIncompleteFormToLine } from '../src/core/structure/applyFormToLine';
 import type { StructureLine } from '../src/core/models/types';
 import type { CalculationResult } from '../src/core/calculation/calculationPipeline';
@@ -98,6 +102,81 @@ describe('applyFormToLine', () => {
     expect(next.contractPriceVat0).toBe(800);
   });
 
+  test('Päivitä hinta korvaa urakan ja poistaa yliajon, myös kortin rivihinnan', () => {
+    const overridden = patchStructureLine(line({ contractPriceVat0: 100, unitPriceVat0: 100 }), {
+      contractPriceVat0: 50,
+    });
+    const next = applyFormResultToLine(overridden, result, { maali: 'uusi' }, 7, { refreshPrices: true });
+    expect(next.contractPriceVat0).toBe(800);
+    expect(next.unitPriceVat0).toBe(3393.52);
+    expect(next.overrides).not.toContain('contractPrice');
+    expect(next.priceRefreshed).toBe(true);
+    const saved = applyRefreshedStructurePrices({
+      id: 'c',
+      projectName: 'Kuvitteellinen',
+      groupDurationHours: 0,
+      crewSize: 1,
+      hourlyRate: 0,
+      marginPercent: 0,
+      commissionPercent: 0,
+      contractPriceVat0: 50,
+      materialsVat0: 0,
+      marginEur: 0,
+      commissionEur: 0,
+      totalPriceVat0: 50,
+      vatPercent: 25.5,
+      vatAmount: 0,
+      totalPriceVat: 50,
+      workDurationDays: 0,
+      discountPercent: 0,
+      discountEur: 0,
+      totalPriceVatBeforeDiscount: 50,
+      totalPriceVat0BeforeDiscount: 50,
+      createdAt: new Date(2026, 0, 1),
+      lines: [],
+      structureLines: [next],
+      formSnapshot: {
+        formId: 'f',
+        formVersion: 1,
+        fields: [],
+        urakkakorttiRivihinnat: { l1: 50, other: 12 },
+      },
+    });
+    expect(saved.structureLines?.[0].priceRefreshed).toBeUndefined();
+    expect(saved.structureLines?.[0].contractPriceVat0).toBe(800);
+    expect(saved.formSnapshot?.urakkakorttiRivihinnat).toEqual({ other: 12 });
+  });
+
+  test('Päivitä hinta pois päältä ei korvaa hintaa eikä yliajoa', () => {
+    const overridden = patchStructureLine(line({ contractPriceVat0: 100, unitPriceVat0: 90 }), {
+      contractPriceVat0: 50,
+      unitPriceVat0: 40,
+    });
+    const next = applyFormResultToLine(overridden, result, { maali: 'sama' }, 7, { refreshPrices: false });
+    expect(next.contractPriceVat0).toBe(50);
+    expect(next.unitPriceVat0).toBe(40);
+    expect(next.overrides).toEqual(expect.arrayContaining(['contractPrice', 'unitPrice']));
+    expect(next.priceRefreshed).toBeUndefined();
+    expect(next.fieldValues.maali).toBe('sama');
+
+    const kept = applyFormResultToLine(overridden, result, { maali: 'sama' }, 7);
+    const cardOf = (structureLine: StructureLine) => {
+      const saved = applyRefreshedStructurePrices(
+        record({}, {
+          structureLines: [structureLine],
+          formSnapshot: { formId: 'f', formVersion: 1, fields: [], urakkakorttiRivihinnat: { l1: 61 } },
+        }),
+      );
+      expect(saved.formSnapshot?.urakkakorttiRivihinnat).toEqual({ l1: 61 });
+      expect(cardHeaderPrices(saved, undefined).alihankkija).toBe(61);
+      const html = renderUrakkakorttiHtml(buildUrakkakorttiContext({ ...input(saved), record: saved }));
+      expect(html).toContain('61,00');
+      expect(html).not.toContain('800,00');
+    };
+    cardOf(next);
+    cardOf(kept);
+  });
+
   test('lisätiedot säilyvät lomakkeen jälkeen', () => {
     const next = applyFormResultToLine(line({ additionalInfo: 'Telineet' }), result, { maali: 'x' }, 7);
     expect(next.additionalInfo).toBe('Telineet');
@@ -107,6 +186,13 @@ describe('applyFormToLine', () => {
     const next = patchStructureLine(line(), { additionalInfo: '  Huom  ' });
     expect(next.additionalInfo).toBe('Huom');
     expect(next.overrides).toEqual([]);
+  });
+
+  test('tyhjennetty lisätieto jää tyhjäksi merkkijonoksi', () => {
+    const cleared = patchStructureLine(line({ additionalInfo: 'Telineet' }), { additionalInfo: '' });
+    expect(cleared.additionalInfo).toBe('');
+    const blank = patchStructureLine(line({ additionalInfo: 'Telineet' }), { additionalInfo: '   ' });
+    expect(blank.additionalInfo).toBe('');
   });
 
   test('nimen muokkaus säilyy lomakkeen jälkeen ilman yliajoa', () => {

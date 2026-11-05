@@ -41,6 +41,54 @@ export function planDocumentStorageCleanup(input: {
   };
 }
 
+/** Laskelman kansio levyllä, kun laskelmaa ei enää ole tietokannassa. */
+export function planOrphanCalculationFolders(input: {
+  documentPaths: readonly string[];
+  attachmentPaths: readonly string[];
+  existingIds: ReadonlySet<string>;
+}): { documentIds: string[]; attachmentIds: string[] } {
+  const idsFor = (root: 'documents' | 'attachments', paths: readonly string[]) => {
+    const ids: string[] = [];
+    const seen = new Set<string>();
+    for (const path of paths) {
+      const [folder, id] = path.split('/');
+      if (folder !== root || !id || input.existingIds.has(id) || seen.has(id)) continue;
+      seen.add(id);
+      ids.push(id);
+    }
+    return ids;
+  };
+  return {
+    documentIds: idsFor('documents', input.documentPaths),
+    attachmentIds: idsFor('attachments', input.attachmentPaths),
+  };
+}
+
+/** Kansioiden poisto on paras yritys. Yhden kansion virhe ei estä muita. */
+export function applyOrphanCalculationFolderCleanup(
+  plan: { documentIds: readonly string[]; attachmentIds: readonly string[] },
+  deps: {
+    deleteDocumentFolder(id: string): void;
+    deleteAttachmentFolder(id: string): void;
+    report(kind: 'documents' | 'attachments', id: string, error: unknown): void;
+  },
+): void {
+  for (const id of plan.documentIds) {
+    try {
+      deps.deleteDocumentFolder(id);
+    } catch (error) {
+      deps.report('documents', id, error);
+    }
+  }
+  for (const id of plan.attachmentIds) {
+    try {
+      deps.deleteAttachmentFolder(id);
+    } catch (error) {
+      deps.report('attachments', id, error);
+    }
+  }
+}
+
 export function applyDocumentStorageCleanup(
   plan: { removeFiles: readonly string[]; missingRows: readonly string[] },
   deps: { deleteFile(path: string): void; reportMissing(path: string): void },

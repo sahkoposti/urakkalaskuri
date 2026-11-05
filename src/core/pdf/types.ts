@@ -4,8 +4,11 @@
  * YRITYSKOHTAISET (`offer_company_settings`): voimassaolo, numerointi, KTV ja
  * Lisätiedot-teksti (tarjouksen Lisätiedot-osio, sellaisenaan).
  * RAKENNEKOHTAISET (`offer_settings:<structureId>`, ei lomakepohjan JSON:ssa):
- * lisäteksti tulostuu sen rakenteen osioon (Muuta). `offerPages` säilyy tallessa;
- * tarjous ei lue sivukytkimiä.
+ * `additionalInfoText` säilyy tallessa, mutta tarjous ja urakkakortti eivät tulosta sitä.
+ * Tulostettava Lisätiedot on rivin oma `additionalInfo`. Uusi rivi kopioi oletuksen
+ * luontihetkellä. Puuttuva kenttä ja tyhjä merkkijono ovat tyhjiä; rakenteen
+ * nykyistä `defaultAdditionalInfo`-oletusta ei lueta.
+ * `offerPages` säilyy tallessa; tarjous ei lue sivukytkimiä.
  * Kentän `print.offer.esitys` ja `print.urakkakortti.esitys` ovat lomakepohjan JSON-avaimia.
  */
 
@@ -44,7 +47,7 @@ export interface OfferCompanySettings {
 
 /** Rakennekohtaiset tarjousasetukset (settings-avain `offer_settings:<structureId>`). */
 export interface OfferStructureSettings {
-  /** Rakenteen lisäteksti. Tulostuu tämän rakenteen osioon (Muuta). Tyhjä = ei tekstiä. */
+  /** Vanha lisäteksti. Säilyy tallessa. Tuloste ei lue tätä. */
   additionalInfoText: string;
   offerPages: OfferPageInclusion[];
 }

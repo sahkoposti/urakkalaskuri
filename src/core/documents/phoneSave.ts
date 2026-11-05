@@ -6,6 +6,17 @@ export const PHONE_FOLDER_PERMISSION = 'Kansion käyttöoikeus puuttuu.';
 export const PHONE_FOLDER_MISSING = 'Kansiota ei löytynyt. Valitse kansio uudelleen.';
 export const PHONE_NOT_SAVED_ON_PHONE = 'Ei tallennettu puhelimeen';
 export const PHONE_SAVE_FAILED = 'Puhelimeen tallennus epäonnistui.';
+export const PHONE_DOWNLOAD_SAVED = 'Dokumentti tallennettiin puhelimen kansioon.';
+export const PHONE_FOLDER_TEMPORARY_NOTE =
+  'Tämä on väliaikainen ja poistuu versiossa 1.4. Dokumentit ladataan silloin puhelimeen.';
+
+export function phoneDownloadNotice(outcome: {
+  status: string;
+  error?: string | null;
+}): { kind: 'success' | 'error'; message: string } {
+  if (outcome.status === 'ok') return { kind: 'success', message: PHONE_DOWNLOAD_SAVED };
+  return { kind: 'error', message: phoneSaveErrorText(outcome.error) ?? PHONE_SAVE_FAILED };
+}
 
 /** Tietokantaan tallennettava syy. Suomenkielinen teksti tulee näyttövaiheessa. */
 export const PHONE_SAVE_ERROR_CODES = [

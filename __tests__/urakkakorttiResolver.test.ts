@@ -518,11 +518,10 @@ describe('urakkakortti print resolver', () => {
   it('drops a print.urakkakortti row whose unit is € or whose value contains €', () => {
     const ctx = buildUrakkakorttiContext(printInput(record({}, { structureLines: [printLine()] })));
     const html = bodyOf(renderUrakkakorttiHtml(ctx));
-    expect(html).not.toContain('Urakkasumma');
+    expect(html).toContain('Urakkasumma alihankkija');
     expect(html).not.toContain('99,00');
     expect(html).not.toContain('sisältää 10');
-    const euroLines = html.split('\n').filter((row) => row.includes('€'));
-    expect(euroLines.every((row) => row.includes('Urakka'))).toBe(true);
+    expect(html).not.toContain('Urakka (alv0)');
     expect((html.match(/€/g) ?? []).length).toBe(2);
   });
 
@@ -541,8 +540,8 @@ describe('urakkakortti print resolver', () => {
       );
       expect(html).not.toMatch(/ALV|Kate|Palkkio|Loppusumma|Hinta|Ale %|Kotitalous|Voimassa|Tarjousnumero|10285|Lisätiedot:/);
       expect(html).not.toMatch(/2\s510|2\s000,00|333,33|77,77|502,00/);
-      const euroLines = html.split('\n').filter((row) => row.includes('€'));
-      expect(euroLines.every((row) => row.includes('Urakka'))).toBe(true);
+      expect(html).toContain('Urakkasumma alihankkija');
+      expect(html).not.toContain('Urakka (alv0)');
       expect((html.match(/€/g) ?? []).length).toBe(2);
     }
   });
@@ -577,10 +576,10 @@ describe('urakkakortti print resolver', () => {
       record({}, { structureLines: [printLine({ id: 'a', name: 'A', contractPriceVat0: 0 })] }),
       { a: 1234.567 },
     );
-    expect(buildUrakkakorttiContext(printInput(manualPrint)).contractRows).toEqual(
-      buildUrakkakorttiContext(ukInput(manualLegacy)).contractRows,
+    expect(buildUrakkakorttiContext(printInput(manualPrint)).contractSum).toBe(
+      buildUrakkakorttiContext(ukInput(manualLegacy)).contractSum,
     );
-    expect(buildUrakkakorttiContext(printInput(manualPrint)).contractRows[0].value).toBe(formatCurrency(1234.57));
+    expect(buildUrakkakorttiContext(printInput(manualPrint)).contractSum).toBe(formatCurrency(1234.57));
 
     const multiLegacy = record(
       {},
@@ -599,14 +598,9 @@ describe('urakkakortti print resolver', () => {
     );
     const legacyCtx = buildUrakkakorttiContext(ukInput(multiLegacy));
     const printCtx = buildUrakkakorttiContext(printInput(multiPrint));
-    expect(printCtx.contractRows).toEqual(legacyCtx.contractRows);
+    expect(printCtx.contractSum).toBe(legacyCtx.contractSum);
     expect(printCtx.infoRows).toEqual(legacyCtx.infoRows);
-    expect(printCtx.contractRows.map((row) => row.label)).toEqual([
-      'Urakka: Ulkomaalaus',
-      'Urakka: Sokkeli',
-      'Urakka yhteensä (alv0)',
-    ]);
-    expect(printCtx.contractRows[2].value.replace(/\s/g, ' ')).toBe('1 450,00 €');
+    expect(printCtx.contractSum?.replace(/\s/g, ' ')).toBe('1 450,00 €');
 
     const printedHtml = bodyOf(renderUrakkakorttiHtml(printed));
     expect(printedHtml).toContain('<td>Maali X</td><td class="value">18,5</td><td>l</td>');
@@ -624,11 +618,7 @@ describe('urakkakortti print resolver', () => {
       { a: 700 },
     );
     const manualCtx = buildUrakkakorttiContext(printInput(manualMulti));
-    expect(manualCtx.contractRows.map((row) => row.value)).toEqual([
-      formatCurrency(700),
-      formatCurrency(450),
-      formatCurrency(1150),
-    ]);
+    expect(manualCtx.contractSum).toBe(formatCurrency(1150));
     expect(bodyOf(renderUrakkakorttiHtml(manualCtx))).not.toContain('Materiaalit');
   });
 

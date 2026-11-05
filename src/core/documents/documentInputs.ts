@@ -4,13 +4,10 @@ import { readKtvPageIncluded } from '@/src/core/pdf/ktvPageIncluded';
 import { readKtvPersons } from '@/src/core/pdf/ktvPersons';
 import { printedOfferAmounts } from '@/src/core/pdf/buildPdfContext';
 import { readOfferValidDays } from '@/src/core/pdf/offerValidDays';
-import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
-import { roundToCents } from '@/src/core/utils/formatters';
 import { readBusinessVatMode } from '@/src/core/utils/priceDisplay';
 import {
-  cardContractBase,
+  cardHeaderPrices,
   effectiveHuomioitavaa,
-  employeeContractAmount,
   readUrakkakorttiHidePrices,
   readUrakkakorttiMode,
   readUrakkakorttiRivihinnat,
@@ -44,15 +41,13 @@ export function tarjousDocumentTotal(record: CalculationRecord): number {
   return printedOfferAmounts(record, customerFromRecord(record)).gross;
 }
 
-/** Urakan summa. Piilotetut hinnat eivät saa lukua. */
-export function urakkakorttiDocumentTotal(record: CalculationRecord, factor: number): number | null {
+/**
+ * Dokumenttien listan ja tallennetun yhteenvedon summa on alihankkijan urakka.
+ * Kerrointa ei käytetä. Vanhan rivin `summary.total` luetaan sellaisenaan, tätä ei ajeta sille.
+ */
+export function urakkakorttiDocumentTotal(record: CalculationRecord, _factor?: number): number | null {
   if (readUrakkakorttiHidePrices(record.formSnapshot)) return null;
-  const mode = readUrakkakorttiMode(record.formSnapshot);
-  const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
-  const amounts = ensureStructureLines(record).map((line) =>
-    roundToCents(employeeContractAmount(cardContractBase(line, mode, overrides), mode, factor, line.name)),
-  );
-  return roundToCents(amounts.reduce((sum, amount) => sum + amount, 0));
+  return cardHeaderPrices(record, null).alihankkija;
 }
 
 export function documentSummary(total: number | null, pages: number): DocumentSummary {

@@ -13,6 +13,7 @@ import {
   shouldClearDraftOnDetailClose,
 } from '@/src/core/history/detailDraftPolicy';
 import { customerFromRecord, type CalculationRecord } from '@/src/core/models/types';
+import { isDraftCalculation } from '@/src/core/wizard/draftCalculation';
 import { createId } from '@/src/core/utils/id';
 import { resetToHistoryList } from '@/src/core/navigation/appStack';
 import { db, useApp } from '@/src/context/AppContext';
@@ -54,6 +55,10 @@ export default function HistoryDetailScreen() {
         const loaded = await db.getCalculation(calcId);
         if (!active) return;
         loadedIdRef.current = calcId ?? null;
+        if (loaded && isDraftCalculation(loaded) && calcId) {
+          router.replace({ pathname: '/wizard', params: { editId: calcId } });
+          return;
+        }
         setRecord(loaded);
         setLoading(false);
       })();

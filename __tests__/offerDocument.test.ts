@@ -290,7 +290,7 @@ describe('offer rows and sections', () => {
     expect(sections[0].textGroups).toEqual([
       { group: 'osa_alueet', title: 'Osa-alueet', items: ['Räystäät', 'Otsalaudat'] },
       { group: 'tyovaiheet', title: 'Työvaiheet', items: ['Pohjamaalaus', 'Valmiiksimaalaus'] },
-      { group: 'muuta', title: 'Muuta', items: ['Kaksi kerrosta.', 'Rivi 1\nRivi <2>'] },
+      { group: 'muuta', title: 'Muuta', items: ['Kaksi kerrosta.'] },
     ]);
     expect(sections[0].tableRows).toEqual([
       { label: '', value: 'Pelkkä arvo <b>' },
@@ -307,8 +307,8 @@ describe('offer rows and sections', () => {
     expect(sections[1].textGroups).toEqual([
       { group: 'osa_alueet', title: 'Osa-alueet', items: ['Piippu'] },
       { group: 'tyovaiheet', title: 'Työvaiheet', items: ['Pohjatyö'] },
-      { group: 'muuta', title: 'Muuta', items: ['Nokihormi kuvitteellinen.'] },
     ]);
+    expect(JSON.stringify(sections[1])).not.toContain('Nokihormi');
     expect(sections[1].tableRows).toEqual([
       { label: 'Leveys', value: '40 cm' },
       { label: 'Työn arvioitu kesto', value: '2 työpäivää' },
@@ -326,8 +326,8 @@ describe('offer rows and sections', () => {
     expect(html).toContain('class="doc-line">Pohjamaalaus</p>');
     expect(html).toContain('Pelkkä arvo &lt;b&gt;');
     expect(html).not.toContain('Pelkkä arvo <b>');
-    expect(html).toContain('class="doc-line">Rivi 1</p>');
-    expect(html).toContain('class="doc-line">Rivi &lt;2&gt;</p>');
+    expect(html).not.toContain('Rivi 1');
+    expect(html).not.toContain('Nokihormi');
     expect(html).toContain('Testimaali Sininen');
     expect(html).toContain('>99 m<');
     expect(html).not.toContain('99,0');

@@ -74,11 +74,21 @@ describe('offer title and acceptance sentence', () => {
 
 describe('renderTarjousHtml', () => {
   it('private customer: rows table and one section per structure', () => {
-    const ctx = buildPdfContext(
-      input(record({}, { structureLines: [line('l1', 's1', 'Ulkomaalaus'), line('l2', 's2', 'Sokkeli', '30')] }), {
-        offerCompany: { ...defaultOfferCompanySettings, additionalInfoText: 'Maksuehto kuvitteellinen.' },
+    const base = input(
+      record({}, {
+        structureLines: [
+          { ...line('l1', 's1', 'Ulkomaalaus'), additionalInfo: 'Sisältää telineet.' },
+          line('l2', 's2', 'Sokkeli', '30'),
+        ],
       }),
+      { offerCompany: { ...defaultOfferCompanySettings, additionalInfoText: 'Maksuehto kuvitteellinen.' } },
     );
+    const ctx = buildPdfContext({
+      ...base,
+      structures: base.structures.map((item) =>
+        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'ELAVA_OLETUS_EI_TULOSTU' } : item,
+      ),
+    });
     const html = renderTarjousHtml(ctx, { logoDataUri: LOGO });
     expect(html).not.toContain('class="offer-rows"');
     expect(html).toContain('class="offer-line-heading"');
@@ -91,7 +101,9 @@ describe('renderTarjousHtml', () => {
     expect(html).toContain('Lisätiedot:');
     expect(html).toContain('Maksuehto kuvitteellinen.');
     expect(html).toContain('Sisältää telineet.');
-    expect(html).toContain('Toinen teksti');
+    expect(html).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
+    expect(html).not.toContain('Toinen teksti');
+    expect(html).not.toContain('VANHA_EI_TULOSTU');
     expect(html).toContain('"Sivu " counter(page) "/" counter(pages)');
     expect(html).toMatchSnapshot();
   });
@@ -126,9 +138,15 @@ describe('renderTarjousHtml', () => {
   });
 
   it('escapes user text everywhere (customer, structure text, labels)', () => {
-    const rec = record({ address: '<script>alert(1)</script>' }, { projectName: 'A & <B>' });
+    const rec = record(
+      { address: '<script>alert(1)</script>' },
+      {
+        projectName: 'A & <B>',
+        structureLines: [{ ...line('l1', 's1', 'Ulkomaalaus'), additionalInfo: 'x <img src=x onerror=1>' }],
+      },
+    );
     const ctx = buildPdfContext(
-      input(rec, { offerStructureSettings: { s1: { additionalInfoText: 'x <img src=x onerror=1>', offerPages: [] } } }),
+      input(rec, { offerStructureSettings: { s1: { additionalInfoText: 'VANHA_EI_TULOSTU', offerPages: [] } } }),
     );
     const html = renderTarjousHtml(ctx);
     expect(html).not.toContain('<script>');
@@ -180,7 +198,7 @@ describe('renderTarjousHtml discount row', () => {
     expect(ktv).toContain('451,80 €');
     expect(ktv).toContain('1 807,20 €');
     expect(ktv).toContain('Arvioitu hinta vähennyksen jälkeen');
-    expect(ktv).toContain('2 259,00 € − 572,88 €');
+    expect(ktv).not.toContain('Peruste');
     expect(ktv).toContain('1 686,12 €');
     expect(ktv).not.toContain('Asiakkaan maksettavaksi');
     expect(ktv).not.toContain('Enimmäismäärä');

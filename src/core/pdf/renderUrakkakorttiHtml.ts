@@ -47,10 +47,14 @@ function renderUrakkakorttiBlock(ctx: UrakkakorttiContext, kind: UrakkakorttiBlo
 }
 
 function renderUrakkakorttiTitle(ctx: UrakkakorttiContext): string {
-  const sum = ctx.contractSum
-    ? `<span class="uk-sum"><span class="uk-sum-label">Urakan summa</span><span class="uk-sum-value">${escapeHtml(ctx.contractSum)}</span></span>`
+  const ali = ctx.contractSum
+    ? `<span class="uk-sum uk-sum-ali"><span class="uk-sum-label">Urakkasumma alihankkija</span><span class="uk-sum-value">${escapeHtml(ctx.contractSum)}</span></span>`
     : '';
-  return `<h1 class="uk-title"><span class="uk-title-text">${escapeHtml(ctx.modeLabel)}</span>${sum}</h1>`;
+  const emp = ctx.employeeSum
+    ? `<span class="uk-sum uk-sum-emp"><span class="uk-sum-label">Urakkasumma työntekijä</span><span class="uk-sum-value">${escapeHtml(ctx.employeeSum)}</span></span>`
+    : '';
+  const sums = ali || emp ? `<span class="uk-sums">${ali}${emp}</span>` : '';
+  return `<h1 class="uk-title"><span class="uk-title-text">${escapeHtml(ctx.modeLabel)}</span>${sums}</h1>`;
 }
 
 export function renderUrakkakorttiBody(ctx: UrakkakorttiContext, attachmentHtml = ''): string {
@@ -61,11 +65,14 @@ export function renderUrakkakorttiBody(ctx: UrakkakorttiContext, attachmentHtml 
 }
 
 const URAKKAKORTTI_CSS = `
-  .uk-title { display: flex; justify-content: space-between; align-items: baseline; gap: 6mm; margin: 0 0 4mm 0; font-size: 17pt; font-weight: 700; }
+  .uk-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 6mm; margin: 0 0 4mm 0; font-size: 17pt; font-weight: 700; }
   .uk-title-text { font-weight: 700; }
-  .uk-sum { margin-left: auto; text-align: right; white-space: nowrap; }
+  .uk-sums { margin-left: auto; text-align: right; }
+  .uk-sum { display: block; white-space: nowrap; }
   .uk-sum-label { display: block; font-size: 9pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-  .uk-sum-value { display: block; font-size: 17pt; font-weight: 700; }
+  .uk-sum-ali .uk-sum-value { display: block; font-size: 17pt; font-weight: 700; }
+  .uk-sum-emp .uk-sum-label { font-size: 8pt; font-weight: 600; }
+  .uk-sum-emp .uk-sum-value { display: block; font-size: 12pt; font-weight: 600; }
   .uk-materials { margin: 0 0 6mm 0; }
   .uk-materials h3 { margin: 0 0 1.5mm 0; font-size: 12pt; break-after: avoid; page-break-after: avoid; }
   .uk-materials table { width: 100%; border-collapse: collapse; font-size: 11pt; }

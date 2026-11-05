@@ -57,26 +57,27 @@ exports[`urakkakortti single line: contract, duration, crew, specs, notes area; 
   .ktv-rate-sentence { margin: 0 0 5mm 0; font-size: 11pt; color: #333; }
   .ktv-block { margin: 0 0 5mm 0; break-inside: avoid; page-break-inside: avoid; }
   table.ktv-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-  table.ktv-table col.c-basis { width: 52mm; }
   table.ktv-table col.c-amount { width: 34mm; }
   table.ktv-table th { font-size: 9pt; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #555; border-bottom: 0.25mm solid #ccc; text-align: left; padding: 0.6mm 1.5mm 0.6mm 0; }
   table.ktv-table th.num { text-align: right; padding-right: 0; }
   table.ktv-table td { font-size: 11.5pt; padding: 1.2mm 1.5mm 1.2mm 0; border-bottom: 0.2mm solid #eee; vertical-align: baseline; }
-  table.ktv-table td.basis { font-size: 10pt; color: #555; text-align: right; white-space: nowrap; }
   table.ktv-table td.num { text-align: right; white-space: nowrap; padding-right: 0; }
   table.ktv-table tr.sub td { padding-left: 5mm; }
-  table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
+  table.ktv-table tr.sub td.num { padding-left: 0; }
   table.ktv-table tr.minor td { color: #444; }
   table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
   table.ktv-table tr.result.final td { border-top: none; }
   .ktv-hint { font-size: 10pt; color: #666; margin: 0 0 5mm 0; }
   .ktv-note { font-size: 10pt; color: #333; margin: 0; }
 
-  .uk-title { display: flex; justify-content: space-between; align-items: baseline; gap: 6mm; margin: 0 0 4mm 0; font-size: 17pt; font-weight: 700; }
+  .uk-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 6mm; margin: 0 0 4mm 0; font-size: 17pt; font-weight: 700; }
   .uk-title-text { font-weight: 700; }
-  .uk-sum { margin-left: auto; text-align: right; white-space: nowrap; }
+  .uk-sums { margin-left: auto; text-align: right; }
+  .uk-sum { display: block; white-space: nowrap; }
   .uk-sum-label { display: block; font-size: 9pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-  .uk-sum-value { display: block; font-size: 17pt; font-weight: 700; }
+  .uk-sum-ali .uk-sum-value { display: block; font-size: 17pt; font-weight: 700; }
+  .uk-sum-emp .uk-sum-label { font-size: 8pt; font-weight: 600; }
+  .uk-sum-emp .uk-sum-value { display: block; font-size: 12pt; font-weight: 600; }
   .uk-materials { margin: 0 0 6mm 0; }
   .uk-materials h3 { margin: 0 0 1.5mm 0; font-size: 12pt; break-after: avoid; page-break-after: avoid; }
   .uk-materials table { width: 100%; border-collapse: collapse; font-size: 11pt; }
@@ -121,8 +122,8 @@ exports[`urakkakortti single line: contract, duration, crew, specs, notes area; 
 <thead><tr><td class="spacer-top"></td></tr></thead>
 <tfoot><tr><td class="spacer-bottom"></td></tr></tfoot>
 <tbody><tr><td>
-<h1 class="uk-title"><span class="uk-title-text">Urakkakortti: Alihankkija</span><span class="uk-sum"><span class="uk-sum-label">Urakan summa</span><span class="uk-sum-value">1 000,00 €</span></span></h1>
-<div class="price-block"><div class="col"><table><tr><td>Urakka (alv0)</td><td class="value">1 000,00 €</td></tr></table></div><div class="col"><table><tr><td>Työn arvioitu kesto</td><td class="value">4 pv</td></tr></table></div></div>
+<h1 class="uk-title"><span class="uk-title-text">Urakkakortti</span><span class="uk-sums"><span class="uk-sum uk-sum-ali"><span class="uk-sum-label">Urakkasumma alihankkija</span><span class="uk-sum-value">1 000,00 €</span></span><span class="uk-sum uk-sum-emp"><span class="uk-sum-label">Urakkasumma työntekijä</span><span class="uk-sum-value">666,67 €</span></span></span></h1>
+<div class="price-block"><div class="col"><table><tr><td>Työn arvioitu kesto</td><td class="value">4 pv</td></tr></table></div></div>
 <div class="spec-grid">
 <div class="spec-card full"><h2>Pinta-alat</h2><table><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120,0 m²</td></tr><tr><td>Aukkovähennykset</td><td class="value">–</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Seinäpinta-ala (laskettu)</td><td class="value">–</td></tr></table></div>
 </div>

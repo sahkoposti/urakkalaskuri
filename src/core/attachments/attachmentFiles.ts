@@ -1,5 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
+import { isSafeCalculationFolderId, UNSAFE_CALCULATION_FOLDER_ID_WARNING } from '../documents/calculationFolderId';
+
 import { attachmentPathParts, attachmentRelativePath, attachmentRelativePathFromUris } from './attachmentPaths';
 
 function attachmentFile(relativePath: string): File {
@@ -74,6 +76,10 @@ export function listAttachmentDiskPaths(): string[] {
 }
 
 export function deleteCalculationAttachmentFolder(calculationId: string): void {
+  if (!isSafeCalculationFolderId(calculationId)) {
+    console.warn(UNSAFE_CALCULATION_FOLDER_ID_WARNING, calculationId);
+    return;
+  }
   const folder = new Directory(Paths.document, 'attachments', calculationId);
   if (folder.exists) folder.delete();
 }

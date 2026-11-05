@@ -112,6 +112,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await cleanupDocumentsOnStartup().catch((error) => {
         console.error(error);
       });
+      await db.promoteCurrentWizardDraft().catch((error) => {
+        console.error(error);
+      });
       await refreshSettings();
       await refreshStructures();
       await refreshProducts();

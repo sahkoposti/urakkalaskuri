@@ -62,15 +62,13 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   .ktv-rate-sentence { margin: 0 0 5mm 0; font-size: 11pt; color: #333; }
   .ktv-block { margin: 0 0 5mm 0; break-inside: avoid; page-break-inside: avoid; }
   table.ktv-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-  table.ktv-table col.c-basis { width: 52mm; }
   table.ktv-table col.c-amount { width: 34mm; }
   table.ktv-table th { font-size: 9pt; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #555; border-bottom: 0.25mm solid #ccc; text-align: left; padding: 0.6mm 1.5mm 0.6mm 0; }
   table.ktv-table th.num { text-align: right; padding-right: 0; }
   table.ktv-table td { font-size: 11.5pt; padding: 1.2mm 1.5mm 1.2mm 0; border-bottom: 0.2mm solid #eee; vertical-align: baseline; }
-  table.ktv-table td.basis { font-size: 10pt; color: #555; text-align: right; white-space: nowrap; }
   table.ktv-table td.num { text-align: right; white-space: nowrap; padding-right: 0; }
   table.ktv-table tr.sub td { padding-left: 5mm; }
-  table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
+  table.ktv-table tr.sub td.num { padding-left: 0; }
   table.ktv-table tr.minor td { color: #444; }
   table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
   table.ktv-table tr.result.final td { border-top: none; }
@@ -162,7 +160,7 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
 <tfoot><tr><td class="spacer-bottom"></td></tr></tfoot>
 <tbody><tr><td>
 <h1 class="offer-doc-title">Tarjous / sopimus</h1>
-<section class="doc-section offer-section"><table class="offer-cols-head"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><thead><tr><th>Nimike</th><th class="num">Määrä</th><th>Yks.</th><th class="num">A-hinta</th><th class="num">Alv-%</th><th class="num">Yht</th></tr></thead></table><table class="offer-line-heading"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><tbody><tr><td class="offer-line-title">Ulkomaalaus</td><td class="num offer-line-qty">1</td><td class="offer-line-unit"></td><td class="num offer-line-unitprice">1 000,00 €</td><td class="num offer-line-vat">Alv 0 %</td><td class="num offer-line-price">1 000,00 €</td></tr></tbody></table><div class="doc-group doc-group-muuta"><p class="doc-group-title">Muuta</p><p class="doc-line">Sisältää telineet.</p></div><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
+<section class="doc-section offer-section"><table class="offer-cols-head"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><thead><tr><th>Nimike</th><th class="num">Määrä</th><th>Yks.</th><th class="num">A-hinta</th><th class="num">Alv-%</th><th class="num">Yht</th></tr></thead></table><table class="offer-line-heading"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><tbody><tr><td class="offer-line-title">Ulkomaalaus</td><td class="num offer-line-qty">1</td><td class="offer-line-unit"></td><td class="num offer-line-unitprice">1 000,00 €</td><td class="num offer-line-vat">Alv 0 %</td><td class="num offer-line-price">1 000,00 €</td></tr></tbody></table><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
 <div class="price-block offer-totals"><div class="col"><table><tr class="emphasis"><td>Loppusumma (Alv 0 %)</td><td class="value">1 000,00 €</td></tr></table></div></div>
 <div class="offer-sign"><p class="offer-sign-accept">Olen lukenut ehdot ja hyväksyn sopimuksen</p><p class="offer-sign-role">Myyjä</p><p class="offer-sign-role">Tilaaja</p><div class="offer-sign-name"><p class="offer-sign-detail">ColoRajaton Oy</p><p class="offer-sign-detail">Puh. +358 40 938 9403</p><p class="offer-sign-detail">info@colorajaton.fi</p></div><div class="offer-sign-name"><p class="offer-sign-detail">Matti Meikäläinen</p></div><div class="offer-sign-pen"><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></div><div class="offer-sign-pen"><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></div></div>
 </td></tr></tbody>
@@ -233,15 +231,13 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   .ktv-rate-sentence { margin: 0 0 5mm 0; font-size: 11pt; color: #333; }
   .ktv-block { margin: 0 0 5mm 0; break-inside: avoid; page-break-inside: avoid; }
   table.ktv-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-  table.ktv-table col.c-basis { width: 52mm; }
   table.ktv-table col.c-amount { width: 34mm; }
   table.ktv-table th { font-size: 9pt; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #555; border-bottom: 0.25mm solid #ccc; text-align: left; padding: 0.6mm 1.5mm 0.6mm 0; }
   table.ktv-table th.num { text-align: right; padding-right: 0; }
   table.ktv-table td { font-size: 11.5pt; padding: 1.2mm 1.5mm 1.2mm 0; border-bottom: 0.2mm solid #eee; vertical-align: baseline; }
-  table.ktv-table td.basis { font-size: 10pt; color: #555; text-align: right; white-space: nowrap; }
   table.ktv-table td.num { text-align: right; white-space: nowrap; padding-right: 0; }
   table.ktv-table tr.sub td { padding-left: 5mm; }
-  table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
+  table.ktv-table tr.sub td.num { padding-left: 0; }
   table.ktv-table tr.minor td { color: #444; }
   table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
   table.ktv-table tr.result.final td { border-top: none; }
@@ -339,8 +335,8 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
 <section class="ktv-page page-break">
 <h2 class="ktv-title">Kotitalousvähennyslaskelma (1 hlö)</h2>
 <p class="ktv-rate-sentence">Vähennystä saa arvonlisäverollisesta työn osuudesta 40 %, max 2 100,00 € / henkilö vuodessa; omavastuu 150,00 € / henkilö vuodessa.</p>
-<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>1. Tarjouksen hinta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Yhteensä sis. alv</td><td class="basis">sivun 1 loppusumma</td><td class="num">1 255,00 €</td></tr><tr class="sub minor"><td>josta materiaalit (sis. alv)</td><td class="basis">ei vähennyskelpoinen</td><td class="num">502,00 €</td></tr><tr class="sub"><td>josta työn osuus (sis. alv)</td><td class="basis">vähennyksen pohja</td><td class="num">753,00 €</td></tr></tbody></table></div>
-<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>2. Vähennyksen laskenta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Kotitalousvähennys 40 % työn osuudesta</td><td class="basis">40 % × 753,00 €</td><td class="num">301,20 €</td></tr><tr><td>Omavastuu (1 hlö)</td><td class="basis">1 × 150,00 €</td><td class="num">−150,00 €</td></tr><tr class="result"><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="basis"></td><td class="num">151,20 €</td></tr><tr class="result final"><td>Arvioitu hinta vähennyksen jälkeen</td><td class="basis">1 255,00 € − 151,20 €</td><td class="num">1 103,80 €</td></tr></tbody></table></div>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-amount" /></colgroup><thead><tr><th>1. Tarjouksen hinta</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Yhteensä sis. alv</td><td class="num">1 255,00 €</td></tr><tr class="sub minor"><td>josta materiaalit (sis. alv)</td><td class="num">502,00 €</td></tr><tr class="sub"><td>josta työn osuus (sis. alv)</td><td class="num">753,00 €</td></tr></tbody></table></div>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-amount" /></colgroup><thead><tr><th>2. Vähennyksen laskenta</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Kotitalousvähennys 40 % työn osuudesta</td><td class="num">301,20 €</td></tr><tr><td>Omavastuu (1 hlö)</td><td class="num">−150,00 €</td></tr><tr class="result"><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="num">151,20 €</td></tr><tr class="result final"><td>Arvioitu hinta vähennyksen jälkeen</td><td class="num">1 103,80 €</td></tr></tbody></table></div>
 <p class="ktv-note">Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.</p>
 </section>
 </td></tr></tbody>
@@ -411,15 +407,13 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   .ktv-rate-sentence { margin: 0 0 5mm 0; font-size: 11pt; color: #333; }
   .ktv-block { margin: 0 0 5mm 0; break-inside: avoid; page-break-inside: avoid; }
   table.ktv-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-  table.ktv-table col.c-basis { width: 52mm; }
   table.ktv-table col.c-amount { width: 34mm; }
   table.ktv-table th { font-size: 9pt; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #555; border-bottom: 0.25mm solid #ccc; text-align: left; padding: 0.6mm 1.5mm 0.6mm 0; }
   table.ktv-table th.num { text-align: right; padding-right: 0; }
   table.ktv-table td { font-size: 11.5pt; padding: 1.2mm 1.5mm 1.2mm 0; border-bottom: 0.2mm solid #eee; vertical-align: baseline; }
-  table.ktv-table td.basis { font-size: 10pt; color: #555; text-align: right; white-space: nowrap; }
   table.ktv-table td.num { text-align: right; white-space: nowrap; padding-right: 0; }
   table.ktv-table tr.sub td { padding-left: 5mm; }
-  table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
+  table.ktv-table tr.sub td.num { padding-left: 0; }
   table.ktv-table tr.minor td { color: #444; }
   table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
   table.ktv-table tr.result.final td { border-top: none; }
@@ -512,15 +506,15 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
 <tbody><tr><td>
 <h1 class="offer-doc-title">Tarjous / sopimus</h1>
 <section class="doc-section offer-section"><table class="offer-cols-head"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><thead><tr><th>Nimike</th><th class="num">Määrä</th><th>Yks.</th><th class="num">A-hinta</th><th class="num">Alv-%</th><th class="num">Yht</th></tr></thead></table><table class="offer-line-heading"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><tbody><tr><td class="offer-line-title">Ulkomaalaus</td><td class="num offer-line-qty">1</td><td class="offer-line-unit"></td><td class="num offer-line-unitprice">1 255,00 €</td><td class="num offer-line-vat">25,5 %</td><td class="num offer-line-price">1 255,00 €</td></tr></tbody></table><div class="doc-group doc-group-muuta"><p class="doc-group-title">Muuta</p><p class="doc-line">Sisältää telineet.</p></div><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">120 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
-<section class="doc-section offer-section"><table class="offer-line-heading"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><tbody><tr><td class="offer-line-title">Sokkeli</td><td class="num offer-line-qty">1</td><td class="offer-line-unit"></td><td class="num offer-line-unitprice">1 255,00 €</td><td class="num offer-line-vat">25,5 %</td><td class="num offer-line-price">1 255,00 €</td></tr></tbody></table><div class="doc-group doc-group-muuta"><p class="doc-group-title">Muuta</p><p class="doc-line">Toinen teksti</p></div><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">30 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
+<section class="doc-section offer-section"><table class="offer-line-heading"><colgroup><col class="c-name" /><col class="c-qty" /><col class="c-unit" /><col class="c-unitprice" /><col class="c-vat" /><col class="c-total" /></colgroup><tbody><tr><td class="offer-line-title">Sokkeli</td><td class="num offer-line-qty">1</td><td class="offer-line-unit"></td><td class="num offer-line-unitprice">1 255,00 €</td><td class="num offer-line-vat">25,5 %</td><td class="num offer-line-price">1 255,00 €</td></tr></tbody></table><table class="doc-fields"><tr><td>Kiinteä seinäpinta-ala</td><td class="value">30 m²</td></tr><tr><td>Laudoitustyyppi</td><td class="value">Paneeli</td></tr><tr><td>Työn arvioitu kesto</td><td class="value">4 työpäivää</td></tr></table></section>
 <div class="price-block offer-totals"><div class="col"><table><tr><td>Yhteensä alv 0</td><td class="value">2 000,00 €</td></tr><tr><td>Alv 25,5 %</td><td class="value">510,00 €</td></tr><tr class="emphasis"><td>Yhteensä sis. alv</td><td class="value">2 510,00 €</td></tr></table></div></div>
 <div class="additional-info"><h3>Lisätiedot:</h3><div>Maksuehto kuvitteellinen.</div></div>
 <div class="offer-sign"><p class="offer-sign-accept">Olen lukenut ehdot ja hyväksyn sopimuksen</p><p class="offer-sign-role">Myyjä</p><p class="offer-sign-role">Tilaaja</p><div class="offer-sign-name"><p class="offer-sign-detail">ColoRajaton Oy</p><p class="offer-sign-detail">Puh. +358 40 938 9403</p><p class="offer-sign-detail">info@colorajaton.fi</p></div><div class="offer-sign-name"><p class="offer-sign-detail">Matti Meikäläinen</p></div><div class="offer-sign-pen"><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></div><div class="offer-sign-pen"><p class="offer-sign-label">Allekirjoitus</p><div class="offer-sign-line"></div></div></div>
 <section class="ktv-page page-break">
 <h2 class="ktv-title">Kotitalousvähennyslaskelma (1 hlö)</h2>
 <p class="ktv-rate-sentence">Vähennystä saa arvonlisäverollisesta työn osuudesta 40 %, max 2 100,00 € / henkilö vuodessa; omavastuu 150,00 € / henkilö vuodessa.</p>
-<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>1. Tarjouksen hinta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Yhteensä sis. alv</td><td class="basis">sivun 1 loppusumma</td><td class="num">2 510,00 €</td></tr><tr class="sub minor"><td>josta materiaalit (sis. alv)</td><td class="basis">ei vähennyskelpoinen</td><td class="num">502,00 €</td></tr><tr class="sub"><td>josta työn osuus (sis. alv)</td><td class="basis">vähennyksen pohja</td><td class="num">2 008,00 €</td></tr></tbody></table></div>
-<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>2. Vähennyksen laskenta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Kotitalousvähennys 40 % työn osuudesta</td><td class="basis">40 % × 2 008,00 €</td><td class="num">803,20 €</td></tr><tr><td>Omavastuu (1 hlö)</td><td class="basis">1 × 150,00 €</td><td class="num">−150,00 €</td></tr><tr class="result"><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="basis"></td><td class="num">653,20 €</td></tr><tr class="result final"><td>Arvioitu hinta vähennyksen jälkeen</td><td class="basis">2 510,00 € − 653,20 €</td><td class="num">1 856,80 €</td></tr></tbody></table></div>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-amount" /></colgroup><thead><tr><th>1. Tarjouksen hinta</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Yhteensä sis. alv</td><td class="num">2 510,00 €</td></tr><tr class="sub minor"><td>josta materiaalit (sis. alv)</td><td class="num">502,00 €</td></tr><tr class="sub"><td>josta työn osuus (sis. alv)</td><td class="num">2 008,00 €</td></tr></tbody></table></div>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-amount" /></colgroup><thead><tr><th>2. Vähennyksen laskenta</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Kotitalousvähennys 40 % työn osuudesta</td><td class="num">803,20 €</td></tr><tr><td>Omavastuu (1 hlö)</td><td class="num">−150,00 €</td></tr><tr class="result"><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="num">653,20 €</td></tr><tr class="result final"><td>Arvioitu hinta vähennyksen jälkeen</td><td class="num">1 856,80 €</td></tr></tbody></table></div>
 <p class="ktv-note">Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.</p>
 </section>
 </td></tr></tbody>

@@ -2,6 +2,8 @@ import { escapeHtml } from '@/src/core/pdf/escapeHtml';
 import {
   PDF_A4_WIDTH_MM,
   PDF_HORIZONTAL_MARGIN_EXTRA_MM,
+  PDF_OFFER_ACCENT_BAR_MM,
+  PDF_OFFER_TEXT_INSET_X_MM,
   PDF_PAGE_MARGIN_LEFT_MM,
   PDF_PAGE_MARGIN_RIGHT_MM,
   PDF_USABLE_BODY_MM,
@@ -36,8 +38,13 @@ export const ATTACHMENT_CAPTION_LINE_BUDGET = 3;
  * 82 mm ei mahtunut kahdelle kuvalle, 80 mm mahtui.
  */
 export const ATTACHMENT_PAGE_SLACK_MM = 6;
-/** Kaksi kuvaa sivulla. Mitattu: 80 mm mahtuu, 82 mm ei (+1 pt, 120 merkkiä). */
-export const ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM = 80;
+/**
+ * Kaksi kuvaa sivulla. 80 mm mahtui Chromeen mutta oli laitteella liian korkea.
+ * 72 mm jättää kuvatekstin ja välin alle käytettävän korkeuden.
+ */
+export const ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM = 72;
+/** Kahden kuvan päätös vaatii tämän verran tyhjää käytettävän korkeuden alle. */
+export const OFFER_TWO_UP_CLEARANCE_MM = 8;
 /** Yksi iso kuva sivulla. Yksi kuva + kuvateksti + otsikko mahtuu 223 mm:iin. */
 export const ATTACHMENT_IMAGE_MAX_HEIGHT_ONE_MM = 175;
 /** Kortin ruudukko: kaksi saraketta, neljä kuvaa sivulla. */
@@ -73,6 +80,74 @@ export function attachmentPairUsableMm(extraPt = 1): number {
   const heading =
     lineBoxMm(ATTACHMENT_HEADING_PT + extraPt, 1) + ATTACHMENT_HEADING_MARGIN_BOTTOM_MM;
   return PDF_USABLE_BODY_MM - heading - ATTACHMENT_PAGE_SLACK_MM;
+}
+
+/**
+ * Tarjouksen kuvat: kaksi sivulla, kun kaksi kuvaa ja kuvateksti mahtuvat selvästi.
+ * Muuten yksi kuva sivulla. Kortin ruudukko ei käytä tätä.
+ */
+export function offerAttachmentLayoutForHeight(
+  imageMaxMm: number,
+  extraPt = 1,
+): 'two_per_page' | 'one_per_page' {
+  const block = imageMaxMm + attachmentCaptionBlockMaxMm(extraPt);
+  const budget = attachmentPairUsableMm(extraPt) - OFFER_TWO_UP_CLEARANCE_MM;
+  return block * 2 <= budget ? 'two_per_page' : 'one_per_page';
+}
+
+/** Tarjouksen tekstileveys, jolle kuvateksti rivittyy. */
+export function offerCaptionContentWidthMm(): number {
+  const marginRight = PDF_OFFER_TEXT_INSET_X_MM + PDF_HORIZONTAL_MARGIN_EXTRA_MM;
+  const marginLeft = PDF_OFFER_ACCENT_BAR_MM;
+  const inset = PDF_OFFER_TEXT_INSET_X_MM + PDF_HORIZONTAL_MARGIN_EXTRA_MM - PDF_OFFER_ACCENT_BAR_MM;
+  return PDF_A4_WIDTH_MM - marginRight - marginLeft - inset;
+}
+
+/**
+ * Kuvatekstin rivimäärä. Merkki lasketaan em-levyisenä, koska fontin oikeita
+ * mittoja ei mitata. Tämä on yläraja rivimäärälle, ei laitteen mittaus.
+ */
+export function captionLineCount(caption: string, extraPt = 1, index = 1): number {
+  const prefix = `Kuva ${index}. `;
+  const text = caption.trim() ? `${prefix}${caption.trim()}` : `Kuva ${index}`;
+  const charMm = (ATTACHMENT_CAPTION_PT + extraPt) * MM_PER_PT;
+  const perLine = Math.max(1, Math.floor(offerCaptionContentWidthMm() / charMm));
+  let lines = 0;
+  for (const part of text.split('\n')) {
+    lines += Math.max(1, Math.ceil([...part].length / perLine));
+  }
+  return lines;
+}
+
+function attachmentCaptionBlockMm(lines: number, extraPt: number): number {
+  const text = lineBoxMm(ATTACHMENT_CAPTION_PT + extraPt, lines);
+  return text + ATTACHMENT_CAPTION_MARGIN_TOP_MM + ATTACHMENT_FIGURE_MARGIN_BOTTOM_MM;
+}
+
+/**
+ * Tarjouksen asettelu kuvatekstien mukaan. Yli kolmen rivin kuvateksti tai
+ * liian korkea kuva+teksti-blokki on yksi kuva sivulla. Päätös on taiton
+ * laskentaa, ei ajon aikana mitattu korkeus.
+ */
+export function offerAttachmentLayoutForCaptions(
+  captions: readonly string[],
+  options?: { extraPt?: number; imageMaxMm?: number },
+): 'two_per_page' | 'one_per_page' {
+  const extraPt = options?.extraPt ?? 1;
+  const imageMaxMm = options?.imageMaxMm ?? ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM;
+  const counts = captions.map((caption, index) => captionLineCount(caption, extraPt, index + 1));
+  const longest = counts.reduce((max, count) => Math.max(max, count), 1);
+  if (longest > ATTACHMENT_CAPTION_LINE_BUDGET) return 'one_per_page';
+  const block = imageMaxMm + attachmentCaptionBlockMm(longest, extraPt);
+  const budget = attachmentPairUsableMm(extraPt) - OFFER_TWO_UP_CLEARANCE_MM;
+  return block * 2 <= budget ? 'two_per_page' : 'one_per_page';
+}
+
+export function resolveOfferAttachmentLayout(
+  captions: readonly string[] = [],
+  extraPt = 1,
+): 'two_per_page' | 'one_per_page' {
+  return offerAttachmentLayoutForCaptions(captions, { extraPt });
 }
 
 function sectionCss(extraPt: number): string {

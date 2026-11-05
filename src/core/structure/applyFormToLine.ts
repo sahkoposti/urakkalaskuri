@@ -4,14 +4,37 @@ import { withDerivedLinePricing } from '@/src/core/structure/linePricing';
 import { normalizeDisplayWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import { roundToCents } from '@/src/core/utils/formatters';
 
+const PRICE_OVERRIDE_KEYS = ['unitPrice', 'materials', 'discount', 'contractPrice'] as const;
+
+/**
+ * `refreshPrices: true` korvaa rivin hinnan ja poistaa hinnan yliajot.
+ * `false` ei muuta hintaa eikä yliajoja. Kentät tallentuvat kummassakin.
+ * Puuttuva lippu säilyttää vanhan käytöksen: yliajo estää korvauksen, muuten hinta päivittyy.
+ */
 export function applyFormResultToLine(
   line: StructureLine,
   result: CalculationResult,
   fieldValues: Record<string, string>,
   commissionPercent: number,
-  extras?: { formVersion?: number; snapshot?: FormSnapshot },
+  extras?: { formVersion?: number; snapshot?: FormSnapshot; refreshPrices?: boolean },
 ): StructureLine {
+  if (extras?.refreshPrices === false) {
+    const { priceRefreshed: _ignored, ...kept } = line;
+    return withDerivedLinePricing({
+      ...kept,
+      fieldValues,
+      formFilled: true,
+      formVersion: extras.formVersion,
+      snapshot: extras.snapshot,
+      workDurationDays: result.workDurationDays,
+      commissionPercent,
+    });
+  }
+  const refresh = extras?.refreshPrices === true;
   const overrides = new Set(line.overrides);
+  if (refresh) {
+    for (const key of PRICE_OVERRIDE_KEYS) overrides.delete(key);
+  }
   return withDerivedLinePricing({
     ...line,
     fieldValues,
@@ -32,6 +55,8 @@ export function applyFormResultToLine(
       : roundToCents(result.contractPriceVat0),
     workDurationDays: result.workDurationDays,
     commissionPercent,
+    overrides: [...overrides],
+    ...(refresh ? { priceRefreshed: true as const } : {}),
   });
 }
 
@@ -70,8 +95,7 @@ export function patchStructureLine(
       displayWorkDurationDays = normalized;
     }
   }
-  const additionalInfo =
-    patch.additionalInfo === undefined ? undefined : patch.additionalInfo.trim() || undefined;
+  const additionalInfo = patch.additionalInfo === undefined ? undefined : patch.additionalInfo.trim();
   const rounded = {
     ...patch,
     ...(patch.quantity !== undefined ? { quantity: roundToCents(patch.quantity) } : {}),

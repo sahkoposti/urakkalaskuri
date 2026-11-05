@@ -1,9 +1,7 @@
 import { router, Stack, type Href } from 'expo-router';
-import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { BrandLogo, SectionTitle } from '@/src/components/common';
-import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { SettingsNavCard } from '@/src/components/SettingsNavCard';
 import { db, useApp } from '@/src/context/AppContext';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -11,22 +9,12 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function HomeScreen() {
   const styles = useThemedStyles(createStyles);
-  const { wizardDraft, refreshWizardDraft } = useApp();
-  const [newCalcDialogVisible, setNewCalcDialogVisible] = useState(false);
+  const { refreshWizardDraft, refreshCalculations } = useApp();
 
-  function handleNewCalculation() {
-    if (wizardDraft) {
-      setNewCalcDialogVisible(true);
-      return;
-    }
-
-    router.push('/wizard');
-  }
-
-  async function startNewCalculation() {
-    await db.clearWizardDraft();
+  async function handleNewCalculation() {
+    await db.beginNewCalculation();
     await refreshWizardDraft();
-    setNewCalcDialogVisible(false);
+    await refreshCalculations();
     router.push('/wizard');
   }
 
@@ -70,27 +58,6 @@ export default function HomeScreen() {
           onPress={() => router.push('/settings' as Href)}
         />
       </ScrollView>
-
-      <ConfirmDialog
-        visible={newCalcDialogVisible}
-        title="Uusi laskenta"
-        message="Kesken jäänyt laskenta poistetaan. Haluatko aloittaa uuden?"
-        onClose={() => setNewCalcDialogVisible(false)}
-        buttons={[
-          {
-            title: 'Peruuta',
-            variant: 'outlined',
-            onPress: () => setNewCalcDialogVisible(false),
-          },
-          {
-            title: 'Aloita uusi',
-            variant: 'primary',
-            onPress: () => {
-              void startNewCalculation();
-            },
-          },
-        ]}
-      />
     </>
   );
 }

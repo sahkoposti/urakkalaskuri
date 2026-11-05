@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 
 import { db, useApp } from '@/src/context/AppContext';
 import { isExportBlockedByEditDraft } from '@/src/core/history/detailDraftPolicy';
+import { useSaveToast } from '@/src/context/SaveToastContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import type { CalculationRecord } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
@@ -43,6 +44,7 @@ import {
 } from '@/src/core/documents/documentLabels';
 import { deleteDocument, listDocumentsByCalculation, updateDocumentPhoneSave } from '@/src/core/documents/documentsRepository';
 import { copySavedPdfToPhone, pickPhoneDirectory as pickSafDirectory } from '@/src/core/documents/phoneFolderIo';
+import { phoneDownloadNotice } from '@/src/core/documents/phoneSave';
 import {
   type PhoneDirectory,
   type PhonePlatform,
@@ -63,7 +65,6 @@ import {
   calculationWithBusinessVatMode,
   calculationWithHuomioitavaa,
   calculationWithUrakkakorttiHidePrices,
-  calculationWithUrakkakorttiMode,
   calculationWithUrakkakorttiRivihinnat,
   cardPriceFieldTexts,
   huomioitavaaFieldText,
@@ -111,6 +112,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   const { settings, products, structures, refreshCalculations, wizardDraft } = useApp();
   const exportBlocked = isExportBlockedByEditDraft(wizardDraft, calculationId);
   const { showAlert } = useThemedAlert();
+  const { showSaved } = useSaveToast();
   const [busy, setBusy] = useState<Busy>(null);
   const [personsText, setPersonsText] = useState(() => ktvPersonsFieldText(record.formSnapshot));
   const [cardMode, setCardMode] = useState<UrakkakorttiMode>(() => readUrakkakorttiMode(record.formSnapshot));
@@ -119,7 +121,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     readBusinessVatMode(record.formSnapshot),
   );
   const [hidePrices, setHidePrices] = useState(() => readUrakkakorttiHidePrices(record.formSnapshot));
-  const [overrideText, setOverrideText] = useState(() => cardPriceFieldTexts(record));
+  const [overrideText, setOverrideText] = useState(() => cardPriceFieldTexts(record, 'alihankkija'));
   const [companyValidDays, setCompanyValidDays] = useState<number | null>(null);
   const [validDaysText, setValidDaysText] = useState(() => offerValidDaysFieldText(record.formSnapshot, null));
   const [validDateText, setValidDateText] = useState(() =>
@@ -155,7 +157,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       validDaysText: days,
       validDateText: expiryDateTextForDays(days, offerDateRef.current ?? offerDateFromNow(), ''),
       huomioText: huomioitavaaFieldText(source),
-      rowPriceText: cardPriceFieldTexts(source),
+      rowPriceText: cardPriceFieldTexts(source, 'alihankkija'),
       cardMode: readUrakkakorttiMode(source.formSnapshot),
       businessVatMode: readBusinessVatMode(source.formSnapshot),
       hidePrices: readUrakkakorttiHidePrices(source.formSnapshot),
@@ -185,7 +187,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   const cardLines = ensureStructureLines(record);
   const draftOverrideProblems = draftCardPriceProblems(cardLines, overrideText, hidePrices);
   const cardProblems = [
-    ...urakkakorttiContractProblems(record, cardMode, hidePrices),
+    ...urakkakorttiContractProblems(record, 'alihankkija', hidePrices),
     ...draftOverrideProblems,
   ];
   const parsedPersons = parseKtvPersonsInput(personsText);
@@ -389,13 +391,12 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
   };
 
   const persistOverrides = async (texts: Record<string, string>) => {
-    const next = urakkakorttiRivihinnatFromFieldTexts(record, texts, cardMode);
+    const next = urakkakorttiRivihinnatFromFieldTexts(record, texts, 'alihankkija');
     await persistRecord(calculationWithUrakkakorttiRivihinnat(record, next));
   };
 
-  const persistCard = async (mode: UrakkakorttiMode, huomio: string, hide: boolean) => {
-    const withMode = calculationWithUrakkakorttiMode(record, mode);
-    const withNote = calculationWithHuomioitavaa(withMode, huomio);
+  const persistCard = async (_mode: UrakkakorttiMode, huomio: string, hide: boolean) => {
+    const withNote = calculationWithHuomioitavaa(record, huomio);
     const withHide = calculationWithUrakkakorttiHidePrices(withNote, hide);
     await persistRecord(withHide);
   };
@@ -527,6 +528,9 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
       if (exportBlocked) return;
       void copyPhoneDocument(document.id, document, true).then((phone) => {
         if (readyIdRef.current === document.id) setReadyPhone(phone);
+        const notice = phoneDownloadNotice(phone);
+        if (notice.kind === 'success') showSaved(notice.message);
+        else showAlert('Lataus', notice.message);
       });
     },
     previewDocument: (target: { uri: string }) => {

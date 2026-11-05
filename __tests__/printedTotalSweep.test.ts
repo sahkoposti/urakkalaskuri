@@ -237,15 +237,19 @@ describe('printed total sweep', () => {
       expect(html).not.toContain('Loppusumma');
       expect(html).not.toContain('Rivit yhteensä');
       expect(html).not.toContain('Alennettu');
-      const amounts = ctx.contractRows.filter((row) => !row.emphasis).map((row) => euros(row.value));
-      const total = euros(ctx.contractRows.find((row) => row.emphasis)?.value ?? '');
-      expect(roundToCents(amounts.reduce((sum, amount) => sum + amount, 0))).toBe(total);
-      expect(euros(ctx.contractSum ?? '')).toBe(total);
+      const lineSum = roundToCents(
+        (cardRecord.structureLines ?? []).reduce((sum, line) => sum + (line.contractPriceVat0 > 0 ? line.contractPriceVat0 : 0), 0),
+      );
+      expect(euros(ctx.contractSum ?? '')).toBe(lineSum);
+      expect(ctx.contractRows.map((row) => row.label)).toEqual(
+        (cardRecord.structureLines ?? []).map((row) => `Urakka: ${row.name}`),
+      );
+      expect(ctx.contractRows.some((row) => row.label.includes('yhteensä'))).toBe(false);
     }
     const hidden = renderUrakkakorttiHtml(
       buildUrakkakorttiContext({ ...source, record: calculationWithUrakkakorttiHidePrices(rec, true) }),
     );
-    expect(hidden).not.toContain('Urakan summa');
+    expect(hidden).not.toContain('Urakkasumma');
     expect(hidden).not.toContain('€');
     expect(hidden).not.toContain('Loppusumma');
   });

@@ -4,7 +4,7 @@ import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { formatFixed2, roundToCents } from '@/src/core/utils/formatters';
 import type { BusinessVatMode } from '@/src/core/utils/priceDisplay';
 
-import { DEFAULT_SIVUKULUKERROIN } from './defaultOfferSettings';
+import { printSivukulukerroin } from './defaultOfferSettings';
 import { effectiveContractVat0 } from './manualContract';
 
 /** Laskelman `form_snapshot`-JSON. Puuttuva avain = alihankkija. */
@@ -81,6 +81,34 @@ export function calculationWithUrakkakorttiRivihinnat(
     return { ...record, formSnapshot: next };
   }
   return withSnapshot(record, { urakkakorttiRivihinnat: clean });
+}
+
+/** Poistaa rivin korttiyliajon, kun lomake päivitti hinnan. Lippu ei jää tietueeseen. */
+export function applyRefreshedStructurePrices(record: CalculationRecord): CalculationRecord {
+  const lines = record.structureLines ?? [];
+  const ids = lines.filter((line) => line.priceRefreshed).map((line) => line.id);
+  if (ids.length === 0) return record;
+  let snapshot = record.formSnapshot;
+  if (snapshot?.urakkakorttiRivihinnat) {
+    const nextPrices = { ...snapshot.urakkakorttiRivihinnat };
+    for (const id of ids) delete nextPrices[id];
+    if (Object.keys(nextPrices).length === 0) {
+      const nextSnapshot = { ...snapshot };
+      delete nextSnapshot.urakkakorttiRivihinnat;
+      snapshot = nextSnapshot;
+    } else {
+      snapshot = { ...snapshot, urakkakorttiRivihinnat: nextPrices };
+    }
+  }
+  return {
+    ...record,
+    formSnapshot: snapshot,
+    structureLines: lines.map((line) => {
+      if (!line.priceRefreshed) return line;
+      const { priceRefreshed: _flag, ...rest } = line;
+      return rest;
+    }),
+  };
 }
 
 /**
@@ -297,6 +325,39 @@ export function assertPrintableEmployeeContracts(record: CalculationRecord): voi
 }
 
 /**
+ * Alihankkijan rivihinta: yliajo `urakkakorttiRivihinnat[lineId]`, muuten rivin `contractPriceVat0`.
+ * Ei jaa Sivukulukertoimella.
+ */
+export function alihankkijaLineAmount(
+  line: { id: string; contractPriceVat0: number },
+  overrides: Record<string, number> | undefined,
+): number {
+  if (overrides && Object.prototype.hasOwnProperty.call(overrides, line.id)) {
+    const value = overrides[line.id];
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+  }
+  return effectiveContractVat0(line);
+}
+
+export type CardHeaderPrices = {
+  alihankkija: number;
+  /** Aina luku. Kelvoton tai puuttuva kerroin on asetusten oletus 1,5. */
+  tyontekija: number;
+};
+
+/** Otsikon summat. Työntekijä on pyöristettyjen rivien summa, ei raakasumman jako. */
+export function cardHeaderPrices(record: CalculationRecord, factor: unknown): CardHeaderPrices {
+  const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
+  const parts = ensureStructureLines(record).map((line) =>
+    roundToCents(alihankkijaLineAmount(line, overrides)),
+  );
+  const alihankkija = roundToCents(parts.reduce((sum, amount) => sum + amount, 0));
+  const usable = printSivukulukerroin(factor);
+  const divided = parts.map((amount) => (amount === 0 ? 0 : roundToCents(amount / usable)));
+  return { alihankkija, tyontekija: roundToCents(divided.reduce((sum, amount) => sum + amount, 0)) };
+}
+
+/**
  * Työntekijä: rivin urakka jaetaan kertoimella ja pyöristetään senteiksi.
  * Nolla pysyy nollana. Virheellinen tai negatiivinen summa heittää, eikä siitä tule 0,00.
  * Alihankkija palauttaa kelvollisen summan sellaisenaan. Ei-luku palauttaa 0 vain Alihankkijalla.
@@ -314,7 +375,7 @@ export function employeeContractAmount(
   if (!Number.isFinite(amount)) return 0;
   if (mode !== 'tyontekija') return amount;
   if (amount === 0) return 0;
-  const divisor = Number.isFinite(factor) && factor > 1 && factor <= 3 ? factor : DEFAULT_SIVUKULUKERROIN;
+  const divisor = printSivukulukerroin(factor);
   return roundToCents(amount / divisor);
 }
 

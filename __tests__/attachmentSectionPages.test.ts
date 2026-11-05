@@ -1,4 +1,4 @@
-import { spawn, execFileSync } from 'child_process';
+import { spawn, execFileSync, type ChildProcess } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -73,54 +73,113 @@ function documentHtml(sectionHtml: string, offer: boolean): string {
   return appendAttachmentSection(document, sectionHtml);
 }
 
-function printToPdf(chrome: string, html: string): Promise<Buffer> {
+const CHROME_ATTEMPT_MS = 20_000;
+const CHROME_ATTEMPTS = 3;
+/** 90 s kattaa kolme yritystä yhdelle tulosteelle. */
+const CHROME_PRINT_TIMEOUT_MS = 90_000;
+
+const chromeJobs: { child: ChildProcess; dir: string }[] = [];
+
+function stopChromeJob(job: { child: ChildProcess; dir: string }) {
+  try {
+    job.child.kill('SIGKILL');
+  } catch {
+    // Prosessi on jo poissa.
+  }
+  fs.rmSync(job.dir, { recursive: true, force: true });
+}
+
+afterAll(() => {
+  for (const job of chromeJobs.splice(0)) stopChromeJob(job);
+});
+
+function chromePrintArgs(pdfPath: string, htmlPath: string, userDataDir: string | null): string[] {
+  const args = [
+    '--headless=new',
+    '--disable-gpu',
+    '--no-sandbox',
+    '--no-pdf-header-footer',
+    `--print-to-pdf=${pdfPath}`,
+  ];
+  if (process.env.CI) {
+    args.push('--disable-dev-shm-usage');
+    if (userDataDir) args.push(`--user-data-dir=${userDataDir}`);
+  }
+  args.push(htmlPath);
+  return args;
+}
+
+function printToPdfOnce(chrome: string, html: string): Promise<{ pdf: Buffer | null; stderr: string }> {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'liite-sivu-'));
   const htmlPath = path.join(dir, 'doc.html');
   const pdfPath = path.join(dir, 'doc.pdf');
+  const userDataDir = process.env.CI ? path.join(dir, 'chrome-profile') : null;
+  if (userDataDir) fs.mkdirSync(userDataDir, { recursive: true });
   fs.writeFileSync(htmlPath, html);
-  return new Promise((resolve, reject) => {
-    const child = spawn(
-      chrome,
-      [
-        '--headless=new',
-        '--disable-gpu',
-        '--no-sandbox',
-        '--no-pdf-header-footer',
-        `--print-to-pdf=${pdfPath}`,
-        htmlPath,
-      ],
-      { stdio: ['ignore', 'ignore', 'pipe'] },
-    );
-    let err = '';
+  return new Promise((resolve) => {
+    const child = spawn(chrome, chromePrintArgs(pdfPath, htmlPath, userDataDir), {
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    const job = { child, dir };
+    chromeJobs.push(job);
+    let stderr = '';
     let settled = false;
-    const timer = setTimeout(() => child.kill('SIGKILL'), 20000);
+    const timer = setTimeout(() => {
+      try {
+        child.kill('SIGKILL');
+      } catch {
+        // Prosessi on jo poissa.
+      }
+    }, CHROME_ATTEMPT_MS);
+    let wroteTimer: ReturnType<typeof setTimeout> | undefined;
     const finish = () => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      if (wroteTimer) clearTimeout(wroteTimer);
+      const index = chromeJobs.indexOf(job);
+      if (index >= 0) chromeJobs.splice(index, 1);
+      let pdf: Buffer | null = null;
       try {
-        if (fs.existsSync(pdfPath) && fs.statSync(pdfPath).size > 0) resolve(fs.readFileSync(pdfPath));
-        else reject(new Error(err.slice(-400) || 'PDF puuttuu'));
-      } catch (error) {
-        reject(error instanceof Error ? error : new Error(String(error)));
+        if (fs.existsSync(pdfPath) && fs.statSync(pdfPath).size > 0) pdf = fs.readFileSync(pdfPath);
+      } catch {
+        pdf = null;
       }
-      setTimeout(() => {
-        fs.rm(dir, { recursive: true, force: true }, () => undefined);
-      }, 400);
+      stopChromeJob(job);
+      resolve({ pdf, stderr });
     };
     child.stderr.on('data', (chunk: Buffer) => {
-      err += chunk.toString();
-      if (err.includes('bytes written')) setTimeout(() => child.kill('SIGKILL'), 200);
-    });
-    child.on('exit', finish);
-    child.on('error', (error) => {
-      clearTimeout(timer);
-      if (!settled) {
-        settled = true;
-        reject(error);
+      stderr += chunk.toString();
+      if (!wroteTimer && stderr.includes('bytes written')) {
+        wroteTimer = setTimeout(() => {
+          try {
+            child.kill('SIGKILL');
+          } catch {
+            // Prosessi on jo poissa.
+          }
+        }, 200);
       }
     });
+    child.on('exit', finish);
+    child.on('error', () => {
+      try {
+        child.kill('SIGKILL');
+      } catch {
+        // Prosessi ei käynnistynyt.
+      }
+      finish();
+    });
   });
+}
+
+async function printToPdf(chrome: string, html: string): Promise<Buffer> {
+  let lastStderr = '';
+  for (let attempt = 1; attempt <= CHROME_ATTEMPTS; attempt += 1) {
+    const result = await printToPdfOnce(chrome, html);
+    if (result.pdf && result.pdf.length > 0) return result.pdf;
+    lastStderr = result.stderr;
+  }
+  throw new Error(lastStderr.slice(-400) || 'PDF puuttuu');
 }
 
 function paintedImageHeightsMm(pdf: Buffer): number[] {
@@ -202,7 +261,6 @@ describe('attachment section printed pages', () => {
   }
 
   const browser = chrome;
-  jest.setTimeout(180000);
   const portrait = pngDataUri(900, 1400);
   let offerBodyPages = 0;
   let cardBodyPages = 0;
@@ -212,7 +270,7 @@ describe('attachment section printed pages', () => {
     cardBodyPages = (await PDFDocument.load(await printToPdf(browser, documentHtml('', false)))).getPageCount();
     expect(offerBodyPages).toBe(1);
     expect(cardBodyPages).toBe(1);
-  });
+  }, 2 * CHROME_PRINT_TIMEOUT_MS);
 
   async function attachmentPages(
     count: number,
@@ -256,7 +314,7 @@ describe('attachment section printed pages', () => {
         expectHeight(printed.heights, count, ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM);
       }
     }
-  });
+  }, 6 * CHROME_PRINT_TIMEOUT_MS);
 
   it.each([0, 1])('puts one offer image on each page at font +%i pt', async (extraPt) => {
     for (const caption of ['Ovi', LONG_CAPTION]) {
@@ -266,7 +324,7 @@ describe('attachment section printed pages', () => {
         expectHeight(printed.heights, count, ATTACHMENT_IMAGE_MAX_HEIGHT_ONE_MM);
       }
     }
-  });
+  }, 6 * CHROME_PRINT_TIMEOUT_MS);
 
   it.each([0, 1])('fits four card images on a page at font +%i pt', async (extraPt) => {
     const pairs: [number, number][] = [
@@ -281,5 +339,5 @@ describe('attachment section printed pages', () => {
         expectHeight(printed.heights, count, ATTACHMENT_CARD_IMAGE_MAX_HEIGHT_MM);
       }
     }
-  });
+  }, 6 * CHROME_PRINT_TIMEOUT_MS);
 });

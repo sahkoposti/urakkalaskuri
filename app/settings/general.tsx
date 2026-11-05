@@ -1,8 +1,22 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { Platform, ScrollView, Text } from 'react-native';
 
 import { AppInput, PrimaryButton, ScreenLoading } from '@/src/components/common';
+import { PhoneFolderBar } from '@/src/components/pdf/CalculationDocumentList';
+import {
+  getPhoneDocumentsDirectoryUri,
+  savePhoneDocumentsDirectoryUri,
+} from '@/src/core/database/database';
+import { phoneFolderRowLabel } from '@/src/core/documents/documentLabels';
+import { pickPhoneDirectory } from '@/src/core/documents/phoneFolderIo';
+import { PHONE_FOLDER_TEMPORARY_NOTE } from '@/src/core/documents/phoneSave';
+import {
+  formatSivukulukerroin,
+  sivukulukerroinDraftError,
+  withSivukulukerroin,
+} from '@/src/core/pdf/defaultOfferSettings';
+import type { OfferCompanySettings } from '@/src/core/pdf/types';
 import { parseNumber } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
@@ -19,6 +33,21 @@ export default function GeneralSettingsScreen() {
   const [defaultHourlyRate, setDefaultHourlyRate] = useState('');
   const [workdayHours, setWorkdayHours] = useState('');
   const [weatherReserveFactor, setWeatherReserveFactor] = useState('');
+  const [offerSettings, setOfferSettings] = useState<OfferCompanySettings | null>(null);
+  const [factorText, setFactorText] = useState('');
+
+  useEffect(() => {
+    if (!ready) return;
+    let active = true;
+    void db.getOfferCompanySettings().then((loaded) => {
+      if (!active) return;
+      setOfferSettings(loaded);
+      setFactorText(formatSivukulukerroin(loaded.sivukulukerroin));
+    });
+    return () => {
+      active = false;
+    };
+  }, [ready]);
 
   useEffect(() => {
     setVatPercent(String(settings.vatPercent));
@@ -34,13 +63,16 @@ export default function GeneralSettingsScreen() {
       defaultCommissionPercent !== String(settings.defaultCommissionPercent) ||
       defaultHourlyRate !== String(settings.defaultHourlyRate) ||
       workdayHours !== String(settings.workdayHours) ||
-      weatherReserveFactor.replace(',', '.') !== String(settings.weatherReserveFactor),
+      weatherReserveFactor.replace(',', '.') !== String(settings.weatherReserveFactor) ||
+      (offerSettings != null && factorText !== formatSivukulukerroin(offerSettings.sivukulukerroin)),
     [
       vatPercent,
       defaultCommissionPercent,
       defaultHourlyRate,
       workdayHours,
       weatherReserveFactor,
+      factorText,
+      offerSettings,
       settings,
     ],
   );
@@ -71,6 +103,14 @@ export default function GeneralSettingsScreen() {
       return false;
     }
 
+    if (offerSettings) {
+      const factorError = sivukulukerroinDraftError(factorText);
+      if (factorError) {
+        showAlert('Tarkista sivukulukerroin', factorError);
+        return false;
+      }
+    }
+
     await db.saveSettings({
       ...settings,
       vatPercent: parsed.vatPercent!,
@@ -80,6 +120,12 @@ export default function GeneralSettingsScreen() {
       workdayHours: parsed.workdayHours!,
       weatherReserveFactor: parsed.weatherReserveFactor!,
     });
+    if (offerSettings) {
+      const nextOffer = withSivukulukerroin(offerSettings, factorText);
+      await db.saveOfferCompanySettings(nextOffer);
+      setOfferSettings(nextOffer);
+      setFactorText(formatSivukulukerroin(nextOffer.sivukulukerroin));
+    }
     await refreshSettings();
     return true;
   }
@@ -140,10 +186,61 @@ export default function GeneralSettingsScreen() {
           Kerroin vaikuttaa vain yhteenvedon arvioituun työn kestoon. Se kerrotaan kestolla ennen
           pyöristystä ylöspäin (oletus 1,3). Hinnoittelu käyttää laskettua kestoa ilman kerrointa.
         </Text>
+        <AppInput
+          label="Sivukulukerroin"
+          value={factorText}
+          onChangeText={setFactorText}
+          kind="decimal"
+          placeholder="1,5"
+        />
+        {sivukulukerroinDraftError(factorText) ? (
+          <Text style={styles.fieldError}>{sivukulukerroinDraftError(factorText)}</Text>
+        ) : null}
+        <Text style={styles.sectionHint}>
+          Urakkakortin työntekijähinta on urakka jaettuna tällä. Arvoa ei tulosteta kortille. Tyhjä = 1,5.
+          Sallittu alue on suurempi kuin 1 ja enintään 3.
+        </Text>
+        {Platform.OS === 'android' ? <PhoneFolderSettings /> : null}
         <PrimaryButton title="Tallenna" onPress={handleSave} />
       </ScrollView>
       {exitDialog}
     </>
+  );
+}
+
+function PhoneFolderSettings() {
+  const { showAlert } = useThemedAlert();
+  const [uri, setUri] = useState<string | null>(null);
+  useEffect(() => {
+    void getPhoneDocumentsDirectoryUri().then(setUri).catch((error: unknown) => {
+      console.error(error);
+    });
+  }, []);
+  return (
+    <PhoneFolderBar
+      label={phoneFolderRowLabel(uri)}
+      note={PHONE_FOLDER_TEMPORARY_NOTE}
+      onChange={() => {
+        void pickPhoneDirectory().then(async (directory) => {
+          if (!directory) return;
+          try {
+            await savePhoneDocumentsDirectoryUri(directory.uri);
+            setUri(directory.uri);
+          } catch (error) {
+            console.error(error);
+            showAlert('Kansiota ei voitu tallentaa', 'Kansion tallennus epäonnistui.');
+          }
+        });
+      }}
+      onClear={() => {
+        void savePhoneDocumentsDirectoryUri(null)
+          .then(() => setUri(null))
+          .catch((error: unknown) => {
+            console.error(error);
+            showAlert('Kansiota ei voitu tyhjentää', 'Kansion tyhjennys epäonnistui.');
+          });
+      }}
+    />
   );
 }
 
@@ -153,6 +250,13 @@ function createStyles(colors: AppColorPalette) {
       padding: 16,
       gap: 4,
       paddingBottom: 32,
+    },
+    fieldError: {
+      marginTop: 4,
+      color: '#C90000',
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 14,
+      lineHeight: 20,
     },
     sectionHint: {
       marginTop: 4,

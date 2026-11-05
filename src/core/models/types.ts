@@ -159,6 +159,11 @@ export interface FormSnapshot {
    * Puuttuva avain = yrityksen asetus (oletus 31). Arvo 1–365. Oletusta vastaavaa arvoa ei tallenneta.
    */
   offerValidDays?: number;
+  /**
+   * Keskeneräisen laskelman wizard-tila. Vain `status = draft` -rivillä.
+   * Ei lomakepohjan avain. Valmis laskelma ei kirjoita tätä.
+   */
+  wizardDraft?: PersistedWizardDraft;
 }
 
 export interface CalculationRecord {
@@ -192,6 +197,11 @@ export interface CalculationRecord {
   structureLines?: StructureLine[];
   /** Tarjousnumero (v1.3). Myönnetään ensimmäisestä tarjous-PDF:stä; säilyy muokkauksessa. */
   offerNumber?: number;
+  /**
+   * `draft` = keskeneräinen, näkyy historiassa. Puuttuva = `complete`
+   * (vanha rivi ennen saraketta). Ei lomakepohjan kenttä.
+   */
+  status?: 'complete' | 'draft';
 }
 
 export type StructureLineOverride =
@@ -253,6 +263,11 @@ export interface StructureLine {
    * Tyhjä taulukko = käyttäjä poisti rivit (taulukkoa ei tulosteta).
    */
   materialQuantities?: MaterialQuantityRow[];
+  /**
+   * Lomakkeen "Päivitä hinta" korvasi rivin hinnan. Poistetaan tallennuksessa,
+   * kun kortin rivihinnan yliajo on ensin poistettu. Ei lomakepohjan kenttä.
+   */
+  priceRefreshed?: boolean;
 }
 
 export interface CustomerInfo {

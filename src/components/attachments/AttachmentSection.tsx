@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
-import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { ReorderControls } from '@/src/components/ReorderControls';
 import { AppInput, OutlinedButton, SectionTitle } from '@/src/components/common';
@@ -12,15 +11,10 @@ import { addPickedAttachment } from '@/src/core/attachments/addPickedAttachment'
 import { attachmentDestinationCounts } from '@/src/core/attachments/attachmentCounts';
 import { attachmentFileUri } from '@/src/core/attachments/attachmentFiles';
 import {
+  ATTACHMENT_ADD_LABEL,
   ATTACHMENT_CAMERA_DENIED_MESSAGE,
-  ATTACHMENT_NEXT_PDF_NOTE,
-  attachmentCountLabel,
+  attachmentFormCountLabel,
 } from '@/src/core/attachments/attachmentMessages';
-import {
-  calculationWithAttachmentPageLayout,
-  readAttachmentPageLayout,
-} from '@/src/core/attachments/attachmentPageLayout';
-import type { AttachmentPageLayout } from '@/src/core/attachments/attachmentPrintPlan';
 import { clampCaption } from '@/src/core/attachments/attachmentCaption';
 import {
   moveAttachment,
@@ -31,7 +25,6 @@ import type { PickedAttachment } from '@/src/core/attachments/ingestAttachment';
 import type { Attachment, AttachmentDestination } from '@/src/core/attachments/types';
 import { ATTACHMENT_CAPTION_MAX } from '@/src/core/attachments/types';
 import type { CalculationRecord } from '@/src/core/models/types';
-import { db } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -52,17 +45,20 @@ type AttachmentSectionProps = {
 
 export function AttachmentSummaryLink({
   attachments,
+  target,
   onPress,
 }: {
   attachments: readonly Attachment[];
+  target: 'offer' | 'card';
   onPress: () => void;
 }) {
   const styles = useThemedStyles(createStyles);
   const counts = attachmentDestinationCounts(attachments);
+  const count = target === 'offer' ? counts.offer : counts.card;
+  const label = attachmentFormCountLabel(count);
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={attachmentCountLabel(counts)}>
-      <Text style={styles.summary}>{attachmentCountLabel(counts)}</Text>
-      <Text style={styles.note}>{ATTACHMENT_NEXT_PDF_NOTE}</Text>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
+      <Text style={styles.summary}>{label}</Text>
     </Pressable>
   );
 }
@@ -71,13 +67,12 @@ export function AttachmentSection({
   record,
   attachments,
   onChanged,
-  onRecordChange,
 }: AttachmentSectionProps) {
   const styles = useThemedStyles(createStyles);
   const { showAlert } = useThemedAlert();
   const [busy, setBusy] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Attachment | null>(null);
-  const layout = readAttachmentPageLayout(record.formSnapshot);
+  const [sourceOpen, setSourceOpen] = useState(false);
 
   async function runAdds(picks: PickedAttachment[]) {
     if (picks.length === 0) return;
@@ -126,29 +121,9 @@ export function AttachmentSection({
     await runAdds(result.assets.map(fromDocumentAsset));
   }
 
-  async function changeLayout(next: AttachmentPageLayout) {
-    const updated = calculationWithAttachmentPageLayout(record, next);
-    if (updated === record) return;
-    await db.saveCalculation(updated);
-    onRecordChange(updated);
-  }
-
   return (
     <View style={styles.section}>
       <SectionTitle title="Liitteet" />
-      <Text style={styles.note}>{ATTACHMENT_NEXT_PDF_NOTE}</Text>
-      <ChoiceToggle
-        label="Kuvien asettelu"
-        value={layout}
-        options={[
-          { value: 'two_per_page', label: '2 kuvaa/sivu' },
-          { value: 'one_per_page', label: '1 iso kuva' },
-        ]}
-        onChange={(value) => {
-          void changeLayout(value);
-        }}
-      />
-      <Text style={styles.note}>Tarjouksessa valinta yllä. Urakkakortti tulostaa neljä kuvaa sivulle.</Text>
       {attachments.length === 0 ? <Text style={styles.note}>Ei liitteitä.</Text> : null}
       {attachments.map((item, index) => (
         <AttachmentRow
@@ -161,9 +136,40 @@ export function AttachmentSection({
           onError={(message) => showAlert('Liite', message)}
         />
       ))}
-      <OutlinedButton title="Ota kuva" onPress={() => void takePhoto()} disabled={busy} />
-      <OutlinedButton title="Valitse kuvia" onPress={() => void pickGallery()} disabled={busy} />
-      <OutlinedButton title="Valitse tiedosto (PDF/kuva)" onPress={() => void pickDocument()} disabled={busy} />
+      <OutlinedButton title={ATTACHMENT_ADD_LABEL} onPress={() => setSourceOpen(true)} disabled={busy} />
+      <ConfirmDialog
+        visible={sourceOpen}
+        title={ATTACHMENT_ADD_LABEL}
+        message="Valitse, mistä liite lisätään."
+        onClose={() => setSourceOpen(false)}
+        buttons={[
+          {
+            title: 'Ota kuva',
+            variant: 'primary',
+            onPress: () => {
+              setSourceOpen(false);
+              void takePhoto();
+            },
+          },
+          {
+            title: 'Valitse kuvia',
+            variant: 'outlined',
+            onPress: () => {
+              setSourceOpen(false);
+              void pickGallery();
+            },
+          },
+          {
+            title: 'Valitse tiedosto',
+            variant: 'outlined',
+            onPress: () => {
+              setSourceOpen(false);
+              void pickDocument();
+            },
+          },
+          { title: 'Peruuta', variant: 'outlined', onPress: () => setSourceOpen(false) },
+        ]}
+      />
       <ConfirmDialog
         visible={pendingDelete != null}
         title="Poista liite?"

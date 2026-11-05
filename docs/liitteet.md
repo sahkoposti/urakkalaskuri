@@ -1,8 +1,8 @@
 # Liitteet (L1–L4)
 
-Nykyinen versio on **1.3.2**. Siihen kuuluvat tarjouksen ja urakkakortin PDF, liitteen valinta (kamera, galleria, tiedosto), kuvankäsittely ja asettelu. Tarjouksessa on kaksi kuvaa sivulla tai yksi iso kuva; urakkakortissa on neljä pientä kuvaa sivulla. Kuvat pienennetään lisäyshetkellä (`expo-image-manipulator` 14.0.8): pisin sivu enintään 1600 px, JPEG 0,7, uusi tiedosto ilman EXIF-tietoja. Vain käsitelty tiedosto tallennetaan. PDF kopioidaan ja puretaan `prepareAttachmentPdf`-funktiolla. Raja on 20 kuvaa laskelmaa kohti, 10 Mt / tiedosto, 25 Mt yhteensä ja 50 sivua (`checkAttachmentLimits`). Yli 15 Mt:n kuvakokonaisuus varoittaa, mutta kuvat otetaan mukaan.
+Nykyinen versio on **1.3.3**. Siihen kuuluvat tarjouksen ja urakkakortin PDF, liitteen valinta yhdellä **Lisää liite** -painikkeella (kamera, galleria tai tiedosto), kuvankäsittely ja asettelu. Tarjouksen sivujako on taiton laskentaa, ei ajon aikana mitattu korkeus eikä laitteella varmistettu: kaksi kuvaa sivulla, kun kuvan enimmäiskorkeus ja pisin kuvateksti (merkki em-levyisenä, fontti +1 pt) mahtuvat kahdesti käytettävään korkeuteen; muuten yksi kuva sivulla. Yli kolmen rivin kuvateksti pakottaa yhden kuvan sivulle. Urakkakortissa on neljä pientä kuvaa sivulla. Asettelun valintaa ei näytetä. Vanha `attachmentPageLayout` ei kaada tulostetta: tarjous päättää asettelun itse. Kuvat pienennetään lisäyshetkellä (`expo-image-manipulator` 14.0.8): pisin sivu enintään 1600 px, JPEG 0,7, uusi tiedosto ilman EXIF-tietoja. Vain käsitelty tiedosto tallennetaan. PDF kopioidaan ja puretaan `prepareAttachmentPdf`-funktiolla. Raja on 20 kuvaa laskelmaa kohti, 10 Mt / tiedosto, 25 Mt yhteensä ja 50 sivua (`checkAttachmentLimits`). Yli 15 Mt:n kuvakokonaisuus varoittaa, mutta kuvat otetaan mukaan.
 
-Asettelu (2 kuvaa/sivu tai 1 iso kuva) tallennetaan laskelman `form_snapshot`-avaimeen `attachmentPageLayout`. Puuttuva avain on 2 kuvaa/sivu. Avain kopioituu laskelman mukana. Uutta SQL-saraketta ei ole.
+Vanha avain `form_snapshot.attachmentPageLayout` saa jäädä laskelmalle. Tuloste ei lue sitä. Uutta SQL-saraketta ei ole.
 
 Taulu `attachments`. Migraatio on `CREATE TABLE IF NOT EXISTS` (`ensureAttachmentsTable`) ja nostaa `PRAGMA user_version` arvoon 3, jos se on pienempi. Ajo kahdesti ei tyhjennä rivejä eikä laske versiota.
 
@@ -11,7 +11,7 @@ Taulu `attachments`. Migraatio on `CREATE TABLE IF NOT EXISTS` (`ensureAttachmen
 | `id` | Liitteen tunniste |
 | `calculation_id` | Laskelma |
 | `kind` | `image` tai `pdf` |
-| `destination` | `offer`, `card`, `both` tai `none`. Uuden liitteen oletus on `none` (Ei kumpaankaan) |
+| `destination` | `offer`, `card`, `both` tai `none`. Uuden liitteen oletus on `card` (urakkakortti). Vanha `none` säilyy. |
 | `caption` | Kuvateksti, enintään 120 merkkiä. Raja tarkistetaan tietovarastossa |
 | `file_rel_path` | Suhteellinen polku `Paths.document`-juuresta |
 | `mime` | Tiedoston tyyppi |
@@ -53,7 +53,7 @@ Kuvien arvioitu koko on tiedostokoko × 4/3. Yli 15 Mt antaa varoituksen. Kuvat 
 
 PDF:ään mahtuu 20 kuvaa. Ylimääräiset jätetään pois ja varoitus palautetaan.
 
-Asetteluvalinta `two_per_page` (oletus) tai `one_per_page` koskee tarjousta. Yksi iso kuva sivulla on hyväksytty tarjouksen asettelu, eikä kahta kuvaa sivulle pakoteta. Urakkakortti ei lue valintaa: kortin Liitteet on 2×2-ruudukko, neljä kuvaa sivulla (kuva enintään 86 mm, kuvateksti enintään kaksi riviä ja ylimääräinen katkaistaan). Osio alkaa uudelta sivulta tarjouksessa KTV-sivun jälkeen ja kortissa kortin jälkeen. Tarjouksen yhden kuvan enimmäiskorkeus on 175 mm ja kahden kuvan sivun 80 mm. Korkeus on laskettu A4:n 297 mm:stä miinus ylä- ja alamarginaalit sekä tunnisteiden välikkeet (käytettävissä 223 mm). Kuva ei katkea sivujen väliin (`break-inside: avoid`). Kuvateksti on `Kuva N` ja valinnainen teksti. HTML escapoidaan. PDF-liitteen nimi listataan rivillä `Liitteenä: nimi`, koska sivut liitetään yhdistämisessä tulosteen perään.
+Tarjouksen `two_per_page` tai `one_per_page` päätetään liitesetin kuvateksteistä. Päätös on laskettu sääntö (`offerAttachmentLayoutForCaptions`): kuvateksti rivitetään tarjouksen tekstileveydelle niin, että jokainen merkki on em-levyinen caption-pistekoossa (+1 pt). Yli kolmen rivin kuvateksti tai kahden blokkikorkeuden ylitys (kuvan 72 mm + kuvateksti + otsikko + 6 mm taiton väli + 8 mm varmuus, käytettävissä 223 mm) antaa yhden kuvan sivulle. Lyhyt kuvateksti antaa kaksi. Tätä ei ole mitattu ajonaikaisesti eikä tarkistettu oikealla laitteella. Urakkakortti ei lue valintaa: kortin Liitteet on 2×2-ruudukko, neljä kuvaa sivulla (kuva enintään 86 mm, kuvateksti enintään kaksi riviä ja ylimääräinen katkaistaan). Osio alkaa uudelta sivulta tarjouksessa KTV-sivun jälkeen ja kortissa kortin jälkeen. Tarjouksen yhden kuvan enimmäiskorkeus on 175 mm. Kuva ei katkea sivujen väliin (`break-inside: avoid`). Kuvateksti on `Kuva N` ja valinnainen teksti. HTML escapoidaan. PDF-liitteen nimi listataan rivillä `Liitteenä: nimi`, koska sivut liitetään yhdistämisessä tulosteen perään.
 
 Jokaisen tulosteen vasen ja oikea reuna on 3 mm aiempaa leveämpi (`PDF_HORIZONTAL_MARGIN_EXTRA_MM`). Kortin sivumarginaali on 17 mm (oli 14 mm). Tarjouksen tekstisisennys on 21 mm paperin reunasta (oli 18 mm); vasen palkki pysyy 2,5 mm.
 
@@ -111,7 +111,7 @@ Dokumentit-välilehdellä on osio Liitteet: kuvateksti (enintään 120), kohde (
 - Marginaalit: kortin vasen ja oikea 17 mm, tarjouksen tekstisisennys 21 mm. Teksti ei osu palkkiin eikä reunaan.
 - Varapolku: puuttuva tiedosto tai epäonnistunut yhdistäminen tuottaa silti tarjouksen. Valmis-näkymässä on suomenkielinen varoitus, ja tarjouksen voi jakaa.
 - Asetteluavain `form_snapshot.attachmentPageLayout` säilyy laskelman kopiossa.
-- Sovellusversio näyttää 1.3.2.
+- Sovellusversio näyttää 1.3.3.
 - Tarjous ja urakkakortti, joissa on liitteitä; yhdistetty PDF aukeaa.
 - Jako Gmailiin.
 - Laskelman kopiointi ja Poista kopioidut liitteet.
