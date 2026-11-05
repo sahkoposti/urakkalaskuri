@@ -5,6 +5,7 @@ import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { AppInput, OutlinedButton } from '@/src/components/common';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
+import { CARD_EXPORT_FIELD_KINDS } from './exportFormFieldKinds';
 import { showCardRowPrices } from './pdfExportFormModel';
 import { createPdfFormStyles } from './pdfFormStyles';
 import type { PdfExportFormState } from './usePdfExportForm';
@@ -42,7 +43,7 @@ export function UrakkakorttiExportForm({ card }: { card: PdfExportFormState['car
               value={line.priceText}
               onChangeText={(value) => card.onRowPriceChange(line.id, value)}
               onBlur={card.onRowPricesBlur}
-              keyboardType="decimal-pad"
+              kind={CARD_EXPORT_FIELD_KINDS.rowPrice}
               compact
             />
           ))
@@ -52,6 +53,7 @@ export function UrakkakorttiExportForm({ card }: { card: PdfExportFormState['car
         value={card.huomioText}
         onChangeText={card.onHuomioChange}
         onBlur={card.onHuomioBlur}
+        kind={CARD_EXPORT_FIELD_KINDS.huomio}
         multiline
         placeholder="Esitäyttö asiakkaan lisätiedoista"
       />

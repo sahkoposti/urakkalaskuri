@@ -36,7 +36,7 @@ describe('renderTarjousHtml', () => {
     expect(html).not.toContain('class="spec-card');
     expect(html).toContain('Yhteensä alv 0');
     expect(html).toContain('Yhteensä sis. alv');
-    expect(html).toContain('Loppusumma');
+    expect(html).toContain('1. Tarjouksen hinta');
     expect(html).toContain('Lisätiedot:');
     expect(html).toContain('Maksuehto kuvitteellinen.');
     expect(html).toContain('Sisältää telineet.');
@@ -124,6 +124,7 @@ describe('renderTarjousHtml discount row', () => {
     expect(totals).toContain('459,00 €');
     expect(html).not.toContain('class="offer-vat"');
     const ktv = html.slice(html.indexOf('class="ktv-page'));
+    expect(ktv).toContain('Alennettu hinta yhteensä');
     expect(ktv).toContain('2 259,00 €');
     expect(ktv).toContain('502,00 €');
     expect(ktv).toContain('1 757,00 €');

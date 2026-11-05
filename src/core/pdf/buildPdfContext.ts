@@ -72,6 +72,8 @@ export type TarjousPdfContext = {
     footnoteText: string;
     /** Henkilömäärä laskelman form_snapshot.ktvPersons-avaimesta. Puuttuva = 1. */
     persons: number;
+    /** Sivun 1 summalohkon viimeinen kokonaishinnan otsikko. */
+    totalLabel: string;
   };
 };
 
@@ -356,6 +358,15 @@ function legacyCalcDiscountPriceBlock(record: CalculationRecord, customer: Custo
  * Yhteensä alv 0, nettoalennus ja Loppusumma (Alv 0 %).
  * Pelkkä laskelman alennus: vanha lohko ja tallennettu maksettava.
  */
+/** Sivun 1 summalohkon otsikko, jota KTV-sivu toistaa. Alennus voittaa listahinnan. */
+export function offerPageTotalLabel(rows: { label: string }[]): string {
+  const discounted = rows.find((row) => row.label === 'Alennettu hinta yhteensä');
+  if (discounted) return discounted.label;
+  const inclusive = rows.find((row) => row.label === 'Yhteensä sis. alv');
+  if (inclusive) return inclusive.label;
+  return rows.length > 0 ? rows[rows.length - 1]!.label : 'Yhteensä sis. alv';
+}
+
 export function offerPriceBlock(record: CalculationRecord, customer: CustomerInfo): TarjousPdfContext['price'] {
   const lineDiscount = linesCarryDiscount(record);
   const vatInclusive = offerIncludesVat(customer, record.formSnapshot);
@@ -414,6 +425,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
   const ktvApplicable =
     isPrivateCustomer(customer) && !customer.reverseVat && readKtvPageIncluded(record.formSnapshot);
   const payable = printedOfferAmounts(record, customer).gross;
+  const price = offerPriceBlock(record, customer);
   return {
     kind: 'tarjous',
     logoUri: company.logoUri,
@@ -423,7 +435,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     sections: buildOfferSections(input),
     deliveryScheduleText: record.deliveryScheduleText?.trim() ?? '',
     vatSummary: offerVatSummary(record, customer),
-    price: offerPriceBlock(record, customer),
+    price,
     additionalInfo: typeof offerCompany.additionalInfoText === 'string' ? offerCompany.additionalInfoText : '',
     sellerLines: sellerContactLines(company),
     signature: offerSignatureParties(company, customer.name),
@@ -435,6 +447,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
           settings: offerCompany.ktv,
           footnoteText: offerCompany.ktvFootnoteText,
           persons: readKtvPersons(record.formSnapshot),
+          totalLabel: offerPageTotalLabel(price.rows),
         }
       : undefined,
   };

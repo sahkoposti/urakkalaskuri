@@ -56,7 +56,10 @@ describe('ktvPageIncluded', () => {
     const onHtml = renderTarjousHtml(buildPdfContext(input(base)));
     const offHtml = renderTarjousHtml(buildPdfContext(input(calculationWithKtvPageIncluded(base, false))));
     expect(onHtml).toContain('class="ktv-page page-break"');
+    expect(onHtml).toContain('1. Tarjouksen hinta');
+    expect(onHtml).toContain('class="ktv-block"');
     expect(withoutStyle(offHtml)).not.toContain('ktv-page');
+    expect(withoutStyle(offHtml)).not.toContain('ktv-block');
     expect(withoutStyle(offHtml)).not.toContain('page-break');
     expect(withoutStyle(offHtml)).not.toContain('Kotitalousvähennys');
     expect(priceBlock(onHtml)).toBe(priceBlock(offHtml));

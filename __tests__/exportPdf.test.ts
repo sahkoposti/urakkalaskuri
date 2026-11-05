@@ -85,7 +85,7 @@ describe('exportTarjousPdf', () => {
     expect(current().offerNumber).toBe(first.offerNumber);
     expect(printed[0].fileName).toBe(`Tarjous_${first.offerNumber}_Testi_Asiakas_2026-10-29.pdf`);
     expect(printed[0].html).toContain(`${first.offerNumber}`);
-    expect(printed[0].html).toContain('Loppusumma');
+    expect(printed[0].html).toContain('Yhteensä sis. alv');
     expect(printed[0]).not.toHaveProperty('share');
     expect(first).toMatchObject({
       kind: 'tarjous',

@@ -6,18 +6,12 @@ import { KTV_DEFAULT_NOTE, kotitalousDeduction } from './kotitalousDeduction';
 import { isValidKtvPersons } from './ktvPersons';
 import type { KtvSettings } from './types';
 
-/** Kiinteä teksti yhdelle henkilölle. n > 1 vaihtaa sanan "n henkilölle". */
-export const KTV_ONE_PERSON_LINE = 'Laskelma on arvio yhdelle henkilölle.';
+const DEFAULT_TOTAL_LABEL = 'Yhteensä sis. alv';
 
 /** Oletushuomautus. Yrityksen oma teksti ei kulje tämän kautta. */
 export function ktvDefaultNote(persons: number): string {
   if (persons <= 1) return KTV_DEFAULT_NOTE;
   return KTV_DEFAULT_NOTE.replace('yhdelle henkilölle', `${persons} henkilölle`);
-}
-
-export function ktvPersonsLine(persons: number): string {
-  if (persons <= 1) return KTV_ONE_PERSON_LINE;
-  return `Laskelma on arvio ${persons} henkilölle.`;
 }
 
 /**
@@ -32,12 +26,23 @@ export function ktvRateSentence(settings: Pick<KtvSettings, 'ratePercent' | 'cap
   );
 }
 
-const row = (label: string, value: string, className = '') =>
-  `<tr${className ? ` class="${className}"` : ''}><td>${escapeHtml(label)}</td><td class="value">${escapeHtml(value)}</td></tr>`;
+const eur = formatCurrency;
+const pct = formatPercent;
+const minus = (amount: string) => `\u2212${amount}`;
+
+function ktvRow(label: string, basis: string, amount: string, className = ''): string {
+  const cls = className ? ` class="${className}"` : '';
+  return `<tr${cls}><td>${escapeHtml(label)}</td><td class="basis">${escapeHtml(basis)}</td><td class="num">${escapeHtml(amount)}</td></tr>`;
+}
+
+function ktvBlock(title: string, rows: string): string {
+  return `<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>${escapeHtml(title)}</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
 
 /**
  * Kotitalousvähennyssivu (suunnitelma §1.6). Viimeinen sivu, oma sivunvaihto.
  * Vain yksityisasiakas ilman käänteistä ALV:ta (ctx.ktv puuttuu muille → tyhjä merkkijono).
+ * Luvut tulevat kotitalousDeductionista. Tällä sivulla ei ole henkilökohtaista jakoa.
  */
 export function renderKotitalousPageHtml(ctx: Pick<TarjousPdfContext, 'ktv'>): string {
   const ktv = ctx.ktv;
@@ -53,42 +58,48 @@ export function renderKotitalousPageHtml(ctx: Pick<TarjousPdfContext, 'ktv'>): s
     persons,
   });
   const s = result.settings;
-  const many = result.persons > 1;
-  const deductible = result.persons * s.deductibleEur;
-  const cap = result.persons * s.capEur;
+  const n = result.persons;
+  const totalLabel = ktv.totalLabel.trim() || DEFAULT_TOTAL_LABEL;
   const customNote = ktv.footnoteText.trim();
-  const note = customNote || ktvDefaultNote(result.persons);
-  const rows = [
-    row('Loppusumma (sis. ALV)', formatCurrency(ktv.totalPriceVat)),
-    row('Työn osuus (sis. ALV)', formatCurrency(result.workShareVatIncluded)),
-    row(`Kotitalousvähennys (${formatPercent(s.ratePercent)})`, formatCurrency(result.grossDeduction)),
-    row(
-      many ? `Omavastuu yhteensä (${result.persons} henkilöä)` : 'Omavastuu / henkilö / vuosi',
-      `−${formatCurrency(deductible)}`,
-    ),
-    ...(many || result.capApplied
-      ? [
-          row(
-            many ? `Enimmäismäärä yhteensä (${result.persons} henkilöä)` : 'Enimmäismäärä / henkilö / vuosi',
-            formatCurrency(cap),
-          ),
-        ]
-      : []),
-    row(
-      many ? `Arvioitu kotitalousvähennys (${result.persons} henkilöä)` : 'Arvioitu kotitalousvähennys (1 henkilö)',
-      formatCurrency(result.deductionAmount),
-      'emphasis',
-    ),
-    row('Materiaalit (sis. ALV), eivät ole vähennyskelpoisia', formatCurrency(result.materialsShareVatIncluded)),
-    row('Arvioitu kustannus vähennyksen jälkeen', formatCurrency(result.estimatedCostAfterDeduction), 'emphasis'),
-  ].join('');
-  const personsLine = many
-    ? ''
-    : `<p class="ktv-one-person">${escapeHtml(ktvPersonsLine(result.persons))}</p>\n`;
+  const note = customNote || ktvDefaultNote(n);
+  const capLabel = n > 1 ? `Enimmäismäärä yhteensä (${n} hlö)` : 'Enimmäismäärä (1 hlö)';
+  const deductionLabel = `Arvioitu kotitalousvähennys (${n} hlö)`;
+  const price = ktvBlock(
+    '1. Tarjouksen hinta',
+    [
+      ktvRow(totalLabel, 'sivun 1 loppusumma', eur(ktv.totalPriceVat)),
+      ktvRow('josta materiaalit (sis. alv)', 'ei vähennyskelpoinen', eur(result.materialsShareVatIncluded), 'sub minor'),
+      ktvRow('josta työn osuus (sis. alv)', 'vähennyksen pohja', eur(result.workShareVatIncluded), 'sub'),
+    ].join(''),
+  );
+  const deduction = ktvBlock(
+    '2. Vähennyksen laskenta',
+    [
+      ktvRow(
+        `Kotitalousvähennys ${pct(s.ratePercent)} työn osuudesta`,
+        `${pct(s.ratePercent)} × ${eur(result.workShareVatIncluded)}`,
+        eur(result.grossDeduction),
+      ),
+      ktvRow(`Omavastuu (${n} hlö)`, `${n} × ${eur(s.deductibleEur)}`, minus(eur(n * s.deductibleEur))),
+      ktvRow(capLabel, `${n} × ${eur(s.capEur)}`, eur(n * s.capEur), 'minor'),
+      ktvRow(deductionLabel, '', eur(result.deductionAmount), 'result'),
+    ].join(''),
+  );
+  const payable = ktvBlock(
+    '3. Asiakkaan maksettavaksi jää (arvio)',
+    [
+      ktvRow(totalLabel, '', eur(ktv.totalPriceVat)),
+      ktvRow(deductionLabel, '', minus(eur(result.deductionAmount))),
+    ].join(''),
+  );
+  const finalPrice = `<div class="price-block ktv-final"><div class="col"><table><tr class="emphasis"><td>Arvioitu hinta vähennyksen jälkeen</td><td class="value">${escapeHtml(eur(result.estimatedCostAfterDeduction))}</td></tr></table></div></div>`;
   return `<section class="ktv-page page-break">
-<h2 class="ktv-title">Kotitalousvähennyslaskelma (${result.persons} hlö)</h2>
+<h2 class="ktv-title">Kotitalousvähennyslaskelma (${n} hlö)</h2>
 <p class="ktv-rate-sentence">${escapeHtml(ktvRateSentence(s))}</p>
-<div class="price-block"><div class="col"><table>${rows}</table></div></div>
-${personsLine}<p class="ktv-note">${escapeMultiline(note)}</p>
+${price}
+${deduction}
+${payable}
+${finalPrice}
+<p class="ktv-note">${escapeMultiline(note)}</p>
 </section>`;
 }

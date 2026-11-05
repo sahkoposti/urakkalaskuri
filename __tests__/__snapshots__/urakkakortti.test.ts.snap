@@ -51,10 +51,26 @@ exports[`urakkakortti single line: contract, duration, crew, specs, notes area; 
   .price-block tr.emphasis td { font-weight: 700; font-size: 12.5pt; border-top: 2px solid #C90000; padding-top: 1.5mm; }
   .additional-info h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
   .page-break { page-break-before: always; break-before: page; }
-  .ktv-title { margin: 0 0 4mm 0; font-size: 14pt; }
   .ktv-page .price-block { max-width: 150mm; }
-  .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
-  .ktv-note { font-size: 9pt; color: #333; }
+  .ktv-title { margin: 0 0 2mm 0; font-size: 14pt; }
+  .ktv-rate-sentence { margin: 0 0 5mm 0; font-size: 10pt; color: #333; }
+  .ktv-block { margin: 0 0 5mm 0; break-inside: avoid; page-break-inside: avoid; }
+  table.ktv-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  table.ktv-table col.c-basis { width: 52mm; }
+  table.ktv-table col.c-amount { width: 34mm; }
+  table.ktv-table th { font-size: 8pt; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #555; border-bottom: 0.25mm solid #ccc; text-align: left; padding: 0.6mm 1.5mm 0.6mm 0; }
+  table.ktv-table th.num { text-align: right; padding-right: 0; }
+  table.ktv-table td { font-size: 10.5pt; padding: 1.2mm 1.5mm 1.2mm 0; border-bottom: 0.2mm solid #eee; vertical-align: baseline; }
+  table.ktv-table td.basis { font-size: 9pt; color: #555; text-align: right; white-space: nowrap; }
+  table.ktv-table td.num { text-align: right; white-space: nowrap; padding-right: 0; }
+  table.ktv-table tr.sub td { padding-left: 5mm; }
+  table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
+  table.ktv-table tr.minor td { color: #444; }
+  table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
+  .price-block.ktv-final { justify-content: flex-end; margin: 2mm 0 5mm 0; }
+  .ktv-page .price-block.ktv-final { max-width: none; }
+  .price-block.ktv-final .col { flex: 0 1 118mm; }
+  .ktv-note { font-size: 9pt; color: #333; margin: 0; }
 
   .uk-title { display: flex; justify-content: space-between; align-items: baseline; gap: 6mm; margin: 0 0 4mm 0; font-size: 16pt; font-weight: 700; }
   .uk-title-text { font-weight: 700; }

@@ -478,7 +478,7 @@ describe('offer signature', () => {
     expect(sign).toContain('info@colorajaton.fi');
     expect(sign.match(/Aada Asentaja/g)).toHaveLength(1);
     expect(sign.match(/Kuvitteellinen Oy/g)).toHaveLength(1);
-    expect(html).toContain('Loppusumma');
+    expect(html).toContain('Yhteensä sis. alv');
   });
 
   it('omits missing seller and customer values and still prints the blank lines', () => {

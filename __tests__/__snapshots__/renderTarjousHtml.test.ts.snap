@@ -56,10 +56,26 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   .price-block tr.emphasis td { font-weight: 700; font-size: 12.5pt; border-top: 2px solid #C90000; padding-top: 1.5mm; }
   .additional-info h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
   .page-break { page-break-before: always; break-before: page; }
-  .ktv-title { margin: 0 0 4mm 0; font-size: 14pt; }
   .ktv-page .price-block { max-width: 150mm; }
-  .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
-  .ktv-note { font-size: 9pt; color: #333; }
+  .ktv-title { margin: 0 0 2mm 0; font-size: 14pt; }
+  .ktv-rate-sentence { margin: 0 0 5mm 0; font-size: 10pt; color: #333; }
+  .ktv-block { margin: 0 0 5mm 0; break-inside: avoid; page-break-inside: avoid; }
+  table.ktv-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  table.ktv-table col.c-basis { width: 52mm; }
+  table.ktv-table col.c-amount { width: 34mm; }
+  table.ktv-table th { font-size: 8pt; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #555; border-bottom: 0.25mm solid #ccc; text-align: left; padding: 0.6mm 1.5mm 0.6mm 0; }
+  table.ktv-table th.num { text-align: right; padding-right: 0; }
+  table.ktv-table td { font-size: 10.5pt; padding: 1.2mm 1.5mm 1.2mm 0; border-bottom: 0.2mm solid #eee; vertical-align: baseline; }
+  table.ktv-table td.basis { font-size: 9pt; color: #555; text-align: right; white-space: nowrap; }
+  table.ktv-table td.num { text-align: right; white-space: nowrap; padding-right: 0; }
+  table.ktv-table tr.sub td { padding-left: 5mm; }
+  table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
+  table.ktv-table tr.minor td { color: #444; }
+  table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
+  .price-block.ktv-final { justify-content: flex-end; margin: 2mm 0 5mm 0; }
+  .ktv-page .price-block.ktv-final { max-width: none; }
+  .price-block.ktv-final .col { flex: 0 1 118mm; }
+  .ktv-note { font-size: 9pt; color: #333; margin: 0; }
   body.doc-offer { padding-left: 15.5mm; }
   body.doc-offer .header, body.doc-offer .footer { left: 15.5mm; }
 
@@ -99,7 +115,6 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   .offer-sign-detail { margin: 0 0 1mm 0; }
   .offer-sign-label { margin: 3mm 0 0 0; }
   .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .ktv-rate-sentence { margin: 0 0 3mm 0; }
   table.offer-cols-head, table.offer-line-heading { width: 100%; table-layout: fixed; border-collapse: collapse; }
   table.offer-cols-head { margin: 3mm 0 0 0; break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
   table.offer-line-heading { display: table; margin: 0 0 2mm 0; break-inside: avoid; page-break-inside: avoid; }
@@ -209,10 +224,26 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   .price-block tr.emphasis td { font-weight: 700; font-size: 12.5pt; border-top: 2px solid #C90000; padding-top: 1.5mm; }
   .additional-info h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
   .page-break { page-break-before: always; break-before: page; }
-  .ktv-title { margin: 0 0 4mm 0; font-size: 14pt; }
   .ktv-page .price-block { max-width: 150mm; }
-  .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
-  .ktv-note { font-size: 9pt; color: #333; }
+  .ktv-title { margin: 0 0 2mm 0; font-size: 14pt; }
+  .ktv-rate-sentence { margin: 0 0 5mm 0; font-size: 10pt; color: #333; }
+  .ktv-block { margin: 0 0 5mm 0; break-inside: avoid; page-break-inside: avoid; }
+  table.ktv-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  table.ktv-table col.c-basis { width: 52mm; }
+  table.ktv-table col.c-amount { width: 34mm; }
+  table.ktv-table th { font-size: 8pt; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #555; border-bottom: 0.25mm solid #ccc; text-align: left; padding: 0.6mm 1.5mm 0.6mm 0; }
+  table.ktv-table th.num { text-align: right; padding-right: 0; }
+  table.ktv-table td { font-size: 10.5pt; padding: 1.2mm 1.5mm 1.2mm 0; border-bottom: 0.2mm solid #eee; vertical-align: baseline; }
+  table.ktv-table td.basis { font-size: 9pt; color: #555; text-align: right; white-space: nowrap; }
+  table.ktv-table td.num { text-align: right; white-space: nowrap; padding-right: 0; }
+  table.ktv-table tr.sub td { padding-left: 5mm; }
+  table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
+  table.ktv-table tr.minor td { color: #444; }
+  table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
+  .price-block.ktv-final { justify-content: flex-end; margin: 2mm 0 5mm 0; }
+  .ktv-page .price-block.ktv-final { max-width: none; }
+  .price-block.ktv-final .col { flex: 0 1 118mm; }
+  .ktv-note { font-size: 9pt; color: #333; margin: 0; }
   body.doc-offer { padding-left: 15.5mm; }
   body.doc-offer .header, body.doc-offer .footer { left: 15.5mm; }
 
@@ -252,7 +283,6 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   .offer-sign-detail { margin: 0 0 1mm 0; }
   .offer-sign-label { margin: 3mm 0 0 0; }
   .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .ktv-rate-sentence { margin: 0 0 3mm 0; }
   table.offer-cols-head, table.offer-line-heading { width: 100%; table-layout: fixed; border-collapse: collapse; }
   table.offer-cols-head { margin: 3mm 0 0 0; break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
   table.offer-line-heading { display: table; margin: 0 0 2mm 0; break-inside: avoid; page-break-inside: avoid; }
@@ -303,8 +333,10 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
 <section class="ktv-page page-break">
 <h2 class="ktv-title">Kotitalousvähennyslaskelma (1 hlö)</h2>
 <p class="ktv-rate-sentence">Vähennystä saa arvonlisäverollisesta työn osuudesta 40 %, max 2 100,00 € / henkilö vuodessa; omavastuu 150,00 € / henkilö vuodessa.</p>
-<div class="price-block"><div class="col"><table><tr><td>Loppusumma (sis. ALV)</td><td class="value">1 255,00 €</td></tr><tr><td>Työn osuus (sis. ALV)</td><td class="value">753,00 €</td></tr><tr><td>Kotitalousvähennys (40 %)</td><td class="value">301,20 €</td></tr><tr><td>Omavastuu / henkilö / vuosi</td><td class="value">−150,00 €</td></tr><tr class="emphasis"><td>Arvioitu kotitalousvähennys (1 henkilö)</td><td class="value">151,20 €</td></tr><tr><td>Materiaalit (sis. ALV), eivät ole vähennyskelpoisia</td><td class="value">502,00 €</td></tr><tr class="emphasis"><td>Arvioitu kustannus vähennyksen jälkeen</td><td class="value">1 103,80 €</td></tr></table></div></div>
-<p class="ktv-one-person">Laskelma on arvio yhdelle henkilölle.</p>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>1. Tarjouksen hinta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Yhteensä sis. alv</td><td class="basis">sivun 1 loppusumma</td><td class="num">1 255,00 €</td></tr><tr class="sub minor"><td>josta materiaalit (sis. alv)</td><td class="basis">ei vähennyskelpoinen</td><td class="num">502,00 €</td></tr><tr class="sub"><td>josta työn osuus (sis. alv)</td><td class="basis">vähennyksen pohja</td><td class="num">753,00 €</td></tr></tbody></table></div>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>2. Vähennyksen laskenta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Kotitalousvähennys 40 % työn osuudesta</td><td class="basis">40 % × 753,00 €</td><td class="num">301,20 €</td></tr><tr><td>Omavastuu (1 hlö)</td><td class="basis">1 × 150,00 €</td><td class="num">−150,00 €</td></tr><tr class="minor"><td>Enimmäismäärä (1 hlö)</td><td class="basis">1 × 2 100,00 €</td><td class="num">2 100,00 €</td></tr><tr class="result"><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="basis"></td><td class="num">151,20 €</td></tr></tbody></table></div>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>3. Asiakkaan maksettavaksi jää (arvio)</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Yhteensä sis. alv</td><td class="basis"></td><td class="num">1 255,00 €</td></tr><tr><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="basis"></td><td class="num">−151,20 €</td></tr></tbody></table></div>
+<div class="price-block ktv-final"><div class="col"><table><tr class="emphasis"><td>Arvioitu hinta vähennyksen jälkeen</td><td class="value">1 103,80 €</td></tr></table></div></div>
 <p class="ktv-note">Kotitalousvähennys on arvio yhdelle henkilölle. Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.</p>
 </section>
 </td></tr></tbody>
@@ -369,10 +401,26 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   .price-block tr.emphasis td { font-weight: 700; font-size: 12.5pt; border-top: 2px solid #C90000; padding-top: 1.5mm; }
   .additional-info h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
   .page-break { page-break-before: always; break-before: page; }
-  .ktv-title { margin: 0 0 4mm 0; font-size: 14pt; }
   .ktv-page .price-block { max-width: 150mm; }
-  .ktv-one-person { font-weight: 700; margin: 4mm 0 2mm 0; }
-  .ktv-note { font-size: 9pt; color: #333; }
+  .ktv-title { margin: 0 0 2mm 0; font-size: 14pt; }
+  .ktv-rate-sentence { margin: 0 0 5mm 0; font-size: 10pt; color: #333; }
+  .ktv-block { margin: 0 0 5mm 0; break-inside: avoid; page-break-inside: avoid; }
+  table.ktv-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  table.ktv-table col.c-basis { width: 52mm; }
+  table.ktv-table col.c-amount { width: 34mm; }
+  table.ktv-table th { font-size: 8pt; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #555; border-bottom: 0.25mm solid #ccc; text-align: left; padding: 0.6mm 1.5mm 0.6mm 0; }
+  table.ktv-table th.num { text-align: right; padding-right: 0; }
+  table.ktv-table td { font-size: 10.5pt; padding: 1.2mm 1.5mm 1.2mm 0; border-bottom: 0.2mm solid #eee; vertical-align: baseline; }
+  table.ktv-table td.basis { font-size: 9pt; color: #555; text-align: right; white-space: nowrap; }
+  table.ktv-table td.num { text-align: right; white-space: nowrap; padding-right: 0; }
+  table.ktv-table tr.sub td { padding-left: 5mm; }
+  table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
+  table.ktv-table tr.minor td { color: #444; }
+  table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
+  .price-block.ktv-final { justify-content: flex-end; margin: 2mm 0 5mm 0; }
+  .ktv-page .price-block.ktv-final { max-width: none; }
+  .price-block.ktv-final .col { flex: 0 1 118mm; }
+  .ktv-note { font-size: 9pt; color: #333; margin: 0; }
   body.doc-offer { padding-left: 15.5mm; }
   body.doc-offer .header, body.doc-offer .footer { left: 15.5mm; }
 
@@ -412,7 +460,6 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   .offer-sign-detail { margin: 0 0 1mm 0; }
   .offer-sign-label { margin: 3mm 0 0 0; }
   .offer-sign-line { height: 10mm; border-bottom: 1px solid #000; margin: 0 0 1mm 0; break-inside: avoid; page-break-inside: avoid; }
-  .ktv-rate-sentence { margin: 0 0 3mm 0; }
   table.offer-cols-head, table.offer-line-heading { width: 100%; table-layout: fixed; border-collapse: collapse; }
   table.offer-cols-head { margin: 3mm 0 0 0; break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
   table.offer-line-heading { display: table; margin: 0 0 2mm 0; break-inside: avoid; page-break-inside: avoid; }
@@ -465,8 +512,10 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
 <section class="ktv-page page-break">
 <h2 class="ktv-title">Kotitalousvähennyslaskelma (1 hlö)</h2>
 <p class="ktv-rate-sentence">Vähennystä saa arvonlisäverollisesta työn osuudesta 40 %, max 2 100,00 € / henkilö vuodessa; omavastuu 150,00 € / henkilö vuodessa.</p>
-<div class="price-block"><div class="col"><table><tr><td>Loppusumma (sis. ALV)</td><td class="value">2 510,00 €</td></tr><tr><td>Työn osuus (sis. ALV)</td><td class="value">2 008,00 €</td></tr><tr><td>Kotitalousvähennys (40 %)</td><td class="value">803,20 €</td></tr><tr><td>Omavastuu / henkilö / vuosi</td><td class="value">−150,00 €</td></tr><tr class="emphasis"><td>Arvioitu kotitalousvähennys (1 henkilö)</td><td class="value">653,20 €</td></tr><tr><td>Materiaalit (sis. ALV), eivät ole vähennyskelpoisia</td><td class="value">502,00 €</td></tr><tr class="emphasis"><td>Arvioitu kustannus vähennyksen jälkeen</td><td class="value">1 856,80 €</td></tr></table></div></div>
-<p class="ktv-one-person">Laskelma on arvio yhdelle henkilölle.</p>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>1. Tarjouksen hinta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Yhteensä sis. alv</td><td class="basis">sivun 1 loppusumma</td><td class="num">2 510,00 €</td></tr><tr class="sub minor"><td>josta materiaalit (sis. alv)</td><td class="basis">ei vähennyskelpoinen</td><td class="num">502,00 €</td></tr><tr class="sub"><td>josta työn osuus (sis. alv)</td><td class="basis">vähennyksen pohja</td><td class="num">2 008,00 €</td></tr></tbody></table></div>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>2. Vähennyksen laskenta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Kotitalousvähennys 40 % työn osuudesta</td><td class="basis">40 % × 2 008,00 €</td><td class="num">803,20 €</td></tr><tr><td>Omavastuu (1 hlö)</td><td class="basis">1 × 150,00 €</td><td class="num">−150,00 €</td></tr><tr class="minor"><td>Enimmäismäärä (1 hlö)</td><td class="basis">1 × 2 100,00 €</td><td class="num">2 100,00 €</td></tr><tr class="result"><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="basis"></td><td class="num">653,20 €</td></tr></tbody></table></div>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>3. Asiakkaan maksettavaksi jää (arvio)</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Yhteensä sis. alv</td><td class="basis"></td><td class="num">2 510,00 €</td></tr><tr><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="basis"></td><td class="num">−653,20 €</td></tr></tbody></table></div>
+<div class="price-block ktv-final"><div class="col"><table><tr class="emphasis"><td>Arvioitu hinta vähennyksen jälkeen</td><td class="value">1 856,80 €</td></tr></table></div></div>
 <p class="ktv-note">Kotitalousvähennys on arvio yhdelle henkilölle. Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.</p>
 </section>
 </td></tr></tbody>

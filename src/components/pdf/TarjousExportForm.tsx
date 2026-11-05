@@ -4,6 +4,7 @@ import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { AppInput, OutlinedButton } from '@/src/components/common';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
+import { OFFER_EXPORT_FIELD_KINDS } from './exportFormFieldKinds';
 import { createPdfFormStyles } from './pdfFormStyles';
 import type { PdfExportFormState } from './usePdfExportForm';
 
@@ -30,7 +31,7 @@ export function TarjousExportForm({ offer }: { offer: PdfExportFormState['offer'
           value={offer.personsText}
           onChangeText={offer.onPersonsChange}
           onBlur={offer.onPersonsBlur}
-          keyboardType="numeric"
+          kind={OFFER_EXPORT_FIELD_KINDS.ktvPersons}
           compact
         />
       ) : null}
@@ -49,7 +50,7 @@ export function TarjousExportForm({ offer }: { offer: PdfExportFormState['offer'
         value={offer.validDaysText}
         onChangeText={offer.onValidDaysChange}
         onBlur={offer.onValidDaysBlur}
-        keyboardType="numeric"
+        kind={OFFER_EXPORT_FIELD_KINDS.validDays}
         compact
       />
       <Text style={styles.hint}>{offer.validDaysHint}</Text>
@@ -63,6 +64,7 @@ export function TarjousExportForm({ offer }: { offer: PdfExportFormState['offer'
         value={offer.validDateText}
         onChangeText={offer.onValidDateChange}
         onBlur={offer.onValidDateBlur}
+        kind={OFFER_EXPORT_FIELD_KINDS.validDate}
         placeholder="p.k.vvvv"
         compact
       />

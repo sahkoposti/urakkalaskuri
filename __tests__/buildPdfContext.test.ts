@@ -69,6 +69,7 @@ describe('buildPdfContext', () => {
       settings: { ratePercent: 40, deductibleEur: 150, capEur: 2100 },
       footnoteText: '',
       persons: 1,
+      totalLabel: 'Yhteensä sis. alv',
     });
     expect(ctx.customerLines).toEqual(['Matti Meikäläinen', 'Testitie 1, 20100 Turku', '040 000 0000']);
     expect(ctx.offerInfo).toEqual([
@@ -118,7 +119,11 @@ describe('buildPdfContext', () => {
       '2 259,00 €',
       '459,00 €',
     ]);
-    expect(ctx.ktv).toMatchObject({ totalPriceVat: 2259, materialsVat: 502 });
+    expect(ctx.ktv).toMatchObject({
+      totalPriceVat: 2259,
+      materialsVat: 502,
+      totalLabel: 'Alennettu hinta yhteensä',
+    });
   });
 
   it('private lines with 10 % discount: list-price headings, reconciling block, KTV uses the same Loppusumma', () => {
@@ -166,9 +171,13 @@ describe('buildPdfContext', () => {
     const alennus = Number((ale?.value ?? '').replace(/[^\d,]/g, '').replace(',', '.'));
     expect(Math.round((parseEuro(sis?.value ?? '') - alennus) * 100) / 100).toBe(2213.82);
     expect(parseEuro(after?.value ?? '')).toBe(2213.82);
-    expect(ctx.ktv).toMatchObject({ totalPriceVat: 2213.82, materialsVat: 502 });
+    expect(ctx.ktv).toMatchObject({
+      totalPriceVat: 2213.82,
+      materialsVat: 502,
+      totalLabel: 'Alennettu hinta yhteensä',
+    });
     const ktv = renderKotitalousPageHtml(ctx).replace(/\s/g, ' ');
-    expect(ktv).toContain('Loppusumma (sis. ALV)');
+    expect(ktv).toContain('Alennettu hinta yhteensä');
     expect(ktv).toContain('2 213,82 €');
     expect(ktv).toContain('1 711,82 €');
     expect(ktv).toContain('684,73 €');
