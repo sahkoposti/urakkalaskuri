@@ -11,12 +11,31 @@ export const PDF_FOOTER_HEIGHT_MM = 16;
 export const PDF_DEFAULT_ACCENT = '#C90000';
 /** Leipäteksti. PDF-fonttikoot ovat pisteinä, kukin yhden pisteen aiempaa suurempi. */
 export const PDF_BODY_FONT_PT = 12;
-/** @page-marginaalit. Urakkakortti käyttää näitä sellaisenaan. */
+/** @page-marginaalit ennen sivulisää. Urakkakortti käyttää vasenta ja oikeaa sellaisenaan + lisä. */
 export const PDF_PAGE_MARGIN_TOP_MM = 10;
 export const PDF_PAGE_MARGIN_RIGHT_MM = 14;
 export const PDF_PAGE_MARGIN_BOTTOM_MM = 12;
 export const PDF_PAGE_MARGIN_LEFT_MM = 14;
-/** Tarjouksen tekstialueen sisennys paperin reunasta, vasen ja oikea. */
+/** Lisä kaikissa tulosteissa, vasen ja oikea. Yksi vakio. */
+export const PDF_HORIZONTAL_MARGIN_EXTRA_MM = 3;
+/** A4. */
+export const PDF_A4_WIDTH_MM = 210;
+export const PDF_A4_HEIGHT_MM = 297;
+/** Toistuva ylävälike: tunniste + 4 mm. */
+export const PDF_SPACER_TOP_MM = PDF_HEADER_HEIGHT_MM + 4;
+/** Toistuva alavälike: tunniste + 2 mm. */
+export const PDF_SPACER_BOTTOM_MM = PDF_FOOTER_HEIGHT_MM + 2;
+/**
+ * Sisällön korkeus thead/tfoot-välikkeiden välissä.
+ * 297 − 10 − 12 − 34 − 18 = 223 mm.
+ */
+export const PDF_USABLE_BODY_MM =
+  PDF_A4_HEIGHT_MM -
+  PDF_PAGE_MARGIN_TOP_MM -
+  PDF_PAGE_MARGIN_BOTTOM_MM -
+  PDF_SPACER_TOP_MM -
+  PDF_SPACER_BOTTOM_MM;
+/** Tarjouksen tekstialueen sisennys paperin reunasta ennen sivulisää, vasen ja oikea. */
 export const PDF_OFFER_TEXT_INSET_X_MM = 18;
 /** Tarjouksen vasen korostus. Sama väri kuin Loppusumman viiva. */
 export const PDF_OFFER_ACCENT_BAR_MM = 2.5;
@@ -42,9 +61,12 @@ export function pageNumberContent(knownTotalPages?: number | null): string {
 export function pdfStyles(options: PdfStyleOptions = {}): string {
   const accent = options.accentColor && HEX.test(options.accentColor) ? options.accentColor : PDF_DEFAULT_ACCENT;
   const offerBar = options.offerAccentBar === true;
-  const marginRight = offerBar ? PDF_OFFER_TEXT_INSET_X_MM : PDF_PAGE_MARGIN_RIGHT_MM;
-  const marginLeft = offerBar ? PDF_OFFER_ACCENT_BAR_MM : PDF_PAGE_MARGIN_LEFT_MM;
-  const offerInsetLeft = PDF_OFFER_TEXT_INSET_X_MM - PDF_OFFER_ACCENT_BAR_MM;
+  const marginRight =
+    (offerBar ? PDF_OFFER_TEXT_INSET_X_MM : PDF_PAGE_MARGIN_RIGHT_MM) + PDF_HORIZONTAL_MARGIN_EXTRA_MM;
+  const marginLeft = offerBar
+    ? PDF_OFFER_ACCENT_BAR_MM
+    : PDF_PAGE_MARGIN_LEFT_MM + PDF_HORIZONTAL_MARGIN_EXTRA_MM;
+  const offerInsetLeft = PDF_OFFER_TEXT_INSET_X_MM + PDF_HORIZONTAL_MARGIN_EXTRA_MM - PDF_OFFER_ACCENT_BAR_MM;
   const accentBoxes = offerBar
     ? `
     @top-left-corner { content: ""; background: ${accent}; }
@@ -81,8 +103,8 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   .footer .col { flex: 1; text-align: left; }
   table.layout { width: 100%; border-collapse: collapse; }
   table.layout > thead td, table.layout > tfoot td, table.layout > tbody > tr > td { padding: 0; }
-  .spacer-top { height: ${PDF_HEADER_HEIGHT_MM + 4}mm; }
-  .spacer-bottom { height: ${PDF_FOOTER_HEIGHT_MM + 2}mm; }
+  .spacer-top { height: ${PDF_SPACER_TOP_MM}mm; }
+  .spacer-bottom { height: ${PDF_SPACER_BOTTOM_MM}mm; }
   .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 6mm; }
   .spec-card { border: 1px solid #ccc; border-top: 3px solid ${accent}; padding: 2.5mm 3mm; page-break-inside: avoid; break-inside: avoid; }
   .spec-card.full { grid-column: 1 / -1; }

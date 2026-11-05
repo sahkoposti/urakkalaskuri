@@ -12,7 +12,7 @@ import {
   estimateImageSectionBytes,
   imageSectionExceedsWarning,
   splitAttachments,
-  type AttachmentPageLayout,
+  type AttachmentSectionLayout,
   type AttachmentTarget,
 } from './attachmentPrintPlan';
 import { renderAttachmentSectionHtml } from './attachmentSectionHtml';
@@ -53,7 +53,7 @@ export async function prepareAttachmentPrint(
   items: readonly Attachment[],
   target: AttachmentTarget,
   deps: Pick<AttachmentPdfDeps, 'loadImageDataUri' | 'readPdfBytes'>,
-  layout: AttachmentPageLayout = DEFAULT_ATTACHMENT_PAGE_LAYOUT,
+  layout: AttachmentSectionLayout = DEFAULT_ATTACHMENT_PAGE_LAYOUT,
 ): Promise<PreparedAttachmentPrint> {
   const selected = attachmentsForDestination(items, target);
   const { images, pdfs } = splitAttachments(selected);

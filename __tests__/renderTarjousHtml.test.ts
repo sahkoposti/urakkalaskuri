@@ -1,7 +1,19 @@
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
 import { defaultOfferCompanySettings } from '../src/core/pdf/defaultOfferSettings';
 import { escapeHtml, escapeMultiline } from '../src/core/pdf/escapeHtml';
-import { pageNumberContent, PDF_BODY_FONT_PT, PDF_DEFAULT_ACCENT, pdfStyles } from '../src/core/pdf/pdfStyles';
+import {
+  pageNumberContent,
+  PDF_BODY_FONT_PT,
+  PDF_DEFAULT_ACCENT,
+  PDF_HORIZONTAL_MARGIN_EXTRA_MM,
+  PDF_OFFER_ACCENT_BAR_MM,
+  PDF_OFFER_TEXT_INSET_X_MM,
+  PDF_PAGE_MARGIN_BOTTOM_MM,
+  PDF_PAGE_MARGIN_LEFT_MM,
+  PDF_PAGE_MARGIN_RIGHT_MM,
+  PDF_PAGE_MARGIN_TOP_MM,
+  pdfStyles,
+} from '../src/core/pdf/pdfStyles';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
 import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
 import { OFFER_ACCEPTANCE_SENTENCE, OFFER_DOC_TITLE, renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
@@ -193,14 +205,21 @@ describe('renderTarjousHtml discount row', () => {
   it('draws the brand bar on the offer only, using the same accent as Loppusumma', () => {
     const html = renderTarjousHtml(buildPdfContext(input(record({}))));
     expect(html).toContain('@left-middle { content: ""; background: ' + PDF_DEFAULT_ACCENT);
-    expect(html).toContain('margin: 10mm 18mm 12mm 2.5mm');
-    expect(html).toContain('padding-left: 15.5mm');
+    const offerRight = PDF_OFFER_TEXT_INSET_X_MM + PDF_HORIZONTAL_MARGIN_EXTRA_MM;
+    const offerPad = offerRight - PDF_OFFER_ACCENT_BAR_MM;
+    expect(html).toContain(
+      `margin: ${PDF_PAGE_MARGIN_TOP_MM}mm ${offerRight}mm ${PDF_PAGE_MARGIN_BOTTOM_MM}mm ${PDF_OFFER_ACCENT_BAR_MM}mm`,
+    );
+    expect(html).toContain(`padding-left: ${offerPad}mm`);
     expect(html).toContain('"Sivu " counter(page) "/" counter(pages)');
     const themed = renderTarjousHtml(buildPdfContext(input(record({}))), { accentColor: '#123abc' });
     expect(themed).toContain('background: #123abc');
     expect(themed).not.toContain(`background: ${PDF_DEFAULT_ACCENT}`);
     const card = renderUrakkakorttiHtml(buildUrakkakorttiContext(input(record({}))));
     expect(card).not.toContain('@left-middle');
-    expect(card).toContain('margin: 10mm 14mm 12mm 14mm');
+    const cardSide = PDF_PAGE_MARGIN_LEFT_MM + PDF_HORIZONTAL_MARGIN_EXTRA_MM;
+    expect(card).toContain(
+      `margin: ${PDF_PAGE_MARGIN_TOP_MM}mm ${PDF_PAGE_MARGIN_RIGHT_MM + PDF_HORIZONTAL_MARGIN_EXTRA_MM}mm ${PDF_PAGE_MARGIN_BOTTOM_MM}mm ${cardSide}mm`,
+    );
   });
 });

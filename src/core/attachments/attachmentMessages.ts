@@ -54,6 +54,26 @@ export function attachmentImageSectionTooLargeMessage(): string {
   return ATTACHMENT_IMAGE_SECTION_TOO_LARGE_MESSAGE;
 }
 
+export const ATTACHMENT_IMAGES_FULL_MESSAGE =
+  'Kuvia voi olla enintään 20. Uutta kuvaa ei lisätty.';
+
+export const ATTACHMENT_IMAGE_PROCESS_FAILED_MESSAGE = 'Kuvaa ei voitu käsitellä.';
+
+export const ATTACHMENT_FILE_KIND_MESSAGE = 'Tiedosto ei ole kuva eikä PDF.';
+
+export const ATTACHMENT_CAMERA_DENIED_MESSAGE = 'Kameran käyttöä ei sallittu.';
+
+export const ATTACHMENT_COPY_FAILED_MESSAGE = 'Laskelman kopiointi epäonnistui.';
+
+export const ATTACHMENT_NEXT_PDF_NOTE =
+  'Uusi liite tulee mukaan vasta seuraavaan luotuun PDF:ään.';
+
+export const ATTACHMENT_REMOVE_COPIED_LABEL = 'Poista kopioidut liitteet';
+
+export function attachmentCountLabel(counts: { offer: number; card: number }): string {
+  return `Liitteet: ${counts.offer} tarjoukseen, ${counts.card} kortille`;
+}
+
 const MESSAGES: Record<AttachmentPdfFailureReason, string> = {
   password: ATTACHMENT_PDF_PASSWORD_MESSAGE,
   invalid: ATTACHMENT_PDF_INVALID_MESSAGE,
