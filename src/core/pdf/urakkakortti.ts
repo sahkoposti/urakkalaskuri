@@ -32,8 +32,7 @@ export type { UrakkakorttiSection } from './urakkakorttiSections';
 
 /**
  * Urakkakortti (suunnitelma §2, Eemil 29.10.2026 #3, #6). Maalareille.
- * EI: asiakashinta, ALV, kate, palkkio, materiaalihinnat, KTV, voimassaolo, tarjousnumero.
- * Yrityksen Lisätiedot (`offerCompany.additionalInfoText`) tulostuu info-lohkon alle, sama teksti kuin tarjouksessa.
+ * EI: asiakashinta, ALV, kate, palkkio, materiaalihinnat, KTV, voimassaolo, tarjousnumero, tarjouksen lisätiedot.
  */
 
 export type UrakkakorttiMaterialRow = { product: string; quantity: string; unit: string };
@@ -53,11 +52,6 @@ export type UrakkakorttiContext = {
   customerNotes: string;
   /** Huomioitavaa-osion teksti. Tyhjä = osiota ei tulosteta. */
   huomioitavaa: string;
-  /**
-   * Yrityksen Lisätiedot. Sama lähde kuin `buildPdfContext.additionalInfo`
-   * (`offer_company_settings.additionalInfoText`). Tyhjä = osio pois.
-   */
-  additionalInfo: string;
   mode: UrakkakorttiMode;
   /** Kortin otsikko: "Urakkakortti: Alihankkija" tai "Urakkakortti: Työntekijä". */
   modeLabel: string;
@@ -78,10 +72,8 @@ export type BuildUrakkakorttiInput = {
   generatedAt: Date;
   /** Yritysasetuksen Sivukulukerroin. Puuttuu = oletus 1,5. Käytetään vain Työntekijä-tilassa. */
   sivukulukerroin?: number;
-  /** Rakenteen Muuta-teksti (`offer_settings:<id>.additionalInfoText`). */
+  /** Rakenteen Muuta-teksti. Yrityksen Lisätiedot-ehtoja ei välitetä kortille. */
   offerStructureSettings?: Record<string, OfferStructureSettings | undefined>;
-  /** Yrityksen Lisätiedot. Sama merkkijono kuin tarjouksen `additionalInfo`. */
-  additionalInfo?: string;
 };
 
 /** €-arvoiset speksirivit pois (voivat paljastaa hintoja, esim. Hinnoittelu-sivu). */
@@ -237,7 +229,6 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     materials: materialTable.rows,
     customerNotes: customer.notes?.trim() ?? '',
     huomioitavaa: effectiveHuomioitavaa(record),
-    additionalInfo: typeof input.additionalInfo === 'string' ? input.additionalInfo.trim() : '',
     mode,
     modeLabel: urakkakorttiModeLabel(mode),
     contractSum,
@@ -251,12 +242,11 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
  * Kuvat tulevat kortin jälkeen omalle sivulleen (renderUrakkakorttiHtml, attachmentHtml),
  * eivät lohkona tämän listan keskelle.
  */
-export type UrakkakorttiBlockKind = 'price' | 'lisatiedot' | 'specs' | 'print' | 'materials' | 'huomio';
+export type UrakkakorttiBlockKind = 'price' | 'specs' | 'print' | 'materials' | 'huomio';
 
 export function urakkakorttiBodyBlocks(ctx: UrakkakorttiContext): UrakkakorttiBlockKind[] {
   const blocks: UrakkakorttiBlockKind[] = [];
   if (ctx.contractRows.length > 0 || ctx.infoRows.length > 0) blocks.push('price');
-  if (ctx.additionalInfo.trim()) blocks.push('lisatiedot');
   if (ctx.specGrid.mode !== 'none') blocks.push('specs');
   if (ctx.sections.length > 0) blocks.push('print');
   if (ctx.materials.length > 0) blocks.push('materials');

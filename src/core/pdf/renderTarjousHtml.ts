@@ -106,7 +106,7 @@ function renderPriceBlock(price: TarjousPdfContext['price'], vatSummary: OfferVa
   return `<div class="price-block offer-totals"><div class="col">${renderVatSummary(vatSummary)}${priceTable(price.rows)}</div></div>`;
 }
 
-export function renderAdditionalInfo(text: string): string {
+function renderAdditionalInfo(text: string): string {
   if (!text.trim()) return '';
   return `<div class="additional-info"><h3>Lisätiedot:</h3><div>${escapeMultiline(text)}</div></div>`;
 }

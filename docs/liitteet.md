@@ -57,7 +57,7 @@ Asetteluvalinta `two_per_page` (oletus) tai `one_per_page` koskee tarjousta. Yks
 
 Jokaisen tulosteen vasen ja oikea reuna on 3 mm aiempaa leveämpi (`PDF_HORIZONTAL_MARGIN_EXTRA_MM`). Kortin sivumarginaali on 17 mm (oli 14 mm). Tarjouksen tekstisisennys on 21 mm paperin reunasta (oli 18 mm); vasen palkki pysyy 2,5 mm.
 
-Urakkakortti tulostaa yrityksen Lisätiedot-tekstin (`offer_company_settings.additionalInfoText`, sama kuin tarjouksen `buildPdfContext.additionalInfo`) hintalohkon alle otsikolla Lisätiedot. Tyhjä teksti jättää osion pois. Rakenteen oma lisäteksti (`offer_settings:<id>.additionalInfoText`) tulostuu yhä rakenteen osioon otsikolla Muuta, kuten tarjouksessa.
+Rakenteen oma lisäteksti (`offer_settings:<id>.additionalInfoText`) tulostuu kortin rakenteen osioon otsikolla Muuta, kuten tarjouksessa. Yrityksen Lisätiedot-ehtoja ei tulosteta kortille.
 
 Jos kohteeseen ei ole liitteitä, tarjouksen ja kortin HTML on sama kuin ennen osiota. Osion CSS on vain osiossa, ei yhteisessä tyylissä.
 
@@ -109,7 +109,6 @@ Dokumentit-välilehdellä on osio Liitteet: kuvateksti (enintään 120), kohde (
 - Tarjouksen asettelun vaihto: 2 kuvaa/sivu tai 1 iso kuva. Yksi iso kuva sivulla on hyväksytty, eikä kahta pakoteta.
 - Urakkakortti: neljä pientä kuvaa sivulla (keskimäärin 3–4). Laitteella 4 kuvaa mahtuu yhdelle liitesivulle, 5 kahdelle, myös pitkällä kuvatekstillä.
 - Marginaalit: kortin vasen ja oikea 17 mm, tarjouksen tekstisisennys 21 mm. Teksti ei osu palkkiin eikä reunaan.
-- Urakkakortin Lisätiedot: yrityksen teksti näkyy hintalohkon alla, kun se ei ole tyhjä, ja puuttuu kun se on tyhjä. Rakenteen Muuta-teksti näkyy rakenteen osiossa.
 - Varapolku: puuttuva tiedosto tai epäonnistunut yhdistäminen tuottaa silti tarjouksen. Valmis-näkymässä on suomenkielinen varoitus, ja tarjouksen voi jakaa.
 - Asetteluavain `form_snapshot.attachmentPageLayout` säilyy laskelman kopiossa.
 - Sovellusversio näyttää 1.3.2.

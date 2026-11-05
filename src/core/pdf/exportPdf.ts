@@ -275,7 +275,6 @@ export async function exportUrakkakorttiPdf(
     settings: app.settings,
     generatedAt,
     sivukulukerroin: offerCompany.sivukulukerroin,
-    additionalInfo: offerCompany.additionalInfoText,
     offerStructureSettings,
   });
   const items = await listedAttachments(deps, calculationId);

@@ -86,7 +86,6 @@ function printToPdf(chrome: string, html: string): Promise<Buffer> {
         '--disable-gpu',
         '--no-sandbox',
         '--no-pdf-header-footer',
-        `--user-data-dir=${path.join(dir, 'profile')}`,
         `--print-to-pdf=${pdfPath}`,
         htmlPath,
       ],
