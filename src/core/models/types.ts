@@ -116,8 +116,9 @@ export interface FormSnapshot {
    */
   ktvPageIncluded?: boolean;
   /**
-   * Liitekuvien asettelu PDF:ssä. Valinnainen avain samassa `form_snapshot`-JSON:ssa.
+   * Tarjouksen liitekuvien asettelu. Valinnainen avain samassa `form_snapshot`-JSON:ssa.
    * Puuttuva avain = kaksi kuvaa sivulla. `one_per_page` = yksi iso kuva.
+   * Urakkakortti ei lue avainta (neljä kuvaa sivulla).
    * Ei lomakepohjan avain eikä SQL-migraatio. Kopioituu laskelman mukana.
    */
   attachmentPageLayout?: 'two_per_page' | 'one_per_page';

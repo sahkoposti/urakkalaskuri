@@ -275,6 +275,7 @@ export async function exportUrakkakorttiPdf(
     settings: app.settings,
     generatedAt,
     sivukulukerroin: offerCompany.sivukulukerroin,
+    additionalInfo: offerCompany.additionalInfoText,
     offerStructureSettings,
   });
   const items = await listedAttachments(deps, calculationId);
@@ -299,7 +300,7 @@ export async function exportUrakkakorttiPdf(
           attachments: {
             items,
             target: 'card' as const,
-            layout: readAttachmentPageLayout(record.formSnapshot),
+            layout: 'card_grid' as const,
           },
           composeHtml: renderCard,
           attachmentDeps: deps.attachmentPdfDeps,

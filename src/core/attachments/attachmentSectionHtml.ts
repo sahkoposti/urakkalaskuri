@@ -1,10 +1,16 @@
 import { escapeHtml } from '@/src/core/pdf/escapeHtml';
-import { PDF_USABLE_BODY_MM } from '@/src/core/pdf/pdfStyles';
+import {
+  PDF_A4_WIDTH_MM,
+  PDF_HORIZONTAL_MARGIN_EXTRA_MM,
+  PDF_PAGE_MARGIN_LEFT_MM,
+  PDF_PAGE_MARGIN_RIGHT_MM,
+  PDF_USABLE_BODY_MM,
+} from '@/src/core/pdf/pdfStyles';
 
 import {
   DEFAULT_ATTACHMENT_PAGE_LAYOUT,
   imagesPerPage,
-  type AttachmentPageLayout,
+  type AttachmentSectionLayout,
 } from './attachmentPrintPlan';
 
 export type AttachmentSectionImage = { dataUri: string; caption: string };
@@ -34,6 +40,20 @@ export const ATTACHMENT_PAGE_SLACK_MM = 6;
 export const ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM = 80;
 /** Yksi iso kuva sivulla. Yksi kuva + kuvateksti + otsikko mahtuu 223 mm:iin. */
 export const ATTACHMENT_IMAGE_MAX_HEIGHT_ONE_MM = 175;
+/** Kortin ruudukko: kaksi saraketta, neljä kuvaa sivulla. */
+export const ATTACHMENT_CARD_GRID_GAP_MM = 4;
+export const ATTACHMENT_CARD_CAPTION_LINES = 2;
+/** Kortin kuvan enimmäiskorkeus. Kaksi riviä + otsikko mahtuu 223 mm:iin, kuvateksti katkaistaan. */
+export const ATTACHMENT_CARD_IMAGE_MAX_HEIGHT_MM = 86;
+
+/** Kortin sisältöleveys sivulisän jälkeen. */
+export function attachmentCardContentWidthMm(): number {
+  return (
+    PDF_A4_WIDTH_MM -
+    (PDF_PAGE_MARGIN_LEFT_MM + PDF_HORIZONTAL_MARGIN_EXTRA_MM) -
+    (PDF_PAGE_MARGIN_RIGHT_MM + PDF_HORIZONTAL_MARGIN_EXTRA_MM)
+  );
+}
 
 function lineBoxMm(pt: number, lines: number): number {
   return lines * pt * ATTACHMENT_LINE_HEIGHT * MM_PER_PT;
@@ -69,6 +89,11 @@ function sectionCss(extraPt: number): string {
   .liite-sivu.two .liite-kuva img { max-height: ${ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM}mm; }
   .liite-sivu.one .liite-kuva img { max-height: ${ATTACHMENT_IMAGE_MAX_HEIGHT_ONE_MM}mm; }
   .liite-kuva figcaption { margin-top: ${ATTACHMENT_CAPTION_MARGIN_TOP_MM}mm; font-size: ${captionPt}pt; line-height: ${ATTACHMENT_LINE_HEIGHT}; overflow-wrap: anywhere; }
+  .liite-sivu.card { display: grid; grid-template-columns: 1fr 1fr; column-gap: ${ATTACHMENT_CARD_GRID_GAP_MM}mm; row-gap: ${ATTACHMENT_CARD_GRID_GAP_MM}mm; align-content: start; overflow: visible; max-height: none; }
+  .liite-sivu.card > h2, .liite-sivu.card > .liite-pdf { grid-column: 1 / -1; }
+  .liite-sivu.card .liite-kuva { margin: 0; min-width: 0; break-inside: avoid; page-break-inside: avoid; }
+  .liite-sivu.card .liite-kuva img { max-height: ${ATTACHMENT_CARD_IMAGE_MAX_HEIGHT_MM}mm; }
+  .liite-sivu.card figcaption { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: ${ATTACHMENT_CARD_CAPTION_LINES}; overflow: hidden; max-height: ${lineBoxMm(captionPt, ATTACHMENT_CARD_CAPTION_LINES).toFixed(2)}mm; }
 </style>`;
 }
 
@@ -95,13 +120,13 @@ function fontExtra(value: number | undefined): number {
 export function renderAttachmentSectionHtml(input: {
   images: readonly AttachmentSectionImage[];
   pdfs: readonly AttachmentSectionPdf[];
-  layout?: AttachmentPageLayout;
+  layout?: AttachmentSectionLayout;
   fontExtraPt?: number;
 }): string {
   if (input.images.length === 0 && input.pdfs.length === 0) return '';
   const layout = input.layout ?? DEFAULT_ATTACHMENT_PAGE_LAYOUT;
   const perPage = imagesPerPage(layout);
-  const pageClass = layout === 'one_per_page' ? 'one' : 'two';
+  const pageClass = layout === 'card_grid' ? 'card' : layout === 'one_per_page' ? 'one' : 'two';
   const css = sectionCss(fontExtra(input.fontExtraPt));
   const pdfList =
     input.pdfs.length > 0

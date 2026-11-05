@@ -218,6 +218,21 @@ describe('urakkakortti', () => {
     expect(renderUrakkakorttiHtml(ctx)).toContain('Portti auki');
   });
 
+  it('prints company Lisätiedot under the info block and omits an empty value', () => {
+    const text = 'Maksuehto kuvitteellinen.\nRivi <2>';
+    const shown = buildUrakkakorttiContext({ ...ukInput(record({})), additionalInfo: `  ${text}  ` });
+    expect(shown.additionalInfo).toBe(text);
+    const html = renderUrakkakorttiHtml(shown);
+    expect(html).toContain('<h3>Lisätiedot:</h3><div>Maksuehto kuvitteellinen.<br />Rivi &lt;2&gt;</div>');
+    expect(html.indexOf('class="price-block"')).toBeLessThan(html.indexOf('Lisätiedot:'));
+    expect(html.indexOf('Lisätiedot:')).toBeLessThan(html.indexOf('class="spec-grid"'));
+
+    const hidden = buildUrakkakorttiContext({ ...ukInput(record({})), additionalInfo: ' \n ' });
+    expect(hidden.additionalInfo).toBe('');
+    expect(renderUrakkakorttiHtml(hidden)).not.toContain('Lisätiedot:');
+    expect(renderUrakkakorttiHtml(buildUrakkakorttiContext(ukInput(record({}))))).not.toContain('Lisätiedot:');
+  });
+
   it('highlights Urakan summa in the title with the same amount as the table total', () => {
     const single = buildUrakkakorttiContext(ukInput(record({})));
     expect(single.contractSum).toBe(single.contractRows[0].value);

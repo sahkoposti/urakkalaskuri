@@ -148,6 +148,7 @@ export function AttachmentSection({
           void changeLayout(value);
         }}
       />
+      <Text style={styles.note}>Tarjouksessa valinta yllä. Urakkakortti tulostaa neljä kuvaa sivulle.</Text>
       {attachments.length === 0 ? <Text style={styles.note}>Ei liitteitä.</Text> : null}
       {attachments.map((item, index) => (
         <AttachmentRow

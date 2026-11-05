@@ -1,6 +1,6 @@
 # Liitteet (L1–L4)
 
-Nykyinen versio on **1.3.2**. Siihen kuuluvat tarjouksen ja urakkakortin PDF, liitteen valinta (kamera, galleria, tiedosto), kuvankäsittely ja asettelu: kaksi kuvaa sivulla tai yksi iso kuva. Kuvat pienennetään lisäyshetkellä (`expo-image-manipulator` 14.0.8): pisin sivu enintään 1600 px, JPEG 0,7, uusi tiedosto ilman EXIF-tietoja. Vain käsitelty tiedosto tallennetaan. PDF kopioidaan ja puretaan `prepareAttachmentPdf`-funktiolla. Raja on 20 kuvaa laskelmaa kohti, 10 Mt / tiedosto, 25 Mt yhteensä ja 50 sivua (`checkAttachmentLimits`). Yli 15 Mt:n kuvakokonaisuus varoittaa, mutta kuvat otetaan mukaan.
+Nykyinen versio on **1.3.2**. Siihen kuuluvat tarjouksen ja urakkakortin PDF, liitteen valinta (kamera, galleria, tiedosto), kuvankäsittely ja asettelu. Tarjouksessa on kaksi kuvaa sivulla tai yksi iso kuva; urakkakortissa on neljä pientä kuvaa sivulla. Kuvat pienennetään lisäyshetkellä (`expo-image-manipulator` 14.0.8): pisin sivu enintään 1600 px, JPEG 0,7, uusi tiedosto ilman EXIF-tietoja. Vain käsitelty tiedosto tallennetaan. PDF kopioidaan ja puretaan `prepareAttachmentPdf`-funktiolla. Raja on 20 kuvaa laskelmaa kohti, 10 Mt / tiedosto, 25 Mt yhteensä ja 50 sivua (`checkAttachmentLimits`). Yli 15 Mt:n kuvakokonaisuus varoittaa, mutta kuvat otetaan mukaan.
 
 Asettelu (2 kuvaa/sivu tai 1 iso kuva) tallennetaan laskelman `form_snapshot`-avaimeen `attachmentPageLayout`. Puuttuva avain on 2 kuvaa/sivu. Avain kopioituu laskelman mukana. Uutta SQL-saraketta ei ole.
 
@@ -53,7 +53,11 @@ Kuvien arvioitu koko on tiedostokoko × 4/3. Yli 15 Mt antaa varoituksen. Kuvat 
 
 PDF:ään mahtuu 20 kuvaa. Ylimääräiset jätetään pois ja varoitus palautetaan.
 
-Asettelu on `two_per_page` (oletus) tai `one_per_page`. Osio alkaa uudelta sivulta tarjouksessa KTV-sivun jälkeen ja kortissa kortin jälkeen. Kahden kuvan sivulla kuvan enimmäiskorkeus on 80 mm ja yhden ison kuvan sivulla 175 mm. Korkeus on laskettu A4:n 297 mm:stä miinus ylä- ja alamarginaalit sekä tunnisteiden välikkeet (käytettävissä 223 mm), niin että kaksi kuvaa ja kaksi enintään 120 merkin kuvatekstiä mahtuvat samalle sivulle myös yhtä pistettä suuremmalla fontilla. Kuva ei katkea sivujen väliin (`break-inside: avoid`). Kuvateksti on `Kuva N` ja valinnainen teksti. HTML escapoidaan. PDF-liitteen nimi listataan rivillä `Liitteenä: nimi`, koska sivut liitetään yhdistämisessä tulosteen perään.
+Asetteluvalinta `two_per_page` (oletus) tai `one_per_page` koskee tarjousta. Yksi iso kuva sivulla on hyväksytty tarjouksen asettelu, eikä kahta kuvaa sivulle pakoteta. Urakkakortti ei lue valintaa: kortin Liitteet on 2×2-ruudukko, neljä kuvaa sivulla (kuva enintään 86 mm, kuvateksti enintään kaksi riviä ja ylimääräinen katkaistaan). Osio alkaa uudelta sivulta tarjouksessa KTV-sivun jälkeen ja kortissa kortin jälkeen. Tarjouksen yhden kuvan enimmäiskorkeus on 175 mm ja kahden kuvan sivun 80 mm. Korkeus on laskettu A4:n 297 mm:stä miinus ylä- ja alamarginaalit sekä tunnisteiden välikkeet (käytettävissä 223 mm). Kuva ei katkea sivujen väliin (`break-inside: avoid`). Kuvateksti on `Kuva N` ja valinnainen teksti. HTML escapoidaan. PDF-liitteen nimi listataan rivillä `Liitteenä: nimi`, koska sivut liitetään yhdistämisessä tulosteen perään.
+
+Jokaisen tulosteen vasen ja oikea reuna on 3 mm aiempaa leveämpi (`PDF_HORIZONTAL_MARGIN_EXTRA_MM`). Kortin sivumarginaali on 17 mm (oli 14 mm). Tarjouksen tekstisisennys on 21 mm paperin reunasta (oli 18 mm); vasen palkki pysyy 2,5 mm.
+
+Urakkakortti tulostaa yrityksen Lisätiedot-tekstin (`offer_company_settings.additionalInfoText`, sama kuin tarjouksen `buildPdfContext.additionalInfo`) hintalohkon alle otsikolla Lisätiedot. Tyhjä teksti jättää osion pois. Rakenteen oma lisäteksti (`offer_settings:<id>.additionalInfoText`) tulostuu yhä rakenteen osioon otsikolla Muuta, kuten tarjouksessa.
 
 Jos kohteeseen ei ole liitteitä, tarjouksen ja kortin HTML on sama kuin ennen osiota. Osion CSS on vain osiossa, ei yhteisessä tyylissä.
 
@@ -102,7 +106,10 @@ Dokumentit-välilehdellä on osio Liitteet: kuvateksti (enintään 120), kohde (
 - Galleria: monivalinta, ei `READ_MEDIA_*`-lupaa.
 - Tiedostovalitsin: kuva ja PDF, myös omistajasalattu PDF (tyhjä käyttäjäsalasana kelpaa). Käyttäjän salasana hylätään viestillä `Tiedosto on suojattu salasanalla. Poista suojaus ja lisää tiedosto uudelleen.`
 - Rajat: 10 Mt / tiedosto, 25 Mt yhteensä, 50 sivua. Yli 15 Mt:n kuvakokonaisuus varoittaa. 20 kuvan katto ja 21. kuvan hylkäys.
-- Asettelun vaihto: kaksi kuvaa sivulla ja yksi iso kuva sivulla. Laitteella kahden kuvan sivu näyttää kaksi kuvaa ja kuvatekstit samalla sivulla, myös 120 merkin kuvatekstillä.
+- Tarjouksen asettelun vaihto: 2 kuvaa/sivu tai 1 iso kuva. Yksi iso kuva sivulla on hyväksytty, eikä kahta pakoteta.
+- Urakkakortti: neljä pientä kuvaa sivulla (keskimäärin 3–4). Laitteella 4 kuvaa mahtuu yhdelle liitesivulle, 5 kahdelle, myös pitkällä kuvatekstillä.
+- Marginaalit: kortin vasen ja oikea 17 mm, tarjouksen tekstisisennys 21 mm. Teksti ei osu palkkiin eikä reunaan.
+- Urakkakortin Lisätiedot: yrityksen teksti näkyy hintalohkon alla, kun se ei ole tyhjä, ja puuttuu kun se on tyhjä. Rakenteen Muuta-teksti näkyy rakenteen osiossa.
 - Varapolku: puuttuva tiedosto tai epäonnistunut yhdistäminen tuottaa silti tarjouksen. Valmis-näkymässä on suomenkielinen varoitus, ja tarjouksen voi jakaa.
 - Asetteluavain `form_snapshot.attachmentPageLayout` säilyy laskelman kopiossa.
 - Sovellusversio näyttää 1.3.2.

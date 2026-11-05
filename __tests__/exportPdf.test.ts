@@ -281,7 +281,7 @@ describe('exportUrakkakorttiPdf', () => {
     const { deps, app, printed } = setup(record({ name: 'Testi' }));
     deps.listAttachments = async () => [];
     await exportUrakkakorttiPdf('c1', app, deps);
-    expect(printed[0].attachments).toEqual({ items: [], target: 'card', layout: 'two_per_page' });
+    expect(printed[0].attachments).toEqual({ items: [], target: 'card', layout: 'card_grid' });
     const empty = printed[0].composeHtml?.('') ?? '';
     expect(empty).toContain('Urakkakortti');
     expect(empty).not.toContain('class="liitteet');

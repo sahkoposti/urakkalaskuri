@@ -10,7 +10,10 @@ export const ATTACHMENT_MAX_IMAGES_PER_PDF = 20;
 export const ATTACHMENT_IMAGE_SECTION_WARN_BYTES = 15 * 1024 * 1024;
 
 export type AttachmentPageLayout = 'two_per_page' | 'one_per_page';
+/** Kortin tuloste. Ei tallenneta form_snapshotiin. */
+export type AttachmentSectionLayout = AttachmentPageLayout | 'card_grid';
 export const DEFAULT_ATTACHMENT_PAGE_LAYOUT: AttachmentPageLayout = 'two_per_page';
+export const ATTACHMENT_CARD_IMAGES_PER_PAGE = 4;
 
 export type AttachmentTarget = 'offer' | 'card';
 
@@ -50,7 +53,8 @@ export function splitAttachments(items: readonly Attachment[]): { images: Attach
   };
 }
 
-export function imagesPerPage(layout: AttachmentPageLayout = DEFAULT_ATTACHMENT_PAGE_LAYOUT): number {
+export function imagesPerPage(layout: AttachmentSectionLayout = DEFAULT_ATTACHMENT_PAGE_LAYOUT): number {
+  if (layout === 'card_grid') return ATTACHMENT_CARD_IMAGES_PER_PAGE;
   return layout === 'one_per_page' ? 1 : 2;
 }
 

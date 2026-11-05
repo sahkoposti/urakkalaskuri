@@ -7,13 +7,16 @@ import zlib from 'zlib';
 import { PDFDocument } from '@cantoo/pdf-lib';
 
 import {
+  ATTACHMENT_CARD_IMAGE_MAX_HEIGHT_MM,
   ATTACHMENT_IMAGE_MAX_HEIGHT_ONE_MM,
   ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM,
   appendAttachmentSection,
   attachmentCaptionBlockMaxMm,
+  attachmentCardContentWidthMm,
   attachmentPairUsableMm,
   renderAttachmentSectionHtml,
 } from '@/src/core/attachments/attachmentSectionHtml';
+import type { AttachmentSectionLayout } from '@/src/core/attachments/attachmentPrintPlan';
 import { PDF_USABLE_BODY_MM } from '@/src/core/pdf/pdfStyles';
 import { renderDocument } from '@/src/core/pdf/renderTarjousHtml';
 
@@ -59,16 +62,14 @@ function pngDataUri(width: number, height: number): string {
   return `data:image/png;base64,${png.toString('base64')}`;
 }
 
-function offerHtml(sectionHtml: string): string {
-  const document = renderDocument(
-    {
-      customerLines: ['Malli Asiakas'],
-      offerInfo: [{ label: 'Tarjous', value: '1' }],
-      footer: { left: ['Vasen'], center: ['Keski'], right: ['Oikea'] },
-    },
-    '<p>Runko.</p>',
-    { offerAccentBar: true, bodyClass: 'doc-offer' },
-  );
+const DOC_CTX = {
+  customerLines: ['Malli Asiakas'],
+  offerInfo: [{ label: 'Tarjous', value: '1' }],
+  footer: { left: ['Vasen'], center: ['Keski'], right: ['Oikea'] },
+};
+
+function documentHtml(sectionHtml: string, offer: boolean): string {
+  const document = renderDocument(DOC_CTX, '<p>Runko.</p>', offer ? { offerAccentBar: true, bodyClass: 'doc-offer' } : {});
   return appendAttachmentSection(document, sectionHtml);
 }
 
@@ -177,6 +178,8 @@ describe('attachment section height budget', () => {
     expect(ATTACHMENT_IMAGE_MAX_HEIGHT_ONE_MM + attachmentCaptionBlockMaxMm(1)).toBeLessThanOrEqual(
       PDF_USABLE_BODY_MM,
     );
+    expect(attachmentCardContentWidthMm()).toBe(176);
+    expect(ATTACHMENT_CARD_IMAGE_MAX_HEIGHT_MM * 2).toBeLessThan(PDF_USABLE_BODY_MM);
     const html = renderAttachmentSectionHtml({
       images: [{ dataUri: 'data:image/png;base64,xx', caption: 'Teksti' }],
       pdfs: [],
@@ -202,34 +205,46 @@ describe('attachment section printed pages', () => {
   const browser = chrome;
   jest.setTimeout(180000);
   const portrait = pngDataUri(900, 1400);
-  let bodyPages = 0;
+  let offerBodyPages = 0;
+  let cardBodyPages = 0;
 
   beforeAll(async () => {
-    const pdf = await printToPdf(browser, offerHtml(''));
-    bodyPages = (await PDFDocument.load(pdf)).getPageCount();
-    expect(bodyPages).toBe(1);
+    offerBodyPages = (await PDFDocument.load(await printToPdf(browser, documentHtml('', true)))).getPageCount();
+    cardBodyPages = (await PDFDocument.load(await printToPdf(browser, documentHtml('', false)))).getPageCount();
+    expect(offerBodyPages).toBe(1);
+    expect(cardBodyPages).toBe(1);
   });
 
   async function attachmentPages(
     count: number,
-    layout: 'two_per_page' | 'one_per_page',
+    layout: AttachmentSectionLayout,
     caption: string,
     fontExtraPt: number,
   ): Promise<{ pages: number; heights: number[] }> {
-    const html = offerHtml(
+    const html = documentHtml(
       renderAttachmentSectionHtml({
         images: Array.from({ length: count }, () => ({ dataUri: portrait, caption })),
         pdfs: [],
         layout,
         fontExtraPt,
       }),
+      layout !== 'card_grid',
     );
     const pdf = await printToPdf(browser, html);
     const total = (await PDFDocument.load(pdf)).getPageCount();
-    return { pages: total - bodyPages, heights: paintedImageHeightsMm(pdf) };
+    const body = layout === 'card_grid' ? cardBodyPages : offerBodyPages;
+    return { pages: total - body, heights: paintedImageHeightsMm(pdf) };
   }
 
-  it.each([0, 1])('lays out two images per page at font +%i pt', async (extraPt) => {
+  function expectHeight(heights: number[], count: number, maxMm: number) {
+    expect(heights).toHaveLength(count);
+    for (const height of heights) {
+      expect(height).toBeGreaterThan(maxMm - 2);
+      expect(height).toBeLessThanOrEqual(maxMm + 0.5);
+    }
+  }
+
+  it.each([0, 1])('keeps the offer two-up option on one page at font +%i pt', async (extraPt) => {
     const pairs: [number, number][] = [
       [2, 1],
       [4, 2],
@@ -239,25 +254,32 @@ describe('attachment section printed pages', () => {
       for (const [count, expected] of pairs) {
         const printed = await attachmentPages(count, 'two_per_page', caption, extraPt);
         expect(printed.pages).toBe(expected);
-        expect(printed.heights).toHaveLength(count);
-        for (const height of printed.heights) {
-          expect(height).toBeGreaterThan(ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM - 2);
-          expect(height).toBeLessThanOrEqual(ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM + 0.5);
-        }
+        expectHeight(printed.heights, count, ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM);
       }
     }
   });
 
-  it.each([0, 1])('lays out one large image per page at font +%i pt', async (extraPt) => {
+  it.each([0, 1])('puts one offer image on each page at font +%i pt', async (extraPt) => {
     for (const caption of ['Ovi', LONG_CAPTION]) {
-      for (const count of [2, 5]) {
+      for (const count of [2, 4, 5]) {
         const printed = await attachmentPages(count, 'one_per_page', caption, extraPt);
         expect(printed.pages).toBe(count);
-        expect(printed.heights).toHaveLength(count);
-        for (const height of printed.heights) {
-          expect(height).toBeGreaterThan(ATTACHMENT_IMAGE_MAX_HEIGHT_ONE_MM - 2);
-          expect(height).toBeLessThanOrEqual(ATTACHMENT_IMAGE_MAX_HEIGHT_ONE_MM + 0.5);
-        }
+        expectHeight(printed.heights, count, ATTACHMENT_IMAGE_MAX_HEIGHT_ONE_MM);
+      }
+    }
+  });
+
+  it.each([0, 1])('fits four card images on a page at font +%i pt', async (extraPt) => {
+    const pairs: [number, number][] = [
+      [4, 1],
+      [8, 2],
+      [5, 2],
+    ];
+    for (const caption of ['Ovi', LONG_CAPTION]) {
+      for (const [count, expected] of pairs) {
+        const printed = await attachmentPages(count, 'card_grid', caption, extraPt);
+        expect(printed.pages).toBe(expected);
+        expectHeight(printed.heights, count, ATTACHMENT_CARD_IMAGE_MAX_HEIGHT_MM);
       }
     }
   });

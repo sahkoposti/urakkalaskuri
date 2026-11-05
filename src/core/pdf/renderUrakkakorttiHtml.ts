@@ -1,6 +1,6 @@
 import { escapeHtml } from './escapeHtml';
 import { renderPrintedGroups, renderPrintedLines, renderPrintedTable, printedSectionCss } from './renderPrintedSection';
-import { renderDocument, type RenderTarjousOptions } from './renderTarjousHtml';
+import { renderAdditionalInfo, renderDocument, type RenderTarjousOptions } from './renderTarjousHtml';
 import type { UrakkakorttiSection } from './urakkakorttiSections';
 import { urakkakorttiBodyBlocks, type UrakkakorttiBlockKind, type UrakkakorttiContext } from './urakkakortti';
 
@@ -27,6 +27,7 @@ function renderUrakkakorttiBlock(ctx: UrakkakorttiContext, kind: UrakkakorttiBlo
     if (columns.length === 0) return '';
     return `<div class="price-block">${columns.join('')}</div>`;
   }
+  if (kind === 'lisatiedot') return renderAdditionalInfo(ctx.additionalInfo);
   if (kind === 'specs') {
     const cards = ctx.specGrid.cards
       .map(

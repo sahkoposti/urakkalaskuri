@@ -4,7 +4,7 @@ ColoRajattoman tarjouslaskuri (Expo / React Native, Android). Pakettiversio **v1
 
 Tämä sivu kuvaa **miten sovellus toimii nyt**. JSON-kentät ja kaavat: [lomakepohja-json-ohje.md](./lomakepohja-json-ohje.md). Tuoterakenteiden malli: [tuoterakenteet.md](./tuoterakenteet.md). Kehitysympäristö: [README.md](../README.md).
 
-Nykyinen versio on **1.3.2**. Siihen kuuluvat tarjouksen ja urakkakortin PDF sekä liitteet (valinta, kuvankäsittely, kaksi kuvaa sivulla tai yksi iso kuva). Kuvaus: [liitteet.md](./liitteet.md). Suunnitelma: [v1.3-suunnitelma.md](./v1.3-suunnitelma.md).
+Nykyinen versio on **1.3.2**. Siihen kuuluvat tarjouksen ja urakkakortin PDF sekä liitteet (valinta, kuvankäsittely, tarjouksessa kaksi kuvaa sivulla tai yksi iso kuva, urakkakortissa neljä kuvaa sivulla). Kuvaus: [liitteet.md](./liitteet.md). Suunnitelma: [v1.3-suunnitelma.md](./v1.3-suunnitelma.md).
 
 Composer-malli on tuotantopolku. Yhtenäisyystarkistuksen siivous: [yhtenaisyystarkistus.md](./yhtenaisyystarkistus.md).
 
