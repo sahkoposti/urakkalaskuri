@@ -28,8 +28,10 @@ export type IngestAttachmentDeps = {
   manipulate: ImageManipulator;
   fileSize: (uri: string) => Promise<number>;
   readBytes: (uri: string) => Promise<Uint8Array | null>;
-  /** Olemassa olevan PDF:n sivumäärä. Epäonnistuminen on 0. */
-  pdfPageCount: (attachment: Attachment) => Promise<number>;
+  /** Olemassa olevan PDF:n sivumäärä. null, jos lukeminen epäonnistuu. Nolla ei ole "ei sivuja". */
+  pdfPageCount: (attachment: Attachment) => Promise<number | null>;
+  /** Valitsimen tai käsittelijän tilapäinen kopio. Puuttuva toteutus ei poista mitään. */
+  deleteTemp?: (uri: string) => void;
   placeImage: (sourceUri: string, calculationId: string, id: string) => string;
   writePdf: (calculationId: string, id: string, bytes: Uint8Array) => string;
   addAttachment: (input: {
@@ -45,13 +47,39 @@ export type IngestAttachmentDeps = {
   removeStored: (relativePath: string) => void;
 };
 
+function positivePageCount(value: number | null): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null;
+  return Math.trunc(value);
+}
+
+function forgetTemp(deps: IngestAttachmentDeps, uri: string): void {
+  if (!deps.deleteTemp || !uri) return;
+  try {
+    deps.deleteTemp(uri);
+  } catch {
+    // Tilapäisen poisto ei saa kaataa tallennusta.
+  }
+}
+
+/** null, jos jonkin jo tallennetun PDF:n sivumäärää ei voi lukea. Kuvalla sivuja on 0. */
 async function existingLimits(
   items: readonly Attachment[],
-  pdfPageCount: (attachment: Attachment) => Promise<number>,
-): Promise<AttachmentLimitItem[]> {
+  pdfPageCount: (attachment: Attachment) => Promise<number | null>,
+): Promise<AttachmentLimitItem[] | null> {
   const limits: AttachmentLimitItem[] = [];
   for (const item of items) {
-    const pages = item.kind === 'pdf' ? await pdfPageCount(item) : 0;
+    if (item.kind !== 'pdf') {
+      limits.push({ sizeBytes: item.sizeBytes, pages: 0 });
+      continue;
+    }
+    let raw: number | null = null;
+    try {
+      raw = await pdfPageCount(item);
+    } catch {
+      raw = null;
+    }
+    const pages = positivePageCount(raw);
+    if (pages == null) return null;
     limits.push({ sizeBytes: item.sizeBytes, pages });
   }
   return limits;
@@ -66,11 +94,15 @@ export async function ingestPickedAttachment(
   picked: PickedAttachment,
   deps: IngestAttachmentDeps,
 ): Promise<{ ok: true; attachment: Attachment } | { ok: false; message: string }> {
-  const kind = pickedFileKind(picked.mime, picked.name);
-  if (!kind) return { ok: false, message: ATTACHMENT_FILE_KIND_MESSAGE };
-  const existing = await deps.listAttachments(calculationId);
-  if (kind === 'image') return ingestImage(calculationId, picked, existing, deps);
-  return ingestPdf(calculationId, picked, existing, deps);
+  try {
+    const kind = pickedFileKind(picked.mime, picked.name);
+    if (!kind) return { ok: false, message: ATTACHMENT_FILE_KIND_MESSAGE };
+    const existing = await deps.listAttachments(calculationId);
+    if (kind === 'image') return await ingestImage(calculationId, picked, existing, deps);
+    return await ingestPdf(calculationId, picked, existing, deps);
+  } finally {
+    forgetTemp(deps, picked.uri);
+  }
 }
 
 async function ingestImage(
@@ -88,6 +120,20 @@ async function ingestImage(
     deps.manipulate,
   );
   if (!processed.ok) return processed;
+  const processedUri = processed.uri !== picked.uri ? processed.uri : '';
+  try {
+    return await storeProcessedImage(calculationId, processed, existing, deps);
+  } finally {
+    forgetTemp(deps, processedUri);
+  }
+}
+
+async function storeProcessedImage(
+  calculationId: string,
+  processed: { uri: string; width: number; height: number },
+  existing: readonly Attachment[],
+  deps: IngestAttachmentDeps,
+): Promise<{ ok: true; attachment: Attachment } | { ok: false; message: string }> {
   let sizeBytes = 0;
   try {
     sizeBytes = await deps.fileSize(processed.uri);
@@ -99,6 +145,7 @@ async function ingestImage(
   }
   const limits = checkAttachmentLimits(
     [{ sizeBytes: existing.reduce((sum, item) => sum + item.sizeBytes, 0), pages: 0 }],
+    // Kuvalla ei ole PDF-sivuja. Sivumäärän 0 on tässä tahallinen, ei lukemisen epäonnistuminen.
     { sizeBytes, pages: 0 },
   );
   if (!limits.ok) return { ok: false, message: attachmentPdfFailureMessage(limits.reason) };
@@ -133,7 +180,9 @@ async function ingestPdf(
   if (!bytes) return { ok: false, message: attachmentPdfFailureMessage('invalid') };
   const prepared = await prepareAttachmentPdf(bytes);
   if (!prepared.ok) return { ok: false, message: attachmentPdfFailureMessage(prepared.reason) };
-  const limits = checkAttachmentLimits(await existingLimits(existing, deps.pdfPageCount), {
+  const prior = await existingLimits(existing, deps.pdfPageCount);
+  if (!prior) return { ok: false, message: attachmentPdfFailureMessage('corrupt') };
+  const limits = checkAttachmentLimits(prior, {
     sizeBytes: prepared.bytes.byteLength,
     pages: prepared.pageCount,
   });

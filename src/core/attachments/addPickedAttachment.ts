@@ -14,13 +14,23 @@ import { manipulateAttachmentImage } from './expoImageManipulator';
 import { ingestPickedAttachment, type PickedAttachment } from './ingestAttachment';
 import type { Attachment } from './types';
 
-async function pdfPageCount(attachment: Attachment): Promise<number> {
+async function pdfPageCount(attachment: Attachment): Promise<number | null> {
   try {
     const bytes = await new File(attachmentFileUri(attachment.fileRelPath)).bytes();
     const doc = await PDFDocument.load(bytes);
-    return doc.getPageCount();
+    const count = doc.getPageCount();
+    return Number.isFinite(count) ? count : null;
   } catch {
-    return 0;
+    return null;
+  }
+}
+
+function deleteTemp(uri: string): void {
+  try {
+    const file = new File(uri);
+    if (file.exists) file.delete();
+  } catch {
+    // Valitsimen tai käsittelijän tilapäinen kopio voi olla jo poissa.
   }
 }
 
@@ -43,6 +53,7 @@ export async function addPickedAttachment(
       }
     },
     pdfPageCount,
+    deleteTemp,
     placeImage: (sourceUri, idCalculation, id) => placeAttachmentFile(sourceUri, idCalculation, id, 'jpg'),
     writePdf: (idCalculation, id, bytes) => writeAttachmentBytes(idCalculation, id, 'pdf', bytes),
     addAttachment: (input) => addAttachment({ ...input, destination: 'none' }),

@@ -80,6 +80,15 @@ describe('attachment PDF merge and validation', () => {
     expect(attachmentPdfFailureMessage('password')).toBe(ATTACHMENT_PDF_PASSWORD_MESSAGE);
   });
 
+  it('rejects a PDF whose page count is not a positive number', async () => {
+    const zeroPages = new TextEncoder().encode(
+      '%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 0/Kids[]>>endobj\nxref\n0 3\n0000000000 65535 f \n0000000009 00000 n \n0000000052 00000 n \ntrailer<</Size 3/Root 1 0 R>>\nstartxref\n100\n%%EOF\n',
+    );
+    expect((await PDFDocument.load(zeroPages)).getPageCount()).toBe(0);
+    expect(await prepareAttachmentPdf(zeroPages)).toEqual({ ok: false, reason: 'corrupt' });
+    expect(ATTACHMENT_PDF_CORRUPT_MESSAGE).toBe('PDF-tiedosto on vioittunut.');
+  });
+
   it('maps a non-PDF to invalid and a truncated PDF to corrupt', async () => {
     const text = await prepareAttachmentPdf(new TextEncoder().encode('ei ole pdf'));
     expect(text).toEqual({ ok: false, reason: 'invalid' });

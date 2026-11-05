@@ -6,6 +6,7 @@ import {
   ATTACHMENT_FILE_KIND_MESSAGE,
   ATTACHMENT_IMAGE_PROCESS_FAILED_MESSAGE,
   ATTACHMENT_IMAGES_FULL_MESSAGE,
+  ATTACHMENT_PDF_CORRUPT_MESSAGE,
   ATTACHMENT_PDF_TOO_LARGE_MESSAGE,
   ATTACHMENT_PDF_TOO_MANY_PAGES_MESSAGE,
   ATTACHMENT_REMOVE_COPIED_LABEL,
@@ -291,6 +292,94 @@ describe('ingestPickedAttachment', () => {
     );
     expect(rejected.ok).toBe(false);
     if (!rejected.ok) expect(rejected.message).toBe(attachmentPdfFailureMessage('password'));
+  });
+
+  it('hylkää PDF:n, jos sivumäärää ei voi lukea', async () => {
+    const plain = await PDFDocument.create();
+    plain.addPage();
+    const bytes = await plain.save();
+    let added = false;
+    for (const pages of [null, 0, Number.NaN] as const) {
+      const result = await ingestPickedAttachment(
+        'c1',
+        picked({ name: 'liite.pdf', mime: 'application/pdf' }),
+        deps({
+          listAttachments: async () => [item({ id: 'old', kind: 'pdf', sizeBytes: 10 })],
+          readBytes: async () => bytes,
+          pdfPageCount: async () => pages,
+          addAttachment: async (input) => {
+            added = true;
+            return item({ id: input.id, kind: 'pdf' });
+          },
+        }),
+      );
+      expect(result).toEqual({ ok: false, message: ATTACHMENT_PDF_CORRUPT_MESSAGE });
+    }
+    expect(added).toBe(false);
+  });
+
+  it('pitää kuvan sivumäärän nollana, kun PDF lisätään kuvan rinnalle', async () => {
+    const plain = await PDFDocument.create();
+    plain.addPage();
+    const bytes = await plain.save();
+    let counted = false;
+    const result = await ingestPickedAttachment(
+      'c1',
+      picked({ name: 'liite.pdf', mime: 'application/pdf' }),
+      deps({
+        listAttachments: async () => [item({ id: 'img', kind: 'image', sizeBytes: 10 })],
+        readBytes: async () => bytes,
+        pdfPageCount: async () => {
+          counted = true;
+          return null;
+        },
+        addAttachment: async (input) => item({ id: input.id, kind: 'pdf', sizeBytes: input.sizeBytes }),
+      }),
+    );
+    expect(result.ok).toBe(true);
+    expect(counted).toBe(false);
+  });
+
+  it('poistaa valitsimen ja käsittelijän tilapäiset kopiot', async () => {
+    const deleted: string[] = [];
+    const result = await ingestPickedAttachment(
+      'c1',
+      picked({ uri: 'file:///cache/pick.jpg' }),
+      deps({
+        manipulate: manipulator(() => ({ uri: 'file:///cache/out.jpg', width: 100, height: 80 })),
+        deleteTemp: (uri) => {
+          deleted.push(uri);
+          if (uri.endsWith('out.jpg')) throw new Error('jo poissa');
+        },
+      }),
+    );
+    expect(result.ok).toBe(true);
+    expect(deleted).toEqual(['file:///cache/out.jpg', 'file:///cache/pick.jpg']);
+    expect(deleted).not.toContain('attachments/c1/new-1.jpg');
+  });
+
+  it('poistaa tilapäisen kopion myös hylkäyksessä', async () => {
+    const deleted: string[] = [];
+    const full = await ingestPickedAttachment(
+      'c1',
+      picked({ uri: 'file:///cache/pick.jpg' }),
+      deps({
+        listAttachments: async () =>
+          Array.from({ length: 20 }, (_, index) => item({ id: String(index), kind: 'image' })),
+        deleteTemp: (uri) => deleted.push(uri),
+      }),
+    );
+    expect(full.ok).toBe(false);
+    const unread = await ingestPickedAttachment(
+      'c1',
+      picked({ uri: 'file:///cache/a.pdf', name: 'a.pdf', mime: 'application/pdf' }),
+      deps({
+        readBytes: async () => null,
+        deleteTemp: (uri) => deleted.push(uri),
+      }),
+    );
+    expect(unread.ok).toBe(false);
+    expect(deleted).toEqual(['file:///cache/pick.jpg', 'file:///cache/a.pdf']);
   });
 
   it('hylkää PDF:n, kun sivuja on yli 50', async () => {

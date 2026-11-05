@@ -57,6 +57,7 @@ export async function prepareAttachmentPdf(bytes: Uint8Array): Promise<PrepareAt
   try {
     const loaded = await loadAttachment(bytes);
     const pageCount = loaded.doc.getPageCount();
+    if (!Number.isFinite(pageCount) || pageCount <= 0) return { ok: false, reason: 'corrupt' };
     if (pageCount > MAX_ATTACHMENT_PDF_PAGES) return { ok: false, reason: 'too_many_pages' };
     const copy = await PDFDocument.create();
     const pages = await copy.copyPages(loaded.doc, loaded.doc.getPageIndices());
