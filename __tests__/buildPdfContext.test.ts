@@ -1,4 +1,4 @@
-import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
+import { buildPdfContext, offerMaterialsVatIncluded } from '../src/core/pdf/buildPdfContext';
 import { renderKotitalousPageHtml } from '../src/core/pdf/renderKotitalousPageHtml';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { calculationWithBusinessVatMode } from '../src/core/pdf/urakkakorttiCard';
@@ -49,6 +49,45 @@ describe('offerPageSpecs', () => {
     expect(cards[0].pageId).toBeNull();
     expect(filterOfferCards(cards, new Set(['page_surfaces']))).toEqual([]);
     expect(filterOfferCards(specCardsFromSnapshot(snapshot('5'), form), new Set())).toEqual([]);
+  });
+});
+
+describe('offerMaterialsVatIncluded', () => {
+  const legacy = (materialsVat0: number, vatPercent: number) =>
+    Math.round(materialsVat0 * (1 + vatPercent / 100) * 100) / 100;
+
+  it('matches the stored aggregate for a single rate and when there are no priced lines', () => {
+    const single = record({}, { materialsVat0: 400, vatPercent: 25.5 });
+    expect(offerMaterialsVatIncluded(single)).toBe(legacy(400, 25.5));
+    expect(offerMaterialsVatIncluded(single)).toBe(502);
+    const none = record({}, {
+      materialsVat0: 400,
+      vatPercent: 25.5,
+      structureLines: [{ ...line('l1', 's1', 'Ulkomaalaus'), quantity: 0, materialsVat0: 999, vatPercent: 10 }],
+    });
+    expect(offerMaterialsVatIncluded(none)).toBe(502);
+  });
+
+  it('sums each line at its own rate, and a missing line rate uses the record rate', () => {
+    const mixed = record({}, {
+      materialsVat0: 150,
+      vatPercent: 25.5,
+      structureLines: [
+        { ...line('a', 's1', 'A'), materialsVat0: 100, vatPercent: 25.5 },
+        { ...line('b', 's2', 'B'), materialsVat0: 50, vatPercent: 10 },
+      ],
+    });
+    expect(offerMaterialsVatIncluded(mixed)).toBe(180.5);
+    expect(offerMaterialsVatIncluded(mixed)).not.toBe(legacy(150, 25.5));
+    const fallback = record({}, {
+      materialsVat0: 150,
+      vatPercent: 25.5,
+      structureLines: [
+        { ...line('a', 's1', 'A'), materialsVat0: 100, vatPercent: Number.NaN },
+        { ...line('b', 's2', 'B'), materialsVat0: 50, vatPercent: 10 },
+      ],
+    });
+    expect(offerMaterialsVatIncluded(fallback)).toBe(180.5);
   });
 });
 
@@ -560,6 +599,8 @@ describe('buildPdfContext', () => {
       'Yhteensä sis. alv',
       'Alennus yhteensä 10 %',
       'Alennettu hinta yhteensä',
+      'Sisältää ALV 25,5 %',
+      'Sisältää ALV 10 %',
     ]);
     expect(ctx.price.rows.map((row) => row.value.replace(/\s/g, ' '))).toEqual([
       '200,00 €',
@@ -568,6 +609,8 @@ describe('buildPdfContext', () => {
       '235,50 €',
       '−23,55 €',
       '211,95 €',
+      '22,95 €',
+      '9,00 €',
     ]);
     expect(ctx.vatSummary).toEqual([
       { vatPercent: 25.5, net: 100, vat: 25.5, gross: 125.5 },
@@ -576,6 +619,63 @@ describe('buildPdfContext', () => {
     const html = renderTarjousHtml(ctx);
     expect(html.indexOf('class="offer-vat"')).toBeLessThan(html.indexOf('Yhteensä alv 0'));
     expect(html).toContain('>Netto</th>');
+  });
+
+  it('uses each line rate for KTV materials and keeps the single-rate aggregate', () => {
+    const single = buildPdfContext(input(record({})));
+    expect(single.ktv?.materialsVat).toBe(502);
+    expect(single.ktv?.materialsVat).toBe(offerMaterialsVatIncluded(record({})));
+    const lines = [
+      { ...line('a', 's1', 'A'), quantity: 1, unitPriceVat0: 1000, materialsVat0: 100, discountPercent: 0, vatPercent: 25.5 },
+      { ...line('b', 's2', 'B'), quantity: 1, unitPriceVat0: 500, materialsVat0: 50, discountPercent: 0, vatPercent: 10 },
+    ];
+    const mixedRecord = record({}, {
+      vatPercent: 25.5,
+      materialsVat0: 150,
+      structureLines: lines,
+      totalPriceVat0: 1500,
+      vatAmount: 305,
+      totalPriceVat: 1805,
+    });
+    const mixed = buildPdfContext(input(mixedRecord));
+    expect(mixed.ktv?.materialsVat).toBe(180.5);
+    expect(mixed.ktv?.totalPriceVat).toBe(1805);
+    const ktv = renderKotitalousPageHtml(mixed).replace(/\s/g, ' ');
+    expect(ktv).toContain('180,50 €');
+    expect(ktv).toContain('1 624,50 €');
+    const discounted = buildPdfContext(
+      input(
+        record({}, {
+          ...mixedRecord,
+          structureLines: lines.map((item) => ({ ...item, discountPercent: 10 })),
+          discountPercent: 10,
+        }),
+      ),
+    );
+    expect(discounted.ktv?.materialsVat).toBe(180.5);
+    expect(discounted.ktv?.totalPriceVat).toBe(1624.5);
+  });
+
+  it('prints a zero VAT row when a 0 % line is mixed with 25,5 %', () => {
+    const ctx = buildPdfContext(
+      input(
+        record({}, {
+          structureLines: [
+            { ...line('a', 's1', 'A'), quantity: 1, unitPriceVat0: 100, materialsVat0: 0, discountPercent: 0, vatPercent: 25.5 },
+            { ...line('b', 's2', 'B'), quantity: 1, unitPriceVat0: 50, materialsVat0: 0, discountPercent: 0, vatPercent: 0 },
+          ],
+          vatPercent: 25.5,
+          materialsVat0: 0,
+        }),
+      ),
+    );
+    expect(ctx.price.rows.map((row) => `${row.label}=${row.value.replace(/\s/g, ' ')}`)).toEqual([
+      'Yhteensä alv 0=150,00 €',
+      'Alv 25,5 %=25,50 €',
+      'Alv 0 %=0,00 €',
+      'Yhteensä sis. alv=175,50 €',
+    ]);
+    expect(ctx.price.rows.some((row) => row.label.startsWith('Sisältää ALV'))).toBe(false);
   });
 
   it('urakkakortti does not reuse the offer discount block', () => {

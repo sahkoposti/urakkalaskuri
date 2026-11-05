@@ -139,6 +139,36 @@ function lineRate(record: CalculationRecord, line: StructureLine): number {
   return Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent;
 }
 
+function round2(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
+/**
+ * KTV-materiaalit sis. ALV.
+ * Ei hinnoiteltuja rivejä tai yksi verokanta: tallennettu `materialsVat0` × laskelman kanta,
+ * sama sentti kuin ennen (rivien materiaalit eivät aina ole tuo summa, eikä rivikohtainen
+ * pyöristys täsmää aggregaattiin).
+ * Usea verokanta: jokaisen rivin materiaalit omalla kannallaan, pyöristettynä erikseen.
+ * Rivin puuttuva kanta on laskelman kanta.
+ */
+export function offerMaterialsVatIncluded(record: CalculationRecord): number {
+  const legacy = Math.round(applyVat(record.materialsVat0, record.vatPercent) * 100) / 100;
+  const lines = pricedOfferLines(record);
+  if (lines.length === 0) return legacy;
+  const rates: number[] = [];
+  for (const line of lines) {
+    const rate = lineRate(record, line);
+    if (!rates.includes(rate)) rates.push(rate);
+  }
+  if (rates.length <= 1) return legacy;
+  return round2(
+    lines.reduce((sum, line) => {
+      const materials = Number.isFinite(line.materialsVat0) ? line.materialsVat0 : 0;
+      return sum + round2(materials * (1 + lineRate(record, line) / 100));
+    }, 0),
+  );
+}
+
 /** ALV, joka sisältyy annettuun bruttosummaan. Brutto − tämä = veroton osa senteissä. */
 function vatIncludedInGross(gross: number, rate: number): number {
   if (!(rate > 0) || !Number.isFinite(gross)) return 0;
@@ -354,9 +384,10 @@ function legacyCalcDiscountPriceBlock(record: CalculationRecord, customer: Custo
  * Verollinen: Yhteensä alv 0, Alv per verokanta, Yhteensä sis. alv. Luvut ovat
  * pyöristettyjen listahintojen summia. Ilman alennusta viimeinen rivi on lihavoitu
  * loppusumma. Alennus tulee sen jälkeen, ja lihavoitu rivi on Alennettu hinta yhteensä.
+ * Usealla kannalla sen perään tulevat "Sisältää ALV" -rivit maksetusta bruttosta.
  * ALV 0 ja käänteinen ALV: ilman alennusta vain Loppusumma (Alv 0 %). Alennuksella
  * Yhteensä alv 0, nettoalennus ja Loppusumma (Alv 0 %).
- * Pelkkä laskelman alennus: vanha lohko ja tallennettu maksettava.
+ * Pelkkä laskelman alennus: vanha lohko ja tallennettu maksettava, ei kantojen jakoa.
  */
 /** Sivun 1 summalohkon otsikko, jota KTV-sivu toistaa. Alennus voittaa listahinnan. */
 export function offerPageTotalLabel(rows: { label: string }[]): string {
@@ -410,6 +441,7 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
   if (lineDiscount) {
     rows.push(discountRow(record, listGross, printed.gross));
     rows.push({ label: 'Alennettu hinta yhteensä', value: formatCurrency(printed.gross), emphasis: true });
+    if (rates && rates.length > 1) rows.push(...vatIncludedRows(record, printed.gross, true));
   }
   return { includesVat: true, rows };
 }
@@ -443,7 +475,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     ktv: ktvApplicable
       ? {
           totalPriceVat: payable,
-          materialsVat: Math.round(applyVat(record.materialsVat0, record.vatPercent) * 100) / 100,
+          materialsVat: offerMaterialsVatIncluded(record),
           settings: offerCompany.ktv,
           footnoteText: offerCompany.ktvFootnoteText,
           persons: readKtvPersons(record.formSnapshot),
