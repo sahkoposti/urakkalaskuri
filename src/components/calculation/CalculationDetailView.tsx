@@ -1,7 +1,8 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { AttachmentSection } from '@/src/components/attachments/AttachmentSection';
 import { DetailTabBar } from '@/src/components/calculation/DetailTabBar';
 import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
@@ -33,6 +34,8 @@ import {
   hasFormVersionMismatch,
 } from '@/src/core/form/formVersion';
 import type { FormDefinition } from '@/src/core/form/types';
+import { listAttachments } from '@/src/core/attachments/attachmentsRepository';
+import type { Attachment } from '@/src/core/attachments/types';
 import type { CalculationRecord, CustomerInfo, MaterialQuantityRow, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
@@ -54,6 +57,10 @@ type CalculationDetailViewProps = {
   /** Näytetään, kun laskelmalla on uudempi muokkausluonnos. */
   unsavedChangesNotice?: string | null;
   onCopy?: () => void;
+  onCopyCalculation?: () => void;
+  onRecordChange?: (record: CalculationRecord) => void;
+  /** Kasvaa, kun kopioidut liitteet poistetaan. */
+  attachmentEpoch?: number;
   onFooterPress: () => void;
   onDeletePress?: () => void;
 };
@@ -73,13 +80,44 @@ export function CalculationDetailView({
   formDefinition,
   unsavedChangesNotice,
   onCopy,
+  onCopyCalculation,
+  onRecordChange,
+  attachmentEpoch = 0,
   onFooterPress,
   onDeletePress,
 }: CalculationDetailViewProps) {
   const styles = useThemedStyles(createStyles);
   const { settings, structures } = useApp();
   const [tab, setTab] = useState<DetailTab>('laskelma');
+  const scrollRef = useRef<ScrollView>(null);
+  const attachmentsRef = useRef<View>(null);
+  const [attachments, setAttachments] = useState<readonly Attachment[]>([]);
+  const reloadAttachments = useCallback(() => {
+    void listAttachments(record.id).then(setAttachments).catch((error: unknown) => {
+      console.error(error);
+    });
+  }, [record.id]);
+  useFocusEffect(
+    useCallback(() => {
+      reloadAttachments();
+    }, [reloadAttachments, attachmentEpoch]),
+  );
   const [openDocument, setOpenDocument] = useState<'tarjous' | 'urakkakortti' | null>(null);
+  function showAttachments() {
+    setOpenDocument(null);
+    requestAnimationFrame(() => {
+      const section = attachmentsRef.current;
+      const scroll = scrollRef.current;
+      if (!section || !scroll) return;
+      section.measureLayout(
+        scroll.getInnerViewNode(),
+        (_x, y) => {
+          scroll.scrollTo({ y: Math.max(0, y - 8), animated: true });
+        },
+        () => undefined,
+      );
+    });
+  }
   const pdf = usePdfExportForm(record.id, record);
   useEffect(() => {
     if (pdf.readyDocument) setOpenDocument(null);
@@ -104,7 +142,7 @@ export function CalculationDetailView({
 
   return (
     <>
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
       <View>
         <View style={styles.titleRow}>
           <Text style={styles.customerName}>{customer.name}</Text>
@@ -164,6 +202,14 @@ export function CalculationDetailView({
               onClear={pdf.clearPhoneFolder}
             />
           ) : null}
+          <View ref={attachmentsRef} collapsable={false}>
+            <AttachmentSection
+              record={record}
+              attachments={attachments}
+              onChanged={reloadAttachments}
+              onRecordChange={onRecordChange ?? (() => undefined)}
+            />
+          </View>
           <CalculationDocumentList
             documents={pdf.documents}
             platform={pdf.phonePlatform}
@@ -196,6 +242,9 @@ export function CalculationDetailView({
           title="Muokkaa"
           onPress={() => router.push({ pathname: '/wizard', params: { editId: record.id } })}
         />
+        {onCopyCalculation ? (
+          <OutlinedButton title="Kopioi laskelma" onPress={onCopyCalculation} />
+        ) : null}
       </View>
 
       <AppCard style={styles.card}>
@@ -284,14 +333,22 @@ export function CalculationDetailView({
       title="Tarjous"
       onClose={() => setOpenDocument(null)}
     >
-      <TarjousExportForm offer={pdf.offer} />
+      <TarjousExportForm
+        offer={pdf.offer}
+        attachments={attachments}
+        onShowAttachments={showAttachments}
+      />
     </DocumentFormModal>
     <DocumentFormModal
       visible={openDocument === 'urakkakortti' && pdf.manualLines === null}
       title="Urakkakortti"
       onClose={() => setOpenDocument(null)}
     >
-      <UrakkakorttiExportForm card={pdf.card} />
+      <UrakkakorttiExportForm
+        card={pdf.card}
+        attachments={attachments}
+        onShowAttachments={showAttachments}
+      />
     </DocumentFormModal>
     <DocumentReadySheet
       document={pdf.readyDocument}
@@ -476,6 +533,7 @@ function createStyles(colors: AppColorPalette) {
     },
     actions: {
       marginTop: 8,
+      gap: 8,
     },
     documents: {
       gap: 16,

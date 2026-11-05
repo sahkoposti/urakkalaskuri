@@ -116,6 +116,12 @@ export interface FormSnapshot {
    */
   ktvPageIncluded?: boolean;
   /**
+   * Liitekuvien asettelu PDF:ssä. Valinnainen avain samassa `form_snapshot`-JSON:ssa.
+   * Puuttuva avain = kaksi kuvaa sivulla. `one_per_page` = yksi iso kuva.
+   * Ei lomakepohjan avain eikä SQL-migraatio. Kopioituu laskelman mukana.
+   */
+  attachmentPageLayout?: 'two_per_page' | 'one_per_page';
+  /**
    * Urakkakortin tila. Valinnainen avain samassa `form_snapshot`-JSON:ssa.
    * Puuttuva avain = `alihankkija`. Ei lomakepohjan avain eikä SQL-migraatio.
    */

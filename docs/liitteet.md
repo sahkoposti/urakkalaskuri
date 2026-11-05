@@ -1,6 +1,8 @@
-# Liitteet (L1–L3)
+# Liitteet (L1–L4)
 
-Pakettiversio yhä **v1.3.1**. Valitsin ja kuvateksti tulevat myöhemmin. Kuvien pikselityö (expo-image-manipulator) tulee L4:ssä. Versio nousee 1.3.2:een vasta L4:ssä.
+Pakettiversio **v1.3.2**. Kuvat pienennetään lisäyshetkellä (`expo-image-manipulator` 14.0.8): pisin sivu enintään 1600 px, JPEG 0,7, uusi tiedosto ilman EXIF-tietoja. Vain käsitelty tiedosto tallennetaan. PDF kopioidaan ja puretaan `prepareAttachmentPdf`-funktiolla. Raja on 20 kuvaa laskelmaa kohti, 10 Mt / 25 Mt / 50 sivua (`checkAttachmentLimits`).
+
+Asettelu (2 kuvaa/sivu tai 1 iso kuva) tallennetaan laskelman `form_snapshot`-avaimeen `attachmentPageLayout`. Puuttuva avain on 2 kuvaa/sivu. Avain kopioituu laskelman mukana. Uutta SQL-saraketta ei ole.
 
 Taulu `attachments`. Migraatio on `CREATE TABLE IF NOT EXISTS` (`ensureAttachmentsTable`) ja nostaa `PRAGMA user_version` arvoon 3, jos se on pienempi. Ajo kahdesti ei tyhjennä rivejä eikä laske versiota.
 
@@ -45,7 +47,7 @@ Jos yhdistäminen heittää, kutsuja saa virheilmoituksen eikä poikkeusta. Tarj
 
 Kohde `offer` tai `both` menee tarjoukseen, `card` tai `both` korttiin. `none` ei tulostu. Järjestys on `sort_order`.
 
-Kuvan pisin sivu pienennetään enintään 1600 pikseliin, JPEG-laatu on 0,7, eikä kuvaa suurenneta. Päätös on `imageResizePlan(leveys, korkeus)`. Oletuslataus palauttaa alkuperäisen tiedoston data-URI:na. Pienennys tehdään vasta L4:ssä injektoidussa `loadImageDataUri`-toteutuksessa.
+Kuvan pisin sivu pienennetään enintään 1600 pikseliin lisäyshetkellä, JPEG-laatu on 0,7, eikä kuvaa suurenneta. Päätös on `imageResizePlan(leveys, korkeus)`. Uusi JPEG-tiedosto korvaa alkuperäisen, joten EXIF ei jää mukaan. `loadImageDataUri` lukee valmiin JPEG:n sellaisenaan, kun mitat mahtuvat rajaan. Muuten se kirjoittaa kuvan uudelleen.
 
 Kuvien arvioitu koko on tiedostokoko × 4/3. Yli 15 Mt antaa varoituksen. Kuvat otetaan silti mukaan.
 
@@ -79,3 +81,30 @@ Puuttuva kuvatiedosto ohitetaan. Puuttuva tai lukukelvoton PDF ohitetaan. Jos yh
 | Jakelu | CJS (`cjs/index.js`), Jestissä ilman selainkentän muunnosta |
 
 `npm audit --omit=dev` projektissa päättyy yhä koodiin 1: 29 olemassa olevaa Expo- ja React Native -haavoittuvuutta (1 matala, 15 keskitaso, 12 korkea, 1 kriittinen). Raportissa ei ole `@cantoo/pdf-lib`-pakettia eikä sen riippuvuuksia. Kirjaston oma esikatsaus oli 0 haavoittuvuutta.
+
+## L4: valinta ja oikeudet
+
+Paketit (SDK 54, `npx expo install`): `expo-image-picker` 17.0.11, `expo-document-picker` 14.0.8, `expo-image-manipulator` 14.0.8. `@cantoo/pdf-lib` pysyy 2.11.1.
+
+`app.json` lisää pluginin `expo-image-picker`:
+
+- `cameraPermission`: `Sovellus tarvitsee kameran liitekuvien ottamiseen.`
+- `photosPermission`: `Sovellus tarvitsee kuvat liitteiden valitsemiseen.`
+- `microphonePermission`: `false` (estää `RECORD_AUDIO`)
+
+Kirjaston oma Android-manifesti (`expo-image-picker`) yhdistää silti `CAMERA`, `READ_EXTERNAL_STORAGE` ja `WRITE_EXTERNAL_STORAGE`. `READ_MEDIA_*` ei tule. `allowBackup` ei muutu (sitä ei ole `app.json`-tiedostossa). `versionCode` ei ole repossa; `eas.json` sanoo `appVersionSource: remote`.
+
+Dokumentit-välilehdellä on osio Liitteet: kuvateksti (enintään 120), kohde (Tarjous / Urakkakortti / Molemmat / Ei kumpaankaan, oletus Ei kumpaankaan), nuolet, poisto vahvistuksella, napit Ota kuva, Valitse kuvia (monivalinta) ja Valitse tiedosto (PDF/kuva). Tarjous- ja korttilomakkeella rivi `Liitteet: N tarjoukseen, M kortille` sulkee lomakkeen ja jättää käyttäjän Dokumentit-välilehdelle. Kopioi laskelma tallentaa kopion heti; epäonnistuminen siivoaa kopioidut tiedostot. Jos liitteitä kopioitui, ilmoituksessa on kertanäpäytys Poista kopioidut liitteet.
+
+## Laitechecklist (ei ajettu tässä PR:ssä)
+
+- Kamera: lupa, kuva pienenee ja EXIF katoaa.
+- Galleria: monivalinta, ei `READ_MEDIA_*`-lupaa.
+- Tiedostovalitsin: kuva ja PDF, myös omistajasalattu PDF (tyhjä käyttäjäsalasana kelpaa, käyttäjäsalasana hylätään suomeksi).
+- 20 kuvan raja ja 21. kuvan hylkäys.
+- Tarjous ja urakkakortti, joissa on liitteitä; yhdistetty PDF aukeaa.
+- Jako Gmailiin.
+- Laskelman kopiointi ja Poista kopioidut liitteet.
+- Ensimmäinen Metro-käännös: `@cantoo/pdf-lib` ja `fflate` mukana bundlessa.
+- Ensimmäinen Android-ajo: pdf-lib lukee expo-printin tulosteen.
+- Varmuuskopio (`allowBackup` ennallaan) ja oikeudet: `CAMERA` sekä kirjaston `READ_EXTERNAL_STORAGE` ja `WRITE_EXTERNAL_STORAGE`; ei `RECORD_AUDIO` eikä `READ_MEDIA_*`.

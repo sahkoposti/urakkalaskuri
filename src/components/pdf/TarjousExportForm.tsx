@@ -1,7 +1,9 @@
 import { Text } from 'react-native';
 
+import { AttachmentSummaryLink } from '@/src/components/attachments/AttachmentSection';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { AppInput, OutlinedButton } from '@/src/components/common';
+import type { Attachment } from '@/src/core/attachments/types';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 import { OFFER_EXPORT_FIELD_KINDS } from './exportFormFieldKinds';
@@ -9,11 +11,20 @@ import { createPdfFormStyles } from './pdfFormStyles';
 import type { PdfExportFormState } from './usePdfExportForm';
 
 /** Tarjouksen kentät ja yksi Luo tarjous -painike. */
-export function TarjousExportForm({ offer }: { offer: PdfExportFormState['offer'] }) {
+export function TarjousExportForm({
+  offer,
+  attachments,
+  onShowAttachments,
+}: {
+  offer: PdfExportFormState['offer'];
+  attachments: readonly Attachment[];
+  onShowAttachments: () => void;
+}) {
   const styles = useThemedStyles(createPdfFormStyles);
 
   return (
     <>
+      <AttachmentSummaryLink attachments={attachments} onPress={onShowAttachments} />
       {offer.showKtvPageChoice ? (
         <ChoiceToggle
           label="Sisällytä kotitalousvähennyslaskelma (KTV-sivu)"

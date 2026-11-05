@@ -123,7 +123,7 @@ describe('exportTarjousPdf', () => {
     deps.listAttachments = async () => items;
     await exportTarjousPdf('c1', app, deps);
     expect(printed[0].html).toBe('');
-    expect(printed[0].attachments).toEqual({ items, target: 'offer' });
+    expect(printed[0].attachments).toEqual({ items, target: 'offer', layout: 'two_per_page' });
     const empty = printed[0].composeHtml?.('') ?? '';
     expect(empty).toContain('Tarjous / sopimus');
     expect(empty).not.toContain('class="liitteet');
@@ -281,7 +281,7 @@ describe('exportUrakkakorttiPdf', () => {
     const { deps, app, printed } = setup(record({ name: 'Testi' }));
     deps.listAttachments = async () => [];
     await exportUrakkakorttiPdf('c1', app, deps);
-    expect(printed[0].attachments).toEqual({ items: [], target: 'card' });
+    expect(printed[0].attachments).toEqual({ items: [], target: 'card', layout: 'two_per_page' });
     const empty = printed[0].composeHtml?.('') ?? '';
     expect(empty).toContain('Urakkakortti');
     expect(empty).not.toContain('class="liitteet');
