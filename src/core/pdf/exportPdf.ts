@@ -1,3 +1,5 @@
+import type { Attachment } from '../attachments/types';
+import type { AttachmentPdfDeps } from '../attachments/prepareAttachmentPrint';
 import type { CompanyProfile } from '../company/types';
 import type { AppSettings, CalculationRecord, Product } from '../models/types';
 import { customerFromRecord } from '../models/types';
@@ -52,6 +54,9 @@ export type PdfExportDeps = {
   insertDocument: (input: NewDocumentInput) => Promise<unknown>;
   removeStoredPdf: (relativePath: string) => void;
   now: () => Date;
+  /** Puuttuu testeissä ja vanhassa kutsussa: tuloste ilman liitteitä. */
+  listAttachments?: (calculationId: string) => Promise<Attachment[]>;
+  attachmentPdfDeps?: AttachmentPdfDeps;
 };
 
 async function storeExportedPdf(
@@ -65,6 +70,9 @@ async function storeExportedPdf(
     inputs: NewDocumentInput['inputs'];
     total: number | null;
     createdAt: string;
+    attachments?: GeneratePdfOptions['attachments'];
+    composeHtml?: GeneratePdfOptions['composeHtml'];
+    attachmentDeps?: GeneratePdfOptions['attachmentDeps'];
   },
 ): Promise<ExportedDocument> {
   const id = deps.newDocumentId();
@@ -73,6 +81,13 @@ async function storeExportedPdf(
     fileName: input.fileName,
     calculationId: input.calculationId,
     documentId: id,
+    ...(input.attachments
+      ? {
+          attachments: input.attachments,
+          composeHtml: input.composeHtml,
+          attachmentDeps: input.attachmentDeps,
+        }
+      : {}),
   });
   await commitStoredDocument(
     placed.relativePath,
@@ -98,7 +113,13 @@ async function storeExportedPdf(
     numberOfPages: placed.numberOfPages,
     kind: input.kind,
     offerNumber: input.offerNumber,
+    warnings: placed.warnings ?? [],
   };
+}
+
+async function listedAttachments(deps: PdfExportDeps, calculationId: string): Promise<Attachment[] | null> {
+  if (!deps.listAttachments) return null;
+  return deps.listAttachments(calculationId);
 }
 
 async function requireCalculation(deps: PdfExportDeps, id: string): Promise<CalculationRecord> {
@@ -144,17 +165,26 @@ export async function exportTarjousPdf(
     generatedAt,
     offerNumber,
   });
-  const html = renderTarjousHtml(ctx, { logoDataUri, accentColor: app.settings.theme?.accentColor });
+  const items = await listedAttachments(deps, calculationId);
+  const renderOffer = (sectionHtml: string) =>
+    renderTarjousHtml(ctx, {
+      logoDataUri,
+      accentColor: app.settings.theme?.accentColor,
+      ...(sectionHtml ? { attachmentHtml: sectionHtml } : {}),
+    });
   const fileName = buildPdfFileName({ kind: 'Tarjous', customerName: customerFromRecord(record).name, date: generatedAt, offerNumber });
   return storeExportedPdf(deps, {
     calculationId,
     kind: 'tarjous',
     offerNumber,
-    html,
+    html: items ? '' : renderOffer(''),
     fileName,
     inputs: tarjousDocumentInputs(record, offerCompany.offerValidDays),
     total: tarjousDocumentTotal(record),
     createdAt: generatedAt.toISOString(),
+    ...(items
+      ? { attachments: { items, target: 'offer' as const }, composeHtml: renderOffer, attachmentDeps: deps.attachmentPdfDeps }
+      : {}),
   });
 }
 
@@ -238,17 +268,26 @@ export async function exportUrakkakorttiPdf(
     sivukulukerroin: offerCompany.sivukulukerroin,
     offerStructureSettings,
   });
-  const html = renderUrakkakorttiHtml(ctx, { logoDataUri, accentColor: app.settings.theme?.accentColor });
+  const items = await listedAttachments(deps, calculationId);
+  const renderCard = (sectionHtml: string) =>
+    renderUrakkakorttiHtml(ctx, {
+      logoDataUri,
+      accentColor: app.settings.theme?.accentColor,
+      ...(sectionHtml ? { attachmentHtml: sectionHtml } : {}),
+    });
   const fileName = buildPdfFileName({ kind: 'Urakkakortti', customerName: customerFromRecord(record).name, date: generatedAt });
   const document = await storeExportedPdf(deps, {
     calculationId,
     kind: 'urakkakortti',
     offerNumber: null,
-    html,
+    html: items ? '' : renderCard(''),
     fileName,
     inputs: urakkakorttiDocumentInputs(record),
     total: urakkakorttiDocumentTotal(record, offerCompany.sivukulukerroin),
     createdAt: generatedAt.toISOString(),
+    ...(items
+      ? { attachments: { items, target: 'card' as const }, composeHtml: renderCard, attachmentDeps: deps.attachmentPdfDeps }
+      : {}),
   });
   return { status: 'done', ...document };
 }

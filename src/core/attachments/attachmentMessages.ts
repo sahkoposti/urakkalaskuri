@@ -1,4 +1,8 @@
 import {
+  ATTACHMENT_IMAGE_SECTION_WARN_BYTES,
+  ATTACHMENT_MAX_IMAGES_PER_PDF,
+} from './attachmentPrintPlan';
+import {
   MAX_ATTACHMENT_PDF_BYTES,
   MAX_ATTACHMENT_PDF_PAGES,
   MAX_TOTAL_ATTACHMENT_BYTES,
@@ -24,6 +28,31 @@ export const ATTACHMENT_PDF_TOO_MANY_PAGES_MESSAGE =
 
 export const ATTACHMENT_PDF_MERGE_FAILED_MESSAGE =
   'Liitteiden yhdistäminen epäonnistui. Tarjous voidaan jakaa ilman liitteitä.';
+
+const imageWarnMegabytes = ATTACHMENT_IMAGE_SECTION_WARN_BYTES / (1024 * 1024);
+
+export const ATTACHMENT_IMAGE_SECTION_TOO_LARGE_MESSAGE =
+  `Kuvien arvioitu koko ylittää ${imageWarnMegabytes} Mt.`;
+
+export function attachmentImagesCappedMessage(skipped: number): string {
+  const head =
+    skipped === 1
+      ? 'Yksi kuva jätettiin pois.'
+      : `${skipped} kuvaa jätettiin pois.`;
+  return `${head} Tarjoukseen mahtuu enintään ${ATTACHMENT_MAX_IMAGES_PER_PDF} kuvaa.`;
+}
+
+export function attachmentImageMissingMessage(name: string): string {
+  return `Kuvaa ei voitu lisätä: ${name}.`;
+}
+
+export function attachmentPdfMissingMessage(name: string): string {
+  return `PDF-liitettä ei voitu lukea: ${name}. Tarjous voidaan jakaa ilman tätä liitettä.`;
+}
+
+export function attachmentImageSectionTooLargeMessage(): string {
+  return ATTACHMENT_IMAGE_SECTION_TOO_LARGE_MESSAGE;
+}
 
 const MESSAGES: Record<AttachmentPdfFailureReason, string> = {
   password: ATTACHMENT_PDF_PASSWORD_MESSAGE,

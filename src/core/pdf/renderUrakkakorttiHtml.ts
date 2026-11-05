@@ -53,9 +53,10 @@ function renderUrakkakorttiTitle(ctx: UrakkakorttiContext): string {
   return `<h1 class="uk-title"><span class="uk-title-text">${escapeHtml(ctx.modeLabel)}</span>${sum}</h1>`;
 }
 
-export function renderUrakkakorttiBody(ctx: UrakkakorttiContext): string {
+export function renderUrakkakorttiBody(ctx: UrakkakorttiContext, attachmentHtml = ''): string {
   const parts: string[] = [renderUrakkakorttiTitle(ctx)];
   for (const kind of urakkakorttiBodyBlocks(ctx)) parts.push(renderUrakkakorttiBlock(ctx, kind));
+  if (attachmentHtml) parts.push(attachmentHtml);
   return parts.join('\n');
 }
 
@@ -75,5 +76,8 @@ const URAKKAKORTTI_CSS = `
 
 export function renderUrakkakorttiHtml(ctx: UrakkakorttiContext, options: RenderTarjousOptions = {}): string {
   const css = `${URAKKAKORTTI_CSS}${printedSectionCss}`;
-  return renderDocument(ctx, renderUrakkakorttiBody(ctx), options).replace('</style>', `${css}</style>`);
+  return renderDocument(ctx, renderUrakkakorttiBody(ctx, options.attachmentHtml ?? ''), options).replace(
+    '</style>',
+    `${css}</style>`,
+  );
 }

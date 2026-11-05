@@ -48,6 +48,11 @@ export function DocumentReadySheet({
           <Text style={styles.fileName}>{document.fileName}</Text>
           <Text style={styles.meta}>{documentPageCountLabel(document.numberOfPages)}</Text>
           <Text style={styles.saved}>{DOCUMENT_SAVED_IN_APP}</Text>
+          {document.warnings.map((warning, index) => (
+            <Text key={`${index}-${warning}`} style={styles.error}>
+              {warning}
+            </Text>
+          ))}
           {phone ? (
             <Text style={phone.status === 'failed' ? styles.error : styles.saved}>
               {phoneStatusLabel(phone.status, phone.error)}

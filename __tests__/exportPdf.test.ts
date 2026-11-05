@@ -1,6 +1,7 @@
 import { exportTarjousPdf, exportUrakkakorttiPdf, type PdfExportDeps } from '../src/core/pdf/exportPdf';
 import { assignOfferNumber } from '../src/core/pdf/offerNumber';
 import { recordWithManualContractPrices } from '../src/core/pdf/manualContract';
+import type { Attachment } from '../src/core/attachments/types';
 import type { GeneratePdfOptions } from '../src/core/pdf/generatePdf';
 import type { NewDocumentInput } from '../src/core/documents/types';
 import type { CalculationRecord } from '../src/core/models/types';
@@ -48,6 +49,7 @@ function setup(rec: CalculationRecord) {
         relativePath: `documents/c1/${options.documentId}.pdf`,
         numberOfPages: 2,
         fileName: options.fileName,
+        warnings: [],
       };
     },
     newDocumentId: () => `doc-${++documentSeq}`,
@@ -97,6 +99,37 @@ describe('exportTarjousPdf', () => {
     expect(inserted[0]?.summary.pages).toBe(2);
     expect(inserted[0]?.offerNumber).toBe(first.offerNumber);
     expect(inserted[0]?.inputs).toMatchObject({ ktvPageIncluded: true });
+    expect(first.warnings).toEqual([]);
+  });
+
+  it('passes offer attachments to generatePdf and leaves an empty section out of the html', async () => {
+    const { deps, app, printed } = setup(record({ name: 'Testi Asiakas' }));
+    const items: Attachment[] = [
+      {
+        id: 'img-1',
+        calculationId: 'c1',
+        kind: 'image',
+        destination: 'offer',
+        caption: 'Julkisivu',
+        fileRelPath: 'attachments/c1/img-1.jpg',
+        mime: 'image/jpeg',
+        sizeBytes: 10,
+        width: 10,
+        height: 10,
+        sortOrder: 0,
+        createdAt: '2026-01-01T00:00:00.000Z',
+      },
+    ];
+    deps.listAttachments = async () => items;
+    await exportTarjousPdf('c1', app, deps);
+    expect(printed[0].html).toBe('');
+    expect(printed[0].attachments).toEqual({ items, target: 'offer' });
+    const empty = printed[0].composeHtml?.('') ?? '';
+    expect(empty).toContain('Tarjous / sopimus');
+    expect(empty).not.toContain('class="liitteet');
+    expect(printed[0].composeHtml?.('<section class="liitteet page-break">x</section>')).toContain(
+      'class="liitteet page-break"',
+    );
   });
 
   it('removes the saved file when the document row cannot be inserted and does not share', async () => {
@@ -242,5 +275,15 @@ describe('exportUrakkakorttiPdf', () => {
     expect(printed[0].html).toContain('Sisältää telineet.');
     expect(printed[0].html).toContain('>Muuta<');
     expect(printed[0].html).not.toContain('Lisätiedot:');
+  });
+
+  it('passes card attachments to generatePdf', async () => {
+    const { deps, app, printed } = setup(record({ name: 'Testi' }));
+    deps.listAttachments = async () => [];
+    await exportUrakkakorttiPdf('c1', app, deps);
+    expect(printed[0].attachments).toEqual({ items: [], target: 'card' });
+    const empty = printed[0].composeHtml?.('') ?? '';
+    expect(empty).toContain('Urakkakortti');
+    expect(empty).not.toContain('class="liitteet');
   });
 });

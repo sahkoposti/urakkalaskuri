@@ -16,6 +16,8 @@ export type RenderTarjousOptions = {
   offerAccentBar?: boolean;
   bodyClass?: string;
   leadingHtml?: string;
+  /** Liitteet-osio KTV-sivun jälkeen. Tyhjä tai puuttuva ei muuta HTML:ää. */
+  attachmentHtml?: string;
 };
 
 const lines = (values: string[]) => values.map((value) => escapeHtml(value)).join('<br />');
@@ -147,7 +149,7 @@ ${bodyHtml}
 </html>`;
 }
 
-export function renderTarjousBody(ctx: TarjousPdfContext): string {
+export function renderTarjousBody(ctx: TarjousPdfContext, attachmentHtml = ''): string {
   // KTV-sivu aina viimeisenä (vain yksityisasiakas ilman käänteistä ALV:ta).
   // Sarakeotsikko kerran, ensimmäisen hinnoitellun rakenneotsikon yläpuolella.
   // Toimitus jää osioiden edelle.
@@ -165,13 +167,14 @@ export function renderTarjousBody(ctx: TarjousPdfContext): string {
     renderAdditionalInfo(ctx.additionalInfo),
     renderSignature(ctx.signature),
     renderKotitalousPageHtml(ctx),
+    attachmentHtml,
   ]
     .filter(Boolean)
     .join('\n');
 }
 
 export function renderTarjousHtml(ctx: TarjousPdfContext, options: RenderTarjousOptions = {}): string {
-  return renderDocument(ctx, renderTarjousBody(ctx), {
+  return renderDocument(ctx, renderTarjousBody(ctx, options.attachmentHtml ?? ''), {
     ...options,
     offerAccentBar: true,
     bodyClass: 'doc-offer',

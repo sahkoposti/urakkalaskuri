@@ -1,5 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 
+import { defaultAttachmentPdfDeps } from '../attachments/attachmentPdfIo';
+import { listAttachments } from '../attachments/attachmentsRepository';
 import { readAppVersion } from '../documents/appVersion';
 import { removeStoredPdf } from '../documents/documentFiles';
 import { insertDocument } from '../documents/documentsRepository';
@@ -38,4 +40,6 @@ export const pdfExportDeps: PdfExportDeps = {
   insertDocument,
   removeStoredPdf,
   now: () => new Date(),
+  listAttachments,
+  attachmentPdfDeps: defaultAttachmentPdfDeps(),
 };
