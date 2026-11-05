@@ -144,7 +144,13 @@ describe('offerMaterialsVatIncluded', () => {
 
 describe('buildPdfContext', () => {
   it('private customer: VAT-inclusive price block, no Ale row at 0 %, KTV data present', () => {
-    const ctx = buildPdfContext(input(record({})));
+    const base = input(record({}));
+    const ctx = buildPdfContext({
+      ...base,
+      structures: base.structures.map((item) =>
+        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'Sisältää telineet.' } : item,
+      ),
+    });
     expect(ctx.price.includesVat).toBe(true);
     expect(labels(ctx.price.rows)).toEqual(['Yhteensä alv 0', 'Alv 25,5 %', 'Yhteensä sis. alv']);
     expect(ctx.price.rows.at(-1)?.emphasis).toBe(true);
@@ -336,15 +342,21 @@ describe('buildPdfContext', () => {
   });
 
   it('multi-structure: each structure section gets its own Tarjous text', () => {
-    const ctx = buildPdfContext(
-      input(record({}, { structureLines: [line('l2', 's2', 'Sokkeli', '30'), line('l1', 's1', 'Ulkomaalaus')] })),
-    );
+    const base = input(record({}, { structureLines: [line('l2', 's2', 'Sokkeli', '30'), line('l1', 's1', 'Ulkomaalaus')] }));
+    const ctx = buildPdfContext({
+      ...base,
+      structures: base.structures.map((item) =>
+        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'Sisältää telineet.' } : item,
+      ),
+    });
     expect(ctx.rows.map((row) => row.name)).toEqual(['Sokkeli', 'Ulkomaalaus']);
     expect(ctx.sections.map((section) => section.title)).toEqual(['Sokkeli', 'Ulkomaalaus']);
     expect(ctx.sections.map((section) => section.textGroups.find((group) => group.group === 'muuta')?.items)).toEqual([
-      ['Toinen teksti'],
       undefined,
+      ['Sisältää telineet.'],
     ]);
+    expect(JSON.stringify(ctx.sections)).not.toContain('Toinen teksti');
+    expect(JSON.stringify(ctx.sections)).not.toContain('VANHA_EI_TULOSTU');
     expect(ctx.additionalInfo).toBe('');
   });
 

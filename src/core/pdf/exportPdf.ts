@@ -1,4 +1,5 @@
 import { resolveOfferAttachmentLayout } from '../attachments/attachmentSectionHtml';
+import { attachmentsForDestination, splitAttachments } from '../attachments/attachmentPrintPlan';
 import type { Attachment } from '../attachments/types';
 import type { AttachmentPdfDeps } from '../attachments/prepareAttachmentPrint';
 import type { CompanyProfile } from '../company/types';
@@ -192,7 +193,9 @@ export async function exportTarjousPdf(
           attachments: {
             items,
             target: 'offer' as const,
-            layout: resolveOfferAttachmentLayout(),
+            layout: resolveOfferAttachmentLayout(
+              splitAttachments(attachmentsForDestination(items, 'offer')).images.map((image) => image.caption),
+            ),
           },
           composeHtml: renderOffer,
           attachmentDeps: deps.attachmentPdfDeps,

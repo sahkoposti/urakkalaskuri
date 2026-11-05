@@ -62,6 +62,14 @@ export function sivukulukerroinDraftError(raw: string): string | null {
   return parseSivukulukerroinInput(raw) === 'invalid' ? SIVUKULUKERROIN_INVALID_MESSAGE : null;
 }
 
+/**
+ * Tulosteen kerroin. Sama normalisointi kuin asetusten tallennuksessa:
+ * kelvollinen arvo (suurempi kuin 1 ja enintään 3) säilyy, muuten oletus 1,5.
+ */
+export function printSivukulukerroin(value: unknown): number {
+  return normalizeSivukulukerroin(value);
+}
+
 function normalizeSivukulukerroin(value: unknown): number {
   if (typeof value === 'number' && Number.isFinite(value) && value > 1 && value <= 3) return value;
   if (typeof value === 'string') {

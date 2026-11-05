@@ -11,7 +11,7 @@ import { isManualStructureId } from '@/src/core/structure/types';
 import { lineSpecSnapshot } from './offerPageSpecs';
 import { printableFields, type PrintRow } from './printableFields';
 import { appendPrintedText, buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from './printedSection';
-import { firstPrintedStructureNote } from './structureExtraText';
+import { firstStructureLisatiedot } from './structureExtraText';
 import type { OfferStructureSettings } from './types';
 
 /**
@@ -110,14 +110,6 @@ function urakkakorttiPrintRows(
   }).filter((row) => !isEuroPrintRow(row));
 }
 
-/** Rakenteen Muuta-teksti sellaisenaan. Tyhjä tai pelkkä väli ei tulostu. */
-export function structureMuutaText(
-  settings: Record<string, OfferStructureSettings | undefined> | undefined,
-  structureId: string,
-): string {
-  return settings?.[structureId]?.additionalInfoText?.trim() ?? '';
-}
-
 function withStructureMuuta(section: UrakkakorttiSection, muuta: string): UrakkakorttiSection {
   if (!muuta) return section;
   const body = { textGroups: section.textGroups.map((group) => ({ ...group, items: [...group.items] })), tableRows: [...section.tableRows] };
@@ -135,9 +127,7 @@ export function buildUrakkakorttiSections(
 ): UrakkakorttiSection[] {
   const reverseVat = Boolean(customerFromRecord(source.record).reverseVat);
   const lines = ensureStructureLines(source.record);
-  const printedNote = firstPrintedStructureNote(lines, (line) =>
-    structureMuutaText(options?.offerStructureSettings, line.structureId),
-  );
+  const printedNote = firstStructureLisatiedot(lines, source.structures);
   const sections: UrakkakorttiSection[] = [];
   for (const line of lines) {
     const muuta = printedNote?.lineId === line.id ? printedNote.text : '';

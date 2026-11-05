@@ -64,7 +64,13 @@ function setup(rec: CalculationRecord) {
     },
     now: () => new Date(2026, 9, 29),
   };
-  const app = { settings: base.settings, products: base.products, structures: base.structures };
+  const app = {
+    settings: base.settings,
+    products: base.products,
+    structures: base.structures.map((item) =>
+      item.id === 's1' ? { ...item, defaultAdditionalInfo: 'Sisältää telineet.' } : item,
+    ),
+  };
   return {
     deps,
     app,
@@ -274,6 +280,7 @@ describe('exportUrakkakorttiPdf', () => {
     expect(inserted[0]?.offerNumber).toBeNull();
     expect(printed[0].html).toContain('Sisältää telineet.');
     expect(printed[0].html).toContain('>Muuta<');
+    expect(printed[0].html).not.toContain('VANHA_EI_TULOSTU');
     expect(printed[0].html).not.toContain('Lisätiedot:');
   });
 
@@ -291,6 +298,7 @@ describe('exportUrakkakorttiPdf', () => {
     expect(printed[0].html).not.toContain(companyText);
     expect(printed[0].html).toContain('Sisältää telineet.');
     expect(printed[0].html).toContain('>Muuta<');
+    expect(printed[0].html).not.toContain('VANHA_EI_TULOSTU');
   });
 
   it('passes card attachments to generatePdf', async () => {

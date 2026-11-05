@@ -176,7 +176,7 @@ export function StructureLineCard({
       {showAdditionalInfo ? (
         <AppInput
           label="Lisätiedot"
-          value={priced.additionalInfo ?? ''}
+          value={(priced.additionalInfo ?? '').trim() ? priced.additionalInfo ?? '' : structure?.defaultAdditionalInfo ?? ''}
           onChangeText={(value) => patch({ additionalInfo: value })}
           kind="sentence"
           multiline

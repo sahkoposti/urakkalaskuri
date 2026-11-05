@@ -1,8 +1,9 @@
 import { router, Stack, type Href } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 
 import { SectionTitle } from '@/src/components/common';
 import { SettingsNavCard } from '@/src/components/SettingsNavCard';
+import { formatAppVersionLabel, readAppVersion } from '@/src/core/documents/appVersion';
 
 export default function SettingsScreen() {
   return (
@@ -35,6 +36,7 @@ export default function SettingsScreen() {
           subtitle="Värit, taustakuva"
           onPress={() => router.push('/settings/theme')}
         />
+        <Text style={styles.version}>{formatAppVersionLabel(readAppVersion())}</Text>
       </ScrollView>
     </>
   );
@@ -44,5 +46,10 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 40,
+  },
+  version: {
+    marginTop: 16,
+    color: '#333',
+    fontSize: 13,
   },
 });

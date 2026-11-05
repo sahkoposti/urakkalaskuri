@@ -197,7 +197,12 @@ describe('urakkakortti työntekijä and huomioitavaa', () => {
     expect(ctx.modeLabel).toBe('Urakkakortti');
     expect(ctx.contractSum).toBe(formatCurrency(200));
     expect(ctx.employeeSum).toBe(formatCurrency(133.34));
-    expect(ctx.contractRows).toEqual([]);
+    expect(ctx.contractRows.map((row) => row.label)).toEqual([
+      'Urakka: Ulkomaalaus',
+      'Urakka: Sokkeli',
+      'Urakka: Nolla',
+      'Urakka yhteensä (alv0)',
+    ]);
     const html = renderUrakkakorttiHtml(ctx);
     const cardBody = bodyOf(html);
     expect(html).not.toMatch(/kerroin/i);
@@ -208,7 +213,7 @@ describe('urakkakortti työntekijä and huomioitavaa', () => {
     const unchanged = buildUrakkakorttiContext(input(base));
     expect(unchanged.modeLabel).toBe('Urakkakortti');
     expect(unchanged.contractSum).toBe(formatCurrency(200));
-    expect(unchanged.employeeSum).toBeNull();
+    expect(unchanged.employeeSum).toBe(formatCurrency(133.34));
   });
 
   it('blocks Työntekijä on NaN, Infinity and a negative contract, and keeps a real zero', () => {
@@ -258,7 +263,7 @@ describe('urakkakortti työntekijä and huomioitavaa', () => {
     const overridden = calculationWithUrakkakorttiRivihinnat(base, { a: 3000, b: 0 });
     const ali = buildUrakkakorttiContext(input(overridden));
     expect(ali.contractSum).toBe(formatCurrency(3000));
-    expect(ali.employeeSum).toBeNull();
+    expect(ali.employeeSum).toBe(formatCurrency(2000));
     const employee = calculationWithUrakkakorttiMode(overridden, 'tyontekija');
     const ctx = buildUrakkakorttiContext({ ...input(employee), sivukulukerroin: 1.5 });
     expect(ctx.contractSum).toBe(formatCurrency(3000));

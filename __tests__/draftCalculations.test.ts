@@ -9,7 +9,7 @@ jest.mock('expo-crypto', () => ({
 }));
 
 jest.mock('../src/core/attachments/attachmentFiles', () => ({
-  deleteCalculationAttachmentFolder: () => undefined,
+  deleteCalculationAttachmentFolder: jest.fn(),
 }));
 jest.mock('../src/core/documents/documentFiles', () => ({
   deleteCalculationDocumentFolder: () => undefined,
@@ -67,11 +67,11 @@ import {
 } from '../src/core/database/database';
 import type { PersistedWizardDraft } from '../src/core/models/types';
 import {
-  completeCalculations,
   draftCalculationFromWizard,
   isDraftCalculation,
   wizardDraftFromCalculation,
 } from '../src/core/wizard/draftCalculation';
+import { deleteCalculationAttachmentFolder } from '../src/core/attachments/attachmentFiles';
 import { record } from './pdfFixtures';
 
 const V3_SQL = `
@@ -207,7 +207,7 @@ describe('draft calculations', () => {
     const listed = await getCalculations();
     const drafts = listed.filter((row) => isDraftCalculation(row));
     expect(drafts.map((row) => row.projectName).sort()).toEqual(['Keskeneräinen Malli', 'Toinen luonnos']);
-    expect(completeCalculations(listed)).toHaveLength(2);
+    expect(listed.filter((row) => !isDraftCalculation(row))).toHaveLength(2);
 
     const finished = {
       ...record({ name: 'Toinen luonnos' }),
@@ -220,9 +220,18 @@ describe('draft calculations', () => {
     expect(afterFinish.filter((row) => row.id === 'draft-2')).toHaveLength(1);
     expect(afterFinish.find((row) => row.id === 'draft-2')?.status).toBe('complete');
 
+    await current.runAsync(
+      `INSERT INTO attachments (id, calculation_id) VALUES ('att-draft', 'id-1')`,
+    );
+    await current.runAsync(
+      `INSERT INTO documents (id, calculation_id) VALUES ('doc-draft', 'id-1')`,
+    );
     await deleteCalculation('id-1');
     expect(await getCalculation('id-1')).toBeNull();
     expect((await getCalculations()).some((row) => row.id === 'id-1')).toBe(false);
+    expect(await current.getAllAsync('SELECT id FROM attachments WHERE calculation_id = ?', 'id-1')).toEqual([]);
+    expect(await current.getAllAsync('SELECT id FROM documents WHERE calculation_id = ?', 'id-1')).toEqual([]);
+    expect(deleteCalculationAttachmentFolder).toHaveBeenCalledWith('id-1');
   });
 
   it('does not lower a newer schema version when the column already exists', async () => {

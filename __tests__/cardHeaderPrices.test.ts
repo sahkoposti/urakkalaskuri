@@ -6,8 +6,8 @@ import {
   calculationWithUrakkakorttiRivihinnat,
   cardHeaderPrices,
   readUrakkakorttiMode,
-  usableSivukulukerroin,
 } from '../src/core/pdf/urakkakorttiCard';
+import { printSivukulukerroin } from '../src/core/pdf/defaultOfferSettings';
 import { input, line, record } from './pdfFixtures';
 
 function cardHtml(rec: ReturnType<typeof record>, factor?: number) {
@@ -31,7 +31,7 @@ describe('card header prices', () => {
   });
 
   it('prints 342,39 and 228,26 once each', () => {
-    expect(usableSivukulukerroin(1.5)).toBe(1.5);
+    expect(printSivukulukerroin(1.5)).toBe(1.5);
     expect(cardHeaderPrices(priced, 1.5)).toEqual({ alihankkija: 342.39, tyontekija: 228.26 });
     const html = cardHtml(priced, 1.5);
     expect(html).toContain('Urakkasumma alihankkija');
@@ -45,15 +45,17 @@ describe('card header prices', () => {
     expect(urakkakorttiDocumentTotal(priced, 1.5)).toBe(342.39);
   });
 
-  it('keeps a per-line override and skips a useless factor', () => {
+  it('keeps a per-line override and falls back to 1,5 when the factor is invalid', () => {
     const overridden = calculationWithUrakkakorttiRivihinnat(priced, { l1: 300 });
     expect(cardHeaderPrices(overridden, 1.5)).toEqual({ alihankkija: 300, tyontekija: 200 });
-    expect(cardHeaderPrices(priced, 1).tyontekija).toBeNull();
     expect(cardHeaderPrices(priced, 3).tyontekija).toBe(114.13);
-    expect(cardHeaderPrices(priced, 3.01).tyontekija).toBeNull();
-    expect(cardHeaderPrices(priced, Number.NaN).tyontekija).toBeNull();
-    expect(cardHeaderPrices(priced, undefined).tyontekija).toBeNull();
-    expect(cardHtml(priced, 0.5)).not.toContain('Urakkasumma työntekijä');
+    for (const factor of [1, 0.5, 3.01, Number.NaN, undefined]) {
+      expect(printSivukulukerroin(factor)).toBe(1.5);
+      expect(cardHeaderPrices(priced, factor)).toEqual({ alihankkija: 342.39, tyontekija: 228.26 });
+    }
+    const html = cardHtml(priced, 0.5);
+    expect(html).toContain('Urakkasumma työntekijä');
+    expect(html).toContain('228,26');
     expect(urakkakorttiDocumentTotal(calculationWithUrakkakorttiMode(priced, 'tyontekija'), 1.5)).toBe(342.39);
   });
 

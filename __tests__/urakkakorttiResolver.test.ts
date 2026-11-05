@@ -522,7 +522,7 @@ describe('urakkakortti print resolver', () => {
     expect(html).not.toContain('99,00');
     expect(html).not.toContain('sisältää 10');
     expect(html).not.toContain('Urakka (alv0)');
-    expect((html.match(/€/g) ?? []).length).toBe(1);
+    expect((html.match(/€/g) ?? []).length).toBe(2);
   });
 
   it('keeps the forbidden-string check in print mode', () => {
@@ -542,7 +542,7 @@ describe('urakkakortti print resolver', () => {
       expect(html).not.toMatch(/2\s510|2\s000,00|333,33|77,77|502,00/);
       expect(html).toContain('Urakkasumma alihankkija');
       expect(html).not.toContain('Urakka (alv0)');
-      expect((html.match(/€/g) ?? []).length).toBe(1);
+      expect((html.match(/€/g) ?? []).length).toBe(2);
     }
   });
 

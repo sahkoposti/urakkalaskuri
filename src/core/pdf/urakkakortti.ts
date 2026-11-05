@@ -6,15 +6,17 @@ import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
-import { estimateWorkDurationDays, formatCurrency } from '@/src/core/utils/formatters';
+import { estimateWorkDurationDays, formatCurrency, roundToCents } from '@/src/core/utils/formatters';
 
 import { buildFooter, customerHeaderLines, type PdfFooter, type PriceRow } from './buildPdfContext';
 import {
+  alihankkijaLineAmount,
   assertPrintableEmployeeContracts,
   cardHeaderPrices,
   effectiveHuomioitavaa,
   readUrakkakorttiHidePrices,
   readUrakkakorttiMode,
+  readUrakkakorttiRivihinnat,
   type UrakkakorttiMode,
 } from './urakkakorttiCard';
 import { lineSpecSnapshot, specCardsFromSnapshot, type SpecCard } from './offerPageSpecs';
@@ -181,8 +183,22 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
   const prices = hidePrices ? null : cardHeaderPrices(record, input.sivukulukerroin);
   if (!hidePrices) assertPrintableEmployeeContracts(record);
   const contractSum = prices ? formatCurrency(prices.alihankkija) : null;
-  const employeeSum = prices?.tyontekija == null ? null : formatCurrency(prices.tyontekija);
+  const employeeSum = prices ? formatCurrency(prices.tyontekija) : null;
   const contractRows: PriceRow[] = [];
+  if (prices && lines.length > 1) {
+    const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
+    for (const line of lines) {
+      contractRows.push({
+        label: `Urakka: ${line.name}`,
+        value: formatCurrency(roundToCents(alihankkijaLineAmount(line, overrides))),
+      });
+    }
+    contractRows.push({
+      label: 'Urakka yhteensä (alv0)',
+      value: formatCurrency(prices.alihankkija),
+      emphasis: true,
+    });
+  }
   const duration =
     lines.length === 1
       ? resolveDisplayedWorkDurationDays(lines[0], settings.weatherReserveFactor)

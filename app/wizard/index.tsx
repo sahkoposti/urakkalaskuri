@@ -757,7 +757,7 @@ export default function CalculationComposerScreen() {
                 }
                 onOpenForm={() => void openLineForm(line.id)}
                 onDelete={() => setDeleteLineId(line.id)}
-                showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id)}
+                showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id, structures)}
               />
               <MaterialQuantitiesEditor
                 line={line}

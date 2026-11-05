@@ -101,7 +101,7 @@ export function input(rec: CalculationRecord, overrides: Partial<BuildPdfContext
     company: { ...defaultCompanyProfile },
     offerCompany: { ...defaultOfferCompanySettings },
     offerStructureSettings: {
-      s1: { additionalInfoText: 'Sisältää telineet.', offerPages: [] },
+      s1: { additionalInfoText: 'VANHA_EI_TULOSTU', offerPages: [] },
       s2: { additionalInfoText: 'Toinen teksti', offerPages: [] },
     },
     structures: [structure('s1', 'Ulkomaalaus'), structure('s2', 'Sokkeli')],

@@ -15,11 +15,6 @@ export function isDraftCalculation(record: { status?: string | null } | null | u
   return calculationStatus(record) === CALCULATION_STATUS_DRAFT;
 }
 
-/** Valmiit laskelmat. Keskeneräisiä ei käytetä hinnoissa, viennissä eikä raporteissa. */
-export function completeCalculations<T extends { status?: string | null }>(records: T[]): T[] {
-  return records.filter((record) => !isDraftCalculation(record));
-}
-
 export function wizardDraftFromCalculation(record: CalculationRecord): PersistedWizardDraft | null {
   const stored = record.formSnapshot?.wizardDraft;
   if (!stored || typeof stored !== 'object') return null;

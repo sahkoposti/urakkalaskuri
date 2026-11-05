@@ -46,7 +46,7 @@ import { estimateWorkDurationDays } from '@/src/core/utils/formatters';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import { roundedLineCardPrices } from '@/src/core/pdf/offerDocument';
 import { isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
-import { structureRowShowsAdditionalInfo } from '@/src/core/pdf/structureExtraText';
+import { lineStructureLisatiedot, structureRowShowsAdditionalInfo } from '@/src/core/pdf/structureExtraText';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import { useApp } from '@/src/context/AppContext';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -312,7 +312,7 @@ export function CalculationDetailView({
           offerSnapshot={record.formSnapshot}
           weatherReserveFactor={settings.weatherReserveFactor}
           showPriceSummary={showStructureSummaries}
-          showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id)}
+          showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id, structures)}
           travelTimeHoursOneWay={record.travelTimeHoursOneWay}
         />
       ))}
@@ -420,9 +420,9 @@ function LineDetail({
           showDuration
         />
       ) : null}
-      {showAdditionalInfo && line.additionalInfo?.trim() ? (
+      {showAdditionalInfo && lineStructureLisatiedot(line, structures) ? (
         <AppCard>
-          <ResultRow label="Lisätiedot" value={line.additionalInfo.trim()} />
+          <ResultRow label="Lisätiedot" value={lineStructureLisatiedot(line, structures)} />
         </AppCard>
       ) : null}
       <SavedMaterialQuantities line={line} />

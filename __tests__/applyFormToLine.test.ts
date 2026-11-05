@@ -1,4 +1,7 @@
-import { applyRefreshedStructurePrices } from '../src/core/pdf/urakkakorttiCard';
+import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
+import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
+import { applyRefreshedStructurePrices, cardHeaderPrices } from '../src/core/pdf/urakkakorttiCard';
+import { input, record } from './pdfFixtures';
 import { applyFormResultToLine, patchStructureLine, saveIncompleteFormToLine } from '../src/core/structure/applyFormToLine';
 import type { StructureLine } from '../src/core/models/types';
 import type { CalculationResult } from '../src/core/calculation/calculationPipeline';
@@ -155,6 +158,23 @@ describe('applyFormToLine', () => {
     expect(next.overrides).toEqual(expect.arrayContaining(['contractPrice', 'unitPrice']));
     expect(next.priceRefreshed).toBeUndefined();
     expect(next.fieldValues.maali).toBe('sama');
+
+    const kept = applyFormResultToLine(overridden, result, { maali: 'sama' }, 7);
+    const cardOf = (structureLine: StructureLine) => {
+      const saved = applyRefreshedStructurePrices(
+        record({}, {
+          structureLines: [structureLine],
+          formSnapshot: { formId: 'f', formVersion: 1, fields: [], urakkakorttiRivihinnat: { l1: 61 } },
+        }),
+      );
+      expect(saved.formSnapshot?.urakkakorttiRivihinnat).toEqual({ l1: 61 });
+      expect(cardHeaderPrices(saved, undefined).alihankkija).toBe(61);
+      const html = renderUrakkakorttiHtml(buildUrakkakorttiContext({ ...input(saved), record: saved }));
+      expect(html).toContain('61,00');
+      expect(html).not.toContain('800,00');
+    };
+    cardOf(next);
+    cardOf(kept);
   });
 
   test('lisätiedot säilyvät lomakkeen jälkeen', () => {

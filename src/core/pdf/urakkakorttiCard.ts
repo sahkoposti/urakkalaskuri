@@ -4,7 +4,7 @@ import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { formatFixed2, roundToCents } from '@/src/core/utils/formatters';
 import type { BusinessVatMode } from '@/src/core/utils/priceDisplay';
 
-import { DEFAULT_SIVUKULUKERROIN } from './defaultOfferSettings';
+import { printSivukulukerroin } from './defaultOfferSettings';
 import { effectiveContractVat0 } from './manualContract';
 
 /** Laskelman `form_snapshot`-JSON. Puuttuva avain = alihankkija. */
@@ -339,17 +339,10 @@ export function alihankkijaLineAmount(
   return effectiveContractVat0(line);
 }
 
-/** Käyttökelpoinen kerroin on 1 < kerroin <= 3. Puuttuva tai kelvoton ei tulosta työntekijähintaa. */
-export function usableSivukulukerroin(factor: unknown): number | null {
-  if (typeof factor !== 'number' || !Number.isFinite(factor)) return null;
-  if (factor > 1 && factor <= 3) return factor;
-  return null;
-}
-
 export type CardHeaderPrices = {
   alihankkija: number;
-  /** null = kerroin puuttuu tai on kelvoton, työntekijäriviä ei tulosteta. */
-  tyontekija: number | null;
+  /** Aina luku. Kelvoton tai puuttuva kerroin on asetusten oletus 1,5. */
+  tyontekija: number;
 };
 
 /** Otsikon summat. Työntekijä on pyöristettyjen rivien summa, ei raakasumman jako. */
@@ -359,8 +352,7 @@ export function cardHeaderPrices(record: CalculationRecord, factor: unknown): Ca
     roundToCents(alihankkijaLineAmount(line, overrides)),
   );
   const alihankkija = roundToCents(parts.reduce((sum, amount) => sum + amount, 0));
-  const usable = usableSivukulukerroin(factor);
-  if (usable == null) return { alihankkija, tyontekija: null };
+  const usable = printSivukulukerroin(factor);
   const divided = parts.map((amount) => (amount === 0 ? 0 : roundToCents(amount / usable)));
   return { alihankkija, tyontekija: roundToCents(divided.reduce((sum, amount) => sum + amount, 0)) };
 }
@@ -383,7 +375,7 @@ export function employeeContractAmount(
   if (!Number.isFinite(amount)) return 0;
   if (mode !== 'tyontekija') return amount;
   if (amount === 0) return 0;
-  const divisor = Number.isFinite(factor) && factor > 1 && factor <= 3 ? factor : DEFAULT_SIVUKULUKERROIN;
+  const divisor = printSivukulukerroin(factor);
   return roundToCents(amount / divisor);
 }
 

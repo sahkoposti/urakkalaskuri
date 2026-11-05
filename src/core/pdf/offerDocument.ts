@@ -16,7 +16,7 @@ import { applyVat, offerIncludesVat } from '@/src/core/utils/priceDisplay';
 import { lineSpecSnapshot } from './offerPageSpecs';
 import { printableFields, type PrintRow } from './printableFields';
 import { appendPrintedText, buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from './printedSection';
-import { firstPrintedStructureNote } from './structureExtraText';
+import { firstStructureLisatiedot } from './structureExtraText';
 import type { OfferStructureSettings } from './types';
 
 /**
@@ -328,11 +328,14 @@ function offerPrintRows(
 export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
   const customer = customerFromRecord(source.record);
   const includesVat = offerIncludesVat(customer, source.record.formSnapshot);
-  const lines = ensureStructureLines(source.record).filter((line) => line.quantity !== 0);
+  const structureLines = ensureStructureLines(source.record);
+  const lines = structureLines.filter((line) => line.quantity !== 0);
+  const printedNote = firstStructureLisatiedot(structureLines, source.structures);
   const showDiscount = lines.some((line) => line.discountPercent > 0);
   const rows: OfferRow[] = [];
   for (const line of lines) {
-    const description = isManualOfferLine(line, source.structures) ? line.additionalInfo?.trim() ?? '' : '';
+    const description =
+      printedNote?.lineId === line.id && isManualOfferLine(line, source.structures) ? printedNote.text : '';
     const invalid = lineOfferPriceInvalid(line, includesVat);
     const row: OfferRow = {
       name: line.name,
@@ -354,15 +357,12 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
   const includesVat = offerIncludesVat(customer, source.record.formSnapshot);
   const reverseVat = Boolean(customer.reverseVat);
   const structureLines = ensureStructureLines(source.record);
-  const printedNote = firstPrintedStructureNote(
-    structureLines,
-    (line) => source.offerStructureSettings[line.structureId]?.additionalInfoText,
-  );
+  const printedNote = firstStructureLisatiedot(structureLines, source.structures);
   const sections: OfferSection[] = [];
   for (const line of structureLines) {
     const heading = offerHeading(line, includesVat);
     if (isManualOfferLine(line, source.structures)) {
-      const description = line.additionalInfo?.trim() || undefined;
+      const description = printedNote?.lineId === line.id ? printedNote.text : undefined;
       if (!heading && !description) continue;
       sections.push({ title: line.name, heading, description, textGroups: [], tableRows: [] });
       continue;
