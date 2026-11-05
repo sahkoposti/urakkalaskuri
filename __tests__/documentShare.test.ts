@@ -6,9 +6,11 @@ import {
 } from '../src/core/documents/documentShare';
 import {
   applyDocumentStorageCleanup,
+  applyOrphanCalculationFolderCleanup,
   documentRelativePathFromUris,
   fileSystemEntryName,
   planDocumentStorageCleanup,
+  planOrphanCalculationFolders,
 } from '../src/core/documents/documentStorage';
 
 describe('shareDocumentFileName', () => {
@@ -140,5 +142,34 @@ describe('document storage cleanup', () => {
     });
     expect(deleted).toEqual(['documents/calc/orphan.pdf']);
     expect(reported).toEqual(['documents/calc/missing.pdf']);
+  });
+
+  it('plans folder cleanup for calculation ids that are no longer stored', () => {
+    const plan = planOrphanCalculationFolders({
+      documentPaths: ['documents/gone/a.pdf', 'documents/kept/b.pdf', 'documents/gone/c.pdf'],
+      attachmentPaths: ['attachments/gone/x.jpg', 'attachments/also-gone/y.jpg', 'attachments/kept/z.jpg'],
+      existingIds: new Set(['kept']),
+    });
+    expect(plan.documentIds).toEqual(['gone']);
+    expect(plan.attachmentIds).toEqual(['gone', 'also-gone']);
+  });
+
+  it('continues folder cleanup when one folder delete fails', () => {
+    const deletedDocuments: string[] = [];
+    const deletedAttachments: string[] = [];
+    const reported: string[] = [];
+    applyOrphanCalculationFolderCleanup(
+      { documentIds: ['gone'], attachmentIds: ['gone'] },
+      {
+        deleteDocumentFolder: () => {
+          throw new Error('kansio lukittu');
+        },
+        deleteAttachmentFolder: (id) => deletedAttachments.push(id),
+        report: (kind, id) => reported.push(`${kind}:${id}`),
+      },
+    );
+    expect(deletedDocuments).toEqual([]);
+    expect(deletedAttachments).toEqual(['gone']);
+    expect(reported).toEqual(['documents:gone']);
   });
 });

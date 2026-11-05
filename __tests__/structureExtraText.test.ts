@@ -3,12 +3,13 @@ import { defaultOfferCompanySettings } from '../src/core/pdf/defaultOfferSetting
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
 import {
+  isProductStructureLisatiedotLine,
   lineStructureLisatiedot,
   structureLineAdditionalInfoInputValue,
   structureRowShowsAdditionalInfo,
 } from '../src/core/pdf/structureExtraText';
 import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
-import { emptyStructureLine } from '../src/core/structure/types';
+import { emptyStructureLine, type ProductStructure } from '../src/core/structure/types';
 import { input, line, record, structure } from './pdfFixtures';
 
 const FIRST = 'Ensimmäisen rakenteen lisätieto.';
@@ -25,12 +26,16 @@ const settings = {
   s2: { additionalInfoText: 'Toinen vanha teksti', offerPages: [] },
 };
 
-function offerHtml(lines: ReturnType<typeof line>[], companyText = '') {
+function offerHtml(
+  lines: ReturnType<typeof line>[],
+  companyText = '',
+  structureList: ProductStructure[] = structures,
+) {
   const rec = record({}, { structureLines: lines });
   return renderTarjousHtml(
     buildPdfContext(
       input(rec, {
-        structures,
+        structures: structureList,
         offerStructureSettings: settings,
         offerCompany: { ...defaultOfferCompanySettings, additionalInfoText: companyText },
       }),
@@ -38,12 +43,16 @@ function offerHtml(lines: ReturnType<typeof line>[], companyText = '') {
   );
 }
 
-function cardHtml(lines: ReturnType<typeof line>[], companyText = '') {
+function cardHtml(
+  lines: ReturnType<typeof line>[],
+  companyText = '',
+  structureList: ProductStructure[] = structures,
+) {
   const rec = record({}, { structureLines: lines });
   return renderUrakkakorttiHtml(
     buildUrakkakorttiContext({
       ...input(rec, {
-        structures,
+        structures: structureList,
         offerStructureSettings: settings,
         offerCompany: { ...defaultOfferCompanySettings, additionalInfoText: companyText },
       }),
@@ -77,34 +86,51 @@ describe('structure Lisätiedot on the real offer and card', () => {
     expect(structureRowShowsAdditionalInfo(lines, 'b', structures)).toBe(false);
   });
 
-  it('uses the structure default when the line has no copy, and prints nothing when every structure is empty', () => {
-    const fromDefault = [line('a', 's1', 'Ulkomaalaus'), line('b', 's2', 'Sokkeli')];
-    expect(offerHtml(fromDefault)).toContain(FIRST);
-    expect(cardHtml(fromDefault)).toContain(FIRST);
-    expect(offerHtml(fromDefault)).not.toContain(SECOND);
-    expect(structureRowShowsAdditionalInfo(fromDefault, 'a', structures)).toBe(true);
-    expect(structureRowShowsAdditionalInfo(fromDefault, 'b', structures)).toBe(false);
-
-    const emptyStructures = structures.map((item) => ({ ...item, defaultAdditionalInfo: undefined }));
-    const emptyLines = [line('a', 's1', 'Ulkomaalaus'), line('b', 's2', 'Sokkeli')];
-    const rec = record({}, { structureLines: emptyLines });
-    const offer = renderTarjousHtml(
-      buildPdfContext(input(rec, { structures: emptyStructures, offerStructureSettings: settings })),
-    );
-    const card = renderUrakkakorttiHtml(
-      buildUrakkakorttiContext({
-        ...input(rec, { structures: emptyStructures, offerStructureSettings: settings }),
-        record: rec,
-      }),
-    );
+  it('prints nothing for a legacy line whose additionalInfo field is missing', () => {
+    const legacy = [line('a', 's1', 'Ulkomaalaus'), line('b', 's2', 'Sokkeli')];
+    expect(legacy[0].additionalInfo).toBeUndefined();
+    expect(lineStructureLisatiedot(legacy[0], structures)).toBe('');
+    expect(structureLineAdditionalInfoInputValue(legacy[0], structures[0])).toBe('');
+    const changed = structures.map((item) => ({ ...item, defaultAdditionalInfo: 'Uusi oletus' }));
+    expect(lineStructureLisatiedot(legacy[0], changed)).toBe('');
+    expect(structureLineAdditionalInfoInputValue(legacy[0], changed[0])).toBe('');
+    const offer = offerHtml(legacy);
+    const card = cardHtml(legacy);
     expect(offer).not.toContain(FIRST);
     expect(card).not.toContain(FIRST);
+    expect(offer).not.toContain(SECOND);
+    expect(card).not.toContain(SECOND);
+    expect(offer).not.toContain('Uusi oletus');
+    expect(card).not.toContain('Uusi oletus');
     expect(offer).not.toContain(OLD);
     expect(card).not.toContain(OLD);
     expect(offer).not.toContain('>Muuta<');
     expect(card).not.toContain('>Muuta<');
-    expect(structureRowShowsAdditionalInfo(emptyLines, 'a', emptyStructures)).toBe(false);
-    expect(structureRowShowsAdditionalInfo(emptyLines, 'b', emptyStructures)).toBe(false);
+    expect(structureRowShowsAdditionalInfo(legacy, 'a', structures)).toBe(false);
+    expect(structureRowShowsAdditionalInfo(legacy, 'b', structures)).toBe(false);
+  });
+
+  it('prints Lisätiedot for a non-manual line even when the structure has no form', () => {
+    const noForm = structures.map((item) => ({ ...item, form: undefined })) as unknown as ProductStructure[];
+    const lines = [
+      { ...line('a', 's1', 'Ulkomaalaus'), additionalInfo: FIRST },
+      { ...line('b', 's2', 'Sokkeli'), additionalInfo: SECOND },
+    ];
+    const missing = { ...line('c', 'puuttuva', 'Kadotettu'), additionalInfo: 'Kadonneen rakenteen teksti.' };
+    expect(isProductStructureLisatiedotLine(lines[0], noForm)).toBe(true);
+    expect(isProductStructureLisatiedotLine(missing, structures)).toBe(true);
+    expect(isProductStructureLisatiedotLine({ ...line('m', 'manual', 'Nostin'), additionalInfo: 'Nostin.' }, structures)).toBe(
+      false,
+    );
+    expect(offerHtml(lines, '', noForm)).toContain(FIRST);
+    expect(cardHtml(lines, '', noForm)).toContain(FIRST);
+    expect(cardHtml(lines, '', noForm)).not.toContain(SECOND);
+    expect(offerHtml([missing, lines[1]])).toContain('Kadonneen rakenteen teksti.');
+    expect(cardHtml([missing, lines[1]])).toContain('Kadonneen rakenteen teksti.');
+    expect(offerHtml([missing, lines[1]])).not.toContain(SECOND);
+    expect(cardHtml([missing, lines[1]])).not.toContain(SECOND);
+    expect(structureRowShowsAdditionalInfo(lines, 'a', noForm)).toBe(true);
+    expect(structureRowShowsAdditionalInfo(lines, 'b', noForm)).toBe(false);
   });
 
   it('snapshots the structure default at creation and ignores a later default', () => {
@@ -132,7 +158,7 @@ describe('structure Lisätiedot on the real offer and card', () => {
     const cleared = { ...line('a', 's1', 'Ulkomaalaus'), additionalInfo: '' };
     const later = { ...line('b', 's2', 'Sokkeli'), additionalInfo: SECOND };
     expect(structureLineAdditionalInfoInputValue(cleared, structures[0])).toBe('');
-    expect(structureLineAdditionalInfoInputValue({ additionalInfo: undefined }, structures[0])).toBe(FIRST);
+    expect(structureLineAdditionalInfoInputValue({ additionalInfo: undefined }, structures[0])).toBe('');
     expect(lineStructureLisatiedot(cleared, structures)).toBe('');
     const reopened = JSON.parse(JSON.stringify(cleared)) as typeof cleared;
     expect(reopened.additionalInfo).toBe('');

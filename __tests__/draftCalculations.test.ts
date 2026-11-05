@@ -12,7 +12,7 @@ jest.mock('../src/core/attachments/attachmentFiles', () => ({
   deleteCalculationAttachmentFolder: jest.fn(),
 }));
 jest.mock('../src/core/documents/documentFiles', () => ({
-  deleteCalculationDocumentFolder: () => undefined,
+  deleteCalculationDocumentFolder: jest.fn(),
 }));
 
 type SqlDb = {
@@ -234,9 +234,12 @@ describe('draft calculations', () => {
     expect(deleteCalculationAttachmentFolder).toHaveBeenCalledWith('id-1');
   });
 
-  it('keeps the calculation when a folder delete fails, then deletes it on retry', async () => {
-    const { deleteCalculationAttachmentFolder } = jest.requireMock('../src/core/attachments/attachmentFiles') as {
+  it('keeps the rows and skips folder deletes when the transaction fails', async () => {
+    const folders = jest.requireMock('../src/core/attachments/attachmentFiles') as {
       deleteCalculationAttachmentFolder: jest.Mock;
+    };
+    const documents = jest.requireMock('../src/core/documents/documentFiles') as {
+      deleteCalculationDocumentFolder: jest.Mock;
     };
     await current.execAsync(V3_SQL);
     await current.execAsync('PRAGMA user_version = 3');
@@ -244,17 +247,46 @@ describe('draft calculations', () => {
     const draft = draftCalculationFromWizard(session('Poisto', 7000), 'draft-fail', new Date(7000));
     await saveCalculation(draft);
     await current.runAsync(`INSERT INTO attachments (id, calculation_id) VALUES ('att-fail', 'draft-fail')`);
-    deleteCalculationAttachmentFolder.mockImplementationOnce(() => {
-      throw new Error('kansio lukittu');
-    });
-    await expect(deleteCalculation('draft-fail')).rejects.toThrow('kansio lukittu');
+    folders.deleteCalculationAttachmentFolder.mockClear();
+    documents.deleteCalculationDocumentFolder.mockClear();
+    current.withTransactionAsync = async () => {
+      throw new Error('tietokanta lukittu');
+    };
+    await expect(deleteCalculation('draft-fail')).rejects.toThrow('tietokanta lukittu');
+    expect(folders.deleteCalculationAttachmentFolder).not.toHaveBeenCalled();
+    expect(documents.deleteCalculationDocumentFolder).not.toHaveBeenCalled();
     expect(await getCalculation('draft-fail')).not.toBeNull();
     expect(await current.getAllAsync('SELECT id FROM attachments WHERE calculation_id = ?', 'draft-fail')).toEqual([
       { id: 'att-fail' },
     ]);
-    await deleteCalculation('draft-fail');
-    expect(await getCalculation('draft-fail')).toBeNull();
-    expect(await current.getAllAsync('SELECT id FROM attachments WHERE calculation_id = ?', 'draft-fail')).toEqual([]);
+  });
+
+  it('drops the rows even when a folder delete fails afterwards', async () => {
+    const folders = jest.requireMock('../src/core/attachments/attachmentFiles') as {
+      deleteCalculationAttachmentFolder: jest.Mock;
+    };
+    const documents = jest.requireMock('../src/core/documents/documentFiles') as {
+      deleteCalculationDocumentFolder: jest.Mock;
+    };
+    await current.execAsync(V3_SQL);
+    await current.execAsync('PRAGMA user_version = 3');
+    await ensureCalculationStatusColumn(current);
+    const draft = draftCalculationFromWizard(session('Poisto', 8000), 'draft-folder', new Date(8000));
+    await saveCalculation(draft);
+    await current.runAsync(`INSERT INTO documents (id, calculation_id) VALUES ('doc-folder', 'draft-folder')`);
+    documents.deleteCalculationDocumentFolder.mockImplementationOnce(() => {
+      throw new Error('dokumenttikansio lukittu');
+    });
+    folders.deleteCalculationAttachmentFolder.mockImplementationOnce(() => {
+      throw new Error('liitekansio lukittu');
+    });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await expect(deleteCalculation('draft-folder')).resolves.toBeUndefined();
+    expect(await getCalculation('draft-folder')).toBeNull();
+    expect(await current.getAllAsync('SELECT id FROM documents WHERE calculation_id = ?', 'draft-folder')).toEqual([]);
+    expect(documents.deleteCalculationDocumentFolder).toHaveBeenCalledWith('draft-folder');
+    expect(folders.deleteCalculationAttachmentFolder).toHaveBeenCalledWith('draft-folder');
+    warn.mockRestore();
   });
 
   it('does not lower a newer schema version when the column already exists', async () => {

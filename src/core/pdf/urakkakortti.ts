@@ -93,7 +93,7 @@ export function urakkakorttiSpecCards(input: BuildUrakkakorttiInput): SpecCard[]
   const perLine = lines.map((line) => {
     const structure = input.structures.find((item) => item.id === line.structureId);
     const customerPageIds = new Set(
-      (structure?.form.pages ?? []).filter((page) => page.system === 'customer').map((page) => page.id),
+      (structure?.form?.pages ?? []).filter((page) => page.system === 'customer').map((page) => page.id),
     );
     const snapshot = lineSpecSnapshot(
       line,

@@ -74,13 +74,19 @@ describe('offer title and acceptance sentence', () => {
 
 describe('renderTarjousHtml', () => {
   it('private customer: rows table and one section per structure', () => {
-    const base = input(record({}, { structureLines: [line('l1', 's1', 'Ulkomaalaus'), line('l2', 's2', 'Sokkeli', '30')] }), {
-      offerCompany: { ...defaultOfferCompanySettings, additionalInfoText: 'Maksuehto kuvitteellinen.' },
-    });
+    const base = input(
+      record({}, {
+        structureLines: [
+          { ...line('l1', 's1', 'Ulkomaalaus'), additionalInfo: 'Sisältää telineet.' },
+          line('l2', 's2', 'Sokkeli', '30'),
+        ],
+      }),
+      { offerCompany: { ...defaultOfferCompanySettings, additionalInfoText: 'Maksuehto kuvitteellinen.' } },
+    );
     const ctx = buildPdfContext({
       ...base,
       structures: base.structures.map((item) =>
-        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'Sisältää telineet.' } : item,
+        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'ELAVA_OLETUS_EI_TULOSTU' } : item,
       ),
     });
     const html = renderTarjousHtml(ctx, { logoDataUri: LOGO });
@@ -95,6 +101,7 @@ describe('renderTarjousHtml', () => {
     expect(html).toContain('Lisätiedot:');
     expect(html).toContain('Maksuehto kuvitteellinen.');
     expect(html).toContain('Sisältää telineet.');
+    expect(html).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
     expect(html).not.toContain('Toinen teksti');
     expect(html).not.toContain('VANHA_EI_TULOSTU');
     expect(html).toContain('"Sivu " counter(page) "/" counter(pages)');

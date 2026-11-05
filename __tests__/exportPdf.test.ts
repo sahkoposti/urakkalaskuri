@@ -68,7 +68,7 @@ function setup(rec: CalculationRecord) {
     settings: base.settings,
     products: base.products,
     structures: base.structures.map((item) =>
-      item.id === 's1' ? { ...item, defaultAdditionalInfo: 'Sisältää telineet.' } : item,
+      item.id === 's1' ? { ...item, defaultAdditionalInfo: 'ELAVA_OLETUS_EI_TULOSTU' } : item,
     ),
   };
   return {
@@ -269,7 +269,13 @@ describe('exportUrakkakorttiPdf', () => {
   });
 
   it('prints directly when contract sums exist; never assigns an offer number', async () => {
-    const { deps, app, printed, current, inserted } = setup(record({ name: 'Testi' }));
+    const storedLine = {
+      ...line('l1', 's1', 'Ulkomaalaus'),
+      additionalInfo: 'Sisältää telineet.',
+    };
+    const { deps, app, printed, current, inserted } = setup(
+      record({ name: 'Testi' }, { structureLines: [storedLine] }),
+    );
     const spy = jest.spyOn(deps, 'assignOfferNumber');
     const done = await exportUrakkakorttiPdf('c1', app, deps);
     expect(done.status).toBe('done');
@@ -280,12 +286,16 @@ describe('exportUrakkakorttiPdf', () => {
     expect(inserted[0]?.offerNumber).toBeNull();
     expect(printed[0].html).toContain('Sisältää telineet.');
     expect(printed[0].html).toContain('>Muuta<');
+    expect(printed[0].html).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
     expect(printed[0].html).not.toContain('VANHA_EI_TULOSTU');
     expect(printed[0].html).not.toContain('Lisätiedot:');
   });
 
   it('does not print company Lisätiedot on the card when the offer text is set', async () => {
-    const rec = record({ name: 'Testi' });
+    const rec = record(
+      { name: 'Testi' },
+      { structureLines: [{ ...line('l1', 's1', 'Ulkomaalaus'), additionalInfo: 'Sisältää telineet.' }] },
+    );
     const { deps, app, printed } = setup(rec);
     const companyText = 'Maksuehto kuvitteellinen.';
     deps.getOfferCompanySettings = async () => ({
@@ -298,6 +308,7 @@ describe('exportUrakkakorttiPdf', () => {
     expect(printed[0].html).not.toContain(companyText);
     expect(printed[0].html).toContain('Sisältää telineet.');
     expect(printed[0].html).toContain('>Muuta<');
+    expect(printed[0].html).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
     expect(printed[0].html).not.toContain('VANHA_EI_TULOSTU');
   });
 

@@ -144,11 +144,13 @@ describe('offerMaterialsVatIncluded', () => {
 
 describe('buildPdfContext', () => {
   it('private customer: VAT-inclusive price block, no Ale row at 0 %, KTV data present', () => {
-    const base = input(record({}));
+    const base = input(
+      record({}, { structureLines: [{ ...line('l1', 's1', 'Ulkomaalaus'), additionalInfo: 'Sisältää telineet.' }] }),
+    );
     const ctx = buildPdfContext({
       ...base,
       structures: base.structures.map((item) =>
-        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'Sisältää telineet.' } : item,
+        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'ELAVA_OLETUS_EI_TULOSTU' } : item,
       ),
     });
     expect(ctx.price.includesVat).toBe(true);
@@ -177,6 +179,7 @@ describe('buildPdfContext', () => {
     expect(ctx.sections).toHaveLength(1);
     expect(ctx.sections[0].title).toBe('Ulkomaalaus');
     expect(ctx.sections[0].textGroups.find((group) => group.group === 'muuta')?.items).toEqual(['Sisältää telineet.']);
+    expect(JSON.stringify(ctx.sections)).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
     expect(ctx.sections[0].tableRows).toEqual(
       expect.arrayContaining([expect.objectContaining({ label: 'Työn arvioitu kesto', value: '4 työpäivää' })]),
     );
@@ -342,11 +345,18 @@ describe('buildPdfContext', () => {
   });
 
   it('multi-structure: each structure section gets its own Tarjous text', () => {
-    const base = input(record({}, { structureLines: [line('l2', 's2', 'Sokkeli', '30'), line('l1', 's1', 'Ulkomaalaus')] }));
+    const base = input(
+      record({}, {
+        structureLines: [
+          line('l2', 's2', 'Sokkeli', '30'),
+          { ...line('l1', 's1', 'Ulkomaalaus'), additionalInfo: 'Sisältää telineet.' },
+        ],
+      }),
+    );
     const ctx = buildPdfContext({
       ...base,
       structures: base.structures.map((item) =>
-        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'Sisältää telineet.' } : item,
+        item.id === 's1' ? { ...item, defaultAdditionalInfo: 'ELAVA_OLETUS_EI_TULOSTU' } : item,
       ),
     });
     expect(ctx.rows.map((row) => row.name)).toEqual(['Sokkeli', 'Ulkomaalaus']);
@@ -355,6 +365,7 @@ describe('buildPdfContext', () => {
       undefined,
       ['Sisältää telineet.'],
     ]);
+    expect(JSON.stringify(ctx.sections)).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
     expect(JSON.stringify(ctx.sections)).not.toContain('Toinen teksti');
     expect(JSON.stringify(ctx.sections)).not.toContain('VANHA_EI_TULOSTU');
     expect(ctx.additionalInfo).toBe('');
