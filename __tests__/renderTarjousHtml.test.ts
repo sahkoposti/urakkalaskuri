@@ -165,11 +165,11 @@ describe('renderTarjousHtml discount row', () => {
     const ktv = html.slice(html.indexOf('class="ktv-page'));
     expect(ktv).toContain('Alennettu hinta yhteensä');
     expect(ktv).toContain('2 259,00 €');
-    expect(ktv).toContain('502,00 €');
-    expect(ktv).toContain('1 757,00 €');
+    expect(ktv).toContain('451,80 €');
+    expect(ktv).toContain('1 807,20 €');
     expect(ktv).toContain('Arvioitu hinta vähennyksen jälkeen');
-    expect(ktv).toContain('2 259,00 € − 552,80 €');
-    expect(ktv).toContain('1 706,20 €');
+    expect(ktv).toContain('2 259,00 € − 572,88 €');
+    expect(ktv).toContain('1 686,12 €');
     expect(ktv).not.toContain('Asiakkaan maksettavaksi');
     expect(ktv).not.toContain('Enimmäismäärä');
   });

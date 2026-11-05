@@ -96,7 +96,7 @@ describe('renderKotitalousPageHtml', () => {
     expect(renderKotitalousPageHtml({ ktv: undefined })).toBe('');
   });
 
-  it('discount: Loppusumma is the discounted total and materials are not reduced', () => {
+  it('discount: Loppusumma is the discounted total and materials are reduced by the same percent', () => {
     const html = norm(
       renderKotitalousPageHtml(
         buildPdfContext(
@@ -124,7 +124,8 @@ describe('renderKotitalousPageHtml', () => {
     expect(html).not.toContain('2 510,00 €');
     expect(html).not.toContain('Yhteensä sis. alv');
     expect(html).toContain('josta materiaalit (sis. alv)');
-    expect(html).toContain('502,00 €');
+    expect(html).toContain('451,80 €');
+    expect(html).not.toContain('502,00 €');
     expect(html).toContain('Alennettu hinta yhteensä');
     expect(html).not.toContain('Asiakkaan maksettavaksi');
   });

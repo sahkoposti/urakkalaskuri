@@ -523,23 +523,23 @@ describe('offer discount, VAT summary and KTV', () => {
     expect(ctx.vatSummary).toEqual([
       { vatPercent: vat, net: paidVat0, vat: roundToCents(2232 - paidVat0), gross: 2232 },
     ]);
-    expect(ctx.ktv?.materialsVat).toBe(248);
-    expect(ctx.ktv?.materialsVat).not.toBe(roundToCents(248 * 0.9));
+    expect(ctx.ktv?.materialsVat).toBe(roundToCents(248 * 0.9));
+    expect(ctx.ktv?.materialsVat).toBe(223.2);
 
     const result = kotitalousDeduction({
       totalPriceVat: ctx.ktv!.totalPriceVat,
       materialsVat: ctx.ktv!.materialsVat,
       settings: ctx.ktv!.settings,
     });
-    expect(result.workShareVatIncluded).toBe(1984);
-    expect(result.materialsShareVatIncluded).toBe(248);
-    expect(result.grossDeduction).toBe(793.6);
-    expect(result.deductionAmount).toBe(643.6);
-    expect(result.estimatedCostAfterDeduction).toBe(1588.4);
+    expect(result.workShareVatIncluded).toBe(2008.8);
+    expect(result.materialsShareVatIncluded).toBe(223.2);
+    expect(result.grossDeduction).toBe(803.52);
+    expect(result.deductionAmount).toBe(653.52);
+    expect(result.estimatedCostAfterDeduction).toBe(1578.48);
     expect(result.capApplied).toBe(false);
     // Matka (kuvitteellinen 100 €) jää työn osuuteen: sitä ei vähennetä materiaalien lisäksi.
-    expect(result.workShareVatIncluded).toBe(2232 - 248);
-    expect(result.workShareVatIncluded).not.toBe(2232 - 248 - 100);
+    expect(result.workShareVatIncluded).toBe(2232 - 223.2);
+    expect(result.workShareVatIncluded).not.toBe(2232 - 223.2 - 100);
   });
 
   it('caps the deduction at 2 100 € when the work share is over 5 625 €', () => {

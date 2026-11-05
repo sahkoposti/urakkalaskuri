@@ -41,8 +41,8 @@ describe('kotitalousDeduction', () => {
     expect(zero.estimatedCostAfterDeduction).toBe(1000);
   });
 
-  it('discount case: discount reduces only the work share; materials unchanged (Eemil 29.10. 17.33)', () => {
-    // 2480 before, 10 % off -> 2232 paid; materials 248 as given -> work 1984
+  it('uses the materials figure it is given and does not apply a second discount', () => {
+    // Caller already discounted the materials. 2232 paid, materials 248 -> work 1984.
     const r = kotitalousDeduction({ totalPriceVat: 2232, materialsVat: 248, settings: defaults });
     expect(r.materialsShareVatIncluded).toBe(248);
     expect(r.workShareVatIncluded).toBe(1984);

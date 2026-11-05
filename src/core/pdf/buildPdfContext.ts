@@ -64,7 +64,7 @@ export type TarjousPdfContext = {
      * Rivialennuksessa rivien pyöristetty summa, muuten tallennettu summa.
      */
     totalPriceVat: number;
-    /** Materiaalit sis. ALV sellaisenaan; alennus pienentää vain työn osuutta (kotitalousDeduction.ktvPriceSplit). */
+    /** Materiaalit sis. ALV alennuksen jälkeen. Kutsuja vähentää alennuksen; ktvPriceSplit ei vähennä toista kertaa. */
     materialsVat: number;
     /** Yrityskohtaiset asetukset (Tarjous-asetukset), ei kovakoodattuja arvoja. */
     settings: KtvSettings;
@@ -144,27 +144,36 @@ function round2(n: number): number {
 }
 
 /**
- * KTV-materiaalit sis. ALV.
- * Ei hinnoiteltuja rivejä tai yksi verokanta: tallennettu `materialsVat0` × laskelman kanta,
- * sama sentti kuin ennen (rivien materiaalit eivät aina ole tuo summa, eikä rivikohtainen
- * pyöristys täsmää aggregaattiin).
- * Usea verokanta: jokaisen rivin materiaalit omalla kannallaan, pyöristettynä erikseen.
- * Rivin puuttuva kanta on laskelman kanta.
+ * KTV-materiaalit sis. ALV, alennus mukana (Eemil 5.11.2026).
+ * Ilman alennusta yksi verokanta tai ei hinnoiteltuja rivejä: tallennettu summa × laskelman kanta, kerran pyöristettynä.
+ * Yksi verokanta ja sama alennus-% kaikilla riveillä, tai pelkkä laskelman alennus: tuo summa × (1 − d/100), kerran.
+ * Sekalaiset riviale-prosentit tai usea verokanta: jokainen rivi
+ * round2(materiaalit alv0 × (1 + kanta/100) × (1 − d/100)), sitten summa.
+ * Jos yhdelläkään rivillä ei ole alea ja record.discountPercent > 0, d on laskelman prosentti.
+ * Rivin puuttuva kanta on laskelman kanta. Kolmatta tarjoustason alennustyyppiä ei ole.
  */
 export function offerMaterialsVatIncluded(record: CalculationRecord): number {
   const legacy = Math.round(applyVat(record.materialsVat0, record.vatPercent) * 100) / 100;
   const lines = pricedOfferLines(record);
-  if (lines.length === 0) return legacy;
+  const lineDiscounts = lines.map((line) => clampDiscountPercent(line.discountPercent));
+  const anyLineDiscount = lineDiscounts.some((value) => value > 0);
+  const calcDiscount = !anyLineDiscount && record.discountPercent > 0 ? clampDiscountPercent(record.discountPercent) : 0;
+  const discountedAggregate = (d: number) => (d > 0 ? round2(legacy * (1 - d / 100)) : legacy);
+  if (lines.length === 0) return discountedAggregate(calcDiscount);
   const rates: number[] = [];
   for (const line of lines) {
     const rate = lineRate(record, line);
     if (!rates.includes(rate)) rates.push(rate);
   }
-  if (rates.length <= 1) return legacy;
+  const uniform = lineDiscounts.every((value) => value === lineDiscounts[0]);
+  if (rates.length <= 1 && (calcDiscount > 0 || uniform)) {
+    return discountedAggregate(calcDiscount > 0 ? calcDiscount : (lineDiscounts[0] ?? 0));
+  }
   return round2(
     lines.reduce((sum, line) => {
       const materials = Number.isFinite(line.materialsVat0) ? line.materialsVat0 : 0;
-      return sum + round2(materials * (1 + lineRate(record, line) / 100));
+      const d = calcDiscount > 0 ? calcDiscount : clampDiscountPercent(line.discountPercent);
+      return sum + round2(materials * (1 + lineRate(record, line) / 100) * (1 - d / 100));
     }, 0),
   );
 }
@@ -384,10 +393,9 @@ function legacyCalcDiscountPriceBlock(record: CalculationRecord, customer: Custo
  * Verollinen: Yhteensä alv 0, Alv per verokanta, Yhteensä sis. alv. Luvut ovat
  * pyöristettyjen listahintojen summia. Ilman alennusta viimeinen rivi on lihavoitu
  * loppusumma. Alennus tulee sen jälkeen, ja lihavoitu rivi on Alennettu hinta yhteensä.
- * Usealla kannalla sen perään tulevat "Sisältää ALV" -rivit maksetusta bruttosta.
  * ALV 0 ja käänteinen ALV: ilman alennusta vain Loppusumma (Alv 0 %). Alennuksella
- * Yhteensä alv 0, nettoalennus ja Loppusumma (Alv 0 %).
- * Pelkkä laskelman alennus: vanha lohko ja tallennettu maksettava, ei kantojen jakoa.
+ * Yhteensä alv 0, nettoalennus ja Loppusumma (Alv 0 %). Ei verokantakohtaisia rivejä.
+ * Pelkkä laskelman alennus: vanha lohko ja tallennettu maksettava. Useaa verokantaa ei jaeta.
  */
 /** Sivun 1 summalohkon otsikko, jota KTV-sivu toistaa. Alennus voittaa listahinnan. */
 export function offerPageTotalLabel(rows: { label: string }[]): string {
@@ -441,7 +449,6 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
   if (lineDiscount) {
     rows.push(discountRow(record, listGross, printed.gross));
     rows.push({ label: 'Alennettu hinta yhteensä', value: formatCurrency(printed.gross), emphasis: true });
-    if (rates && rates.length > 1) rows.push(...vatIncludedRows(record, printed.gross, true));
   }
   return { includesVat: true, rows };
 }
