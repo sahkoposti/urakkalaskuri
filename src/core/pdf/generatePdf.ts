@@ -10,7 +10,7 @@ import {
 } from '@/src/core/attachments/prepareAttachmentPrint';
 import {
   DEFAULT_ATTACHMENT_PAGE_LAYOUT,
-  type AttachmentPageLayout,
+  type AttachmentSectionLayout,
   type AttachmentTarget,
 } from '@/src/core/attachments/attachmentPrintPlan';
 import type { Attachment } from '@/src/core/attachments/types';
@@ -22,7 +22,7 @@ export const A4_PORTRAIT = { width: 595, height: 842 } as const;
 export type GeneratePdfAttachmentInput = {
   items: readonly Attachment[];
   target: AttachmentTarget;
-  layout?: AttachmentPageLayout;
+  layout?: AttachmentSectionLayout;
 };
 
 export type GeneratePdfOptions = {

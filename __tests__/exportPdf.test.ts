@@ -123,7 +123,7 @@ describe('exportTarjousPdf', () => {
     deps.listAttachments = async () => items;
     await exportTarjousPdf('c1', app, deps);
     expect(printed[0].html).toBe('');
-    expect(printed[0].attachments).toEqual({ items, target: 'offer' });
+    expect(printed[0].attachments).toEqual({ items, target: 'offer', layout: 'two_per_page' });
     const empty = printed[0].composeHtml?.('') ?? '';
     expect(empty).toContain('Tarjous / sopimus');
     expect(empty).not.toContain('class="liitteet');
@@ -277,11 +277,27 @@ describe('exportUrakkakorttiPdf', () => {
     expect(printed[0].html).not.toContain('Lisätiedot:');
   });
 
+  it('does not print company Lisätiedot on the card when the offer text is set', async () => {
+    const rec = record({ name: 'Testi' });
+    const { deps, app, printed } = setup(rec);
+    const companyText = 'Maksuehto kuvitteellinen.';
+    deps.getOfferCompanySettings = async () => ({
+      ...input(rec).offerCompany,
+      additionalInfoText: companyText,
+    });
+    const done = await exportUrakkakorttiPdf('c1', app, deps);
+    expect(done.status).toBe('done');
+    expect(printed[0].html).not.toContain('Lisätiedot:');
+    expect(printed[0].html).not.toContain(companyText);
+    expect(printed[0].html).toContain('Sisältää telineet.');
+    expect(printed[0].html).toContain('>Muuta<');
+  });
+
   it('passes card attachments to generatePdf', async () => {
     const { deps, app, printed } = setup(record({ name: 'Testi' }));
     deps.listAttachments = async () => [];
     await exportUrakkakorttiPdf('c1', app, deps);
-    expect(printed[0].attachments).toEqual({ items: [], target: 'card' });
+    expect(printed[0].attachments).toEqual({ items: [], target: 'card', layout: 'card_grid' });
     const empty = printed[0].composeHtml?.('') ?? '';
     expect(empty).toContain('Urakkakortti');
     expect(empty).not.toContain('class="liitteet');

@@ -1,3 +1,4 @@
+import { readAttachmentPageLayout } from '../attachments/attachmentPageLayout';
 import type { Attachment } from '../attachments/types';
 import type { AttachmentPdfDeps } from '../attachments/prepareAttachmentPrint';
 import type { CompanyProfile } from '../company/types';
@@ -183,7 +184,15 @@ export async function exportTarjousPdf(
     total: tarjousDocumentTotal(record),
     createdAt: generatedAt.toISOString(),
     ...(items
-      ? { attachments: { items, target: 'offer' as const }, composeHtml: renderOffer, attachmentDeps: deps.attachmentPdfDeps }
+      ? {
+          attachments: {
+            items,
+            target: 'offer' as const,
+            layout: readAttachmentPageLayout(record.formSnapshot),
+          },
+          composeHtml: renderOffer,
+          attachmentDeps: deps.attachmentPdfDeps,
+        }
       : {}),
   });
 }
@@ -286,7 +295,15 @@ export async function exportUrakkakorttiPdf(
     total: urakkakorttiDocumentTotal(record, offerCompany.sivukulukerroin),
     createdAt: generatedAt.toISOString(),
     ...(items
-      ? { attachments: { items, target: 'card' as const }, composeHtml: renderCard, attachmentDeps: deps.attachmentPdfDeps }
+      ? {
+          attachments: {
+            items,
+            target: 'card' as const,
+            layout: 'card_grid' as const,
+          },
+          composeHtml: renderCard,
+          attachmentDeps: deps.attachmentPdfDeps,
+        }
       : {}),
   });
   return { status: 'done', ...document };

@@ -6,6 +6,26 @@ function attachmentFile(relativePath: string): File {
   return new File(Paths.document, ...attachmentPathParts(relativePath));
 }
 
+export function attachmentFileUri(relativePath: string): string {
+  return attachmentFile(relativePath).uri;
+}
+
+export function writeAttachmentBytes(
+  calculationId: string,
+  id: string,
+  ext: string,
+  bytes: Uint8Array,
+): string {
+  const relativePath = attachmentRelativePath(calculationId, id, ext);
+  const parts = attachmentPathParts(relativePath);
+  const folder = new Directory(Paths.document, ...parts.slice(0, -1));
+  if (!folder.exists) folder.create({ intermediates: true, idempotent: true });
+  const target = new File(Paths.document, ...parts);
+  if (target.exists) target.delete();
+  target.write(bytes);
+  return relativePath;
+}
+
 export function placeAttachmentFile(
   sourceUri: string,
   calculationId: string,

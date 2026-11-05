@@ -1,8 +1,10 @@
 import { Text } from 'react-native';
 
 import { AppPicker } from '@/src/components/AppPicker';
+import { AttachmentSummaryLink } from '@/src/components/attachments/AttachmentSection';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { AppInput, OutlinedButton } from '@/src/components/common';
+import type { Attachment } from '@/src/core/attachments/types';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 import { CARD_EXPORT_FIELD_KINDS } from './exportFormFieldKinds';
@@ -11,12 +13,21 @@ import { createPdfFormStyles } from './pdfFormStyles';
 import type { PdfExportFormState } from './usePdfExportForm';
 
 /** Urakkakortin kentät ja yksi Luo urakkakortti -painike. */
-export function UrakkakorttiExportForm({ card }: { card: PdfExportFormState['card'] }) {
+export function UrakkakorttiExportForm({
+  card,
+  attachments,
+  onShowAttachments,
+}: {
+  card: PdfExportFormState['card'];
+  attachments: readonly Attachment[];
+  onShowAttachments: () => void;
+}) {
   const styles = useThemedStyles(createPdfFormStyles);
   const showPrices = showCardRowPrices(card.hidePrices);
 
   return (
     <>
+      <AttachmentSummaryLink attachments={attachments} onPress={onShowAttachments} />
       <AppPicker
         label="Urakkakortti"
         selectedValue={card.cardMode}

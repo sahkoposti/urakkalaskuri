@@ -9,7 +9,7 @@ exports[`urakkakortti single line: contract, duration, crew, specs, notes area; 
 <style>
   @page {
     size: A4 portrait;
-    margin: 10mm 14mm 12mm 14mm;
+    margin: 10mm 17mm 12mm 17mm;
     @bottom-right {
       content: "Sivu " counter(page) "/" counter(pages);
       font-family: 'IBM Plex Sans', Arial, Helvetica, sans-serif;

@@ -9,7 +9,7 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
 <style>
   @page {
     size: A4 portrait;
-    margin: 10mm 18mm 12mm 2.5mm;
+    margin: 10mm 21mm 12mm 2.5mm;
     @bottom-right {
       content: "Sivu " counter(page) "/" counter(pages);
       font-family: 'IBM Plex Sans', Arial, Helvetica, sans-serif;
@@ -76,8 +76,8 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   table.ktv-table tr.result.final td { border-top: none; }
   .ktv-hint { font-size: 10pt; color: #666; margin: 0 0 5mm 0; }
   .ktv-note { font-size: 10pt; color: #333; margin: 0; }
-  body.doc-offer { padding-left: 15.5mm; }
-  body.doc-offer .header, body.doc-offer .footer { left: 15.5mm; }
+  body.doc-offer { padding-left: 18.5mm; }
+  body.doc-offer .header, body.doc-offer .footer { left: 18.5mm; }
 
   .doc-section { margin: 0 0 5mm 0; }
   .doc-heading, .offer-line-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
@@ -180,7 +180,7 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
 <style>
   @page {
     size: A4 portrait;
-    margin: 10mm 18mm 12mm 2.5mm;
+    margin: 10mm 21mm 12mm 2.5mm;
     @bottom-right {
       content: "Sivu " counter(page) "/" counter(pages);
       font-family: 'IBM Plex Sans', Arial, Helvetica, sans-serif;
@@ -247,8 +247,8 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   table.ktv-table tr.result.final td { border-top: none; }
   .ktv-hint { font-size: 10pt; color: #666; margin: 0 0 5mm 0; }
   .ktv-note { font-size: 10pt; color: #333; margin: 0; }
-  body.doc-offer { padding-left: 15.5mm; }
-  body.doc-offer .header, body.doc-offer .footer { left: 15.5mm; }
+  body.doc-offer { padding-left: 18.5mm; }
+  body.doc-offer .header, body.doc-offer .footer { left: 18.5mm; }
 
   .doc-section { margin: 0 0 5mm 0; }
   .doc-heading, .offer-line-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
@@ -358,7 +358,7 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
 <style>
   @page {
     size: A4 portrait;
-    margin: 10mm 18mm 12mm 2.5mm;
+    margin: 10mm 21mm 12mm 2.5mm;
     @bottom-right {
       content: "Sivu " counter(page) "/" counter(pages);
       font-family: 'IBM Plex Sans', Arial, Helvetica, sans-serif;
@@ -425,8 +425,8 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   table.ktv-table tr.result.final td { border-top: none; }
   .ktv-hint { font-size: 10pt; color: #666; margin: 0 0 5mm 0; }
   .ktv-note { font-size: 10pt; color: #333; margin: 0; }
-  body.doc-offer { padding-left: 15.5mm; }
-  body.doc-offer .header, body.doc-offer .footer { left: 15.5mm; }
+  body.doc-offer { padding-left: 18.5mm; }
+  body.doc-offer .header, body.doc-offer .footer { left: 18.5mm; }
 
   .doc-section { margin: 0 0 5mm 0; }
   .doc-heading, .offer-line-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
