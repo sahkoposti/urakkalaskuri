@@ -393,6 +393,7 @@ function legacyCalcDiscountPriceBlock(record: CalculationRecord, customer: Custo
  * Verollinen: Yhteensä alv 0, Alv per verokanta, Yhteensä sis. alv. Luvut ovat
  * pyöristettyjen listahintojen summia. Ilman alennusta viimeinen rivi on lihavoitu
  * loppusumma. Alennus tulee sen jälkeen, ja lihavoitu rivi on Alennettu hinta yhteensä.
+ * Usealla kannalla sen perään tulevat "Sisältää ALV" -rivit maksetusta bruttosta.
  * ALV 0 ja käänteinen ALV: ilman alennusta vain Loppusumma (Alv 0 %). Alennuksella
  * Yhteensä alv 0, nettoalennus ja Loppusumma (Alv 0 %). Ei verokantakohtaisia rivejä.
  * Pelkkä laskelman alennus: vanha lohko ja tallennettu maksettava. Useaa verokantaa ei jaeta.
@@ -449,6 +450,7 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
   if (lineDiscount) {
     rows.push(discountRow(record, listGross, printed.gross));
     rows.push({ label: 'Alennettu hinta yhteensä', value: formatCurrency(printed.gross), emphasis: true });
+    if (rates && rates.length > 1) rows.push(...vatIncludedRows(record, printed.gross, true));
   }
   return { includesVat: true, rows };
 }

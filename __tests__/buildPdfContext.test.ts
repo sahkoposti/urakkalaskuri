@@ -653,8 +653,9 @@ describe('buildPdfContext', () => {
       'Yhteensä sis. alv',
       'Alennus yhteensä 10 %',
       'Alennettu hinta yhteensä',
+      'Sisältää ALV 25,5 %',
+      'Sisältää ALV 10 %',
     ]);
-    expect(ctx.price.rows.some((row) => row.label.startsWith('Sisältää ALV'))).toBe(false);
     expect(ctx.price.rows.map((row) => row.value.replace(/\s/g, ' '))).toEqual([
       '200,00 €',
       '25,50 €',
@@ -662,6 +663,8 @@ describe('buildPdfContext', () => {
       '235,50 €',
       '−23,55 €',
       '211,95 €',
+      '22,95 €',
+      '9,00 €',
     ]);
     expect(ctx.vatSummary).toEqual([
       { vatPercent: 25.5, net: 100, vat: 25.5, gross: 125.5 },
