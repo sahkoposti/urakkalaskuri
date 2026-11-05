@@ -46,6 +46,7 @@ import { parseCrewSize } from '../structure/structureSettings';
 import { ensureStructureLines } from '../structure/legacyCalculation';
 import { recordWithManualContractPrices } from '../pdf/manualContract';
 import { storedHourlyRate } from '../structure/structureSettings';
+import type { AttachmentCopyFailure } from '../attachments/types';
 import {
   ACTIVE_STRUCTURE_KEY,
   getDb,
@@ -375,14 +376,18 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
   });
 }
 
-/**
- * Laskelman kopio. Uusi id, ei tarjousnumeroa. Lähde ja sen numero säilyvät.
- * Seuraava tarjous-PDF myöntää kopiolle oman numeron, koska kenttä on tyhjä.
- */
-export function copyCalculationRecord(
+export type { AttachmentCopyFailure };
+
+export type CalculationCopyResult = {
+  record: CalculationRecord;
+  /** Liitteet, joiden tiedostoa ei kopioitu. Laskelman kopio on silti tässä. */
+  attachmentCopyFailures: AttachmentCopyFailure[];
+};
+
+function cloneCalculationRecord(
   source: CalculationRecord,
   newId: string,
-  createdAt: Date = new Date(),
+  createdAt: Date,
 ): CalculationRecord {
   const copy: CalculationRecord = {
     ...source,
@@ -399,15 +404,34 @@ export function copyCalculationRecord(
   return copy;
 }
 
+/**
+ * Laskelman kopio. Uusi id, ei tarjousnumeroa. Lähde ja sen numero säilyvät.
+ * Liitteet kopioidaan uusiksi tiedostoiksi (kohde, kuvateksti ja järjestys säilyvät).
+ * Tiedostokopioinnin epäonnistuminen ei kaada laskelman kopiota.
+ */
+export async function copyCalculationRecord(
+  source: CalculationRecord,
+  newId: string,
+  createdAt: Date = new Date(),
+): Promise<CalculationCopyResult> {
+  const record = cloneCalculationRecord(source, newId, createdAt);
+  const { copyAttachmentsForCalculation } = await import('../attachments/attachmentsRepository');
+  const attachmentCopyFailures = await copyAttachmentsForCalculation(source.id, record.id);
+  return { record, attachmentCopyFailures };
+}
+
 export async function deleteCalculation(id: string): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
     await db.runAsync('DELETE FROM documents WHERE calculation_id = ?', id);
+    await db.runAsync('DELETE FROM attachments WHERE calculation_id = ?', id);
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', id);
     await db.runAsync('DELETE FROM calculations WHERE id = ?', id);
   });
   const { deleteCalculationDocumentFolder } = await import('../documents/documentFiles');
   deleteCalculationDocumentFolder(id);
+  const { deleteCalculationAttachmentFolder } = await import('../attachments/attachmentFiles');
+  deleteCalculationAttachmentFolder(id);
 }
 
 const WIZARD_DRAFT_ID = 'current';
