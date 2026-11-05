@@ -5,7 +5,8 @@
  * Lisätiedot-teksti (tarjouksen Lisätiedot-osio, sellaisenaan).
  * RAKENNEKOHTAISET (`offer_settings:<structureId>`, ei lomakepohjan JSON:ssa):
  * `additionalInfoText` säilyy tallessa, mutta tarjous ja urakkakortti eivät tulosta sitä.
- * Tulostettava Lisätiedot on rakenteen `defaultAdditionalInfo` / rivin `additionalInfo`.
+ * Tulostettava Lisätiedot on rivin oma `additionalInfo`. Puuttuva kenttä (vanha laskelma)
+ * käyttää rakenteen `defaultAdditionalInfo`-oletusta; tyhjä merkkijono ei.
  * `offerPages` säilyy tallessa; tarjous ei lue sivukytkimiä.
  * Kentän `print.offer.esitys` ja `print.urakkakortti.esitys` ovat lomakepohjan JSON-avaimia.
  */

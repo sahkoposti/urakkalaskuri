@@ -334,8 +334,7 @@ export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
   const showDiscount = lines.some((line) => line.discountPercent > 0);
   const rows: OfferRow[] = [];
   for (const line of lines) {
-    const description =
-      printedNote?.lineId === line.id && isManualOfferLine(line, source.structures) ? printedNote.text : '';
+    const description = isManualOfferLine(line, source.structures) ? line.additionalInfo?.trim() ?? '' : '';
     const invalid = lineOfferPriceInvalid(line, includesVat);
     const row: OfferRow = {
       name: line.name,
@@ -362,7 +361,7 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
   for (const line of structureLines) {
     const heading = offerHeading(line, includesVat);
     if (isManualOfferLine(line, source.structures)) {
-      const description = printedNote?.lineId === line.id ? printedNote.text : undefined;
+      const description = line.additionalInfo?.trim() || undefined;
       if (!heading && !description) continue;
       sections.push({ title: line.name, heading, description, textGroups: [], tableRows: [] });
       continue;

@@ -241,11 +241,10 @@ describe('printed total sweep', () => {
         (cardRecord.structureLines ?? []).reduce((sum, line) => sum + (line.contractPriceVat0 > 0 ? line.contractPriceVat0 : 0), 0),
       );
       expect(euros(ctx.contractSum ?? '')).toBe(lineSum);
-      expect(ctx.contractRows.map((row) => row.label)).toEqual([
-        ...(cardRecord.structureLines ?? []).map((row) => `Urakka: ${row.name}`),
-        'Urakka yhteensä (alv0)',
-      ]);
-      expect(euros(ctx.contractRows[ctx.contractRows.length - 1].value)).toBe(lineSum);
+      expect(ctx.contractRows.map((row) => row.label)).toEqual(
+        (cardRecord.structureLines ?? []).map((row) => `Urakka: ${row.name}`),
+      );
+      expect(ctx.contractRows.some((row) => row.label.includes('yhteensä'))).toBe(false);
     }
     const hidden = renderUrakkakorttiHtml(
       buildUrakkakorttiContext({ ...source, record: calculationWithUrakkakorttiHidePrices(rec, true) }),

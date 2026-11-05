@@ -72,7 +72,7 @@ describe('emptyStructureLine', () => {
     expect(line.contractPriceVat0).toBe(0);
     expect(line.materialsVat0).toBe(0);
     expect(line.displayWorkDurationDays).toBeUndefined();
-    expect(line.additionalInfo).toBeUndefined();
+    expect(line.additionalInfo).toBe('');
   });
 });
 

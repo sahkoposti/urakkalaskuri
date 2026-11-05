@@ -188,6 +188,13 @@ describe('applyFormToLine', () => {
     expect(next.overrides).toEqual([]);
   });
 
+  test('tyhjennetty lisätieto jää tyhjäksi merkkijonoksi', () => {
+    const cleared = patchStructureLine(line({ additionalInfo: 'Telineet' }), { additionalInfo: '' });
+    expect(cleared.additionalInfo).toBe('');
+    const blank = patchStructureLine(line({ additionalInfo: 'Telineet' }), { additionalInfo: '   ' });
+    expect(blank.additionalInfo).toBe('');
+  });
+
   test('nimen muokkaus säilyy lomakkeen jälkeen ilman yliajoa', () => {
     const renamed = patchStructureLine(line(), { name: 'Pihan maalaus' });
     expect(renamed.name).toBe('Pihan maalaus');

@@ -234,6 +234,29 @@ describe('draft calculations', () => {
     expect(deleteCalculationAttachmentFolder).toHaveBeenCalledWith('id-1');
   });
 
+  it('keeps the calculation when a folder delete fails, then deletes it on retry', async () => {
+    const { deleteCalculationAttachmentFolder } = jest.requireMock('../src/core/attachments/attachmentFiles') as {
+      deleteCalculationAttachmentFolder: jest.Mock;
+    };
+    await current.execAsync(V3_SQL);
+    await current.execAsync('PRAGMA user_version = 3');
+    await ensureCalculationStatusColumn(current);
+    const draft = draftCalculationFromWizard(session('Poisto', 7000), 'draft-fail', new Date(7000));
+    await saveCalculation(draft);
+    await current.runAsync(`INSERT INTO attachments (id, calculation_id) VALUES ('att-fail', 'draft-fail')`);
+    deleteCalculationAttachmentFolder.mockImplementationOnce(() => {
+      throw new Error('kansio lukittu');
+    });
+    await expect(deleteCalculation('draft-fail')).rejects.toThrow('kansio lukittu');
+    expect(await getCalculation('draft-fail')).not.toBeNull();
+    expect(await current.getAllAsync('SELECT id FROM attachments WHERE calculation_id = ?', 'draft-fail')).toEqual([
+      { id: 'att-fail' },
+    ]);
+    await deleteCalculation('draft-fail');
+    expect(await getCalculation('draft-fail')).toBeNull();
+    expect(await current.getAllAsync('SELECT id FROM attachments WHERE calculation_id = ?', 'draft-fail')).toEqual([]);
+  });
+
   it('does not lower a newer schema version when the column already exists', async () => {
     await current.execAsync(V3_SQL);
     await current.execAsync("ALTER TABLE calculations ADD COLUMN status TEXT NOT NULL DEFAULT 'complete'");

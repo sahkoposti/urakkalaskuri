@@ -194,7 +194,7 @@ export default function GeneralSettingsScreen() {
           placeholder="1,5"
         />
         {sivukulukerroinDraftError(factorText) ? (
-          <Text style={styles.sectionHint}>{sivukulukerroinDraftError(factorText)}</Text>
+          <Text style={styles.fieldError}>{sivukulukerroinDraftError(factorText)}</Text>
         ) : null}
         <Text style={styles.sectionHint}>
           Urakkakortin työntekijähinta on urakka jaettuna tällä. Arvoa ei tulosteta kortille. Tyhjä = 1,5.
@@ -250,6 +250,13 @@ function createStyles(colors: AppColorPalette) {
       padding: 16,
       gap: 4,
       paddingBottom: 32,
+    },
+    fieldError: {
+      marginTop: 4,
+      color: '#C90000',
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 14,
+      lineHeight: 20,
     },
     sectionHint: {
       marginTop: 4,

@@ -2,8 +2,13 @@ import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
 import { defaultOfferCompanySettings } from '../src/core/pdf/defaultOfferSettings';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
-import { structureRowShowsAdditionalInfo } from '../src/core/pdf/structureExtraText';
+import {
+  lineStructureLisatiedot,
+  structureLineAdditionalInfoInputValue,
+  structureRowShowsAdditionalInfo,
+} from '../src/core/pdf/structureExtraText';
 import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
+import { emptyStructureLine } from '../src/core/structure/types';
 import { input, line, record, structure } from './pdfFixtures';
 
 const FIRST = 'Ensimmäisen rakenteen lisätieto.';
@@ -100,5 +105,68 @@ describe('structure Lisätiedot on the real offer and card', () => {
     expect(card).not.toContain('>Muuta<');
     expect(structureRowShowsAdditionalInfo(emptyLines, 'a', emptyStructures)).toBe(false);
     expect(structureRowShowsAdditionalInfo(emptyLines, 'b', emptyStructures)).toBe(false);
+  });
+
+  it('snapshots the structure default at creation and ignores a later default', () => {
+    const created = emptyStructureLine({
+      id: 'new',
+      structure: { ...structure('s1', 'Ulkomaalaus'), defaultAdditionalInfo: '  Alkuperäinen teksti  ' },
+      vatPercent: 25.5,
+    });
+    expect(created.additionalInfo).toBe('Alkuperäinen teksti');
+    const changed = [{ ...structures[0], defaultAdditionalInfo: 'Uusi oletus' }, structures[1]];
+    expect(lineStructureLisatiedot(created, changed)).toBe('Alkuperäinen teksti');
+    const stored = JSON.parse(JSON.stringify(created)) as typeof created;
+    expect(stored.additionalInfo).toBe('Alkuperäinen teksti');
+    expect(lineStructureLisatiedot(stored, changed)).toBe('Alkuperäinen teksti');
+    const offer = offerHtml([created, line('b', 's2', 'Sokkeli')]);
+    const card = cardHtml([created, line('b', 's2', 'Sokkeli')]);
+    expect(offer).toContain('Alkuperäinen teksti');
+    expect(card).toContain('Alkuperäinen teksti');
+    expect(offer).not.toContain('Uusi oletus');
+    expect(card).not.toContain(FIRST);
+    expect(card).not.toContain(SECOND);
+  });
+
+  it('keeps an explicit empty string cleared and lets the next structure win', () => {
+    const cleared = { ...line('a', 's1', 'Ulkomaalaus'), additionalInfo: '' };
+    const later = { ...line('b', 's2', 'Sokkeli'), additionalInfo: SECOND };
+    expect(structureLineAdditionalInfoInputValue(cleared, structures[0])).toBe('');
+    expect(structureLineAdditionalInfoInputValue({ additionalInfo: undefined }, structures[0])).toBe(FIRST);
+    expect(lineStructureLisatiedot(cleared, structures)).toBe('');
+    const reopened = JSON.parse(JSON.stringify(cleared)) as typeof cleared;
+    expect(reopened.additionalInfo).toBe('');
+    expect(structureLineAdditionalInfoInputValue(reopened, structures[0])).toBe('');
+    expect(offerHtml([cleared, later])).toContain(SECOND);
+    expect(cardHtml([cleared, later])).toContain(SECOND);
+    expect(offerHtml([cleared, later])).not.toContain(FIRST);
+    expect(structureRowShowsAdditionalInfo([cleared, later], 'a', structures)).toBe(false);
+    expect(structureRowShowsAdditionalInfo([cleared, later], 'b', structures)).toBe(true);
+  });
+
+  it('prints a manual description in either order without blocking structure Lisätiedot', () => {
+    const manualText = 'Nostin kuvitteelliselle pihalle.';
+    const manual = { ...line('m', 'manual', 'Henkilönostin'), additionalInfo: manualText };
+    const first = { ...line('a', 's1', 'Ulkomaalaus'), additionalInfo: FIRST };
+    const second = { ...line('b', 's2', 'Sokkeli'), additionalInfo: SECOND };
+    for (const lines of [
+      [manual, first],
+      [first, manual],
+      [manual, first, second],
+      [first, manual, second],
+    ]) {
+      const offer = offerHtml(lines);
+      const card = cardHtml(lines);
+      expect(offer).toContain(manualText);
+      expect(offer).toContain(FIRST);
+      expect(card).toContain(FIRST);
+      expect(card).not.toContain(manualText);
+      expect(offer).not.toContain(SECOND);
+      expect(card).not.toContain(SECOND);
+    }
+    expect(structureRowShowsAdditionalInfo([manual, first], 'm', structures)).toBe(true);
+    expect(structureRowShowsAdditionalInfo([manual, first], 'a', structures)).toBe(true);
+    expect(structureRowShowsAdditionalInfo([first, second], 'a', structures)).toBe(true);
+    expect(structureRowShowsAdditionalInfo([first, second], 'b', structures)).toBe(false);
   });
 });

@@ -80,7 +80,6 @@ function emptyLineBase(input: {
   additionalInfo?: string;
   pricesIncludeVat?: boolean;
 }): StructureLine {
-  const additionalInfo = input.additionalInfo?.trim();
   return {
     id: input.id,
     structureId: input.structureId,
@@ -99,7 +98,7 @@ function emptyLineBase(input: {
     marginEur: 0,
     marginPercent: 0,
     pricesIncludeVat: input.pricesIncludeVat,
-    additionalInfo: additionalInfo || undefined,
+    additionalInfo: input.additionalInfo === undefined ? undefined : input.additionalInfo.trim(),
     fieldValues: {},
     formFilled: false,
     overrides: [],
@@ -123,7 +122,7 @@ export function emptyStructureLine(input: {
     materialsVat0: input.structure.defaultMaterialsVat0,
     contractPriceVat0: input.structure.defaultContractPriceVat0,
     displayWorkDurationDays: input.structure.defaultDisplayWorkDurationDays,
-    additionalInfo: input.structure.defaultAdditionalInfo,
+    additionalInfo: input.structure.defaultAdditionalInfo ?? '',
     pricesIncludeVat: input.pricesIncludeVat,
   });
 }

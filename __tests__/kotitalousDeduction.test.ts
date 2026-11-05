@@ -202,6 +202,18 @@ describe('persons actually needed', () => {
     expect(r.capApplied).toBe(false);
   });
 
+  it('G=2300 and n=2 uses the 2100 cap per person, so two persons allow 4200', () => {
+    const r = at(2300, 2);
+    expect(r.grossDeduction).toBe(2300);
+    expect(r.persons).toBe(2);
+    expect(r.settings.capEur).toBe(2100);
+    expect(r.persons * r.settings.capEur).toBe(4200);
+    // k=1: min(2100, 2150)=2100. k=2: min(4200, 2000)=2000. The higher amount is the one-person cap.
+    expect(r.personsUsed).toBe(1);
+    expect(r.deductionAmount).toBe(2100);
+    expect(r.capApplied).toBe(true);
+  });
+
   it('exact cap boundary G=2250 stays on one person without capApplied', () => {
     const r = at(2250, 2);
     expect(r.grossDeduction).toBe(2250);

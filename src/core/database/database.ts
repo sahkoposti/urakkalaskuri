@@ -429,6 +429,10 @@ export async function copyCalculationRecord(
 }
 
 export async function deleteCalculation(id: string): Promise<void> {
+  const { deleteCalculationDocumentFolder } = await import('../documents/documentFiles');
+  const { deleteCalculationAttachmentFolder } = await import('../attachments/attachmentFiles');
+  deleteCalculationDocumentFolder(id);
+  deleteCalculationAttachmentFolder(id);
   const db = await getDb();
   await db.withTransactionAsync(async () => {
     await db.runAsync('DELETE FROM documents WHERE calculation_id = ?', id);
@@ -436,10 +440,6 @@ export async function deleteCalculation(id: string): Promise<void> {
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', id);
     await db.runAsync('DELETE FROM calculations WHERE id = ?', id);
   });
-  const { deleteCalculationDocumentFolder } = await import('../documents/documentFiles');
-  deleteCalculationDocumentFolder(id);
-  const { deleteCalculationAttachmentFolder } = await import('../attachments/attachmentFiles');
-  deleteCalculationAttachmentFolder(id);
 }
 
 const WIZARD_DRAFT_ID = 'current';

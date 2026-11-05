@@ -106,20 +106,14 @@ describe('urakkakortti', () => {
     expect(ctx.contractRows.map((row) => row.label)).toEqual([
       'Urakka: Ulkomaalaus',
       'Urakka: Sokkeli',
-      'Urakka yhteensä (alv0)',
     ]);
-    expect(ctx.contractRows.map((row) => row.value.replace(/\s/g, ' '))).toEqual([
-      '1 000,00 €',
-      '450,00 €',
-      '1 450,00 €',
-    ]);
-    expect(ctx.contractRows[2].emphasis).toBe(true);
+    expect(ctx.contractRows.map((row) => row.value.replace(/\s/g, ' '))).toEqual(['1 000,00 €', '450,00 €']);
     expect(ctx.contractSum?.replace(/\s/g, ' ')).toBe('1 450,00 €');
     expect(renderUrakkakorttiHtml(ctx)).toContain('Urakkasumma alihankkija');
     expect(renderUrakkakorttiHtml(ctx)).toContain('Urakkasumma työntekijä');
     expect(renderUrakkakorttiHtml(ctx)).toContain('Urakka: Ulkomaalaus');
     expect(renderUrakkakorttiHtml(ctx)).toContain('Urakka: Sokkeli');
-    expect(renderUrakkakorttiHtml(ctx)).toContain('Urakka yhteensä (alv0)');
+    expect(renderUrakkakorttiHtml(ctx)).not.toContain('Urakka yhteensä');
     expect(ctx.specGrid.cards.map((c) => c.title)).toEqual(['Ulkomaalaus: Pinta-alat', 'Sokkeli: Pinta-alat']);
   });
 

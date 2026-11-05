@@ -193,11 +193,6 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
         value: formatCurrency(roundToCents(alihankkijaLineAmount(line, overrides))),
       });
     }
-    contractRows.push({
-      label: 'Urakka yhteensä (alv0)',
-      value: formatCurrency(prices.alihankkija),
-      emphasis: true,
-    });
   }
   const duration =
     lines.length === 1

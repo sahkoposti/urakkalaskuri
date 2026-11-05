@@ -95,8 +95,7 @@ export function patchStructureLine(
       displayWorkDurationDays = normalized;
     }
   }
-  const additionalInfo =
-    patch.additionalInfo === undefined ? undefined : patch.additionalInfo.trim() || undefined;
+  const additionalInfo = patch.additionalInfo === undefined ? undefined : patch.additionalInfo.trim();
   const rounded = {
     ...patch,
     ...(patch.quantity !== undefined ? { quantity: roundToCents(patch.quantity) } : {}),

@@ -201,7 +201,6 @@ describe('urakkakortti työntekijä and huomioitavaa', () => {
       'Urakka: Ulkomaalaus',
       'Urakka: Sokkeli',
       'Urakka: Nolla',
-      'Urakka yhteensä (alv0)',
     ]);
     const html = renderUrakkakorttiHtml(ctx);
     const cardBody = bodyOf(html);

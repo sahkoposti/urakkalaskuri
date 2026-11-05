@@ -5,6 +5,7 @@ import { AppCard, AppInput } from '@/src/components/common';
 import { NAME_FIELD_KIND } from '@/src/components/textInputProps';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
+import { structureLineAdditionalInfoInputValue } from '@/src/core/pdf/structureExtraText';
 import { patchStructureLine } from '@/src/core/structure/applyFormToLine';
 import { hasStructureFormPages, isStructureFormIncomplete } from '@/src/core/structure/formPages';
 import {
@@ -176,7 +177,7 @@ export function StructureLineCard({
       {showAdditionalInfo ? (
         <AppInput
           label="Lisätiedot"
-          value={(priced.additionalInfo ?? '').trim() ? priced.additionalInfo ?? '' : structure?.defaultAdditionalInfo ?? ''}
+          value={structureLineAdditionalInfoInputValue(priced, structure)}
           onChangeText={(value) => patch({ additionalInfo: value })}
           kind="sentence"
           multiline

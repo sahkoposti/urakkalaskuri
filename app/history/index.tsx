@@ -111,6 +111,10 @@ function createStyles(colors: AppColorPalette) {
     delete: {
       alignSelf: 'flex-start' as const,
       marginTop: 8,
+      minHeight: 44,
+      minWidth: 44,
+      justifyContent: 'center' as const,
+      paddingHorizontal: 12,
     },
     deleteText: {
       color: '#C90000',

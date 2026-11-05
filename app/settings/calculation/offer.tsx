@@ -1,20 +1,14 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 
-import { AppInput, AppSwitch, PrimaryButton, ScreenLoading, SectionTitle } from '@/src/components/common';
+import { AppInput, PrimaryButton, ScreenLoading, SectionTitle } from '@/src/components/common';
 import { db } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import {
   defaultOfferCompanySettings,
   normalizeOfferCompanySettings,
 } from '@/src/core/pdf/defaultOfferSettings';
-import {
-  offerStructureSettingsFromPageDraft,
-  structureOfferPageDraft,
-  toggleStructureOfferPage,
-  type StructureOfferPageDraft,
-} from '@/src/core/pdf/offerPageDraft';
 import { offerNumberStartWarning } from '@/src/core/pdf/offerNumber';
 import type { OfferCompanySettings } from '@/src/core/pdf/types';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
@@ -64,28 +58,17 @@ export default function OfferSettingsScreen() {
   const [company, setCompany] = useState<CompanyDraft>(toDraft(defaultOfferCompanySettings));
   const [storedFactor, setStoredFactor] = useState(defaultOfferCompanySettings.sivukulukerroin);
   const [storedNextOfferNumber, setStoredNextOfferNumber] = useState<number | undefined>();
-  const [pageDrafts, setPageDrafts] = useState<StructureOfferPageDraft[]>([]);
-  const [storedPageDrafts, setStoredPageDrafts] = useState<StructureOfferPageDraft[]>([]);
 
   useEffect(() => {
     let active = true;
-    Promise.all([db.getOfferCompanySettings(), db.getStoredNextOfferNumber(), db.getProductStructures()])
-      .then(async ([companySettings, storedNext, structures]) => {
-        if (!active) return;
-        const drafts: StructureOfferPageDraft[] = [];
-        for (const structure of structures) {
-          const settings = await db.getOfferStructureSettings(structure.id);
-          const draft = structureOfferPageDraft(structure, settings);
-          if (draft && draft.pages.length > 0) drafts.push(draft);
-        }
+    Promise.all([db.getOfferCompanySettings(), db.getStoredNextOfferNumber()])
+      .then(([companySettings, storedNext]) => {
         if (!active) return;
         setStoredNextOfferNumber(storedNext);
         const draft = toDraft(companySettings);
         setStoredFactor(companySettings.sivukulukerroin);
         setStoredCompany(draft);
         setCompany(draft);
-        setPageDrafts(drafts);
-        setStoredPageDrafts(drafts);
       })
       .catch(() => {
         if (active) showAlert('Virhe', 'Tarjousasetusten lataus epäonnistui. Näytetään oletukset.');
@@ -100,24 +83,18 @@ export default function OfferSettingsScreen() {
 
   const isDirty = useMemo(
     () =>
-      loaded &&
-      (JSON.stringify(company) !== JSON.stringify(storedCompany) ||
-        JSON.stringify(pageDrafts) !== JSON.stringify(storedPageDrafts)),
-    [loaded, company, storedCompany, pageDrafts, storedPageDrafts],
+      loaded && JSON.stringify(company) !== JSON.stringify(storedCompany),
+    [loaded, company, storedCompany],
   );
 
   async function persist(): Promise<boolean> {
     try {
       const companySettings = fromDraft(company, storedFactor);
       await db.saveOfferCompanySettings(companySettings);
-      for (const draft of pageDrafts) {
-        await db.saveOfferStructureSettings(draft.structureId, offerStructureSettingsFromPageDraft(draft));
-      }
       const nextCompany = toDraft(companySettings);
       setStoredFactor(companySettings.sivukulukerroin);
       setStoredCompany(nextCompany);
       setCompany(nextCompany);
-      setStoredPageDrafts(pageDrafts);
       return true;
     } catch {
       showAlert('Virhe', 'Tallennus epäonnistui.');
@@ -175,30 +152,6 @@ export default function OfferSettingsScreen() {
         <Text style={styles.note}>
           Tulostuu tarjouksen Lisätiedot-osioon sellaisenaan (esim. maksuehto, takuu).
         </Text>
-        {pageDrafts.map((draft) => (
-          <View key={draft.structureId}>
-            <SectionTitle title={draft.structureName} />
-            <Text style={styles.note}>Tarjoukseen tulevat lomakkeen sivut.</Text>
-            {draft.pages.map((page) => (
-              <View key={page.pageId} style={styles.pageRow}>
-                <Text style={styles.pageTitle}>{page.title}</Text>
-                <AppSwitch
-                  accessibilityLabel={page.title}
-                  value={page.enabled}
-                  onValueChange={(enabled) =>
-                    setPageDrafts((current) =>
-                      current.map((item) =>
-                        item.structureId === draft.structureId
-                          ? toggleStructureOfferPage(item, page.pageId, enabled)
-                          : item,
-                      ),
-                    )
-                  }
-                />
-              </View>
-            ))}
-          </View>
-        ))}
         <Text style={styles.sectionLabel}>Kotitalousvähennys (vain yksityisasiakas)</Text>
         <AppInput
           label="Vähennys % työn osuudesta (sis. ALV)"
@@ -258,19 +211,6 @@ function createStyles(colors: AppColorPalette) {
       fontFamily: 'IBMPlexSans_400Regular',
       fontSize: 13,
       lineHeight: 20,
-    },
-    pageRow: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      justifyContent: 'space-between' as const,
-      gap: 12,
-      paddingVertical: 4,
-    },
-    pageTitle: {
-      flex: 1,
-      color: colors.text,
-      fontFamily: 'IBMPlexSans_400Regular',
-      fontSize: 15,
     },
   };
 }
