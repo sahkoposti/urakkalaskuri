@@ -119,32 +119,41 @@ describe('kotitalousDeduction persons', () => {
     expect(r.deductionAmount).toBe(2100);
   });
 
-  it('scales deductible and cap for two and three persons, reached and not reached', () => {
+  it('uses only the person count that raises the deduction', () => {
     const twoOpen = kotitalousDeduction({ totalPriceVat: 8000, materialsVat: 0, settings: defaults, persons: 2 });
     expect(twoOpen.persons).toBe(2);
+    expect(twoOpen.personsUsed).toBe(2);
     expect(twoOpen.grossDeduction).toBe(3200);
     expect(twoOpen.deductionAmount).toBe(2900);
     expect(twoOpen.capApplied).toBe(false);
 
     const twoCapped = kotitalousDeduction({ totalPriceVat: 12000, materialsVat: 0, settings: defaults, persons: 2 });
+    expect(twoCapped.personsUsed).toBe(2);
     expect(twoCapped.deductionAmount).toBe(4200);
     expect(twoCapped.capApplied).toBe(true);
 
+    // G=3200. k=1 gives 2100, k=2 gives 2900, k=3 gives 2750. Highest is k=2.
     const threeOpen = kotitalousDeduction({ totalPriceVat: 8000, materialsVat: 0, settings: defaults, persons: 3 });
-    expect(threeOpen.deductionAmount).toBe(2750);
+    expect(threeOpen.persons).toBe(3);
+    expect(threeOpen.personsUsed).toBe(2);
+    expect(threeOpen.deductionAmount).toBe(2900);
     expect(threeOpen.capApplied).toBe(false);
 
     const threeCapped = kotitalousDeduction({ totalPriceVat: 20000, materialsVat: 0, settings: defaults, persons: 3 });
+    expect(threeCapped.personsUsed).toBe(3);
     expect(threeCapped.deductionAmount).toBe(6300);
     expect(threeCapped.capApplied).toBe(true);
   });
 
-  it('deductible scales with n and a zero work share stays zero', () => {
+  it('does not charge a second deductible when one person gives more', () => {
+    // G=800. k=1: 650. k=2: 500. One person wins.
     const scaled = kotitalousDeduction({ totalPriceVat: 2000, materialsVat: 0, settings: defaults, persons: 2 });
     expect(scaled.grossDeduction).toBe(800);
-    expect(scaled.deductionAmount).toBe(500);
+    expect(scaled.personsUsed).toBe(1);
+    expect(scaled.deductionAmount).toBe(650);
     const zero = kotitalousDeduction({ totalPriceVat: 300, materialsVat: 400, settings: defaults, persons: 3 });
     expect(zero.workShareVatIncluded).toBe(0);
+    expect(zero.personsUsed).toBe(1);
     expect(zero.deductionAmount).toBe(0);
   });
 
@@ -163,7 +172,131 @@ describe('kotitalousDeduction persons', () => {
       settings: { ratePercent: 40, deductibleEur: 100, capEur: 1000 },
       persons: 2,
     });
+    expect(r.personsUsed).toBe(2);
     expect(r.deductionAmount).toBe(2000);
     expect(r.capApplied).toBe(true);
+  });
+});
+
+describe('persons actually needed', () => {
+  const at = (gross: number, persons: number, settings = defaults) =>
+    kotitalousDeduction({
+      totalPriceVat: gross / (settings.ratePercent / 100),
+      materialsVat: 0,
+      settings,
+      persons,
+    });
+
+  it('n=2 and G=609.93 uses one deductible, not both', () => {
+    const r = at(609.93, 2);
+    expect(r.grossDeduction).toBe(609.93);
+    expect(r.persons).toBe(2);
+    expect(r.personsUsed).toBe(1);
+    expect(r.deductionAmount).toBe(459.93);
+    expect(r.deductionAmount).not.toBe(309.93);
+    expect(r.capApplied).toBe(false);
+  });
+
+  it('exact cap boundary G=2250 stays on one person without capApplied', () => {
+    const r = at(2250, 2);
+    expect(r.grossDeduction).toBe(2250);
+    expect(r.workShareVatIncluded).toBe(5625);
+    expect(r.personsUsed).toBe(1);
+    expect(r.deductionAmount).toBe(2100);
+    expect(r.capApplied).toBe(false);
+  });
+
+  it('just over the one-person cap still prefers 2100 over the two-person 1950.01', () => {
+    const r = at(2250.01, 2);
+    expect(r.grossDeduction).toBe(2250.01);
+    expect(r.personsUsed).toBe(1);
+    expect(r.deductionAmount).toBe(2100);
+    expect(r.capApplied).toBe(true);
+  });
+
+  it('tie at 2400 keeps the smaller k, and 2500 needs the second person', () => {
+    const tie = at(2400, 2);
+    expect(tie.grossDeduction).toBe(2400);
+    expect(tie.workShareVatIncluded).toBe(6000);
+    expect(tie.personsUsed).toBe(1);
+    expect(tie.deductionAmount).toBe(2100);
+    expect(tie.capApplied).toBe(true);
+
+    const second = at(2500, 2);
+    expect(second.grossDeduction).toBe(2500);
+    expect(second.workShareVatIncluded).toBe(6250);
+    expect(second.personsUsed).toBe(2);
+    expect(second.deductionAmount).toBe(2200);
+    expect(second.capApplied).toBe(false);
+  });
+
+  it('n=3 picks the k with the higher deduction, including the full cap', () => {
+    // G=5000. k=1: min(2100, 4850)=2100. k=2: min(4200, 4700)=4200.
+    // k=3: min(6300, 4550)=4550. Highest is 4550, so k_used=3, not the capped k=2.
+    const mid = at(5000, 3);
+    expect(mid.grossDeduction).toBe(5000);
+    expect(mid.personsUsed).toBe(3);
+    expect(mid.deductionAmount).toBe(4550);
+    expect(mid.capApplied).toBe(false);
+
+    // G=7000. k=2: min(4200, 6700)=4200. k=3: min(6300, 6550)=6300.
+    const high = at(7000, 3);
+    expect(high.grossDeduction).toBe(7000);
+    expect(high.personsUsed).toBe(3);
+    expect(high.deductionAmount).toBe(6300);
+    expect(high.capApplied).toBe(true);
+
+    const huge = at(20000, 3);
+    expect(huge.personsUsed).toBe(3);
+    expect(huge.deductionAmount).toBe(6300);
+    expect(huge.capApplied).toBe(true);
+  });
+
+  it('n=1 matches the previous one-person results below, at and above the cap', () => {
+    const below = at(1000, 1);
+    expect(below.personsUsed).toBe(1);
+    expect(below.deductionAmount).toBe(850);
+    expect(below.capApplied).toBe(false);
+
+    const atCap = at(2250, 1);
+    expect(atCap.personsUsed).toBe(1);
+    expect(atCap.deductionAmount).toBe(2100);
+    expect(atCap.capApplied).toBe(false);
+
+    const above = at(3200, 1);
+    expect(above.personsUsed).toBe(1);
+    expect(above.deductionAmount).toBe(2100);
+    expect(above.capApplied).toBe(true);
+    expect(above.estimatedCostAfterDeduction).toBe(8000 - 2100);
+  });
+
+  it('uses custom deductible and cap, not 150 and 2100', () => {
+    const settings = { ratePercent: 30, deductibleEur: 100, capEur: 1500 };
+    const oneWins = at(600, 2, settings);
+    expect(oneWins.grossDeduction).toBe(600);
+    expect(oneWins.personsUsed).toBe(1);
+    expect(oneWins.deductionAmount).toBe(500);
+
+    const twoWins = at(3000, 3, settings);
+    expect(twoWins.grossDeduction).toBe(3000);
+    expect(twoWins.personsUsed).toBe(2);
+    expect(twoWins.deductionAmount).toBe(2800);
+    expect(twoWins.capApplied).toBe(false);
+  });
+
+  it('stays non-decreasing in G and never below the old all-n formula', () => {
+    const oldForAll = (gross: number, n: number) => Math.min(n * 2100, Math.max(0, gross - n * 150));
+    for (let n = 1; n <= 4; n += 1) {
+      let previous = -1;
+      for (let gross = 0; gross <= 20000; gross += 50) {
+        const r = at(gross, n);
+        expect(r.grossDeduction).toBe(gross);
+        expect(r.deductionAmount).toBeGreaterThanOrEqual(previous);
+        expect(r.deductionAmount).toBeGreaterThanOrEqual(oldForAll(gross, n));
+        expect(r.personsUsed).toBeGreaterThanOrEqual(1);
+        expect(r.personsUsed).toBeLessThanOrEqual(n);
+        previous = r.deductionAmount;
+      }
+    }
   });
 });

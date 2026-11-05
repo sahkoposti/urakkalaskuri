@@ -10,7 +10,7 @@ import {
   sivukulukerroinDraftError,
 } from '../src/core/pdf/defaultOfferSettings';
 import { offerSignatureParties } from '../src/core/pdf/offerDocument';
-import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
+import { OFFER_ACCEPTANCE_SENTENCE, OFFER_DOC_TITLE, renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
 import { buildUrakkakorttiContext, urakkakorttiBodyBlocks } from '../src/core/pdf/urakkakortti';
 import {
@@ -465,6 +465,12 @@ describe('offer signature', () => {
     expect(html).toContain('.offer-sign { display: grid;');
     expect(html).not.toContain('offer-sign-col');
     const sign = html.slice(html.indexOf('class="offer-sign"'), html.indexOf('class="ktv-page'));
+    expect(sign.indexOf(OFFER_ACCEPTANCE_SENTENCE)).toBeGreaterThan(-1);
+    expect(sign.indexOf(OFFER_ACCEPTANCE_SENTENCE)).toBeLessThan(sign.indexOf('>Myyjä<'));
+    expect(html.indexOf(`>${OFFER_DOC_TITLE}<`)).toBeGreaterThan(html.indexOf('class="header"'));
+    expect(html.indexOf(`>${OFFER_DOC_TITLE}<`)).toBeLessThan(html.indexOf('class="doc-section offer-section"'));
+    expect(html.slice(html.indexOf('class="ktv-page'))).not.toContain(OFFER_ACCEPTANCE_SENTENCE);
+    expect(html.slice(html.indexOf('class="ktv-page'))).not.toContain(OFFER_DOC_TITLE);
     expect((sign.match(/>Allekirjoitus</g) ?? []).length).toBe(2);
     expect((sign.match(/>Päiväys</g) ?? []).length).toBe(0);
     expect(html).not.toContain('<table class="offer-sign"');

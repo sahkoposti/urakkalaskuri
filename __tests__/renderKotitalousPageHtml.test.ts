@@ -3,7 +3,7 @@ import { defaultOfferCompanySettings } from '../src/core/pdf/defaultOfferSetting
 import { escapeHtml } from '../src/core/pdf/escapeHtml';
 import { KTV_DEFAULT_NOTE } from '../src/core/pdf/kotitalousDeduction';
 import { calculationWithKtvPersons } from '../src/core/pdf/ktvPersons';
-import { ktvDefaultNote, ktvRateSentence, renderKotitalousPageHtml } from '../src/core/pdf/renderKotitalousPageHtml';
+import { ktvDefaultNote, ktvPersonsUsedHint, ktvRateSentence, renderKotitalousPageHtml } from '../src/core/pdf/renderKotitalousPageHtml';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { input, line, record } from './pdfFixtures';
 
@@ -39,7 +39,7 @@ describe('renderKotitalousPageHtml', () => {
     }
   });
 
-  it('amounts: (2510 - 502) * 40 % = 803.20 - 150 = 653.20; cost after = 1856.80', () => {
+  it('amounts: (2510 - 502) * 40 % = 803.20 - 150 = 653.20, without a cap row or a payable block', () => {
     const html = norm(renderKotitalousPageHtml(buildPdfContext(input(recordAt2510()))));
     const loppu = html.indexOf('Yhteensä sis. alv');
     const tyo = html.indexOf('josta työn osuus (sis. alv)');
@@ -52,8 +52,11 @@ describe('renderKotitalousPageHtml', () => {
     expect(html).toContain('803,20 €');
     expect(html).toContain('−150,00 €');
     expect(html).toContain('653,20 €');
-    expect(html).toContain('1 856,80 €');
-    expect(html).toContain('Enimmäismäärä (1 hlö)');
+    expect(html).not.toContain('Enimmäismäärä');
+    expect(html).not.toContain('Asiakkaan maksettavaksi');
+    expect(html).not.toContain('Arvioitu hinta vähennyksen jälkeen');
+    expect(html).not.toContain('1 856,80 €');
+    expect(html).not.toContain('class="ktv-hint"');
     expect(html).not.toContain('Laskelma on arvio');
     expect(html).toContain(KTV_DEFAULT_NOTE);
   });
@@ -76,7 +79,8 @@ describe('renderKotitalousPageHtml', () => {
     expect(html).not.toContain('2 100,00 €');
     expect(html).not.toContain('150,00 €');
     expect(html).toContain('−100,00 €');
-    expect(html).toContain('Enimmäismäärä (1 hlö)');
+    expect(html).not.toContain('Enimmäismäärä');
+    expect(html).toContain('max 500,00 € / henkilö vuodessa');
     expect(html).toContain('Oma &lt;huomautus&gt;');
     expect(html).not.toContain(KTV_DEFAULT_NOTE);
     expect(html).not.toContain('Laskelma on arvio');
@@ -116,22 +120,26 @@ describe('renderKotitalousPageHtml', () => {
     expect(html).not.toContain('Yhteensä sis. alv');
     expect(html).toContain('josta materiaalit (sis. alv)');
     expect(html).toContain('502,00 €');
+    expect(html).toContain('Alennettu hinta yhteensä');
+    expect(html).not.toContain('Asiakkaan maksettavaksi');
   });
 
   it('n=2 and n=3 change the person rows and the default estimate wording', () => {
     const two = norm(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(recordAt2510(), 2)))));
     expect(two).toContain('Kotitalousvähennyslaskelma (2 hlö)');
     expect(two).not.toContain('Kotitalousvähennyslaskelma (1 hlö)');
-    expect(two).toContain('Omavastuu (2 hlö)');
-    expect(two).toContain('−300,00 €');
-    expect(two).toContain('Enimmäismäärä yhteensä (2 hlö)');
-    expect(two).toContain('4 200,00 €');
-    expect(two).toContain('Arvioitu kotitalousvähennys (2 hlö)');
-    expect(two).toContain('503,20 €');
+    expect(two).toContain('Omavastuu (1 hlö)');
+    expect(two).toContain('−150,00 €');
+    expect(two).toContain('Arvioitu kotitalousvähennys (1 hlö)');
+    expect(two).toContain('653,20 €');
+    expect(two).toContain(ktvPersonsUsedHint(1, 2));
+    expect(two).not.toContain('Enimmäismäärä');
+    expect(two).not.toContain('Asiakkaan maksettavaksi');
+    expect(two).not.toContain('−300,00 €');
     expect(two).not.toContain('Henkilöittäin');
     expect(two).not.toContain('tasajako');
     expect(two).not.toContain('Arvioitu vähennys / henkilö');
-    expect(two).toContain('/ henkilö vuodessa');
+    expect(two).toContain('max 2 100,00 € / henkilö vuodessa');
     expect(two).not.toContain('class="ktv-one-person"');
     expect(two).toContain(ktvDefaultNote(2));
     expect(two).not.toContain('yhdelle henkilölle');
@@ -139,11 +147,10 @@ describe('renderKotitalousPageHtml', () => {
 
     const three = norm(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(recordAt2510(), 3)))));
     expect(three).toContain('Kotitalousvähennyslaskelma (3 hlö)');
-    expect(three).toContain('Omavastuu (3 hlö)');
-    expect(three).toContain('−450,00 €');
-    expect(three).toContain('Enimmäismäärä yhteensä (3 hlö)');
-    expect(three).toContain('6 300,00 €');
-    expect(three).toContain('Arvioitu kotitalousvähennys (3 hlö)');
+    expect(three).toContain('Omavastuu (1 hlö)');
+    expect(three).toContain(ktvPersonsUsedHint(1, 3));
+    expect(three).not.toContain('Omavastuu (3 hlö)');
+    expect(three).not.toContain('Enimmäismäärä');
     expect(three).not.toContain('tasajako');
     expect(three).toContain(ktvDefaultNote(3));
     expect(renderKotitalousPageHtml(buildPdfContext(input(calculationWithKtvPersons(recordAt2510(), 2))))).toMatchSnapshot();
@@ -174,7 +181,7 @@ describe('renderKotitalousPageHtml', () => {
     expect(match?.[1]).not.toContain('<');
   });
 
-  it('prints the previous 1-person and 2-person amounts and always shows the cap', () => {
+  it('prints the previous 1-person amounts and uses one person when n=2 does not raise the deduction', () => {
     const page = (persons: number) =>
       norm(
         renderKotitalousPageHtml({
@@ -189,7 +196,7 @@ describe('renderKotitalousPageHtml', () => {
         }),
       );
     const one = page(1);
-    for (const amount of ['1 725,62 €', '200,80 €', '1 524,82 €', '609,93 €', '−150,00 €', '459,93 €', '1 265,69 €']) {
+    for (const amount of ['1 725,62 €', '200,80 €', '1 524,82 €', '609,93 €', '−150,00 €', '459,93 €']) {
       expect(one).toContain(amount);
     }
     expect(one.indexOf('1 725,62 €')).toBeLessThan(one.indexOf('200,80 €'));
@@ -197,23 +204,54 @@ describe('renderKotitalousPageHtml', () => {
     expect(one.indexOf('1 524,82 €')).toBeLessThan(one.indexOf('609,93 €'));
     expect(one.indexOf('609,93 €')).toBeLessThan(one.indexOf('−150,00 €'));
     expect(one.indexOf('−150,00 €')).toBeLessThan(one.indexOf('459,93 €'));
-    expect(one.indexOf('459,93 €')).toBeLessThan(one.indexOf('1 265,69 €'));
-    expect(one).toContain('Enimmäismäärä (1 hlö)');
-    expect(one).toContain('1 × 2 100,00 €');
-    expect(one).toContain('2 100,00 €');
+    expect(one).toContain('max 2 100,00 € / henkilö vuodessa');
+    expect(one).not.toContain('Enimmäismäärä');
+    expect(one).not.toContain('Asiakkaan maksettavaksi');
+    expect(one).not.toContain('Arvioitu hinta vähennyksen jälkeen');
+    expect(one).not.toContain('1 265,69 €');
+    expect(one).not.toContain('class="ktv-hint"');
     expect(one).not.toContain('Henkilöittäin');
     expect(one).not.toContain('Arvioitu vähennys / henkilö');
     expect(one).not.toContain('tasajako');
     expect(one).not.toContain('Laskelma on arvio');
 
     const two = page(2);
-    expect(two).toContain('−300,00 €');
-    expect(two).toContain('Enimmäismäärä yhteensä (2 hlö)');
-    expect(two).toContain('4 200,00 €');
-    expect(two).toContain('309,93 €');
-    expect(two).toContain('1 415,69 €');
+    expect(two).toContain('Kotitalousvähennyslaskelma (2 hlö)');
+    expect(two).toContain('Omavastuu (1 hlö)');
+    expect(two).toContain('−150,00 €');
+    expect(two).toContain('459,93 €');
+    expect(two).toContain(ktvPersonsUsedHint(1, 2));
+    expect(two).not.toContain('309,93 €');
+    expect(two).not.toContain('−300,00 €');
+    expect(two).not.toContain('1 415,69 €');
+    expect(two).not.toContain('Enimmäismäärä');
     expect(two).not.toContain('Henkilöittäin');
     expect(two).not.toContain('tasajako');
     expect(two).not.toContain('Laskelma on arvio');
+  });
+
+  it('shows the plural hint only when more than one person is needed and n is larger', () => {
+    const html = (persons: number, totalPriceVat: number) =>
+      norm(
+        renderKotitalousPageHtml({
+          ktv: {
+            totalPriceVat,
+            materialsVat: 0,
+            settings: defaultOfferCompanySettings.ktv,
+            footnoteText: '',
+            persons,
+            totalLabel: 'Yhteensä sis. alv',
+          },
+        }),
+      );
+    const twoOfThree = html(3, 7500);
+    expect(twoOfThree).toContain('Kotitalousvähennyslaskelma (3 hlö)');
+    expect(twoOfThree).toContain('Omavastuu (2 hlö)');
+    expect(twoOfThree).toContain(ktvPersonsUsedHint(2, 3));
+    expect(twoOfThree).not.toContain(ktvPersonsUsedHint(1, 3));
+
+    const bothNeeded = html(2, 8000);
+    expect(bothNeeded).toContain('Omavastuu (2 hlö)');
+    expect(bothNeeded).not.toContain('class="ktv-hint"');
   });
 });

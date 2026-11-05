@@ -30,6 +30,15 @@ const eur = formatCurrency;
 const pct = formatPercent;
 const minus = (amount: string) => `\u2212${amount}`;
 
+/** Näytetään vain, kun valittu n on suurempi kuin vähennykseen tarvittava määrä. */
+export function ktvPersonsUsedHint(personsUsed: number, persons: number): string {
+  if (personsUsed >= persons) return '';
+  if (personsUsed === 1) {
+    return 'Laskelmassa on käytetty yhden henkilön omavastuuta ja enimmäismäärää, koska vähennys ei vaadi useampaa.';
+  }
+  return `Laskelmassa on käytetty ${personsUsed} henkilön omavastuuta ja enimmäismäärää, koska vähennys ei vaadi useampaa.`;
+}
+
 function ktvRow(label: string, basis: string, amount: string, className = ''): string {
   const cls = className ? ` class="${className}"` : '';
   return `<tr${cls}><td>${escapeHtml(label)}</td><td class="basis">${escapeHtml(basis)}</td><td class="num">${escapeHtml(amount)}</td></tr>`;
@@ -59,11 +68,11 @@ export function renderKotitalousPageHtml(ctx: Pick<TarjousPdfContext, 'ktv'>): s
   });
   const s = result.settings;
   const n = result.persons;
+  const k = result.personsUsed;
   const totalLabel = ktv.totalLabel.trim() || DEFAULT_TOTAL_LABEL;
   const customNote = ktv.footnoteText.trim();
   const note = customNote || ktvDefaultNote(n);
-  const capLabel = n > 1 ? `Enimmäismäärä yhteensä (${n} hlö)` : 'Enimmäismäärä (1 hlö)';
-  const deductionLabel = `Arvioitu kotitalousvähennys (${n} hlö)`;
+  const hint = ktvPersonsUsedHint(k, n);
   const price = ktvBlock(
     '1. Tarjouksen hinta',
     [
@@ -80,26 +89,16 @@ export function renderKotitalousPageHtml(ctx: Pick<TarjousPdfContext, 'ktv'>): s
         `${pct(s.ratePercent)} × ${eur(result.workShareVatIncluded)}`,
         eur(result.grossDeduction),
       ),
-      ktvRow(`Omavastuu (${n} hlö)`, `${n} × ${eur(s.deductibleEur)}`, minus(eur(n * s.deductibleEur))),
-      ktvRow(capLabel, `${n} × ${eur(s.capEur)}`, eur(n * s.capEur), 'minor'),
-      ktvRow(deductionLabel, '', eur(result.deductionAmount), 'result'),
+      ktvRow(`Omavastuu (${k} hlö)`, `${k} × ${eur(s.deductibleEur)}`, minus(eur(k * s.deductibleEur))),
+      ktvRow(`Arvioitu kotitalousvähennys (${k} hlö)`, '', eur(result.deductionAmount), 'result'),
     ].join(''),
   );
-  const payable = ktvBlock(
-    '3. Asiakkaan maksettavaksi jää (arvio)',
-    [
-      ktvRow(totalLabel, '', eur(ktv.totalPriceVat)),
-      ktvRow(deductionLabel, '', minus(eur(result.deductionAmount))),
-    ].join(''),
-  );
-  const finalPrice = `<div class="price-block ktv-final"><div class="col"><table><tr class="emphasis"><td>Arvioitu hinta vähennyksen jälkeen</td><td class="value">${escapeHtml(eur(result.estimatedCostAfterDeduction))}</td></tr></table></div></div>`;
+  const hintHtml = hint ? `<p class="ktv-hint">${escapeHtml(hint)}</p>\n` : '';
   return `<section class="ktv-page page-break">
 <h2 class="ktv-title">Kotitalousvähennyslaskelma (${n} hlö)</h2>
 <p class="ktv-rate-sentence">${escapeHtml(ktvRateSentence(s))}</p>
 ${price}
 ${deduction}
-${payable}
-${finalPrice}
-<p class="ktv-note">${escapeMultiline(note)}</p>
+${hintHtml}<p class="ktv-note">${escapeMultiline(note)}</p>
 </section>`;
 }

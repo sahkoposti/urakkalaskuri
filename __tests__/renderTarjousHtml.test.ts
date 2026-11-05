@@ -1,10 +1,10 @@
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
 import { defaultOfferCompanySettings } from '../src/core/pdf/defaultOfferSettings';
 import { escapeHtml, escapeMultiline } from '../src/core/pdf/escapeHtml';
-import { pageNumberContent, PDF_DEFAULT_ACCENT } from '../src/core/pdf/pdfStyles';
+import { pageNumberContent, PDF_BODY_FONT_PT, PDF_DEFAULT_ACCENT, pdfStyles } from '../src/core/pdf/pdfStyles';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
 import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
-import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
+import { OFFER_ACCEPTANCE_SENTENCE, OFFER_DOC_TITLE, renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { input, line, record } from './pdfFixtures';
 
 const LOGO = 'data:image/png;base64,AAAA';
@@ -18,6 +18,45 @@ describe('escapeHtml', () => {
 
   it('multiline keeps line breaks safely', () => {
     expect(escapeMultiline('a<x>\r\nb\nc')).toBe('a&lt;x&gt;<br />b<br />c');
+  });
+});
+
+describe('pdf font size', () => {
+  it('uses a 12pt body, one point above the previous 11pt', () => {
+    expect(PDF_BODY_FONT_PT).toBe(12);
+    expect(pdfStyles()).toContain(`font-size: ${PDF_BODY_FONT_PT}pt`);
+    expect(pdfStyles()).not.toContain('font-size: 11pt; line-height');
+  });
+});
+
+describe('offer title and acceptance sentence', () => {
+  it('puts Tarjous / sopimus above the offer and the sentence inside the signature block only', () => {
+    const html = renderTarjousHtml(
+      buildPdfContext(input(record({}, { deliveryScheduleText: 'Viikolla 40' }))),
+    );
+    const titleAt = html.indexOf('class="offer-doc-title"');
+    const signAt = html.indexOf('class="offer-sign"');
+    const ktvAt = html.indexOf('class="ktv-page');
+    expect(html).toContain(`>${OFFER_DOC_TITLE}<`);
+    expect((html.match(/Tarjous \/ sopimus/g) ?? []).length).toBe(1);
+    expect(titleAt).toBeGreaterThan(html.indexOf('class="header"'));
+    expect(titleAt).toBeLessThan(html.indexOf('class="doc-section offer-section"'));
+    expect(titleAt).toBeLessThan(html.indexOf('Toimitusajankohta'));
+    const sign = html.slice(signAt, ktvAt);
+    expect(sign.indexOf(OFFER_ACCEPTANCE_SENTENCE)).toBeGreaterThan(-1);
+    expect(sign.indexOf(OFFER_ACCEPTANCE_SENTENCE)).toBeLessThan(sign.indexOf('offer-sign-role'));
+    expect(sign.indexOf(OFFER_ACCEPTANCE_SENTENCE)).toBeLessThan(sign.indexOf('offer-sign-name'));
+    expect(html).toContain('.offer-sign-accept { grid-column: 1 / -1;');
+    expect(html).toContain('.offer-sign { display: grid;');
+    expect(html).toContain('break-inside: avoid');
+    const ktv = html.slice(ktvAt);
+    expect(ktv).not.toContain(OFFER_DOC_TITLE);
+    expect(ktv).not.toContain(OFFER_ACCEPTANCE_SENTENCE);
+    const card = renderUrakkakorttiHtml(buildUrakkakorttiContext(input(record({}))));
+    expect(card).not.toContain(OFFER_DOC_TITLE);
+    expect(card).not.toContain(OFFER_ACCEPTANCE_SENTENCE);
+    expect(card).not.toContain('offer-doc-title');
+    expect(card).not.toContain('offer-sign-accept');
   });
 });
 
@@ -128,6 +167,8 @@ describe('renderTarjousHtml discount row', () => {
     expect(ktv).toContain('2 259,00 €');
     expect(ktv).toContain('502,00 €');
     expect(ktv).toContain('1 757,00 €');
+    expect(ktv).not.toContain('Asiakkaan maksettavaksi');
+    expect(ktv).not.toContain('Enimmäismäärä');
   });
 
   it('keeps the VAT table only when more than one rate is present', () => {
