@@ -14,6 +14,7 @@ import {
 
 import { MaterialQuantitiesEditor } from '@/src/components/calculation/MaterialQuantitiesEditor';
 import { StructureLineCard } from '@/src/components/calculation/StructureLineCard';
+import { structureRowShowsAdditionalInfo } from '@/src/core/pdf/structureExtraText';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { UpdateOldCalculationsDialog } from '@/src/components/UpdateOldCalculationsDialog';
@@ -41,9 +42,14 @@ import {
   mergeStructureLineMaterials,
 } from '@/src/core/materials/materialQuantities';
 import { createId } from '@/src/core/utils/id';
-import { calculationWithBusinessVatMode, preserveCalculationSnapshot } from '@/src/core/pdf/urakkakorttiCard';
+import { applyRefreshedStructurePrices, calculationWithBusinessVatMode, preserveCalculationSnapshot } from '@/src/core/pdf/urakkakorttiCard';
 import { buildCalculationRecordFromComposer } from '@/src/core/wizard/buildCalculationRecord';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
+import {
+  draftCalculationFromWizard,
+  isDraftCalculation,
+  wizardDraftFromCalculation,
+} from '@/src/core/wizard/draftCalculation';
 import {
   buildPersistedWizardDraft,
   composerHasUnsavedChanges,
@@ -335,6 +341,11 @@ export default function CalculationComposerScreen() {
           const record = await db.getCalculation(routeEditId);
           if (!active || !record) return;
           hydratedRef.current = true;
+          const storedDraft = isDraftCalculation(record) ? wizardDraftFromCalculation(record) : null;
+          if (storedDraft) {
+            restoreDraftForm({ ...storedDraft, editCalculationId: record.id }, true);
+            return;
+          }
           resumedIncompleteDraftRef.current = false;
           const { form } = calculationToFormState(record, products);
           bindExistingCalculation(
@@ -407,7 +418,35 @@ export default function CalculationComposerScreen() {
   }
 
   async function saveDraftAndExit() {
-    await persistDraft();
+    const state = getFormState();
+    const meta = currentEditMeta();
+    let id = firstNonEmptyId(meta.editCalculationId);
+    let createdAt: Date =
+      meta.originalCreatedAt instanceof Date
+        ? meta.originalCreatedAt
+        : typeof meta.originalCreatedAt === 'number'
+          ? new Date(meta.originalCreatedAt)
+          : new Date();
+    if (id) {
+      const existing = await db.getCalculation(id);
+      if (existing && !isDraftCalculation(existing)) {
+        id = undefined;
+      } else if (existing) {
+        createdAt = existing.createdAt;
+      }
+    }
+    if (!id) id = createId();
+    const draft = buildPersistedWizardDraft(
+      state,
+      { editCalculationId: id, originalCreatedAt: createdAt, editFormVersion: meta.editFormVersion },
+      wizardDraft,
+    );
+    bindExistingCalculation(id, createdAt, meta.editFormVersion);
+    await db.saveWizardDraft(draft);
+    await db.saveCalculation(draftCalculationFromWizard(draft, id, createdAt));
+    await refreshWizardDraft();
+    await refreshCalculations();
+    markComposerSaved(state);
     allowComposerExit();
     const action = pendingExitRef.current;
     closeExitDialog();
@@ -599,8 +638,9 @@ export default function CalculationComposerScreen() {
         }),
         previous?.formSnapshot,
       );
-      const record =
+      const priced =
         info.customerType === 'business' ? calculationWithBusinessVatMode(built, businessVatMode) : built;
+      const record = applyRefreshedStructurePrices(priced);
       await db.saveCalculation(record);
       await db.clearWizardDraft();
       await refreshCalculations();
@@ -717,6 +757,7 @@ export default function CalculationComposerScreen() {
                 }
                 onOpenForm={() => void openLineForm(line.id)}
                 onDelete={() => setDeleteLineId(line.id)}
+                showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id)}
               />
               <MaterialQuantitiesEditor
                 line={line}
@@ -737,6 +778,16 @@ export default function CalculationComposerScreen() {
             title="Yhteenveto"
             onPress={() => void finishCalculation(false)}
             disabled={hasIncompleteForm || hasInvalidMaterials}
+          />
+          <OutlinedButton
+            title="Tallenna ja sulje"
+            onPress={() => {
+              if (hasIncompleteForm || hasInvalidMaterials || structureLines.length === 0) {
+                void saveDraftAndExit();
+                return;
+              }
+              void finishCalculation(false);
+            }}
           />
           {hasIncompleteForm ? (
             <Text style={styles.incompleteHint}>

@@ -101,6 +101,7 @@ async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
   await migrateStripCustomerFormPages(db);
   await ensureDocumentsTable(db);
   await ensureAttachmentsTable(db);
+  await ensureCalculationStatusColumn(db);
 }
 
 /** Uusi taulu. CREATE IF NOT EXISTS, ei muuta vanhoja tauluja. Turvallista ajaa kahdesti. */
@@ -135,6 +136,12 @@ export const DOCUMENT_SCHEMA_VERSION = 2;
  * Nosto on idempotentti eikä laske versiota.
  */
 export const ATTACHMENT_SCHEMA_VERSION = 3;
+
+/**
+ * Laskelman tila. user_version 4 lisää `calculations.status`.
+ * Oletus `complete`, joten vanhat rivit säilyvät valmiina. Nosto on idempotentti.
+ */
+export const CALCULATION_STATUS_SCHEMA_VERSION = 4;
 
 export const ATTACHMENTS_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS attachments (
@@ -181,6 +188,20 @@ export async function ensureAttachmentsTable(db: DocumentsDb): Promise<void> {
   const current = Number(row?.user_version ?? 0);
   if (!Number.isFinite(current) || current < ATTACHMENT_SCHEMA_VERSION) {
     await db.execAsync(`PRAGMA user_version = ${ATTACHMENT_SCHEMA_VERSION}`);
+  }
+}
+
+/** `status`-sarake. Turvallista ajaa kahdesti ja jos sarake on jo olemassa. */
+export async function ensureCalculationStatusColumn(db: DocumentsDb): Promise<void> {
+  const columns = await db.getAllAsync('PRAGMA table_info(calculations)');
+  const names = columns.map((column) => String(column.name ?? ''));
+  if (names.length > 0 && !names.includes('status')) {
+    await db.execAsync("ALTER TABLE calculations ADD COLUMN status TEXT NOT NULL DEFAULT 'complete'");
+  }
+  const row = await db.getFirstAsync('PRAGMA user_version');
+  const current = Number(row?.user_version ?? 0);
+  if (!Number.isFinite(current) || current < CALCULATION_STATUS_SCHEMA_VERSION) {
+    await db.execAsync(`PRAGMA user_version = ${CALCULATION_STATUS_SCHEMA_VERSION}`);
   }
 }
 

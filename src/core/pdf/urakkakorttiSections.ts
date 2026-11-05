@@ -11,6 +11,7 @@ import { isManualStructureId } from '@/src/core/structure/types';
 import { lineSpecSnapshot } from './offerPageSpecs';
 import { printableFields, type PrintRow } from './printableFields';
 import { appendPrintedText, buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from './printedSection';
+import { firstPrintedStructureNote } from './structureExtraText';
 import type { OfferStructureSettings } from './types';
 
 /**
@@ -133,9 +134,13 @@ export function buildUrakkakorttiSections(
   },
 ): UrakkakorttiSection[] {
   const reverseVat = Boolean(customerFromRecord(source.record).reverseVat);
+  const lines = ensureStructureLines(source.record);
+  const printedNote = firstPrintedStructureNote(lines, (line) =>
+    structureMuutaText(options?.offerStructureSettings, line.structureId),
+  );
   const sections: UrakkakorttiSection[] = [];
-  for (const line of ensureStructureLines(source.record)) {
-    const muuta = structureMuutaText(options?.offerStructureSettings, line.structureId);
+  for (const line of lines) {
+    const muuta = printedNote?.lineId === line.id ? printedNote.text : '';
     const structure = source.structures.find((item) => item.id === line.structureId);
     if (!lineUsesUrakkakorttiPrint(line, source.structures) || !structure?.form) {
       if (!muuta) continue;

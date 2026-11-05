@@ -6,6 +6,7 @@ import { AppCard, ScreenLoading, ScreenMessage } from '@/src/components/common';
 import { customerFromRecord } from '@/src/core/models/types';
 import { formatPrintedDisplayPrice } from '@/src/core/pdf/buildPdfContext';
 import { formatDate } from '@/src/core/utils/formatters';
+import { isDraftCalculation } from '@/src/core/wizard/draftCalculation';
 import { useApp } from '@/src/context/AppContext';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -36,12 +37,22 @@ export default function HistoryScreen() {
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       renderItem={({ item }) => {
         const customer = customerFromRecord(item);
-        const priceLabel = formatPrintedDisplayPrice(item, customer);
+        const draft = isDraftCalculation(item);
+        const priceLabel = draft ? null : formatPrintedDisplayPrice(item, customer);
         return (
-          <AppCard onPress={() => router.push(`/history/${item.id}`)}>
+          <AppCard
+            onPress={() => {
+              if (draft) {
+                router.push({ pathname: '/wizard', params: { editId: item.id } });
+                return;
+              }
+              router.push(`/history/${item.id}`);
+            }}
+          >
             <Text style={styles.title}>{customer.name}</Text>
+            {draft ? <Text style={styles.badge}>Keskeneräinen</Text> : null}
             {customer.phone ? <Text style={styles.subtitle}>{customer.phone}</Text> : null}
-            <Text style={styles.price}>{priceLabel}</Text>
+            {priceLabel ? <Text style={styles.price}>{priceLabel}</Text> : null}
             <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
           </AppCard>
         );
@@ -62,6 +73,13 @@ function createStyles(colors: AppColorPalette) {
       fontFamily: 'IBMPlexSans_700Bold',
       fontSize: 16,
       color: colors.primary,
+    },
+    badge: {
+      alignSelf: 'flex-start' as const,
+      marginTop: 6,
+      color: '#C90000',
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 13,
     },
     subtitle: {
       marginTop: 4,

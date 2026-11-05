@@ -2,19 +2,15 @@ import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Text } from 'react-native';
 
-import { AppInput, PrimaryButton, ScreenLoading, ScreenMessage, SectionTitle } from '@/src/components/common';
+import { AppInput, PrimaryButton, ScreenLoading, SectionTitle } from '@/src/components/common';
 import { db } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import {
   defaultOfferCompanySettings,
-  formatSivukulukerroin,
   normalizeOfferCompanySettings,
-  sivukulukerroinDraftError,
 } from '@/src/core/pdf/defaultOfferSettings';
 import { offerNumberStartWarning } from '@/src/core/pdf/offerNumber';
-import { syncOfferPages, toOfferPageInclusions } from '@/src/core/pdf/syncOfferPages';
-import type { OfferCompanySettings, SyncedOfferPage } from '@/src/core/pdf/types';
-import { useStructureFormEditor } from '@/src/hooks/useStructureFormEditor';
+import type { OfferCompanySettings } from '@/src/core/pdf/types';
 import { useUnsavedChangesGuard } from '@/src/hooks/useUnsavedChangesGuard';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -28,7 +24,6 @@ type CompanyDraft = {
   ktvCapEur: string;
   ktvFootnoteText: string;
   additionalInfoText: string;
-  sivukulukerroin: string;
 };
 
 function toDraft(s: OfferCompanySettings): CompanyDraft {
@@ -41,53 +36,39 @@ function toDraft(s: OfferCompanySettings): CompanyDraft {
     ktvCapEur: n(s.ktv.capEur),
     ktvFootnoteText: s.ktvFootnoteText,
     additionalInfoText: s.additionalInfoText,
-    sivukulukerroin: formatSivukulukerroin(s.sivukulukerroin),
   };
 }
 
-function fromDraft(d: CompanyDraft): OfferCompanySettings {
+function fromDraft(d: CompanyDraft, sivukulukerroin: number): OfferCompanySettings {
   return normalizeOfferCompanySettings({
     offerNumberStart: d.offerNumberStart,
     offerValidDays: d.offerValidDays,
     ktv: { ratePercent: d.ktvRatePercent, deductibleEur: d.ktvDeductibleEur, capEur: d.ktvCapEur },
     ktvFootnoteText: d.ktvFootnoteText.trim(),
     additionalInfoText: d.additionalInfoText,
-    sivukulukerroin: d.sivukulukerroin,
+    sivukulukerroin,
   });
 }
 
 export default function OfferSettingsScreen() {
   const styles = useThemedStyles(createStyles);
   const { showAlert } = useThemedAlert();
-  const { structureId, structure, formDefinition } = useStructureFormEditor();
   const [loaded, setLoaded] = useState(false);
   const [storedCompany, setStoredCompany] = useState<CompanyDraft>(toDraft(defaultOfferCompanySettings));
   const [company, setCompany] = useState<CompanyDraft>(toDraft(defaultOfferCompanySettings));
-  const [storedInfo, setStoredInfo] = useState('');
-  const [info, setInfo] = useState('');
-  const [storedPages, setStoredPages] = useState<SyncedOfferPage[]>([]);
-  const [pages, setPages] = useState<SyncedOfferPage[]>([]);
+  const [storedFactor, setStoredFactor] = useState(defaultOfferCompanySettings.sivukulukerroin);
   const [storedNextOfferNumber, setStoredNextOfferNumber] = useState<number | undefined>();
 
   useEffect(() => {
-    if (!formDefinition) return;
     let active = true;
-    Promise.all([
-      db.getOfferCompanySettings(),
-      db.getOfferStructureSettings(structureId),
-      db.getStoredNextOfferNumber(),
-    ])
-      .then(([companySettings, structureSettings, storedNext]) => {
+    Promise.all([db.getOfferCompanySettings(), db.getStoredNextOfferNumber()])
+      .then(([companySettings, storedNext]) => {
         if (!active) return;
         setStoredNextOfferNumber(storedNext);
         const draft = toDraft(companySettings);
+        setStoredFactor(companySettings.sivukulukerroin);
         setStoredCompany(draft);
         setCompany(draft);
-        setStoredInfo(structureSettings.additionalInfoText);
-        setInfo(structureSettings.additionalInfoText);
-        const synced = syncOfferPages(formDefinition, structureSettings);
-        setStoredPages(synced);
-        setPages(synced);
       })
       .catch(() => {
         if (active) showAlert('Virhe', 'Tarjousasetusten lataus epäonnistui. Näytetään oletukset.');
@@ -98,36 +79,21 @@ export default function OfferSettingsScreen() {
     return () => {
       active = false;
     };
-  }, [formDefinition, structureId, showAlert]);
+  }, [showAlert]);
 
   const isDirty = useMemo(
-    () =>
-      loaded &&
-      (JSON.stringify(company) !== JSON.stringify(storedCompany) ||
-        info !== storedInfo ||
-        JSON.stringify(toOfferPageInclusions(pages)) !== JSON.stringify(toOfferPageInclusions(storedPages))),
-    [loaded, company, storedCompany, info, storedInfo, pages, storedPages],
+    () => loaded && JSON.stringify(company) !== JSON.stringify(storedCompany),
+    [loaded, company, storedCompany],
   );
 
   async function persist(): Promise<boolean> {
-    const factorError = sivukulukerroinDraftError(company.sivukulukerroin);
-    if (factorError) {
-      showAlert('Tarkista sivukulukerroin', factorError);
-      return false;
-    }
     try {
-      const companySettings = fromDraft(company);
+      const companySettings = fromDraft(company, storedFactor);
       await db.saveOfferCompanySettings(companySettings);
-      await db.saveOfferStructureSettings(structureId, {
-        additionalInfoText: info.trim(),
-        offerPages: toOfferPageInclusions(pages),
-      });
       const draft = toDraft(companySettings);
+      setStoredFactor(companySettings.sivukulukerroin);
       setStoredCompany(draft);
       setCompany(draft);
-      setStoredInfo(info.trim());
-      setInfo(info.trim());
-      setStoredPages(pages);
       return true;
     } catch {
       showAlert('Virhe', 'Tallennus epäonnistui.');
@@ -137,7 +103,6 @@ export default function OfferSettingsScreen() {
 
   const { allowExit, exitDialog, save } = useUnsavedChangesGuard({ isDirty, onSave: persist });
 
-  if (!formDefinition) return <ScreenMessage message="Tuoterakennetta ei löytynyt." />;
   if (!loaded) return <ScreenLoading />;
 
   async function handleSave() {
@@ -160,11 +125,7 @@ export default function OfferSettingsScreen() {
     <>
       <Stack.Screen options={{ title: 'Tarjous' }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <SectionTitle title={structure?.name ? `Tämä rakenne: ${structure.name}` : 'Tämä rakenne'} />
-        <AppInput label="Lisätiedot" value={info} onChangeText={setInfo} kind="sentence" multiline placeholder="Valinnainen" />
-        <Text style={styles.note}>Tulostuu tämän rakenteen osioon tarjouksessa (Muuta).</Text>
-
-        <SectionTitle title="Yhteiset (kaikki tuoterakenteet)" />
+        <SectionTitle title="Tarjous" />
         <AppInput
           label="Tarjousnumeron aloitus"
           value={company.offerNumberStart}
@@ -190,21 +151,6 @@ export default function OfferSettingsScreen() {
         <Text style={styles.note}>
           Tulostuu tarjouksen Lisätiedot-osioon sellaisenaan (esim. maksuehto, takuu).
         </Text>
-        <AppInput
-          label="Sivukulukerroin"
-          value={company.sivukulukerroin}
-          onChangeText={setField('sivukulukerroin')}
-          kind="decimal"
-          placeholder="1,5"
-        />
-        {sivukulukerroinDraftError(company.sivukulukerroin) ? (
-          <Text style={styles.note}>{sivukulukerroinDraftError(company.sivukulukerroin)}</Text>
-        ) : null}
-        <Text style={styles.note}>
-          Urakkakortin Työntekijä-tila jakaa urakan tällä. Arvoa ei tulosteta kortille. Tyhjä = 1,5. Sallittu
-          alue on suurempi kuin 1 ja enintään 3.
-        </Text>
-
         <Text style={styles.sectionLabel}>Kotitalousvähennys (vain yksityisasiakas)</Text>
         <AppInput
           label="Vähennys % työn osuudesta (sis. ALV)"

@@ -6,19 +6,15 @@ import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
-import { estimateWorkDurationDays, formatCurrency, roundToCents } from '@/src/core/utils/formatters';
+import { estimateWorkDurationDays, formatCurrency } from '@/src/core/utils/formatters';
 
 import { buildFooter, customerHeaderLines, type PdfFooter, type PriceRow } from './buildPdfContext';
-import { DEFAULT_SIVUKULUKERROIN } from './defaultOfferSettings';
 import {
   assertPrintableEmployeeContracts,
-  cardContractBase,
+  cardHeaderPrices,
   effectiveHuomioitavaa,
-  employeeContractAmount,
   readUrakkakorttiHidePrices,
   readUrakkakorttiMode,
-  readUrakkakorttiRivihinnat,
-  urakkakorttiModeLabel,
   type UrakkakorttiMode,
 } from './urakkakorttiCard';
 import { lineSpecSnapshot, specCardsFromSnapshot, type SpecCard } from './offerPageSpecs';
@@ -41,7 +37,7 @@ export type UrakkakorttiContext = {
   kind: 'urakkakortti';
   customerLines: string[];
   offerInfo: PriceRow[];
-  /** Rivikohtaiset urakat; yhteensä-rivi kun rivejä > 1. Ainoat €-arvot. */
+  /** Usean rivin erittely. Yhden rivin summa on vain otsikossa, ei tässä uudelleen. */
   contractRows: PriceRow[];
   infoRows: PriceRow[];
   specGrid: SpecGridLayout;
@@ -56,10 +52,12 @@ export type UrakkakorttiContext = {
   /** Kortin otsikko: "Urakkakortti: Alihankkija" tai "Urakkakortti: Työntekijä". */
   modeLabel: string;
   /**
-   * Otsikon urakan summa. Sama muotoilu kuin taulukon yhteensä-rivillä.
-   * null, kun hintoja ei näytetä tai urakkarivejä ei ole.
+   * Otsikon alihankkijan summa. null, kun hintoja ei näytetä.
+   * Sama luku tulostetaan vain kerran, ei taulukossa uudelleen.
    */
   contractSum: string | null;
+  /** Otsikon työntekijän summa. null, kun kerroin puuttuu tai on kelvoton tai hinnat on piilotettu. */
+  employeeSum: string | null;
   footer: PdfFooter;
 };
 
@@ -70,7 +68,10 @@ export type BuildUrakkakorttiInput = {
   products: Product[];
   settings: AppSettings;
   generatedAt: Date;
-  /** Yritysasetuksen Sivukulukerroin. Puuttuu = oletus 1,5. Käytetään vain Työntekijä-tilassa. */
+  /**
+   * Yritysasetuksen Sivukulukerroin. Käyttökelpoinen vain kun 1 < kerroin <= 3.
+   * Puuttuva tai kelvoton jättää työntekijän summan pois. Oletusta 1,5 ei keksitä kelvottoman tilalle.
+   */
   sivukulukerroin?: number;
   /** Rakenteen Muuta-teksti. Yrityksen Lisätiedot-ehtoja ei välitetä kortille. */
   offerStructureSettings?: Record<string, OfferStructureSettings | undefined>;
@@ -176,34 +177,12 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
   const lines = ensureStructureLines(record);
   const materialTable = resolveUrakkakorttiMaterialTable(input);
   const mode = readUrakkakorttiMode(record.formSnapshot);
-  const factor =
-    typeof input.sivukulukerroin === 'number' && Number.isFinite(input.sivukulukerroin)
-      ? input.sivukulukerroin
-      : DEFAULT_SIVUKULUKERROIN;
   const hidePrices = readUrakkakorttiHidePrices(record.formSnapshot);
+  const prices = hidePrices ? null : cardHeaderPrices(record, input.sivukulukerroin);
+  if (!hidePrices) assertPrintableEmployeeContracts(record);
+  const contractSum = prices ? formatCurrency(prices.alihankkija) : null;
+  const employeeSum = prices?.tyontekija == null ? null : formatCurrency(prices.tyontekija);
   const contractRows: PriceRow[] = [];
-  if (!hidePrices) {
-    assertPrintableEmployeeContracts(record);
-    const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
-    const amounts = lines.map((line) =>
-      roundToCents(employeeContractAmount(cardContractBase(line, mode, overrides), mode, factor, line.name)),
-    );
-    contractRows.push(
-      ...lines.map((line, index) => ({
-        label: lines.length > 1 ? `Urakka: ${line.name}` : 'Urakka (alv0)',
-        value: formatCurrency(amounts[index] ?? 0),
-      })),
-    );
-    if (lines.length > 1) {
-      const total = roundToCents(amounts.reduce((sum, amount) => sum + amount, 0));
-      contractRows.push({
-        label: 'Urakka yhteensä (alv0)',
-        value: formatCurrency(total),
-        emphasis: true,
-      });
-    }
-  }
-  const contractSum = contractRows.find((row) => row.emphasis)?.value ?? contractRows[0]?.value ?? null;
   const duration =
     lines.length === 1
       ? resolveDisplayedWorkDurationDays(lines[0], settings.weatherReserveFactor)
@@ -230,8 +209,9 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     customerNotes: customer.notes?.trim() ?? '',
     huomioitavaa: effectiveHuomioitavaa(record),
     mode,
-    modeLabel: urakkakorttiModeLabel(mode),
+    modeLabel: 'Urakkakortti',
     contractSum,
+    employeeSum,
     footer: buildFooter(input.company),
   };
 }

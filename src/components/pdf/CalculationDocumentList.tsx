@@ -7,7 +7,6 @@ import {
   PHONE_FOLDER_CLEAR,
   PHONE_FOLDER_EXPLANATION,
   documentListLabel,
-  phoneSaveActionLabel,
   phoneSaveDetail,
   phoneStatusLabel,
 } from '@/src/core/documents/documentLabels';
@@ -31,16 +30,19 @@ export function PhoneFolderBar({
   label,
   onChange,
   onClear,
+  note,
 }: {
   label: string;
   onChange: () => void;
   onClear: () => void;
+  note?: string;
 }) {
   const styles = useThemedStyles(createStyles);
   return (
     <AppCard style={styles.card}>
       <Text style={styles.label}>{label}</Text>
       <Text style={styles.hint}>{PHONE_FOLDER_EXPLANATION}</Text>
+      {note ? <Text style={styles.hint}>{note}</Text> : null}
       <View style={styles.actions}>
         <Pressable onPress={onChange} accessibilityLabel={PHONE_FOLDER_CHANGE}>
           <Text style={styles.action}>{PHONE_FOLDER_CHANGE}</Text>
@@ -91,14 +93,9 @@ export function CalculationDocumentList({
             <Pressable onPress={() => onShare(document)} accessibilityLabel="Jaa">
               <Text style={styles.action}>Jaa</Text>
             </Pressable>
-            {phoneSaveActionLabel(document.phoneSaveStatus, platform) ? (
-              <Pressable
-                onPress={() => onSaveToPhone(document)}
-                accessibilityLabel={phoneSaveActionLabel(document.phoneSaveStatus, platform) ?? ''}
-              >
-                <Text style={styles.action}>{phoneSaveActionLabel(document.phoneSaveStatus, platform)}</Text>
-              </Pressable>
-            ) : null}
+            <Pressable onPress={() => onSaveToPhone(document)} accessibilityLabel="Lataa">
+              <Text style={styles.action}>Lataa</Text>
+            </Pressable>
             <Pressable onPress={() => onDelete(document)} accessibilityLabel="Poista">
               <Text style={styles.action}>Poista</Text>
             </Pressable>

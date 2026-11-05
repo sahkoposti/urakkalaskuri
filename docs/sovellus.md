@@ -1,12 +1,26 @@
 # Urakkalaskuri – sovelluksen kuvaus
 
-ColoRajattoman tarjouslaskuri (Expo / React Native, Android). Pakettiversio **v1.3.2**. Laskelma = asiakas + toimitusajankohta + matka-aika yhteen suuntaan + tuoterakennerivit.
+ColoRajattoman tarjouslaskuri (Expo / React Native, Android). Pakettiversio **v1.3.3**. Laskelma = asiakas + toimitusajankohta + matka-aika yhteen suuntaan + tuoterakennerivit.
 
 Tämä sivu kuvaa **miten sovellus toimii nyt**. JSON-kentät ja kaavat: [lomakepohja-json-ohje.md](./lomakepohja-json-ohje.md). Tuoterakenteiden malli: [tuoterakenteet.md](./tuoterakenteet.md). Kehitysympäristö: [README.md](../README.md).
 
-Nykyinen versio on **1.3.2**. Siihen kuuluvat tarjouksen ja urakkakortin PDF sekä liitteet (valinta, kuvankäsittely, tarjouksessa kaksi kuvaa sivulla tai yksi iso kuva, urakkakortissa neljä kuvaa sivulla). Kuvaus: [liitteet.md](./liitteet.md). Suunnitelma: [v1.3-suunnitelma.md](./v1.3-suunnitelma.md).
+Nykyinen versio on **1.3.3**. Siihen kuuluvat tarjouksen ja urakkakortin PDF sekä liitteet (valinta, kuvankäsittely, tarjouksessa kaksi kuvaa sivulla tai yksi iso kuva, urakkakortissa neljä kuvaa sivulla). Kuvaus: [liitteet.md](./liitteet.md). Suunnitelma: [v1.3-suunnitelma.md](./v1.3-suunnitelma.md).
 
 Composer-malli on tuotantopolku. Yhtenäisyystarkistuksen siivous: [yhtenaisyystarkistus.md](./yhtenaisyystarkistus.md).
+
+### v1.3.3
+
+- Keskeneräinen laskenta tallentuu `calculations.status = 'draft'` ja näkyy historiassa punaisella merkinnällä **Keskeneräinen**. Uusi laskenta ei poista muita luonnoksia. Vanha `wizard_drafts`-rivi nostetaan luonnoslaskelmaksi, sitä ei hävitetä.
+- Laskelman tiedoista ja Dokumentit-välilehdeltä on poistettu alareunan **Sulje**.
+- Puhelimen kansio on asetuksissa (Yleinen), vain Androidilla. Laatikko on väliaikainen ja poistuu versiossa 1.4.
+- Uusi liite lisätään yhdellä **Lisää liite** -painikkeella. Oletuskohde on urakkakortti. Tarjous laskee kuvat kahteen sivuun, kun ne mahtuvat, muuten yhteen. Kortti pysyy 2×2-ruudukkona.
+- Luontilomakkeella liitteet ovat **Liitteet: N** heti **Luo tarjous** / **Luo urakkakortti** -painikkeen yläpuolella. N on sen dokumentin liitteiden määrä.
+- Dokumenttirivillä on **Lataa**. Onnistuminen ilmoitetaan sovelluksessa. Jos kansiota ei ole valittu, näytetään virhe.
+- Urakkakortti tulostaa **Urakkasumma alihankkija** ja, kun sivukulukerroin on käytettävissä, **Urakkasumma työntekijä**. Rivikohtainen hinnan yliajo säilyy. Vanhaa tilavalintaa ei enää kysytä.
+- Kotitalousvähennystulosteessa ei ole Peruste-saraketta. Sovelluksen näytössä sellaista saraketta ei ollut.
+- Tarjouksen yhteiset asetukset ovat **Asetukset → Tarjous**. **Sivukulukerroin** on **Asetukset → Yleinen**. Arvo tallentuu edelleen `offer_company_settings`-avaimeen. Rakenteen oma `offer_settings`-lisätieto tulostuu Muuta-tekstinä vain ensimmäiseltä rakenteelta, jolla tekstiä on. Jo tallennettua tekstiä ei tyhjennetä.
+- Rivin lomakkeen viimeisellä sivulla on **Päivitä hinta** (oletus päällä). Päällä lomakkeen hinta korvaa rivin hinnan ja rivikohtaisen yliajon. Pois päältä hinnat ja yliajot säilyvät.
+- Laskentasivulla **Tallenna ja sulje** on **Yhteenveto**-painikkeen alla. Valmis laskelma tallennetaan kuten yhteenveto. Keskeneräinen tallennetaan luonnokseksi.
 
 ---
 
@@ -18,13 +32,13 @@ Composer-malli on tuotantopolku. Yhtenäisyystarkistuksen siivous: [yhtenaisyyst
 | Laskenta (`/wizard`) | Asiakas, toimitusajankohta, tuoterakennerivit. **Yhteenveto** tallentaa laskelman |
 | Asiakas (`/wizard/customer`) | Yhteystiedot ja rekisterihaku (nimi *) |
 | Rivin lomake (`/wizard/line/…`) | Tuoterakenteen lomakesivut. **Valmis** laskee rivin hinnat |
-| Laskelman tiedot | Yhteinen näkymä yhteenvedon jälkeen ja historiasta. Roskakori poistaa laskelman. Kopiointi vain asiakastiedoista. **Sulje** → historia |
+| Laskelman tiedot | Yhteinen näkymä yhteenvedon jälkeen ja historiasta. Roskakori poistaa laskelman. Kopiointi vain asiakastiedoista. Paluu on laitteen oma. |
 | Historia | Tallennetut laskelmat |
 | Tuotteet | Materiaalit: ostohinta, myyntihinta, kate, menekki, työkerroin, tuoterakenteet. Järjestys nuolilla |
 | Asiakkaat | Rekisteri |
-| Asetukset | Yleinen, tuoterakenteet (lomake per rakenne), teema |
+| Asetukset | Yleinen, tarjous, tuoterakenteet (lomake per rakenne), yritys, teema |
 
-Kesken jäänyt laskenta: punainen palkki **Jatka laskentaa**. **Uusi laskenta** kysyy vahvistuksen, jos luonnos on olemassa (luonnos tyhjennetään).
+Kesken jäänyt laskenta: punainen palkki **Jatka laskentaa**. **Uusi laskenta** jättää aiemmat luonnokset historiaan.
 
 ---
 

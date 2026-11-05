@@ -274,7 +274,7 @@ describe('buildPdfContext', () => {
     expect(ktv).toContain('554,81 €');
     expect(ktv).toContain('451,80 €');
     expect(ktv).toContain('Arvioitu hinta vähennyksen jälkeen');
-    expect(ktv).toContain('2 213,82 € − 554,81 €');
+    expect(ktv).not.toContain('Peruste');
     expect(ktv).toContain('1 659,01 €');
     expect(ktv).not.toContain('Asiakkaan maksettavaksi');
     expect(ktv).not.toContain('Enimmäismäärä');
@@ -343,7 +343,7 @@ describe('buildPdfContext', () => {
     expect(ctx.sections.map((section) => section.title)).toEqual(['Sokkeli', 'Ulkomaalaus']);
     expect(ctx.sections.map((section) => section.textGroups.find((group) => group.group === 'muuta')?.items)).toEqual([
       ['Toinen teksti'],
-      ['Sisältää telineet.'],
+      undefined,
     ]);
     expect(ctx.additionalInfo).toBe('');
   });

@@ -2,7 +2,6 @@ import type { CalculationRecord, CustomerInfo } from '@/src/core/models/types';
 import {
   calculationWithHuomioitavaa,
   calculationWithUrakkakorttiHidePrices,
-  calculationWithUrakkakorttiMode,
   calculationWithUrakkakorttiRivihinnat,
   invalidEmployeeContractWarning,
   parseCardPriceInput,
@@ -213,13 +212,13 @@ export function calculationForUrakkakorttiCreate(
     typedRowPrices: Record<string, string>;
   },
 ): CalculationRecord {
-  let next = calculationWithUrakkakorttiMode(record, input.mode);
+  let next = record;
   next = calculationWithUrakkakorttiHidePrices(next, input.hidePrices);
   if (input.dirtyHuomio) next = calculationWithHuomioitavaa(next, input.typedHuomio);
   if (input.dirtyRowPrices) {
     next = calculationWithUrakkakorttiRivihinnat(
       next,
-      urakkakorttiRivihinnatFromFieldTexts(next, input.typedRowPrices, input.mode),
+      urakkakorttiRivihinnatFromFieldTexts(next, input.typedRowPrices, 'alihankkija'),
     );
   }
   return next;

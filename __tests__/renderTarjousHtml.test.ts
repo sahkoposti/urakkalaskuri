@@ -91,7 +91,7 @@ describe('renderTarjousHtml', () => {
     expect(html).toContain('Lisätiedot:');
     expect(html).toContain('Maksuehto kuvitteellinen.');
     expect(html).toContain('Sisältää telineet.');
-    expect(html).toContain('Toinen teksti');
+    expect(html).not.toContain('Toinen teksti');
     expect(html).toContain('"Sivu " counter(page) "/" counter(pages)');
     expect(html).toMatchSnapshot();
   });
@@ -180,7 +180,7 @@ describe('renderTarjousHtml discount row', () => {
     expect(ktv).toContain('451,80 €');
     expect(ktv).toContain('1 807,20 €');
     expect(ktv).toContain('Arvioitu hinta vähennyksen jälkeen');
-    expect(ktv).toContain('2 259,00 € − 572,88 €');
+    expect(ktv).not.toContain('Peruste');
     expect(ktv).toContain('1 686,12 €');
     expect(ktv).not.toContain('Asiakkaan maksettavaksi');
     expect(ktv).not.toContain('Enimmäismäärä');

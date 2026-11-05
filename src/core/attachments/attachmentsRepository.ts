@@ -63,7 +63,7 @@ function mapRow(row: AttachmentRow): Attachment {
 }
 
 function requireDestination(value: AttachmentDestination | undefined): AttachmentDestination {
-  if (value === undefined) return 'none';
+  if (value === undefined) return 'card';
   if (!isDestination(value)) throw new Error('Virheellinen liitteen kohde.');
   return value;
 }

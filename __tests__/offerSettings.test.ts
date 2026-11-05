@@ -1,10 +1,12 @@
 import {
   DEFAULT_KTV_SETTINGS,
   defaultOfferCompanySettings,
+  formatSivukulukerroin,
   normalizeKtvSettings,
   normalizeOfferCompanySettings,
   parseStoredOfferCompanySettings,
   parseStoredOfferStructureSettings,
+  withSivukulukerroin,
 } from '../src/core/pdf/defaultOfferSettings';
 import { offerStructureSettingsKey } from '../src/core/pdf/types';
 
@@ -41,6 +43,33 @@ describe('offer company settings', () => {
       additionalInfoText: '',
       sivukulukerroin: 1.5,
     });
+  });
+
+  it('loads a saved sivukulukerroin unchanged for Yleinen', () => {
+    const saved = {
+      offerValidDays: 21,
+      offerNumberStart: 11000,
+      ktv: { ratePercent: 40, deductibleEur: 150, capEur: 2100 },
+      ktvFootnoteText: 'Huom kuvitteellinen',
+      additionalInfoText: 'Maksuehto kuvitteellinen.',
+      sivukulukerroin: 1.5,
+    };
+    const loaded = parseStoredOfferCompanySettings(JSON.stringify(saved));
+    expect(loaded).toEqual(saved);
+    expect(formatSivukulukerroin(loaded.sivukulukerroin)).toBe('1,5');
+    const custom = parseStoredOfferCompanySettings(JSON.stringify({ ...saved, sivukulukerroin: 2.25 }));
+    expect(custom.sivukulukerroin).toBe(2.25);
+    expect(custom.offerNumberStart).toBe(11000);
+    expect(custom.additionalInfoText).toBe('Maksuehto kuvitteellinen.');
+    expect(withSivukulukerroin(custom, formatSivukulukerroin(custom.sivukulukerroin))).toEqual(custom);
+    const offerFieldsKept = normalizeOfferCompanySettings({
+      ...custom,
+      offerValidDays: 10,
+      sivukulukerroin: custom.sivukulukerroin,
+    });
+    expect(offerFieldsKept.sivukulukerroin).toBe(2.25);
+    expect(offerFieldsKept.offerValidDays).toBe(10);
+    expect(offerFieldsKept.additionalInfoText).toBe(custom.additionalInfoText);
   });
 
   it('KTV: partial merge, decimal comma, rate above 100 rejected', () => {

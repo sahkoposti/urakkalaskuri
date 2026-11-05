@@ -56,7 +56,7 @@ describe('renderKotitalousPageHtml', () => {
     const afterRow = html.indexOf('Arvioitu hinta vähennyksen jälkeen');
     expect(deductionRow).toBeGreaterThan(-1);
     expect(afterRow).toBeGreaterThan(deductionRow);
-    expect(html).toContain('2 510,00 € − 653,20 €');
+    expect(html).not.toContain('Peruste');
     expect(html).toContain('1 856,80 €');
     expect(html).toContain('class="result final"');
     expect(html).not.toContain('Enimmäismäärä');
@@ -148,7 +148,7 @@ describe('renderKotitalousPageHtml', () => {
     expect(two).toContain('max 2 100,00 € / henkilö vuodessa');
     expect(two).not.toContain('class="ktv-one-person"');
     expect(two.indexOf('Arvioitu hinta vähennyksen jälkeen')).toBeGreaterThan(two.indexOf('Arvioitu kotitalousvähennys (1 hlö)'));
-    expect(two).toContain('2 510,00 € − 653,20 €');
+    expect(two).not.toContain('Peruste');
     expect(two).toContain('1 856,80 €');
     expect(ktvDefaultNote(1)).toBe(KTV_DEFAULT_NOTE);
     expect(ktvDefaultNote(2)).toBe(KTV_DEFAULT_NOTE);
@@ -222,7 +222,7 @@ describe('renderKotitalousPageHtml', () => {
     expect(one.indexOf('609,93 €')).toBeLessThan(one.indexOf('−150,00 €'));
     expect(one.indexOf('−150,00 €')).toBeLessThan(one.indexOf('459,93 €'));
     expect(one.indexOf('459,93 €')).toBeLessThan(one.indexOf('Arvioitu hinta vähennyksen jälkeen'));
-    expect(one).toContain('1 725,62 € − 459,93 €');
+    expect(one).not.toContain('Peruste');
     expect(one).toContain('1 265,69 €');
     expect(one).toContain('max 2 100,00 € / henkilö vuodessa');
     expect(one).not.toContain('Enimmäismäärä');
@@ -238,7 +238,7 @@ describe('renderKotitalousPageHtml', () => {
     expect(two).toContain('Omavastuu (1 hlö)');
     expect(two).toContain('−150,00 €');
     expect(two).toContain('459,93 €');
-    expect(two).toContain('1 725,62 € − 459,93 €');
+    expect(two).not.toContain('Peruste');
     expect(two).toContain('1 265,69 €');
     expect(two).toContain(ktvPersonsUsedHint(1, 2));
     expect(two).not.toContain('309,93 €');

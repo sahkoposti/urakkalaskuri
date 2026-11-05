@@ -3,12 +3,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   View,
 } from 'react-native';
 
-import { OutlinedButton, PrimaryButton, ScreenMessage, SectionTitle } from '@/src/components/common';
+import { AppSwitch, OutlinedButton, PrimaryButton, ScreenMessage, SectionTitle } from '@/src/components/common';
 import { WizardFieldList } from '@/src/components/form/WizardFieldList';
 import {
   CalculationValidationError,
@@ -70,6 +71,7 @@ export default function StructureLineFormScreen() {
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(
     () => ({ ...(line?.fieldValues ?? {}) }),
   );
+  const [refreshPrices, setRefreshPrices] = useState(true);
 
   useEffect(() => {
     if (!line) return;
@@ -194,7 +196,7 @@ export default function StructureLineFormScreen() {
         result,
         fieldValues,
         structure.commissionPercent,
-        { formVersion: structure.form.version, snapshot },
+        { formVersion: structure.form.version, snapshot, refreshPrices },
       );
       return writeLineToDraft(nextLine);
     } catch (error) {
@@ -301,6 +303,17 @@ export default function StructureLineFormScreen() {
               <PrimaryButton title={nextTitle} onPress={handleNext} />
             </View>
           </View>
+          {step === stepCount - 1 ? (
+            <Pressable
+              style={styles.refreshRow}
+              onPress={() => setRefreshPrices((current) => !current)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: refreshPrices }}
+            >
+              <Text style={styles.refreshLabel}>Päivitä hinta</Text>
+              <AppSwitch value={refreshPrices} onValueChange={setRefreshPrices} />
+            </Pressable>
+          ) : null}
           {currentPage ? (
             <WizardFieldList
               form={structure.form}
@@ -343,6 +356,19 @@ function createStyles(colors: AppColorPalette) {
     },
     actionButton: {
       flex: 1,
+    },
+    refreshRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      marginBottom: 16,
+      gap: 12,
+    },
+    refreshLabel: {
+      flex: 1,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 16,
+      color: colors.text,
     },
     empty: {
       fontFamily: 'IBMPlexSans_400Regular',

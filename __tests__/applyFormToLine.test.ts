@@ -1,3 +1,4 @@
+import { applyRefreshedStructurePrices } from '../src/core/pdf/urakkakorttiCard';
 import { applyFormResultToLine, patchStructureLine, saveIncompleteFormToLine } from '../src/core/structure/applyFormToLine';
 import type { StructureLine } from '../src/core/models/types';
 import type { CalculationResult } from '../src/core/calculation/calculationPipeline';
@@ -96,6 +97,64 @@ describe('applyFormToLine', () => {
     expect(next.workDurationDays).toBe(2);
     expect(next.overrides).toContain('workDurationDisplay');
     expect(next.contractPriceVat0).toBe(800);
+  });
+
+  test('Päivitä hinta korvaa urakan ja poistaa yliajon, myös kortin rivihinnan', () => {
+    const overridden = patchStructureLine(line({ contractPriceVat0: 100, unitPriceVat0: 100 }), {
+      contractPriceVat0: 50,
+    });
+    const next = applyFormResultToLine(overridden, result, { maali: 'uusi' }, 7, { refreshPrices: true });
+    expect(next.contractPriceVat0).toBe(800);
+    expect(next.unitPriceVat0).toBe(3393.52);
+    expect(next.overrides).not.toContain('contractPrice');
+    expect(next.priceRefreshed).toBe(true);
+    const saved = applyRefreshedStructurePrices({
+      id: 'c',
+      projectName: 'Kuvitteellinen',
+      groupDurationHours: 0,
+      crewSize: 1,
+      hourlyRate: 0,
+      marginPercent: 0,
+      commissionPercent: 0,
+      contractPriceVat0: 50,
+      materialsVat0: 0,
+      marginEur: 0,
+      commissionEur: 0,
+      totalPriceVat0: 50,
+      vatPercent: 25.5,
+      vatAmount: 0,
+      totalPriceVat: 50,
+      workDurationDays: 0,
+      discountPercent: 0,
+      discountEur: 0,
+      totalPriceVatBeforeDiscount: 50,
+      totalPriceVat0BeforeDiscount: 50,
+      createdAt: new Date(2026, 0, 1),
+      lines: [],
+      structureLines: [next],
+      formSnapshot: {
+        formId: 'f',
+        formVersion: 1,
+        fields: [],
+        urakkakorttiRivihinnat: { l1: 50, other: 12 },
+      },
+    });
+    expect(saved.structureLines?.[0].priceRefreshed).toBeUndefined();
+    expect(saved.structureLines?.[0].contractPriceVat0).toBe(800);
+    expect(saved.formSnapshot?.urakkakorttiRivihinnat).toEqual({ other: 12 });
+  });
+
+  test('Päivitä hinta pois päältä ei korvaa hintaa eikä yliajoa', () => {
+    const overridden = patchStructureLine(line({ contractPriceVat0: 100, unitPriceVat0: 90 }), {
+      contractPriceVat0: 50,
+      unitPriceVat0: 40,
+    });
+    const next = applyFormResultToLine(overridden, result, { maali: 'sama' }, 7, { refreshPrices: false });
+    expect(next.contractPriceVat0).toBe(50);
+    expect(next.unitPriceVat0).toBe(40);
+    expect(next.overrides).toEqual(expect.arrayContaining(['contractPrice', 'unitPrice']));
+    expect(next.priceRefreshed).toBeUndefined();
+    expect(next.fieldValues.maali).toBe('sama');
   });
 
   test('lisätiedot säilyvät lomakkeen jälkeen', () => {

@@ -126,15 +126,13 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   .ktv-rate-sentence { margin: 0 0 5mm 0; font-size: 11pt; color: #333; }
   .ktv-block { margin: 0 0 5mm 0; break-inside: avoid; page-break-inside: avoid; }
   table.ktv-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-  table.ktv-table col.c-basis { width: 52mm; }
   table.ktv-table col.c-amount { width: 34mm; }
   table.ktv-table th { font-size: 9pt; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #555; border-bottom: 0.25mm solid #ccc; text-align: left; padding: 0.6mm 1.5mm 0.6mm 0; }
   table.ktv-table th.num { text-align: right; padding-right: 0; }
   table.ktv-table td { font-size: 11.5pt; padding: 1.2mm 1.5mm 1.2mm 0; border-bottom: 0.2mm solid #eee; vertical-align: baseline; }
-  table.ktv-table td.basis { font-size: 10pt; color: #555; text-align: right; white-space: nowrap; }
   table.ktv-table td.num { text-align: right; white-space: nowrap; padding-right: 0; }
   table.ktv-table tr.sub td { padding-left: 5mm; }
-  table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
+  table.ktv-table tr.sub td.num { padding-left: 0; }
   table.ktv-table tr.minor td { color: #444; }
   table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
   table.ktv-table tr.result.final td { border-top: none; }

@@ -24,7 +24,6 @@ export function TarjousExportForm({
 
   return (
     <>
-      <AttachmentSummaryLink attachments={attachments} onPress={onShowAttachments} />
       {offer.showKtvPageChoice ? (
         <ChoiceToggle
           label="Sisällytä kotitalousvähennyslaskelma (KTV-sivu)"
@@ -95,6 +94,7 @@ export function TarjousExportForm({
           onChange={offer.onBusinessVatModeChange}
         />
       ) : null}
+      <AttachmentSummaryLink attachments={attachments} target="offer" onPress={onShowAttachments} />
       <OutlinedButton title={offer.createTitle} onPress={offer.onCreate} disabled={offer.createDisabled} />
     </>
   );

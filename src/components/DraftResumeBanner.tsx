@@ -3,6 +3,7 @@ import { Pressable, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApp } from '@/src/context/AppContext';
+import { isDraftCalculation } from '@/src/core/wizard/draftCalculation';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
@@ -11,11 +12,15 @@ const BANNER_HEIGHT = 40;
 
 export function DraftResumeBanner() {
   const styles = useThemedStyles(createStyles);
-  const { wizardDraft } = useApp();
+  const { wizardDraft, calculations } = useApp();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const latestDraft = calculations.find((item) => isDraftCalculation(item));
 
-  if (!wizardDraft || pathname.startsWith('/wizard')) {
+  if (pathname.startsWith('/wizard')) {
+    return null;
+  }
+  if (!wizardDraft && !latestDraft) {
     return null;
   }
 
@@ -30,7 +35,7 @@ export function DraftResumeBanner() {
         pressed && styles.bannerPressed,
       ]}
       onPress={() => {
-        const editId = wizardDraft.editCalculationId;
+        const editId = wizardDraft?.editCalculationId ?? latestDraft?.id;
         if (editId) {
           router.push({ pathname: '/wizard', params: { editId } });
           return;

@@ -81,7 +81,9 @@ describe('urakkakortti', () => {
   it('single line: contract, duration, crew, specs, notes area; snapshot', () => {
     const rec = record({ notes: 'Koira pihalla' });
     const ctx = buildUrakkakorttiContext(ukInput(rec));
-    expect(ctx.contractRows).toEqual([{ label: 'Urakka (alv0)', value: expect.stringMatching(/1\s000,00\s€/) }]);
+    expect(ctx.contractRows).toEqual([]);
+    expect(ctx.contractSum?.replace(/\s/g, ' ')).toBe('1 000,00 €');
+    expect(ctx.employeeSum).toBeNull();
     expect(ctx.infoRows.map((r) => r.label)).toEqual(['Työn arvioitu kesto']);
     expect(renderUrakkakorttiHtml(ctx)).not.toContain('Työryhmän koko');
     expect(ctx.specGrid.mode).toBe('single');
@@ -89,7 +91,9 @@ describe('urakkakortti', () => {
     expect(html).toContain('Urakkakortti');
     expect(html).toContain('Koira pihalla');
     expect(html).toContain('Huomioitavaa');
-    expect(html).toContain('Urakkakortti: Alihankkija');
+    expect(html).toContain('Urakkasumma alihankkija');
+    expect(html).not.toContain('Urakka (alv0)');
+    expect(html).not.toContain('Urakkakortti: Alihankkija');
     expect(html).not.toContain('Muistiinpanot');
     expect(html).not.toContain('Asiakkaan lisätiedot');
     expect(html).not.toContain('Työryhmän koko');
@@ -99,12 +103,8 @@ describe('urakkakortti', () => {
   it('multi-structure: one card with per-line contract sums and total', () => {
     const lines = [line('a', 's1', 'Ulkomaalaus'), { ...line('b', 's2', 'Sokkeli', '30'), contractPriceVat0: 450 }];
     const ctx = buildUrakkakorttiContext(ukInput(record({}, { structureLines: lines })));
-    expect(ctx.contractRows.map((r) => r.label)).toEqual([
-      'Urakka: Ulkomaalaus',
-      'Urakka: Sokkeli',
-      'Urakka yhteensä (alv0)',
-    ]);
-    expect(ctx.contractRows[2].value.replace(/\s/g, ' ')).toBe('1 450,00 €');
+    expect(ctx.contractRows).toEqual([]);
+    expect(ctx.contractSum?.replace(/\s/g, ' ')).toBe('1 450,00 €');
     expect(ctx.specGrid.cards.map((c) => c.title)).toEqual(['Ulkomaalaus: Pinta-alat', 'Sokkeli: Pinta-alat']);
   });
 
@@ -137,9 +137,9 @@ describe('urakkakortti', () => {
       const html = bodyOf(renderUrakkakorttiHtml(buildUrakkakorttiContext(ukInput({ ...rec, customer: record(customer).customer }))));
       expect(html).not.toMatch(/ALV|Kate|Palkkio|Loppusumma|Hinta|Ale %|Kotitalous|Voimassa|Tarjousnumero|10285|Lisätiedot:/);
       expect(html).not.toMatch(/2\s510|2\s000,00|333,33|77,77|502,00/);
-      const euroLines = html.split('\n').filter((l) => l.includes('€'));
-      expect(euroLines.every((l) => l.includes('Urakka'))).toBe(true);
-      expect((html.match(/€/g) ?? []).length).toBe(2);
+      expect(html).toContain('Urakkasumma alihankkija');
+      expect(html).not.toContain('Urakka (alv0)');
+      expect((html.match(/€/g) ?? []).length).toBe(1);
     }
   });
 
@@ -154,9 +154,9 @@ describe('urakkakortti', () => {
         missing: { additionalInfoText: 'Ei kuulu riville', offerPages: [] },
       },
     });
-    expect(ctx.sections.map((section) => section.title)).toEqual(['Ulkomaalaus', 'Sokkeli']);
+    expect(ctx.sections.map((section) => section.title)).toEqual(['Ulkomaalaus']);
     expect(ctx.sections[0].textGroups).toEqual([{ group: 'muuta', title: 'Muuta', items: [long] }]);
-    expect(ctx.sections[1].textGroups).toEqual([{ group: 'muuta', title: 'Muuta', items: ['Nokihormi kuvitteellinen.'] }]);
+    expect(JSON.stringify(ctx.sections)).not.toContain('Nokihormi');
     expect(ctx.huomioitavaa).toBe('Koira pihalla');
     const html = renderUrakkakorttiHtml(ctx);
     expect(html).toContain('>Muuta<');
@@ -218,26 +218,28 @@ describe('urakkakortti', () => {
     expect(renderUrakkakorttiHtml(ctx)).toContain('Portti auki');
   });
 
-  it('highlights Urakan summa in the title with the same amount as the table total', () => {
-    const single = buildUrakkakorttiContext(ukInput(record({})));
-    expect(single.contractSum).toBe(single.contractRows[0].value);
+  it('prints each header price once and hides the työntekijä row when the factor is missing', () => {
+    const single = buildUrakkakorttiContext({ ...ukInput(record({})), sivukulukerroin: 1.5 });
     const singleHtml = renderUrakkakorttiHtml(single);
-    expect(singleHtml).toContain('Urakan summa');
-    expect(singleHtml).toContain(`class="uk-sum-value">${single.contractSum}</span>`);
+    expect(singleHtml).toContain('Urakkasumma alihankkija');
+    expect(singleHtml).toContain('Urakkasumma työntekijä');
+    expect(singleHtml).not.toContain('Urakka (alv0)');
+    expect(singleHtml).not.toContain('Urakan summa');
+    expect(singleHtml.split('Urakkasumma alihankkija').length).toBe(2);
+    expect(singleHtml.split('Urakkasumma työntekijä').length).toBe(2);
     expect(singleHtml.indexOf('uk-title')).toBeLessThan(singleHtml.indexOf('class="price-block"'));
 
     const lines = [line('a', 's1', 'Ulkomaalaus'), { ...line('b', 's2', 'Sokkeli'), contractPriceVat0: 450 }];
     const multi = buildUrakkakorttiContext(ukInput(record({}, { structureLines: lines })));
-    const total = multi.contractRows.find((row) => row.emphasis);
-    expect(multi.contractSum).toBe(total?.value);
     expect(multi.contractSum?.replace(/\s/g, ' ')).toBe('1 450,00 €');
-    expect(renderUrakkakorttiHtml(multi)).toContain(`class="uk-sum-value">${multi.contractSum}</span>`);
+    expect(multi.employeeSum).toBeNull();
 
     const hidden = buildUrakkakorttiContext(
       ukInput(record({}, { formSnapshot: { formId: '', formVersion: 0, fields: [], urakkakorttiHidePrices: true } })),
     );
     expect(hidden.contractRows).toEqual([]);
     expect(hidden.contractSum).toBeNull();
-    expect(renderUrakkakorttiHtml(hidden)).not.toContain('Urakan summa');
+    expect(hidden.employeeSum).toBeNull();
+    expect(renderUrakkakorttiHtml(hidden)).not.toContain('Urakkasumma');
   });
 });

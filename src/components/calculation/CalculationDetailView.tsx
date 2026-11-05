@@ -6,7 +6,7 @@ import { AttachmentSection } from '@/src/components/attachments/AttachmentSectio
 import { DetailTabBar } from '@/src/components/calculation/DetailTabBar';
 import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
-import { CalculationDocumentList, PhoneFolderBar } from '@/src/components/pdf/CalculationDocumentList';
+import { CalculationDocumentList } from '@/src/components/pdf/CalculationDocumentList';
 import { DocumentFormModal } from '@/src/components/pdf/DocumentFormModal';
 import { DocumentReadySheet } from '@/src/components/pdf/DocumentReadySheet';
 import { DOKUMENTTI_ACTIONS, type DetailTab } from '@/src/components/pdf/pdfExportFormModel';
@@ -46,6 +46,7 @@ import { estimateWorkDurationDays } from '@/src/core/utils/formatters';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
 import { roundedLineCardPrices } from '@/src/core/pdf/offerDocument';
 import { isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
+import { structureRowShowsAdditionalInfo } from '@/src/core/pdf/structureExtraText';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import { useApp } from '@/src/context/AppContext';
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -83,7 +84,6 @@ export function CalculationDetailView({
   onCopyCalculation,
   onRecordChange,
   attachmentEpoch = 0,
-  onFooterPress,
   onDeletePress,
 }: CalculationDetailViewProps) {
   const styles = useThemedStyles(createStyles);
@@ -195,13 +195,6 @@ export function CalculationDetailView({
               />
             </AppCard>
           ))}
-          {pdf.showPhoneFolder ? (
-            <PhoneFolderBar
-              label={pdf.phoneFolderLabel}
-              onChange={pdf.changePhoneFolder}
-              onClear={pdf.clearPhoneFolder}
-            />
-          ) : null}
           <View ref={attachmentsRef} collapsable={false}>
             <AttachmentSection
               record={record}
@@ -224,7 +217,6 @@ export function CalculationDetailView({
               pdf.retryPhoneSave(document);
             }}
           />
-          <OutlinedButton title="Sulje" onPress={onFooterPress} />
         </View>
       ) : (
         <>
@@ -320,11 +312,10 @@ export function CalculationDetailView({
           offerSnapshot={record.formSnapshot}
           weatherReserveFactor={settings.weatherReserveFactor}
           showPriceSummary={showStructureSummaries}
+          showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id)}
           travelTimeHoursOneWay={record.travelTimeHoursOneWay}
         />
       ))}
-
-      <OutlinedButton title="Sulje" onPress={onFooterPress} />
         </>
       )}
     </ScrollView>
@@ -381,6 +372,7 @@ function LineDetail({
   offerSnapshot,
   weatherReserveFactor,
   showPriceSummary,
+  showAdditionalInfo,
   travelTimeHoursOneWay,
 }: {
   line: StructureLine;
@@ -388,6 +380,7 @@ function LineDetail({
   offerSnapshot?: CalculationRecord['formSnapshot'];
   weatherReserveFactor: number;
   showPriceSummary: boolean;
+  showAdditionalInfo: boolean;
   travelTimeHoursOneWay?: number;
 }) {
   const { products, structures, settings } = useApp();
@@ -427,7 +420,7 @@ function LineDetail({
           showDuration
         />
       ) : null}
-      {line.additionalInfo?.trim() ? (
+      {showAdditionalInfo && line.additionalInfo?.trim() ? (
         <AppCard>
           <ResultRow label="Lisätiedot" value={line.additionalInfo.trim()} />
         </AppCard>
@@ -495,16 +488,14 @@ function createStyles(colors: AppColorPalette) {
       backgroundColor: colors.accent,
     },
     pendingNotice: {
-      padding: 12,
-      borderWidth: 1,
-      borderColor: colors.accent,
-      borderRadius: 5,
-      backgroundColor: colors.surface,
+      paddingVertical: 8,
+      paddingHorizontal: 0,
     },
     pendingNoticeText: {
-      fontFamily: 'IBMPlexSans_700Bold',
-      fontSize: 15,
-      color: colors.accent,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.text,
     },
     deleteButton: {
       padding: 4,

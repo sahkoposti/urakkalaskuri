@@ -47,6 +47,8 @@ type StructureLineCardProps = {
   onChange: (line: StructureLine) => void;
   onOpenForm?: () => void;
   onDelete: () => void;
+  /** Myöhemmän rivin oma teksti piilotetaan, kun aiemmalla rivillä on jo lisätiedot. */
+  showAdditionalInfo?: boolean;
 };
 
 export function StructureLineCard({
@@ -58,6 +60,7 @@ export function StructureLineCard({
   onChange,
   onOpenForm,
   onDelete,
+  showAdditionalInfo = true,
 }: StructureLineCardProps) {
   const styles = useThemedStyles(createStyles);
   const priced = withDerivedLinePricing(line);
@@ -170,14 +173,16 @@ export function StructureLineCard({
         onChangeValue={(value) => patch({ discountPercent: value })}
       />
 
-      <AppInput
-        label="Lisätiedot"
-        value={priced.additionalInfo ?? ''}
-        onChangeText={(value) => patch({ additionalInfo: value })}
-        kind="sentence"
-        multiline
-        placeholder="Valinnainen"
-      />
+      {showAdditionalInfo ? (
+        <AppInput
+          label="Lisätiedot"
+          value={priced.additionalInfo ?? ''}
+          onChangeText={(value) => patch({ additionalInfo: value })}
+          kind="sentence"
+          multiline
+          placeholder="Valinnainen"
+        />
+      ) : null}
 
       <View style={styles.metaRow}>
         <Text style={styles.metaLabel}>Kate ({vat0Tag()})</Text>

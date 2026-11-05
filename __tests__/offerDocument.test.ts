@@ -307,8 +307,8 @@ describe('offer rows and sections', () => {
     expect(sections[1].textGroups).toEqual([
       { group: 'osa_alueet', title: 'Osa-alueet', items: ['Piippu'] },
       { group: 'tyovaiheet', title: 'Työvaiheet', items: ['Pohjatyö'] },
-      { group: 'muuta', title: 'Muuta', items: ['Nokihormi kuvitteellinen.'] },
     ]);
+    expect(JSON.stringify(sections[1])).not.toContain('Nokihormi');
     expect(sections[1].tableRows).toEqual([
       { label: 'Leveys', value: '40 cm' },
       { label: 'Työn arvioitu kesto', value: '2 työpäivää' },

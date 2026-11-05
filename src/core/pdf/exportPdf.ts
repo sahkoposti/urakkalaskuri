@@ -1,9 +1,10 @@
-import { readAttachmentPageLayout } from '../attachments/attachmentPageLayout';
+import { resolveOfferAttachmentLayout } from '../attachments/attachmentSectionHtml';
 import type { Attachment } from '../attachments/types';
 import type { AttachmentPdfDeps } from '../attachments/prepareAttachmentPrint';
 import type { CompanyProfile } from '../company/types';
 import type { AppSettings, CalculationRecord, Product } from '../models/types';
 import { customerFromRecord } from '../models/types';
+import { isDraftCalculation } from '../wizard/draftCalculation';
 import type { ProductStructure } from '../structure/types';
 import { ensureStructureLines } from '../structure/legacyCalculation';
 import { buildPdfContext } from './buildPdfContext';
@@ -126,6 +127,9 @@ async function listedAttachments(deps: PdfExportDeps, calculationId: string): Pr
 async function requireCalculation(deps: PdfExportDeps, id: string): Promise<CalculationRecord> {
   const record = await deps.getCalculation(id);
   if (!record) throw new Error('Laskelmaa ei löytynyt.');
+  if (isDraftCalculation(record)) {
+    throw new Error('Keskeneräisestä laskelmasta ei voi tehdä dokumenttia.');
+  }
   return record;
 }
 
@@ -188,7 +192,7 @@ export async function exportTarjousPdf(
           attachments: {
             items,
             target: 'offer' as const,
-            layout: readAttachmentPageLayout(record.formSnapshot),
+            layout: resolveOfferAttachmentLayout(),
           },
           composeHtml: renderOffer,
           attachmentDeps: deps.attachmentPdfDeps,

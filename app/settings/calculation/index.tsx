@@ -126,12 +126,6 @@ export default function CalculationSettingsScreen() {
           subtitle="Lisää kenttiä, valintalistoja ja kaavoja"
           onPress={() => router.push(href('/settings/calculation/fields'))}
         />
-        <SettingsNavCard
-          title="Tarjous"
-          subtitle="Tarjous-PDF: sivut, lisätiedot, numerointi, voimassaolo, kotitalousvähennys"
-          onPress={() => router.push(href('/settings/calculation/offer'))}
-        />
-
         <SectionTitle title="Lomakepohja" />
         <OutlinedButton
           title="Tuo JSON…"

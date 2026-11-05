@@ -38,13 +38,13 @@ export function ktvPersonsUsedHint(personsUsed: number, persons: number): string
   return `Laskelmassa on käytetty ${personsUsed} henkilön omavastuuta ja enimmäismäärää, koska vähennys ei vaadi useampaa.`;
 }
 
-function ktvRow(label: string, basis: string, amount: string, className = ''): string {
+function ktvRow(label: string, _basis: string, amount: string, className = ''): string {
   const cls = className ? ` class="${className}"` : '';
-  return `<tr${cls}><td>${escapeHtml(label)}</td><td class="basis">${escapeHtml(basis)}</td><td class="num">${escapeHtml(amount)}</td></tr>`;
+  return `<tr${cls}><td>${escapeHtml(label)}</td><td class="num">${escapeHtml(amount)}</td></tr>`;
 }
 
 function ktvBlock(title: string, rows: string): string {
-  return `<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>${escapeHtml(title)}</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-amount" /></colgroup><thead><tr><th>${escapeHtml(title)}</th><th class="num">Summa</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 /**

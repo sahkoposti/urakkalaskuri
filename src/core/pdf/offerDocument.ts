@@ -16,6 +16,7 @@ import { applyVat, offerIncludesVat } from '@/src/core/utils/priceDisplay';
 import { lineSpecSnapshot } from './offerPageSpecs';
 import { printableFields, type PrintRow } from './printableFields';
 import { appendPrintedText, buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from './printedSection';
+import { firstPrintedStructureNote } from './structureExtraText';
 import type { OfferStructureSettings } from './types';
 
 /**
@@ -352,8 +353,13 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
   const customer = customerFromRecord(source.record);
   const includesVat = offerIncludesVat(customer, source.record.formSnapshot);
   const reverseVat = Boolean(customer.reverseVat);
+  const structureLines = ensureStructureLines(source.record);
+  const printedNote = firstPrintedStructureNote(
+    structureLines,
+    (line) => source.offerStructureSettings[line.structureId]?.additionalInfoText,
+  );
   const sections: OfferSection[] = [];
-  for (const line of ensureStructureLines(source.record)) {
+  for (const line of structureLines) {
     const heading = offerHeading(line, includesVat);
     if (isManualOfferLine(line, source.structures)) {
       const description = line.additionalInfo?.trim() || undefined;
@@ -364,8 +370,7 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
     const structure = matchingStructure(line, source.structures);
     if (!hasOfferForm(structure)) continue;
     const body = buildPrintedBody(offerPrintRows(line, structure, source, reverseVat));
-    const extra = source.offerStructureSettings[line.structureId]?.additionalInfoText?.trim() ?? '';
-    if (extra) appendPrintedText(body, 'muuta', extra);
+    if (printedNote?.lineId === line.id) appendPrintedText(body, 'muuta', printedNote.text);
     const days = resolveDisplayedWorkDurationDays(line, source.settings.weatherReserveFactor);
     if (days != null && days > 0) {
       const unit = days === 1 ? 'työpäivä' : 'työpäivää';

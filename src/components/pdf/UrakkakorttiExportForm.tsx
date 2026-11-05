@@ -1,6 +1,5 @@
 import { Text } from 'react-native';
 
-import { AppPicker } from '@/src/components/AppPicker';
 import { AttachmentSummaryLink } from '@/src/components/attachments/AttachmentSection';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { AppInput, OutlinedButton } from '@/src/components/common';
@@ -27,16 +26,6 @@ export function UrakkakorttiExportForm({
 
   return (
     <>
-      <AttachmentSummaryLink attachments={attachments} onPress={onShowAttachments} />
-      <AppPicker
-        label="Urakkakortti"
-        selectedValue={card.cardMode}
-        onValueChange={card.onCardModeChange}
-        items={[
-          { value: 'alihankkija', label: 'Alihankkija' },
-          { value: 'tyontekija', label: 'Työntekijä' },
-        ]}
-      />
       <ChoiceToggle
         label="Urakkahinnat"
         value={card.hidePrices}
@@ -73,6 +62,7 @@ export function UrakkakorttiExportForm({
           {problem}
         </Text>
       ))}
+      <AttachmentSummaryLink attachments={attachments} target="card" onPress={onShowAttachments} />
       <OutlinedButton title={card.createTitle} onPress={card.onCreate} disabled={card.createDisabled} />
     </>
   );

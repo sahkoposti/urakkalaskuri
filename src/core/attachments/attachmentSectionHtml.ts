@@ -36,8 +36,13 @@ export const ATTACHMENT_CAPTION_LINE_BUDGET = 3;
  * 82 mm ei mahtunut kahdelle kuvalle, 80 mm mahtui.
  */
 export const ATTACHMENT_PAGE_SLACK_MM = 6;
-/** Kaksi kuvaa sivulla. Mitattu: 80 mm mahtuu, 82 mm ei (+1 pt, 120 merkkiä). */
-export const ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM = 80;
+/**
+ * Kaksi kuvaa sivulla. 80 mm mahtui Chromeen mutta oli laitteella liian korkea.
+ * 72 mm jättää kuvatekstin ja välin alle käytettävän korkeuden.
+ */
+export const ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM = 72;
+/** Kahden kuvan päätös vaatii tämän verran tyhjää käytettävän korkeuden alle. */
+export const OFFER_TWO_UP_CLEARANCE_MM = 8;
 /** Yksi iso kuva sivulla. Yksi kuva + kuvateksti + otsikko mahtuu 223 mm:iin. */
 export const ATTACHMENT_IMAGE_MAX_HEIGHT_ONE_MM = 175;
 /** Kortin ruudukko: kaksi saraketta, neljä kuvaa sivulla. */
@@ -73,6 +78,23 @@ export function attachmentPairUsableMm(extraPt = 1): number {
   const heading =
     lineBoxMm(ATTACHMENT_HEADING_PT + extraPt, 1) + ATTACHMENT_HEADING_MARGIN_BOTTOM_MM;
   return PDF_USABLE_BODY_MM - heading - ATTACHMENT_PAGE_SLACK_MM;
+}
+
+/**
+ * Tarjouksen kuvat: kaksi sivulla, kun kaksi kuvaa ja kuvateksti mahtuvat selvästi.
+ * Muuten yksi kuva sivulla. Kortin ruudukko ei käytä tätä.
+ */
+export function offerAttachmentLayoutForHeight(
+  imageMaxMm: number,
+  extraPt = 1,
+): 'two_per_page' | 'one_per_page' {
+  const block = imageMaxMm + attachmentCaptionBlockMaxMm(extraPt);
+  const budget = attachmentPairUsableMm(extraPt) - OFFER_TWO_UP_CLEARANCE_MM;
+  return block * 2 <= budget ? 'two_per_page' : 'one_per_page';
+}
+
+export function resolveOfferAttachmentLayout(extraPt = 1): 'two_per_page' | 'one_per_page' {
+  return offerAttachmentLayoutForHeight(ATTACHMENT_IMAGE_MAX_HEIGHT_TWO_MM, extraPt);
 }
 
 function sectionCss(extraPt: number): string {

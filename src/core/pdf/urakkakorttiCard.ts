@@ -83,6 +83,34 @@ export function calculationWithUrakkakorttiRivihinnat(
   return withSnapshot(record, { urakkakorttiRivihinnat: clean });
 }
 
+/** Poistaa rivin korttiyliajon, kun lomake päivitti hinnan. Lippu ei jää tietueeseen. */
+export function applyRefreshedStructurePrices(record: CalculationRecord): CalculationRecord {
+  const lines = record.structureLines ?? [];
+  const ids = lines.filter((line) => line.priceRefreshed).map((line) => line.id);
+  if (ids.length === 0) return record;
+  let snapshot = record.formSnapshot;
+  if (snapshot?.urakkakorttiRivihinnat) {
+    const nextPrices = { ...snapshot.urakkakorttiRivihinnat };
+    for (const id of ids) delete nextPrices[id];
+    if (Object.keys(nextPrices).length === 0) {
+      const nextSnapshot = { ...snapshot };
+      delete nextSnapshot.urakkakorttiRivihinnat;
+      snapshot = nextSnapshot;
+    } else {
+      snapshot = { ...snapshot, urakkakorttiRivihinnat: nextPrices };
+    }
+  }
+  return {
+    ...record,
+    formSnapshot: snapshot,
+    structureLines: lines.map((line) => {
+      if (!line.priceRefreshed) return line;
+      const { priceRefreshed: _flag, ...rest } = line;
+      return rest;
+    }),
+  };
+}
+
 /**
  * Lomakkeen esitäytön lähde. Alihankkija: kortille tulostuva urakka.
  * Työntekijä: sama summa ennen Sivukulukerroin-jakoa.
@@ -294,6 +322,47 @@ export function cardLinesNeedingManualContract(record: CalculationRecord): Retur
 export function assertPrintableEmployeeContracts(record: CalculationRecord): void {
   const problems = urakkakorttiContractProblems(record);
   if (problems.length > 0) throw new Error(problems.join('\n'));
+}
+
+/**
+ * Alihankkijan rivihinta: yliajo `urakkakorttiRivihinnat[lineId]`, muuten rivin `contractPriceVat0`.
+ * Ei jaa Sivukulukertoimella.
+ */
+export function alihankkijaLineAmount(
+  line: { id: string; contractPriceVat0: number },
+  overrides: Record<string, number> | undefined,
+): number {
+  if (overrides && Object.prototype.hasOwnProperty.call(overrides, line.id)) {
+    const value = overrides[line.id];
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+  }
+  return effectiveContractVat0(line);
+}
+
+/** Käyttökelpoinen kerroin on 1 < kerroin <= 3. Puuttuva tai kelvoton ei tulosta työntekijähintaa. */
+export function usableSivukulukerroin(factor: unknown): number | null {
+  if (typeof factor !== 'number' || !Number.isFinite(factor)) return null;
+  if (factor > 1 && factor <= 3) return factor;
+  return null;
+}
+
+export type CardHeaderPrices = {
+  alihankkija: number;
+  /** null = kerroin puuttuu tai on kelvoton, työntekijäriviä ei tulosteta. */
+  tyontekija: number | null;
+};
+
+/** Otsikon summat. Työntekijä on pyöristettyjen rivien summa, ei raakasumman jako. */
+export function cardHeaderPrices(record: CalculationRecord, factor: unknown): CardHeaderPrices {
+  const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
+  const parts = ensureStructureLines(record).map((line) =>
+    roundToCents(alihankkijaLineAmount(line, overrides)),
+  );
+  const alihankkija = roundToCents(parts.reduce((sum, amount) => sum + amount, 0));
+  const usable = usableSivukulukerroin(factor);
+  if (usable == null) return { alihankkija, tyontekija: null };
+  const divided = parts.map((amount) => (amount === 0 ? 0 : roundToCents(amount / usable)));
+  return { alihankkija, tyontekija: roundToCents(divided.reduce((sum, amount) => sum + amount, 0)) };
 }
 
 /**

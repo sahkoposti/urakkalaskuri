@@ -56,7 +56,7 @@ export async function addPickedAttachment(
     deleteTemp,
     placeImage: (sourceUri, idCalculation, id) => placeAttachmentFile(sourceUri, idCalculation, id, 'jpg'),
     writePdf: (idCalculation, id, bytes) => writeAttachmentBytes(idCalculation, id, 'pdf', bytes),
-    addAttachment: (input) => addAttachment({ ...input, destination: 'none' }),
+    addAttachment: (input) => addAttachment(input),
     removeStored: (relativePath) => {
       try {
         removeStoredAttachment(relativePath);

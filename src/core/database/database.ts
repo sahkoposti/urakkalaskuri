@@ -8,6 +8,12 @@ import type {
   ThemeSettings,
 } from '../models/types';
 import { defaultSettings, defaultThemeSettings } from '../models/types';
+import { createId } from '../utils/id';
+import {
+  draftCalculationFromWizard,
+  isDraftCalculation,
+  wizardDraftFromCalculation,
+} from '../wizard/draftCalculation';
 import { parseProductAttributesJson } from '../product/productAttributes';
 import { productSortOrder } from '../product/productMutations';
 import {
@@ -136,6 +142,7 @@ function calculationFromRow(
       row.travel_time_one_way_h == null ? undefined : Number(row.travel_time_one_way_h),
     structureLines: parseStructureLines(row.structure_lines),
     offerNumber: row.offer_number == null ? undefined : Number(row.offer_number),
+    status: row.status === 'draft' ? 'draft' : 'complete',
   };
 }
 
@@ -324,8 +331,8 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
         work_duration_days, discount_percent, discount_eur,
         total_price_vat_before_discount, total_price_vat0_before_discount,
         created_at, form_snapshot, customer_id, delivery_schedule_text, travel_time_one_way_h, structure_lines,
-        offer_number
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        offer_number, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       record.id,
       record.projectName,
       record.customer ?? null,
@@ -355,6 +362,7 @@ export async function saveCalculation(record: CalculationRecord): Promise<void> 
       record.structureLines ? JSON.stringify(record.structureLines) : null,
       // Uusi rivi, myös kopio, ei peri tarjousnumeroa. Numero myönnetään vasta seuraavasta tarjouksesta.
       existing ? offerNumberOnSave(record.offerNumber, existing.offer_number) : null,
+      record.status === 'draft' ? 'draft' : 'complete',
     );
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', record.id);
     for (const line of record.lines) {
@@ -465,6 +473,46 @@ export async function saveWizardDraft(draft: PersistedWizardDraft): Promise<void
 export async function clearWizardDraft(): Promise<void> {
   const db = await getDb();
   await db.runAsync('DELETE FROM wizard_drafts WHERE id = ?', WIZARD_DRAFT_ID);
+}
+
+/**
+ * Säilyttää avoimen session `wizard_drafts`-rivin laskelmana.
+ * Ei poista sessiota eikä muuta valmista laskelmaa keskeneräiseksi.
+ * Sama kutsu kahdesti päivittää saman rivin.
+ */
+export async function promoteCurrentWizardDraft(): Promise<string | null> {
+  const session = await getWizardDraft();
+  if (!session) return null;
+  const linkedId = session.editCalculationId?.trim();
+  if (linkedId) {
+    const linked = await getCalculation(linkedId);
+    if (linked && isDraftCalculation(linked)) {
+      await saveCalculation(draftCalculationFromWizard(session, linkedId, linked.createdAt));
+      return linkedId;
+    }
+  }
+  const existing = (await getCalculations()).find((row) => {
+    if (!isDraftCalculation(row)) return false;
+    const stored = wizardDraftFromCalculation(row);
+    return stored?.updatedAt === session.updatedAt;
+  });
+  if (existing) return existing.id;
+  const id = createId();
+  const createdAt =
+    typeof session.originalCreatedAt === 'number' && Number.isFinite(session.originalCreatedAt)
+      ? new Date(session.originalCreatedAt)
+      : new Date(session.updatedAt);
+  await saveCalculation(draftCalculationFromWizard(session, id, createdAt));
+  if (!linkedId) {
+    await saveWizardDraft({ ...session, editCalculationId: id });
+  }
+  return id;
+}
+
+/** Uusi laskenta: sessio säilyy keskeneräisenä rivinä, avoin luonnos tyhjennetään. */
+export async function beginNewCalculation(): Promise<void> {
+  await promoteCurrentWizardDraft();
+  await clearWizardDraft();
 }
 
 export async function getFormDefinition(): Promise<FormDefinition> {
