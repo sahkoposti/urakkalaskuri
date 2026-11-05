@@ -2,6 +2,7 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => 'uuid' }));
 
 const removedFiles: string[] = [];
 const removedFolders: string[] = [];
+const removedAttachmentFolders: string[] = [];
 
 jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
 jest.mock('../src/core/documents/documentFiles', () => ({
@@ -10,6 +11,11 @@ jest.mock('../src/core/documents/documentFiles', () => ({
   },
   deleteCalculationDocumentFolder: (id: string) => {
     removedFolders.push(id);
+  },
+}));
+jest.mock('../src/core/attachments/attachmentFiles', () => ({
+  deleteCalculationAttachmentFolder: (id: string) => {
+    removedAttachmentFolders.push(id);
   },
 }));
 
@@ -54,7 +60,7 @@ jest.mock('../src/core/database/connection', () => {
   };
 });
 
-import { DOCUMENT_SCHEMA_VERSION, ensureDocumentsTable } from '../src/core/database/connection';
+import { DOCUMENT_SCHEMA_VERSION, ensureAttachmentsTable, ensureDocumentsTable } from '../src/core/database/connection';
 import { deleteCalculation } from '../src/core/database/database';
 import {
   deleteDocument,
@@ -90,6 +96,7 @@ describe('documents repository', () => {
   beforeEach(async () => {
     removedFiles.length = 0;
     removedFolders.length = 0;
+    removedAttachmentFolders.length = 0;
     const db = new DatabaseSync(':memory:');
     current = adapt(db);
     await ensureDocumentsTable(current);
@@ -231,8 +238,10 @@ describe('documents repository', () => {
       CREATE TABLE calculations (id TEXT PRIMARY KEY);
       CREATE TABLE calculation_lines (id TEXT PRIMARY KEY, calculation_id TEXT);
     `);
+    await ensureAttachmentsTable(current);
     await deleteCalculation('calc-b');
     expect(await listDocumentsByCalculation('calc-b')).toEqual([]);
     expect(removedFolders).toEqual(['calc-b']);
+    expect(removedAttachmentFolders).toEqual(['calc-b']);
   });
 });

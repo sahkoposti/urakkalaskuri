@@ -1,5 +1,8 @@
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'uuid' }));
 jest.mock('expo-sqlite', () => ({}));
+jest.mock('../src/core/attachments/attachmentsRepository', () => ({
+  copyAttachmentsForCalculation: async () => [],
+}));
 
 const stored = new Map<string, number | null>();
 const inserts: unknown[][] = [];
@@ -41,7 +44,9 @@ describe('copyCalculationRecord', () => {
   it('does not carry offerNumber to the copy; the next offer gets a new number', async () => {
     const source = record({}, { id: 'src', offerNumber: 10285, projectName: 'Lähde' });
     const createdAt = new Date(2026, 9, 2);
-    const copy = copyCalculationRecord(source, 'copy', createdAt);
+    const copied = await copyCalculationRecord(source, 'copy', createdAt);
+    const copy = copied.record;
+    expect(copied.attachmentCopyFailures).toEqual([]);
 
     expect(copy.id).toBe('copy');
     expect(copy.createdAt).toBe(createdAt);

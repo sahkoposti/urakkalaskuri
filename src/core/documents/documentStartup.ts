@@ -1,3 +1,6 @@
+import { listAttachmentFilePaths } from '@/src/core/attachments/attachmentsRepository';
+import { listAttachmentDiskPaths, removeStoredAttachment } from '@/src/core/attachments/attachmentFiles';
+
 import { deleteExpiredShareCopies } from './documentActions';
 import { listDocumentFilePaths } from './documentsRepository';
 import { listDocumentDiskPaths, removeStoredPdf } from './documentFiles';
@@ -14,6 +17,16 @@ export async function cleanupDocumentsOnStartup(): Promise<void> {
     deleteFile: removeStoredPdf,
     reportMissing: (path) => {
       console.warn(`Dokumentin tiedosto puuttuu, riviä ei poistettu: ${path}`);
+    },
+  });
+  const attachments = planDocumentStorageCleanup({
+    storedPaths: await listAttachmentFilePaths(),
+    diskPaths: listAttachmentDiskPaths(),
+  });
+  applyDocumentStorageCleanup(attachments, {
+    deleteFile: removeStoredAttachment,
+    reportMissing: (path) => {
+      console.warn(`Liitteen tiedosto puuttuu, riviä ei poistettu: ${path}`);
     },
   });
 }
