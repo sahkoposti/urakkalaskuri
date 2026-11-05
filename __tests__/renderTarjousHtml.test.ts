@@ -167,6 +167,9 @@ describe('renderTarjousHtml discount row', () => {
     expect(ktv).toContain('2 259,00 €');
     expect(ktv).toContain('502,00 €');
     expect(ktv).toContain('1 757,00 €');
+    expect(ktv).toContain('Arvioitu hinta vähennyksen jälkeen');
+    expect(ktv).toContain('2 259,00 € − 552,80 €');
+    expect(ktv).toContain('1 706,20 €');
     expect(ktv).not.toContain('Asiakkaan maksettavaksi');
     expect(ktv).not.toContain('Enimmäismäärä');
   });

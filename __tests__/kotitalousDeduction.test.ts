@@ -107,8 +107,13 @@ describe('normalizeKtvSettings', () => {
     expect(normalizeKtvSettings({ capEur: 4200 }).capEur).toBe(4200);
   });
 
-  it('default PDF note says it is an estimate for one person', () => {
-    expect(KTV_DEFAULT_NOTE).toContain('arvio yhdelle henkilölle');
+  it('default PDF note does not name a person count', () => {
+    expect(KTV_DEFAULT_NOTE).toBe(
+      'Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.',
+    );
+    expect(KTV_DEFAULT_NOTE).not.toContain('yhdelle henkilölle');
+    expect(KTV_DEFAULT_NOTE).not.toContain('arvio yhdelle');
+    expect(KTV_DEFAULT_NOTE).not.toMatch(/\d+ henkilölle/);
   });
 });
 

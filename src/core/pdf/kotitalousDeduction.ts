@@ -22,9 +22,8 @@ export type { KtvSettings };
 
 /** PDF:ään tuleva huomautus (oletus; Tarjous-asetusten oma teksti korvaa). */
 export const KTV_DEFAULT_NOTE =
-  'Kotitalousvähennys on arvio yhdelle henkilölle. Vähennyksestä on vähennetty omavastuu ' +
-  'ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole ' +
-  'vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.';
+  'Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. ' +
+  'Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.';
 
 export type KotitalousDeductionInput = {
   /** Asiakkaan kokonaishinta sis. ALV alennuksen jälkeen. */

@@ -183,7 +183,9 @@ describe('buildPdfContext', () => {
     expect(ktv).toContain('684,73 €');
     expect(ktv).toContain('534,73 €');
     expect(ktv).toContain('502,00 €');
-    expect(ktv).not.toContain('1 679,09 €');
+    expect(ktv).toContain('Arvioitu hinta vähennyksen jälkeen');
+    expect(ktv).toContain('2 213,82 € − 534,73 €');
+    expect(ktv).toContain('1 679,09 €');
     expect(ktv).not.toContain('Asiakkaan maksettavaksi');
     expect(ktv).not.toContain('Enimmäismäärä');
     expect(ktv).not.toContain('2 459,80 €');

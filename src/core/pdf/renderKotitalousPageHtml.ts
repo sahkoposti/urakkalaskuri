@@ -8,10 +8,9 @@ import type { KtvSettings } from './types';
 
 const DEFAULT_TOTAL_LABEL = 'Yhteensä sis. alv';
 
-/** Oletushuomautus. Yrityksen oma teksti ei kulje tämän kautta. */
-export function ktvDefaultNote(persons: number): string {
-  if (persons <= 1) return KTV_DEFAULT_NOTE;
-  return KTV_DEFAULT_NOTE.replace('yhdelle henkilölle', `${persons} henkilölle`);
+/** Oletushuomautus. Sama teksti kaikille henkilömäärille. Yrityksen oma teksti ei kulje tämän kautta. */
+export function ktvDefaultNote(_persons: number): string {
+  return KTV_DEFAULT_NOTE;
 }
 
 /**
@@ -91,6 +90,12 @@ export function renderKotitalousPageHtml(ctx: Pick<TarjousPdfContext, 'ktv'>): s
       ),
       ktvRow(`Omavastuu (${k} hlö)`, `${k} × ${eur(s.deductibleEur)}`, minus(eur(k * s.deductibleEur))),
       ktvRow(`Arvioitu kotitalousvähennys (${k} hlö)`, '', eur(result.deductionAmount), 'result'),
+      ktvRow(
+        'Arvioitu hinta vähennyksen jälkeen',
+        `${eur(ktv.totalPriceVat)} \u2212 ${eur(result.deductionAmount)}`,
+        eur(result.estimatedCostAfterDeduction),
+        'result final',
+      ),
     ].join(''),
   );
   const hintHtml = hint ? `<p class="ktv-hint">${escapeHtml(hint)}</p>\n` : '';

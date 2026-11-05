@@ -71,6 +71,7 @@ exports[`renderTarjousHtml business customer: only alv0, no reverse VAT text, no
   table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
   table.ktv-table tr.minor td { color: #444; }
   table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
+  table.ktv-table tr.result.final td { border-top: none; }
   .ktv-hint { font-size: 10pt; color: #666; margin: 0 0 5mm 0; }
   .ktv-note { font-size: 10pt; color: #333; margin: 0; }
   body.doc-offer { padding-left: 15.5mm; }
@@ -239,6 +240,7 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
   table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
   table.ktv-table tr.minor td { color: #444; }
   table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
+  table.ktv-table tr.result.final td { border-top: none; }
   .ktv-hint { font-size: 10pt; color: #666; margin: 0 0 5mm 0; }
   .ktv-note { font-size: 10pt; color: #333; margin: 0; }
   body.doc-offer { padding-left: 15.5mm; }
@@ -334,8 +336,8 @@ exports[`renderTarjousHtml empty company Lisätiedot is omitted; offer page swit
 <h2 class="ktv-title">Kotitalousvähennyslaskelma (1 hlö)</h2>
 <p class="ktv-rate-sentence">Vähennystä saa arvonlisäverollisesta työn osuudesta 40 %, max 2 100,00 € / henkilö vuodessa; omavastuu 150,00 € / henkilö vuodessa.</p>
 <div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>1. Tarjouksen hinta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Yhteensä sis. alv</td><td class="basis">sivun 1 loppusumma</td><td class="num">1 255,00 €</td></tr><tr class="sub minor"><td>josta materiaalit (sis. alv)</td><td class="basis">ei vähennyskelpoinen</td><td class="num">502,00 €</td></tr><tr class="sub"><td>josta työn osuus (sis. alv)</td><td class="basis">vähennyksen pohja</td><td class="num">753,00 €</td></tr></tbody></table></div>
-<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>2. Vähennyksen laskenta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Kotitalousvähennys 40 % työn osuudesta</td><td class="basis">40 % × 753,00 €</td><td class="num">301,20 €</td></tr><tr><td>Omavastuu (1 hlö)</td><td class="basis">1 × 150,00 €</td><td class="num">−150,00 €</td></tr><tr class="result"><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="basis"></td><td class="num">151,20 €</td></tr></tbody></table></div>
-<p class="ktv-note">Kotitalousvähennys on arvio yhdelle henkilölle. Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.</p>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>2. Vähennyksen laskenta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Kotitalousvähennys 40 % työn osuudesta</td><td class="basis">40 % × 753,00 €</td><td class="num">301,20 €</td></tr><tr><td>Omavastuu (1 hlö)</td><td class="basis">1 × 150,00 €</td><td class="num">−150,00 €</td></tr><tr class="result"><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="basis"></td><td class="num">151,20 €</td></tr><tr class="result final"><td>Arvioitu hinta vähennyksen jälkeen</td><td class="basis">1 255,00 € − 151,20 €</td><td class="num">1 103,80 €</td></tr></tbody></table></div>
+<p class="ktv-note">Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.</p>
 </section>
 </td></tr></tbody>
 </table>
@@ -414,6 +416,7 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
   table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
   table.ktv-table tr.minor td { color: #444; }
   table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
+  table.ktv-table tr.result.final td { border-top: none; }
   .ktv-hint { font-size: 10pt; color: #666; margin: 0 0 5mm 0; }
   .ktv-note { font-size: 10pt; color: #333; margin: 0; }
   body.doc-offer { padding-left: 15.5mm; }
@@ -511,8 +514,8 @@ exports[`renderTarjousHtml private customer: rows table and one section per stru
 <h2 class="ktv-title">Kotitalousvähennyslaskelma (1 hlö)</h2>
 <p class="ktv-rate-sentence">Vähennystä saa arvonlisäverollisesta työn osuudesta 40 %, max 2 100,00 € / henkilö vuodessa; omavastuu 150,00 € / henkilö vuodessa.</p>
 <div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>1. Tarjouksen hinta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Yhteensä sis. alv</td><td class="basis">sivun 1 loppusumma</td><td class="num">2 510,00 €</td></tr><tr class="sub minor"><td>josta materiaalit (sis. alv)</td><td class="basis">ei vähennyskelpoinen</td><td class="num">502,00 €</td></tr><tr class="sub"><td>josta työn osuus (sis. alv)</td><td class="basis">vähennyksen pohja</td><td class="num">2 008,00 €</td></tr></tbody></table></div>
-<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>2. Vähennyksen laskenta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Kotitalousvähennys 40 % työn osuudesta</td><td class="basis">40 % × 2 008,00 €</td><td class="num">803,20 €</td></tr><tr><td>Omavastuu (1 hlö)</td><td class="basis">1 × 150,00 €</td><td class="num">−150,00 €</td></tr><tr class="result"><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="basis"></td><td class="num">653,20 €</td></tr></tbody></table></div>
-<p class="ktv-note">Kotitalousvähennys on arvio yhdelle henkilölle. Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.</p>
+<div class="ktv-block"><table class="ktv-table"><colgroup><col /><col class="c-basis" /><col class="c-amount" /></colgroup><thead><tr><th>2. Vähennyksen laskenta</th><th class="num">Peruste</th><th class="num">Summa</th></tr></thead><tbody><tr><td>Kotitalousvähennys 40 % työn osuudesta</td><td class="basis">40 % × 2 008,00 €</td><td class="num">803,20 €</td></tr><tr><td>Omavastuu (1 hlö)</td><td class="basis">1 × 150,00 €</td><td class="num">−150,00 €</td></tr><tr class="result"><td>Arvioitu kotitalousvähennys (1 hlö)</td><td class="basis"></td><td class="num">653,20 €</td></tr><tr class="result final"><td>Arvioitu hinta vähennyksen jälkeen</td><td class="basis">2 510,00 € − 653,20 €</td><td class="num">1 856,80 €</td></tr></tbody></table></div>
+<p class="ktv-note">Vähennyksestä on vähennetty omavastuu ja se on rajattu henkilökohtaiseen vuosittaiseen enimmäismäärään. Materiaalit eivät ole vähennyskelpoisia. Lopullisen vähennyksen määrää Verohallinto.</p>
 </section>
 </td></tr></tbody>
 </table>

@@ -113,6 +113,7 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   table.ktv-table tr.sub td.num, table.ktv-table tr.sub td.basis { padding-left: 0; }
   table.ktv-table tr.minor td { color: #444; }
   table.ktv-table tr.result td { font-weight: 700; border-bottom: none; border-top: 0.4mm solid #000; }
+  table.ktv-table tr.result.final td { border-top: none; }
   .ktv-hint { font-size: 10pt; color: #666; margin: 0 0 5mm 0; }
   .ktv-note { font-size: 10pt; color: #333; margin: 0; }${offerBar ? `
   body.doc-offer { padding-left: ${offerInsetLeft}mm; }
