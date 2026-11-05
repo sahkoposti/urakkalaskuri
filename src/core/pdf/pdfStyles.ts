@@ -93,8 +93,10 @@ export function pdfStyles(options: PdfStyleOptions = {}): string {
   .price-block { display: flex; gap: 12px; margin: 2mm 0 6mm 0; page-break-inside: avoid; break-inside: avoid; }
   .price-block .col { flex: 1; }
   .price-block table { width: 100%; border-collapse: collapse; }
-  .price-block td { padding: 0.8mm 0; }
-  .price-block td.value { text-align: right; white-space: nowrap; }
+  .price-block td { padding: 0.8mm 0; vertical-align: baseline; }
+  .price-block td:first-child { padding-right: 3mm; }
+  .price-block:not(.offer-totals) td:first-child { white-space: nowrap; }
+  .price-block td.value { text-align: right; overflow-wrap: anywhere; }
   .price-block tr.emphasis td { font-weight: 700; font-size: 13.5pt; border-top: 2px solid ${accent}; padding-top: 1.5mm; }
   .additional-info h3 { margin: 0 0 1.5mm 0; font-size: 12pt; break-after: avoid; page-break-after: avoid; }
   .page-break { page-break-before: always; break-before: page; }
