@@ -69,6 +69,15 @@ describe('manual contract price (replaces contractPriceVat0)', () => {
 });
 
 describe('urakkakortti', () => {
+  it('keeps a gutter between info labels and values that may wrap', () => {
+    const html = renderUrakkakorttiHtml(buildUrakkakorttiContext(ukInput(record({}))));
+    expect(html).toContain('.price-block td { padding: 0.8mm 0; vertical-align: baseline; }');
+    expect(html).toContain('.price-block td:first-child { padding-right: 3mm; }');
+    expect(html).toContain('.price-block:not(.offer-totals) td:first-child { white-space: nowrap; }');
+    expect(html).toContain('.price-block td.value { text-align: right; overflow-wrap: anywhere; }');
+    expect(html).not.toContain('.price-block td.value { text-align: right; white-space: nowrap; }');
+  });
+
   it('single line: contract, duration, crew, specs, notes area; snapshot', () => {
     const rec = record({ notes: 'Koira pihalla' });
     const ctx = buildUrakkakorttiContext(ukInput(rec));

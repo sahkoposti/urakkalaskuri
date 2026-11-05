@@ -53,7 +53,7 @@ export function ManualContractDialog({ visible, lines, onSubmit, onCancel }: Man
                 label={`${line.name} (€, alv0)`}
                 value={inputs[line.id] ?? ''}
                 onChangeText={(value) => setInputs((prev) => ({ ...prev, [line.id]: value }))}
-                keyboardType="decimal-pad"
+                kind="decimal"
               />
             ))}
           </ScrollView>

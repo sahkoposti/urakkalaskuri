@@ -10,7 +10,7 @@ import {
   sivukulukerroinDraftError,
 } from '../src/core/pdf/defaultOfferSettings';
 import { offerSignatureParties } from '../src/core/pdf/offerDocument';
-import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
+import { OFFER_ACCEPTANCE_SENTENCE, OFFER_DOC_TITLE, renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
 import { buildUrakkakorttiContext, urakkakorttiBodyBlocks } from '../src/core/pdf/urakkakortti';
 import {
@@ -461,12 +461,18 @@ describe('offer signature', () => {
     expect(html).toContain('>Tilaaja<');
     expect(html).toContain('Allekirjoitus');
     expect(html).toContain('Päiväys');
-    expect((html.match(/class="offer-sign-line"/g) ?? []).length).toBe(4);
+    expect((html.match(/class="offer-sign-line"/g) ?? []).length).toBe(2);
     expect(html).toContain('.offer-sign { display: grid;');
     expect(html).not.toContain('offer-sign-col');
     const sign = html.slice(html.indexOf('class="offer-sign"'), html.indexOf('class="ktv-page'));
+    expect(sign.indexOf(OFFER_ACCEPTANCE_SENTENCE)).toBeGreaterThan(-1);
+    expect(sign.indexOf(OFFER_ACCEPTANCE_SENTENCE)).toBeLessThan(sign.indexOf('>Myyjä<'));
+    expect(html.indexOf(`>${OFFER_DOC_TITLE}<`)).toBeGreaterThan(html.indexOf('class="header"'));
+    expect(html.indexOf(`>${OFFER_DOC_TITLE}<`)).toBeLessThan(html.indexOf('class="doc-section offer-section"'));
+    expect(html.slice(html.indexOf('class="ktv-page'))).not.toContain(OFFER_ACCEPTANCE_SENTENCE);
+    expect(html.slice(html.indexOf('class="ktv-page'))).not.toContain(OFFER_DOC_TITLE);
     expect((sign.match(/>Allekirjoitus</g) ?? []).length).toBe(2);
-    expect((sign.match(/>Päiväys</g) ?? []).length).toBe(2);
+    expect((sign.match(/>Päiväys</g) ?? []).length).toBe(0);
     expect(html).not.toContain('<table class="offer-sign"');
     expect(html).toContain('break-inside: avoid');
     const at = (needle: string) => html.indexOf(needle);
@@ -478,7 +484,7 @@ describe('offer signature', () => {
     expect(sign).toContain('info@colorajaton.fi');
     expect(sign.match(/Aada Asentaja/g)).toHaveLength(1);
     expect(sign.match(/Kuvitteellinen Oy/g)).toHaveLength(1);
-    expect(html).toContain('Loppusumma');
+    expect(html).toContain('Yhteensä sis. alv');
   });
 
   it('omits missing seller and customer values and still prints the blank lines', () => {
@@ -502,7 +508,8 @@ describe('offer signature', () => {
     expect(block).not.toContain('undefined');
     expect(block).not.toContain('null');
     expect((block.match(/class="offer-sign-detail"/g) ?? []).length).toBe(0);
-    expect((block.match(/class="offer-sign-line"/g) ?? []).length).toBe(4);
+    expect((block.match(/class="offer-sign-line"/g) ?? []).length).toBe(2);
+    expect(block).not.toContain('Päiväys');
     expect(html.match(/class="offer-sign"/g)).toHaveLength(1);
   });
 });

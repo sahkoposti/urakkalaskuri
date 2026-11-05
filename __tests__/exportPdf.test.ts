@@ -2,6 +2,7 @@ import { exportTarjousPdf, exportUrakkakorttiPdf, type PdfExportDeps } from '../
 import { assignOfferNumber } from '../src/core/pdf/offerNumber';
 import { recordWithManualContractPrices } from '../src/core/pdf/manualContract';
 import type { GeneratePdfOptions } from '../src/core/pdf/generatePdf';
+import type { NewDocumentInput } from '../src/core/documents/types';
 import type { CalculationRecord } from '../src/core/models/types';
 import {
   calculationWithUrakkakorttiHidePrices,
@@ -14,6 +15,10 @@ function setup(rec: CalculationRecord) {
   let stored: CalculationRecord = rec;
   let next: number | undefined;
   const printed: GeneratePdfOptions[] = [];
+  const inserted: NewDocumentInput[] = [];
+  const removed: string[] = [];
+  let documentSeq = 0;
+  let failInsert = false;
   const base = input(rec);
   const deps: PdfExportDeps = {
     getCalculation: async () => stored,
@@ -38,24 +43,68 @@ function setup(rec: CalculationRecord) {
     loadLogoDataUri: async () => null,
     generatePdf: async (options) => {
       printed.push(options);
-      return { uri: `file:///cache/${options.fileName}`, numberOfPages: 2, shared: true };
+      return {
+        uri: `file:///docs/documents/c1/${options.documentId}.pdf`,
+        relativePath: `documents/c1/${options.documentId}.pdf`,
+        numberOfPages: 2,
+        fileName: options.fileName,
+      };
+    },
+    newDocumentId: () => `doc-${++documentSeq}`,
+    appVersion: () => '0.0.0-test',
+    insertDocument: async (row) => {
+      if (failInsert) throw new Error('Dokumentin tallennus epäonnistui.');
+      inserted.push(row);
+      return row;
+    },
+    removeStoredPdf: (path) => {
+      removed.push(path);
     },
     now: () => new Date(2026, 9, 29),
   };
   const app = { settings: base.settings, products: base.products, structures: base.structures };
-  return { deps, app, printed, current: () => stored };
+  return {
+    deps,
+    app,
+    printed,
+    inserted,
+    removed,
+    failInsert: () => {
+      failInsert = true;
+    },
+    current: () => stored,
+  };
 }
 
 describe('exportTarjousPdf', () => {
   it('assigns a number once, reprint keeps it; file name per plan §10', async () => {
-    const { deps, app, printed, current } = setup(record({ name: 'Testi Asiakas' }, { projectName: 'Testi Asiakas' }));
+    const { deps, app, printed, current, inserted } = setup(record({ name: 'Testi Asiakas' }, { projectName: 'Testi Asiakas' }));
     const first = await exportTarjousPdf('c1', app, deps);
     const again = await exportTarjousPdf('c1', app, deps);
     expect(first.offerNumber).toBe(again.offerNumber);
     expect(current().offerNumber).toBe(first.offerNumber);
     expect(printed[0].fileName).toBe(`Tarjous_${first.offerNumber}_Testi_Asiakas_2026-10-29.pdf`);
     expect(printed[0].html).toContain(`${first.offerNumber}`);
-    expect(printed[0].html).toContain('Loppusumma');
+    expect(printed[0].html).toContain('Yhteensä sis. alv');
+    expect(printed[0]).not.toHaveProperty('share');
+    expect(first).toMatchObject({
+      kind: 'tarjous',
+      offerNumber: first.offerNumber,
+      fileName: printed[0].fileName,
+      numberOfPages: 2,
+      id: 'doc-1',
+    });
+    expect(inserted[0]?.summary.pages).toBe(2);
+    expect(inserted[0]?.offerNumber).toBe(first.offerNumber);
+    expect(inserted[0]?.inputs).toMatchObject({ ktvPageIncluded: true });
+  });
+
+  it('removes the saved file when the document row cannot be inserted and does not share', async () => {
+    const { deps, app, printed, removed, failInsert } = setup(record({ name: 'Testi Asiakas' }));
+    failInsert();
+    await expect(exportTarjousPdf('c1', app, deps)).rejects.toThrow('Dokumentin tallennus epäonnistui.');
+    expect(printed).toHaveLength(1);
+    expect(removed).toEqual([`documents/c1/${printed[0].documentId}.pdf`]);
   });
 
   it('blocks PDF generation when a line price is invalid and does not change the calculation', async () => {
@@ -181,13 +230,15 @@ describe('exportUrakkakorttiPdf', () => {
   });
 
   it('prints directly when contract sums exist; never assigns an offer number', async () => {
-    const { deps, app, printed, current } = setup(record({ name: 'Testi' }));
+    const { deps, app, printed, current, inserted } = setup(record({ name: 'Testi' }));
     const spy = jest.spyOn(deps, 'assignOfferNumber');
     const done = await exportUrakkakorttiPdf('c1', app, deps);
     expect(done.status).toBe('done');
     expect(printed).toHaveLength(1);
     expect(spy).not.toHaveBeenCalled();
     expect(current().offerNumber).toBeUndefined();
+    expect(done).toMatchObject({ status: 'done', kind: 'urakkakortti', offerNumber: null });
+    expect(inserted[0]?.offerNumber).toBeNull();
     expect(printed[0].html).toContain('Sisältää telineet.');
     expect(printed[0].html).toContain('>Muuta<');
     expect(printed[0].html).not.toContain('Lisätiedot:');

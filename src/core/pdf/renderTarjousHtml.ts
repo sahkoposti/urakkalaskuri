@@ -20,6 +20,15 @@ export type RenderTarjousOptions = {
 
 const lines = (values: string[]) => values.map((value) => escapeHtml(value)).join('<br />');
 
+/** Tarjouksen sivun 1 otsikko. Urakkakortti käyttää omaa otsikkoaan. */
+export const OFFER_DOC_TITLE = 'Tarjous / sopimus';
+/** Allekirjoituslohkon hyväksyntälause, täsmälleen näin, ilman pistettä. */
+export const OFFER_ACCEPTANCE_SENTENCE = 'Olen lukenut ehdot ja hyväksyn sopimuksen';
+
+function renderOfferTitle(): string {
+  return `<h1 class="offer-doc-title">${OFFER_DOC_TITLE}</h1>`;
+}
+
 function renderHeader(ctx: Pick<TarjousPdfContext, 'customerLines' | 'offerInfo'>, logoDataUri?: string | null): string {
   const [name, ...rest] = ctx.customerLines;
   const logo = logoDataUri ? `<img class="logo" src="${escapeHtml(logoDataUri)}" alt="" />` : '';
@@ -79,7 +88,7 @@ function renderVatSummary(rows: OfferVatSummaryRow[]): string {
         `<tr><td>${escapeHtml(formatPercent(row.vatPercent))}</td><td class="num">${escapeHtml(formatCurrency(row.net))}</td><td class="num">${escapeHtml(formatCurrency(row.vat))}</td><td class="num">${escapeHtml(formatCurrency(row.gross))}</td></tr>`,
     )
     .join('');
-  return `<table class="offer-vat"><thead><tr><th>Alv-%</th><th class="num">Veroton</th><th class="num">Alv</th><th class="num">Yhteensä</th></tr></thead><tbody>${body}</tbody></table>`;
+  return `<table class="offer-vat"><thead><tr><th>Alv-%</th><th class="num">Netto</th><th class="num">Alv</th><th class="num">Yhteensä</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
 function priceTable(rows: PriceRow[]): string {
@@ -91,8 +100,8 @@ function priceTable(rows: PriceRow[]): string {
     .join('')}</table>`;
 }
 
-function renderPriceBlock(price: TarjousPdfContext['price']): string {
-  return `<div class="price-block offer-totals"><div class="col">${priceTable(price.rows)}</div></div>`;
+function renderPriceBlock(price: TarjousPdfContext['price'], vatSummary: OfferVatSummaryRow[]): string {
+  return `<div class="price-block offer-totals"><div class="col">${renderVatSummary(vatSummary)}${priceTable(price.rows)}</div></div>`;
 }
 
 function renderAdditionalInfo(text: string): string {
@@ -108,7 +117,7 @@ function renderSignature(signature: TarjousPdfContext['signature']): string {
   const details = (lines: string[]) =>
     lines.map((line) => `<p class="offer-sign-detail">${escapeHtml(line)}</p>`).join('');
   const customer = signature.customerName ? [signature.customerName] : [];
-  return `<div class="offer-sign"><p class="offer-sign-role">Myyjä</p><p class="offer-sign-role">Tilaaja</p><div class="offer-sign-name">${details(signature.sellerLines)}</div><div class="offer-sign-name">${details(customer)}</div>${signaturePen('Allekirjoitus')}${signaturePen('Allekirjoitus')}${signaturePen('Päiväys')}${signaturePen('Päiväys')}</div>`;
+  return `<div class="offer-sign"><p class="offer-sign-accept">${OFFER_ACCEPTANCE_SENTENCE}</p><p class="offer-sign-role">Myyjä</p><p class="offer-sign-role">Tilaaja</p><div class="offer-sign-name">${details(signature.sellerLines)}</div><div class="offer-sign-name">${details(customer)}</div>${signaturePen('Allekirjoitus')}${signaturePen('Allekirjoitus')}</div>`;
 }
 
 /** Sivupohja: toistuva ylä-/alatunniste + sisältö. Käytetään myös KTV-sivulle (T8). */
@@ -149,10 +158,10 @@ export function renderTarjousBody(ctx: TarjousPdfContext): string {
     return renderSection(section, showColumnHeader);
   });
   return [
+    renderOfferTitle(),
     renderDelivery(ctx.deliveryScheduleText),
     ...sections,
-    renderPriceBlock(ctx.price),
-    renderVatSummary(ctx.vatSummary),
+    renderPriceBlock(ctx.price, ctx.vatSummary),
     renderAdditionalInfo(ctx.additionalInfo),
     renderSignature(ctx.signature),
     renderKotitalousPageHtml(ctx),

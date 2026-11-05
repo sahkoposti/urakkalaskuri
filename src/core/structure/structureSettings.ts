@@ -9,7 +9,7 @@ export const MAX_HOURLY_RATE = 500;
 /** Kentän tekstit yhdessä paikassa. */
 export const HOURLY_RATE_FIELD = {
   label: 'Tuntihinta, €/h (alv 0 %)',
-  help: 'Tuntihinta ilman arvonlisäveroa. Käytetään sekä tekijöiden urakkahinnassa että asiakashinnan kentissä. Tyhjä = yleinen tuntihinta (Asetukset → Yleinen).',
+  help: 'Tuntihinta ilman arvonlisäveroa. Käytetään sekä urakkahinnassa että asiakashinnan kentissä. Tyhjä = yleinen tuntihinta (Asetukset → Yleinen).',
   invalid:
     'Anna tuntihinta, joka on suurempi kuin 0 ja enintään 500 €/h. Esimerkki: 45,5.',
 } as const;

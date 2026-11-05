@@ -4,6 +4,15 @@ import { customerFromRecord } from '../models/types';
 import type { ProductStructure } from '../structure/types';
 import { ensureStructureLines } from '../structure/legacyCalculation';
 import { buildPdfContext } from './buildPdfContext';
+import { commitStoredDocument } from '../documents/commitStoredDocument';
+import {
+  documentSummary,
+  tarjousDocumentInputs,
+  tarjousDocumentTotal,
+  urakkakorttiDocumentInputs,
+  urakkakorttiDocumentTotal,
+} from '../documents/documentInputs';
+import type { ExportedDocument, NewDocumentInput } from '../documents/types';
 import type { GeneratePdfOptions, GeneratePdfResult } from './generatePdf';
 import {
   calculationWithUrakkakorttiRivihinnat,
@@ -38,8 +47,59 @@ export type PdfExportDeps = {
   getOfferStructureSettings: (structureId: string) => Promise<OfferStructureSettings>;
   loadLogoDataUri: () => Promise<string | null>;
   generatePdf: (options: GeneratePdfOptions) => Promise<GeneratePdfResult>;
+  newDocumentId: () => string;
+  appVersion: () => string | null;
+  insertDocument: (input: NewDocumentInput) => Promise<unknown>;
+  removeStoredPdf: (relativePath: string) => void;
   now: () => Date;
 };
+
+async function storeExportedPdf(
+  deps: PdfExportDeps,
+  input: {
+    calculationId: string;
+    kind: ExportedDocument['kind'];
+    offerNumber: number | null;
+    html: string;
+    fileName: string;
+    inputs: NewDocumentInput['inputs'];
+    total: number | null;
+    createdAt: string;
+  },
+): Promise<ExportedDocument> {
+  const id = deps.newDocumentId();
+  const placed = await deps.generatePdf({
+    html: input.html,
+    fileName: input.fileName,
+    calculationId: input.calculationId,
+    documentId: id,
+  });
+  await commitStoredDocument(
+    placed.relativePath,
+    () =>
+      deps.insertDocument({
+        id,
+        calculationId: input.calculationId,
+        kind: input.kind,
+        offerNumber: input.offerNumber,
+        fileRelPath: placed.relativePath,
+        fileName: input.fileName,
+        inputs: input.inputs,
+        summary: documentSummary(input.total, placed.numberOfPages),
+        appVersion: deps.appVersion(),
+        createdAt: input.createdAt,
+      }),
+    deps.removeStoredPdf,
+  );
+  return {
+    id,
+    path: placed.uri,
+    fileName: input.fileName,
+    numberOfPages: placed.numberOfPages,
+    kind: input.kind,
+    offerNumber: input.offerNumber,
+  };
+}
 
 async function requireCalculation(deps: PdfExportDeps, id: string): Promise<CalculationRecord> {
   const record = await deps.getCalculation(id);
@@ -55,7 +115,7 @@ export async function exportTarjousPdf(
   calculationId: string,
   app: PdfAppData,
   deps: PdfExportDeps,
-): Promise<GeneratePdfResult & { offerNumber: number; fileName: string }> {
+): Promise<ExportedDocument> {
   const existing = await requireCalculation(deps, calculationId);
   const problems = offerDocumentProblems(existing);
   if (problems.length > 0) {
@@ -86,8 +146,16 @@ export async function exportTarjousPdf(
   });
   const html = renderTarjousHtml(ctx, { logoDataUri, accentColor: app.settings.theme?.accentColor });
   const fileName = buildPdfFileName({ kind: 'Tarjous', customerName: customerFromRecord(record).name, date: generatedAt, offerNumber });
-  const result = await deps.generatePdf({ html, fileName, dialogTitle: `Tarjous ${offerNumber}` });
-  return { ...result, offerNumber, fileName };
+  return storeExportedPdf(deps, {
+    calculationId,
+    kind: 'tarjous',
+    offerNumber,
+    html,
+    fileName,
+    inputs: tarjousDocumentInputs(record, offerCompany.offerValidDays),
+    total: tarjousDocumentTotal(record),
+    createdAt: generatedAt.toISOString(),
+  });
 }
 
 /**
@@ -125,7 +193,7 @@ async function applyCardManualPrices(
 
 export type UrakkakorttiExportResult =
   | { status: 'needsManualContract'; lines: { id: string; name: string }[] }
-  | ({ status: 'done'; fileName: string } & GeneratePdfResult);
+  | ({ status: 'done' } & ExportedDocument);
 
 /**
  * Urakkakortti: ei tarjousnumeroa. Jos jollakin rivillä ei ole urakkaa (lomaketta ei käytetty),
@@ -172,6 +240,15 @@ export async function exportUrakkakorttiPdf(
   });
   const html = renderUrakkakorttiHtml(ctx, { logoDataUri, accentColor: app.settings.theme?.accentColor });
   const fileName = buildPdfFileName({ kind: 'Urakkakortti', customerName: customerFromRecord(record).name, date: generatedAt });
-  const result = await deps.generatePdf({ html, fileName, dialogTitle: 'Urakkakortti' });
-  return { status: 'done', fileName, ...result };
+  const document = await storeExportedPdf(deps, {
+    calculationId,
+    kind: 'urakkakortti',
+    offerNumber: null,
+    html,
+    fileName,
+    inputs: urakkakorttiDocumentInputs(record),
+    total: urakkakorttiDocumentTotal(record, offerCompany.sivukulukerroin),
+    createdAt: generatedAt.toISOString(),
+  });
+  return { status: 'done', ...document };
 }

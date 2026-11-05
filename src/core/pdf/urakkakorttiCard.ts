@@ -357,6 +357,7 @@ export function calculationWithBusinessVatMode(
 
 const SNAPSHOT_EXTRA_KEYS = [
   'ktvPersons',
+  'ktvPageIncluded',
   'offerValidDays',
   URAKKAKORTTI_MODE_KEY,
   URAKKAKORTTI_HUOMIO_KEY,

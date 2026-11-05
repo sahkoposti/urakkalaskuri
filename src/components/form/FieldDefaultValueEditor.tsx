@@ -67,7 +67,7 @@ export function FieldDefaultValueEditor({ field, products, onChange }: FieldDefa
           label="Oletusarvo"
           value={field.defaultValue ?? ''}
           onChangeText={setDefaultValue}
-          keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
+          kind={field.type === 'number' ? 'decimal' : 'sentence'}
           placeholder={field.type === 'number' ? 'Esim. 120' : 'Valinnainen'}
           compact
         />

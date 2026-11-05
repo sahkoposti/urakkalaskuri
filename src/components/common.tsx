@@ -15,6 +15,7 @@ import * as Clipboard from 'expo-clipboard';
 import type { ReactNode } from 'react';
 
 import { ThemedIcon } from '@/src/components/ThemedIcon';
+import { textInputPropsFor, type TextInputKind } from '@/src/components/textInputProps';
 import Slider from '@react-native-community/slider';
 
 import type { AppColorPalette } from '@/src/theme/colors';
@@ -249,7 +250,13 @@ type AppInputProps = {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
-  keyboardType?: 'default' | 'numeric' | 'decimal-pad' | 'phone-pad' | 'email-address';
+  /** Kentän laji. Asetukset tulevat `textInputPropsFor`-funktiosta. */
+  kind?: TextInputKind;
+  keyboardType?: TextInputProps['keyboardType'];
+  autoCapitalize?: TextInputProps['autoCapitalize'];
+  autoCorrect?: TextInputProps['autoCorrect'];
+  autoComplete?: TextInputProps['autoComplete'];
+  textContentType?: TextInputProps['textContentType'];
   multiline?: boolean;
   placeholder?: string;
   compact?: boolean;
@@ -262,7 +269,12 @@ export function AppInput({
   label,
   value,
   onChangeText,
-  keyboardType = 'default',
+  kind,
+  keyboardType,
+  autoCapitalize,
+  autoCorrect,
+  autoComplete,
+  textContentType,
   multiline = false,
   placeholder,
   compact = false,
@@ -270,6 +282,7 @@ export function AppInput({
   onFocus,
   onBlur,
 }: AppInputProps) {
+  const kindProps = kind ? textInputPropsFor(kind) : undefined;
   const styles = useThemedStyles(createCommonStyles);
   const inputStyle = [
     styles.input,
@@ -284,7 +297,11 @@ export function AppInput({
     <TextInput
       value={value}
       onChangeText={onChangeText}
-      keyboardType={keyboardType}
+      keyboardType={keyboardType ?? kindProps?.keyboardType ?? 'default'}
+      autoCapitalize={autoCapitalize ?? kindProps?.autoCapitalize}
+      autoCorrect={autoCorrect ?? kindProps?.autoCorrect}
+      autoComplete={autoComplete ?? kindProps?.autoComplete}
+      textContentType={textContentType ?? kindProps?.textContentType}
       multiline={multiline}
       placeholder={placeholder}
       placeholderTextColor="#999"

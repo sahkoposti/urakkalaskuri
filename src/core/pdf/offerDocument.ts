@@ -412,7 +412,10 @@ function vatRowsMatchPayable(
   return sum === vatInclusivePayable(record, customer);
 }
 
-/** Usean verokannan taulu rivien pyöristetyistä summista. null = kelvoton rivi tai pelkkä laskelman alennus. */
+/**
+ * Usean verokannan taulu rivien pyöristetyistä listahinnoista (alentamaton Yht).
+ * null = kelvoton rivi tai pelkkä laskelman alennus (vanha poikkeus: ei taulua).
+ */
 function roundedVatRateRows(record: CalculationRecord): OfferVatSummaryRow[] | null {
   if (calcLevelDiscountOnly(record)) return null;
   const lines = ensureStructureLines(record).filter((line) => line.quantity !== 0 && Number.isFinite(line.quantity));
@@ -429,8 +432,8 @@ function roundedVatRateRows(record: CalculationRecord): OfferVatSummaryRow[] | n
     for (const line of lines) {
       const lineRate = Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent;
       if (lineRate !== rate) continue;
-      const netPart = roundedOfferLineAmount(line, false, 'paid');
-      const grossPart = roundedOfferLineAmount(line, true, 'paid');
+      const netPart = roundedOfferLineAmount(line, false, 'list');
+      const grossPart = roundedOfferLineAmount(line, true, 'list');
       if (netPart == null || grossPart == null) return null;
       net += netPart;
       gross += grossPart;
@@ -443,11 +446,10 @@ function roundedVatRateRows(record: CalculationRecord): OfferVatSummaryRow[] | n
 }
 
 /**
- * ALV-erittely maksun jälkeen. Yksi verokanta → yksi rivi.
- * Yksityinen käyttää tallennettuja summia. Yrityksen sis. ALV käyttää otsikoiden
- * bruttosummaa, jotta erittely ja Loppusumma ovat samat.
- * Usea verokanta: jokaisen rivin pyöristetty netto ja brutto.
- * Pelkkä laskelman alennus: ei taulua, koska rivisummat ovat alentamattomia.
+ * ALV-erittely. Yksi verokanta → yksi rivi (tallennettu kooste, taulua ei tulosteta).
+ * Usea verokanta: jokaisen rivin pyöristetty listanetto ja listabrutto, jotta taulu
+ * täsmää summalohkon alentamattomiin lukuihin. Alennus tulostetaan taulun jälkeen.
+ * Pelkkä laskelman alennus: ei taulua. Maksettava on tallennettu summa.
  * Painotettu jako tulostetaan vain, jos bruttosumma on sama kuin Loppusumma.
  * Yrityksen ALV 0 ja käänteinen ALV: ei rivejä.
  */

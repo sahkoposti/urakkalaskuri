@@ -26,6 +26,7 @@ import {
   type OfferVatSummaryRow,
 } from './offerDocument';
 import type { KtvSettings, OfferCompanySettings, OfferStructureSettings } from './types';
+import { readKtvPageIncluded } from './ktvPageIncluded';
 import { readKtvPersons } from './ktvPersons';
 import { readOfferValidDays } from './offerValidDays';
 import { formatFinnishDate, validUntil } from './validUntil';
@@ -45,9 +46,9 @@ export type TarjousPdfContext = {
   sections: OfferSection[];
   /** Laskelman toimitusajankohta. Tyhjä = ei tulosteta. */
   deliveryScheduleText: string;
-  /** ALV-erittely maksun jälkeen. Yrityksen ALV 0 ja käänteinen ALV: tyhjä. Sis. ALV: otsikoiden summa. */
+  /** ALV-erittely. Usea verokanta: listahinnat. Yksi verokanta: tallennettu kooste, ei taulua. Laskelman alennus: tyhjä. */
   vatSummary: OfferVatSummaryRow[];
-  /** Yksi summalohko. Alennus täsmää Rivit yhteensä − loppusumma. Yksittäistä verokantaa ei toisteta ALV-taulukkona. */
+  /** Summalohko. Listahinnat, sitten alennus. Pelkkä laskelman alennus käyttää vanhaa lohkoa. */
   price: { includesVat: boolean; rows: PriceRow[] };
   /** Yrityksen Lisätiedot-teksti. Tyhjä = osio pois. */
   additionalInfo: string;
@@ -63,7 +64,7 @@ export type TarjousPdfContext = {
      * Rivialennuksessa rivien pyöristetty summa, muuten tallennettu summa.
      */
     totalPriceVat: number;
-    /** Materiaalit sis. ALV sellaisenaan; alennus pienentää vain työn osuutta (kotitalousDeduction.ktvPriceSplit). */
+    /** Materiaalit sis. ALV alennuksen jälkeen. Kutsuja vähentää alennuksen; ktvPriceSplit ei vähennä toista kertaa. */
     materialsVat: number;
     /** Yrityskohtaiset asetukset (Tarjous-asetukset), ei kovakoodattuja arvoja. */
     settings: KtvSettings;
@@ -71,6 +72,8 @@ export type TarjousPdfContext = {
     footnoteText: string;
     /** Henkilömäärä laskelman form_snapshot.ktvPersons-avaimesta. Puuttuva = 1. */
     persons: number;
+    /** Sivun 1 summalohkon viimeinen kokonaishinnan otsikko. */
+    totalLabel: string;
   };
 };
 
@@ -134,6 +137,45 @@ function uniformDiscountPercent(record: CalculationRecord): number | null {
 
 function lineRate(record: CalculationRecord, line: StructureLine): number {
   return Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent;
+}
+
+function round2(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
+/**
+ * KTV-materiaalit sis. ALV, alennus mukana (Eemil 5.11.2026).
+ * Ilman alennusta yksi verokanta tai ei hinnoiteltuja rivejä: tallennettu summa × laskelman kanta, kerran pyöristettynä.
+ * Yksi verokanta ja sama alennus-% kaikilla riveillä, tai pelkkä laskelman alennus: tuo summa × (1 − d/100), kerran.
+ * Sekalaiset riviale-prosentit tai usea verokanta: jokainen rivi
+ * round2(materiaalit alv0 × (1 + kanta/100) × (1 − d/100)), sitten summa.
+ * Jos yhdelläkään rivillä ei ole alea ja record.discountPercent > 0, d on laskelman prosentti.
+ * Rivin puuttuva kanta on laskelman kanta. Kolmatta tarjoustason alennustyyppiä ei ole.
+ */
+export function offerMaterialsVatIncluded(record: CalculationRecord): number {
+  const legacy = Math.round(applyVat(record.materialsVat0, record.vatPercent) * 100) / 100;
+  const lines = pricedOfferLines(record);
+  const lineDiscounts = lines.map((line) => clampDiscountPercent(line.discountPercent));
+  const anyLineDiscount = lineDiscounts.some((value) => value > 0);
+  const calcDiscount = !anyLineDiscount && record.discountPercent > 0 ? clampDiscountPercent(record.discountPercent) : 0;
+  const discountedAggregate = (d: number) => (d > 0 ? round2(legacy * (1 - d / 100)) : legacy);
+  if (lines.length === 0) return discountedAggregate(calcDiscount);
+  const rates: number[] = [];
+  for (const line of lines) {
+    const rate = lineRate(record, line);
+    if (!rates.includes(rate)) rates.push(rate);
+  }
+  const uniform = lineDiscounts.every((value) => value === lineDiscounts[0]);
+  if (rates.length <= 1 && (calcDiscount > 0 || uniform)) {
+    return discountedAggregate(calcDiscount > 0 ? calcDiscount : (lineDiscounts[0] ?? 0));
+  }
+  return round2(
+    lines.reduce((sum, line) => {
+      const materials = Number.isFinite(line.materialsVat0) ? line.materialsVat0 : 0;
+      const d = calcDiscount > 0 ? calcDiscount : clampDiscountPercent(line.discountPercent);
+      return sum + round2(materials * (1 + lineRate(record, line) / 100) * (1 - d / 100));
+    }, 0),
+  );
 }
 
 /** ALV, joka sisältyy annettuun bruttosummaan. Brutto − tämä = veroton osa senteissä. */
@@ -280,35 +322,54 @@ function vatIncludedRows(record: CalculationRecord, loppu: number, lineDiscount:
   });
 }
 
-/**
- * Yksi summalohko.
- * Alennus: Rivit yhteensä (otsikoiden listahinnat), Alennus yhteensä (erotus), Alennettu hinta yhteensä.
- * Verollinen alennus: alle rivin Sisältää ALV. Veroton ja ALV-rivit jäävät pois.
- * Ilman alennusta: verollisella Veroton, ALV ja Loppusumma rivien pyöristetystä summasta.
- * ALV 0: vain Loppusumma (Alv 0 %), rivien pyöristetty netto. Yrityksen sis. ALV: Loppusumma on otsikoiden brutto.
- */
-export function offerPriceBlock(record: CalculationRecord, customer: CustomerInfo): TarjousPdfContext['price'] {
-  const discounted = linesCarryDiscount(record) || hasOfferDiscount(record);
-  const vatInclusive = offerIncludesVat(customer, record.formSnapshot);
-  if (!discounted) {
-    if (!vatInclusive) {
-      const printed = printedOfferAmounts(record, customer);
-      return {
-        includesVat: false,
-        rows: [{ label: 'Loppusumma (Alv 0 %)', value: formatCurrency(printed.gross), emphasis: true }],
-      };
-    }
-    const printed = printedOfferAmounts(record, customer);
-    return {
-      includesVat: true,
-      rows: [
-        { label: 'Veroton', value: formatCurrency(printed.net) },
-        { label: `ALV ${formatPercent(record.vatPercent)}`, value: formatCurrency(printed.vat) },
-        { label: 'Loppusumma', value: formatCurrency(printed.gross), emphasis: true },
-      ],
-    };
-  }
+type ListRateAmount = { rate: number; net: number; vat: number; gross: number };
 
+/** Listahinnan netto, ALV ja brutto verokannoittain. null = kelvoton rivi. */
+function listRateAmounts(record: CalculationRecord): ListRateAmount[] | null {
+  const lines = pricedOfferLines(record);
+  const rates: number[] = [];
+  for (const line of lines) {
+    const rate = lineRate(record, line);
+    if (!rates.includes(rate)) rates.push(rate);
+  }
+  if (rates.length === 0) return null;
+  const rows: ListRateAmount[] = [];
+  for (const rate of rates) {
+    let net = 0;
+    let gross = 0;
+    for (const line of lines) {
+      if (lineRate(record, line) !== rate) continue;
+      const netPart = roundedOfferLineAmount(line, false, 'list');
+      const grossPart = roundedOfferLineAmount(line, true, 'list');
+      if (netPart == null || grossPart == null) return null;
+      net += netPart;
+      gross += grossPart;
+    }
+    const netCents = roundToCents(net);
+    const grossCents = roundToCents(gross);
+    rows.push({ rate, net: netCents, vat: roundToCents(grossCents - netCents), gross: grossCents });
+  }
+  return rows;
+}
+
+function alvRow(rate: number, amount: number): PriceRow {
+  return { label: `Alv ${formatPercent(rate)}`, value: formatCurrency(amount) };
+}
+
+function discountRow(record: CalculationRecord, listTotal: number, payable: number): PriceRow {
+  const percent = uniformDiscountPercent(record);
+  return {
+    label: percent != null ? `Alennus yhteensä ${formatPercent(percent)}` : 'Alennus yhteensä',
+    value: discountValue(listTotal, payable),
+  };
+}
+
+/**
+ * Vanha lohko, kun alennus on vain laskelmalla ja rivit ovat alentamattomia.
+ * Maksettava on tallennettu summa. Useaa verokantaa ei eritellä.
+ */
+function legacyCalcDiscountPriceBlock(record: CalculationRecord, customer: CustomerInfo): TarjousPdfContext['price'] {
+  const vatInclusive = offerIncludesVat(customer, record.formSnapshot);
   const listSum = sumRoundedOfferLines(record, vatInclusive, 'list');
   const rivit =
     listSum ??
@@ -323,8 +384,75 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
     },
     { label: 'Alennettu hinta yhteensä', value: formatCurrency(loppu), emphasis: true },
   ];
-  if (vatInclusive) rows.push(...vatIncludedRows(record, loppu, linesCarryDiscount(record)));
+  if (vatInclusive) rows.push(...vatIncludedRows(record, loppu, false));
   return { includesVat: vatInclusive, rows };
+}
+
+/**
+ * Summalohko rivien alla.
+ * Verollinen: Yhteensä alv 0, Alv per verokanta, Yhteensä sis. alv. Luvut ovat
+ * pyöristettyjen listahintojen summia. Ilman alennusta viimeinen rivi on lihavoitu
+ * loppusumma. Alennus tulee sen jälkeen, ja lihavoitu rivi on Alennettu hinta yhteensä.
+ * Usealla kannalla sen perään tulevat "Sisältää ALV" -rivit maksetusta bruttosta.
+ * ALV 0 ja käänteinen ALV: ilman alennusta vain Loppusumma (Alv 0 %). Alennuksella
+ * Yhteensä alv 0, nettoalennus ja Loppusumma (Alv 0 %). Ei verokantakohtaisia rivejä.
+ * Pelkkä laskelman alennus: vanha lohko ja tallennettu maksettava. Useaa verokantaa ei jaeta.
+ */
+/** Sivun 1 summalohkon otsikko, jota KTV-sivu toistaa. Alennus voittaa listahinnan. */
+export function offerPageTotalLabel(rows: { label: string }[]): string {
+  const discounted = rows.find((row) => row.label === 'Alennettu hinta yhteensä');
+  if (discounted) return discounted.label;
+  const inclusive = rows.find((row) => row.label === 'Yhteensä sis. alv');
+  if (inclusive) return inclusive.label;
+  return rows.length > 0 ? rows[rows.length - 1]!.label : 'Yhteensä sis. alv';
+}
+
+export function offerPriceBlock(record: CalculationRecord, customer: CustomerInfo): TarjousPdfContext['price'] {
+  const lineDiscount = linesCarryDiscount(record);
+  const vatInclusive = offerIncludesVat(customer, record.formSnapshot);
+  if (!lineDiscount && hasOfferDiscount(record)) return legacyCalcDiscountPriceBlock(record, customer);
+
+  const printed = printedOfferAmounts(record, customer);
+  if (!vatInclusive) {
+    if (!lineDiscount) {
+      return {
+        includesVat: false,
+        rows: [{ label: 'Loppusumma (Alv 0 %)', value: formatCurrency(printed.gross), emphasis: true }],
+      };
+    }
+    const listNet =
+      sumRoundedOfferLines(record, false, 'list') ?? roundToCents(record.totalPriceVat0BeforeDiscount);
+    return {
+      includesVat: false,
+      rows: [
+        { label: 'Yhteensä alv 0', value: formatCurrency(listNet) },
+        discountRow(record, listNet, printed.gross),
+        { label: 'Loppusumma (Alv 0 %)', value: formatCurrency(printed.gross), emphasis: true },
+      ],
+    };
+  }
+
+  const rates = listRateAmounts(record);
+  const listNet = rates
+    ? roundToCents(rates.reduce((sum, row) => sum + row.net, 0))
+    : (sumRoundedOfferLines(record, false, 'list') ?? printed.net);
+  const listGross = rates
+    ? roundToCents(rates.reduce((sum, row) => sum + row.gross, 0))
+    : (sumRoundedOfferLines(record, true, 'list') ?? (lineDiscount ? roundToCents(record.totalPriceVatBeforeDiscount) : printed.gross));
+  const alvRows = rates
+    ? rates.map((row) => alvRow(row.rate, row.vat))
+    : [alvRow(record.vatPercent, roundToCents(listGross - listNet))];
+  const rows: PriceRow[] = [
+    { label: 'Yhteensä alv 0', value: formatCurrency(listNet) },
+    ...alvRows,
+    { label: 'Yhteensä sis. alv', value: formatCurrency(listGross), emphasis: !lineDiscount },
+  ];
+  if (lineDiscount) {
+    rows.push(discountRow(record, listGross, printed.gross));
+    rows.push({ label: 'Alennettu hinta yhteensä', value: formatCurrency(printed.gross), emphasis: true });
+    if (rates && rates.length > 1) rows.push(...vatIncludedRows(record, printed.gross, true));
+  }
+  return { includesVat: true, rows };
 }
 
 export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext {
@@ -335,8 +463,10 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     { label: 'Päiväys', value: formatFinnishDate(generatedAt) },
     { label: 'Voimassa', value: formatFinnishDate(validUntil(generatedAt, readOfferValidDays(record.formSnapshot, offerCompany.offerValidDays))) },
   ];
-  const ktvApplicable = isPrivateCustomer(customer) && !customer.reverseVat;
+  const ktvApplicable =
+    isPrivateCustomer(customer) && !customer.reverseVat && readKtvPageIncluded(record.formSnapshot);
   const payable = printedOfferAmounts(record, customer).gross;
+  const price = offerPriceBlock(record, customer);
   return {
     kind: 'tarjous',
     logoUri: company.logoUri,
@@ -346,7 +476,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     sections: buildOfferSections(input),
     deliveryScheduleText: record.deliveryScheduleText?.trim() ?? '',
     vatSummary: offerVatSummary(record, customer),
-    price: offerPriceBlock(record, customer),
+    price,
     additionalInfo: typeof offerCompany.additionalInfoText === 'string' ? offerCompany.additionalInfoText : '',
     sellerLines: sellerContactLines(company),
     signature: offerSignatureParties(company, customer.name),
@@ -354,10 +484,11 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     ktv: ktvApplicable
       ? {
           totalPriceVat: payable,
-          materialsVat: Math.round(applyVat(record.materialsVat0, record.vatPercent) * 100) / 100,
+          materialsVat: offerMaterialsVatIncluded(record),
           settings: offerCompany.ktv,
           footnoteText: offerCompany.ktvFootnoteText,
           persons: readKtvPersons(record.formSnapshot),
+          totalLabel: offerPageTotalLabel(price.rows),
         }
       : undefined,
   };

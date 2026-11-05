@@ -1,8 +1,17 @@
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { PdfExportButtons } from '@/src/components/pdf/PdfExportButtons';
+import { DetailTabBar } from '@/src/components/calculation/DetailTabBar';
+import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
+import { CalculationDocumentList, PhoneFolderBar } from '@/src/components/pdf/CalculationDocumentList';
+import { DocumentFormModal } from '@/src/components/pdf/DocumentFormModal';
+import { DocumentReadySheet } from '@/src/components/pdf/DocumentReadySheet';
+import { DOKUMENTTI_ACTIONS, type DetailTab } from '@/src/components/pdf/pdfExportFormModel';
+import { TarjousExportForm } from '@/src/components/pdf/TarjousExportForm';
+import { UrakkakorttiExportForm } from '@/src/components/pdf/UrakkakorttiExportForm';
+import { usePdfExportForm } from '@/src/components/pdf/usePdfExportForm';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
 import { PriceBreakdownCard } from '@/src/components/calculation/PriceBreakdownCard';
 import {
@@ -13,6 +22,10 @@ import {
   SectionTitle,
 } from '@/src/components/common';
 import { previewFormContext } from '@/src/core/calculation/calculationPipeline';
+import {
+  CONTINUE_EDIT_LABEL,
+  EXPORT_BLOCKED_BY_DRAFT_MESSAGE,
+} from '@/src/core/history/detailDraftPolicy';
 import { buildCalculationFormulaContext, formatTravelTimeHoursOneWay } from '@/src/core/form/calculationFormulaContext';
 import { lineFormSnapshot } from '@/src/core/form/formSummaryHelpers';
 import {
@@ -38,6 +51,8 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 type CalculationDetailViewProps = {
   record: CalculationRecord;
   formDefinition: FormDefinition;
+  /** Näytetään, kun laskelmalla on uudempi muokkausluonnos. */
+  unsavedChangesNotice?: string | null;
   onCopy?: () => void;
   onFooterPress: () => void;
   onDeletePress?: () => void;
@@ -56,12 +71,19 @@ function lineBreakdown(line: StructureLine, reverseVat: boolean) {
 export function CalculationDetailView({
   record,
   formDefinition,
+  unsavedChangesNotice,
   onCopy,
   onFooterPress,
   onDeletePress,
 }: CalculationDetailViewProps) {
   const styles = useThemedStyles(createStyles);
   const { settings, structures } = useApp();
+  const [tab, setTab] = useState<DetailTab>('laskelma');
+  const [openDocument, setOpenDocument] = useState<'tarjous' | 'urakkakortti' | null>(null);
+  const pdf = usePdfExportForm(record.id, record);
+  useEffect(() => {
+    if (pdf.readyDocument) setOpenDocument(null);
+  }, [pdf.readyDocument]);
   const customer = customerFromRecord(record);
   const privateCustomer = isPrivateCustomer(customer);
   const structureLines = ensureStructureLines(record);
@@ -81,6 +103,7 @@ export function CalculationDetailView({
   const currentVersion = formDefinition.version;
 
   return (
+    <>
     <ScrollView contentContainerStyle={styles.content}>
       <View>
         <View style={styles.titleRow}>
@@ -99,6 +122,66 @@ export function CalculationDetailView({
         <View style={styles.titleUnderline} />
       </View>
 
+      {unsavedChangesNotice ? (
+        <View style={styles.pendingNotice}>
+          <Text style={styles.pendingNoticeText}>{unsavedChangesNotice}</Text>
+        </View>
+      ) : null}
+
+      <DetailTabBar value={tab} onChange={setTab} />
+
+      {tab === 'dokumentit' ? (
+        <View style={styles.documents}>
+          {pdf.exportBlocked ? (
+            <View style={styles.pendingNotice}>
+              <Text style={styles.pendingNoticeText}>{EXPORT_BLOCKED_BY_DRAFT_MESSAGE}</Text>
+              <PrimaryButton
+                title={CONTINUE_EDIT_LABEL}
+                onPress={() => router.push({ pathname: '/wizard', params: { editId: record.id } })}
+              />
+            </View>
+          ) : null}
+          {DOKUMENTTI_ACTIONS.map((action) => (
+            <AppCard key={action.id} style={styles.documentCard}>
+              <Text style={styles.documentTitle}>
+                {action.id === 'tarjous' ? 'Tarjous' : 'Urakkakortti'}
+              </Text>
+              <OutlinedButton
+                title={action.label}
+                disabled={pdf.exportBlocked}
+                onPress={() => {
+                  if (pdf.exportBlocked) return;
+                  pdf.resyncSheet();
+                  setOpenDocument(action.id);
+                }}
+              />
+            </AppCard>
+          ))}
+          {pdf.showPhoneFolder ? (
+            <PhoneFolderBar
+              label={pdf.phoneFolderLabel}
+              onChange={pdf.changePhoneFolder}
+              onClear={pdf.clearPhoneFolder}
+            />
+          ) : null}
+          <CalculationDocumentList
+            documents={pdf.documents}
+            platform={pdf.phonePlatform}
+            onPreview={pdf.previewDocument}
+            onShare={(document) => {
+              if (pdf.exportBlocked) return;
+              pdf.shareDocument(document);
+            }}
+            onDelete={pdf.confirmDeleteDocument}
+            onSaveToPhone={(document) => {
+              if (pdf.exportBlocked) return;
+              pdf.retryPhoneSave(document);
+            }}
+          />
+          <OutlinedButton title="Sulje" onPress={onFooterPress} />
+        </View>
+      ) : (
+        <>
       {mismatchLine && snapshotVersion != null ? (
         <View style={styles.versionWarning}>
           <Text style={styles.versionWarningTitle}>Lomakepohja on muuttunut</Text>
@@ -113,7 +196,6 @@ export function CalculationDetailView({
           title="Muokkaa"
           onPress={() => router.push({ pathname: '/wizard', params: { editId: record.id } })}
         />
-        <PdfExportButtons calculationId={record.id} record={record} />
       </View>
 
       <AppCard style={styles.card}>
@@ -194,7 +276,45 @@ export function CalculationDetailView({
       ))}
 
       <OutlinedButton title="Sulje" onPress={onFooterPress} />
+        </>
+      )}
     </ScrollView>
+    <DocumentFormModal
+      visible={openDocument === 'tarjous'}
+      title="Tarjous"
+      onClose={() => setOpenDocument(null)}
+    >
+      <TarjousExportForm offer={pdf.offer} />
+    </DocumentFormModal>
+    <DocumentFormModal
+      visible={openDocument === 'urakkakortti' && pdf.manualLines === null}
+      title="Urakkakortti"
+      onClose={() => setOpenDocument(null)}
+    >
+      <UrakkakorttiExportForm card={pdf.card} />
+    </DocumentFormModal>
+    <DocumentReadySheet
+      document={pdf.readyDocument}
+      phone={pdf.readyPhone}
+      platform={pdf.phonePlatform}
+      onPreview={() => pdf.readyDocument && pdf.previewDocument({ uri: pdf.readyDocument.path })}
+      onShare={() => {
+        if (pdf.exportBlocked || !pdf.readyShare) return;
+        pdf.shareDocument(pdf.readyShare);
+      }}
+      onSaveToPhone={() => {
+        if (pdf.exportBlocked || !pdf.readyShare || !pdf.readyDocument) return;
+        pdf.retryPhoneSave({ ...pdf.readyShare, id: pdf.readyDocument.id });
+      }}
+      onClose={pdf.dismissReady}
+    />
+    <ManualContractDialog
+      visible={pdf.manualLines !== null}
+      lines={pdf.manualLines ?? []}
+      onCancel={pdf.cancelManual}
+      onSubmit={pdf.submitManual}
+    />
+    </>
   );
 }
 
@@ -317,6 +437,18 @@ function createStyles(colors: AppColorPalette) {
       height: 3,
       backgroundColor: colors.accent,
     },
+    pendingNotice: {
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderRadius: 5,
+      backgroundColor: colors.surface,
+    },
+    pendingNoticeText: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 15,
+      color: colors.accent,
+    },
     deleteButton: {
       padding: 4,
     },
@@ -344,6 +476,17 @@ function createStyles(colors: AppColorPalette) {
     },
     actions: {
       marginTop: 8,
+    },
+    documents: {
+      gap: 16,
+    },
+    documentCard: {
+      gap: 12,
+    },
+    documentTitle: {
+      fontFamily: 'IBMPlexSans_700Bold',
+      fontSize: 18,
+      color: colors.primary,
     },
     card: {
       marginTop: 8,

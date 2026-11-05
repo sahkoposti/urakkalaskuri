@@ -60,14 +60,14 @@ export function renderUrakkakorttiBody(ctx: UrakkakorttiContext): string {
 }
 
 const URAKKAKORTTI_CSS = `
-  .uk-title { display: flex; justify-content: space-between; align-items: baseline; gap: 6mm; margin: 0 0 4mm 0; font-size: 16pt; font-weight: 700; }
+  .uk-title { display: flex; justify-content: space-between; align-items: baseline; gap: 6mm; margin: 0 0 4mm 0; font-size: 17pt; font-weight: 700; }
   .uk-title-text { font-weight: 700; }
   .uk-sum { margin-left: auto; text-align: right; white-space: nowrap; }
-  .uk-sum-label { display: block; font-size: 8pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-  .uk-sum-value { display: block; font-size: 16pt; font-weight: 700; }
+  .uk-sum-label { display: block; font-size: 9pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .uk-sum-value { display: block; font-size: 17pt; font-weight: 700; }
   .uk-materials { margin: 0 0 6mm 0; }
-  .uk-materials h3 { margin: 0 0 1.5mm 0; font-size: 11pt; break-after: avoid; page-break-after: avoid; }
-  .uk-materials table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  .uk-materials h3 { margin: 0 0 1.5mm 0; font-size: 12pt; break-after: avoid; page-break-after: avoid; }
+  .uk-materials table { width: 100%; border-collapse: collapse; font-size: 11pt; }
   .uk-materials tr { break-inside: avoid; page-break-inside: avoid; }
   .uk-materials th, .uk-materials td { text-align: left; padding: 0.8mm 2mm 0.8mm 0; border-bottom: 1px solid #ddd; }
   .uk-materials .value { text-align: right; }

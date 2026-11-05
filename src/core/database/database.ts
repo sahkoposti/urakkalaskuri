@@ -402,9 +402,12 @@ export function copyCalculationRecord(
 export async function deleteCalculation(id: string): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM documents WHERE calculation_id = ?', id);
     await db.runAsync('DELETE FROM calculation_lines WHERE calculation_id = ?', id);
     await db.runAsync('DELETE FROM calculations WHERE id = ?', id);
   });
+  const { deleteCalculationDocumentFolder } = await import('../documents/documentFiles');
+  deleteCalculationDocumentFolder(id);
 }
 
 const WIZARD_DRAFT_ID = 'current';
@@ -551,6 +554,24 @@ async function readSettingValue(key: string): Promise<string | null> {
 async function writeSettingValue(key: string, value: string): Promise<void> {
   const db = await getDb();
   await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value);
+}
+
+/** SAF-kansion URI. Sama settings-taulu kuin muut paikalliset asetukset. */
+export const PHONE_DOCUMENTS_DIRECTORY_KEY = 'phone_documents_directory_uri';
+
+export async function getPhoneDocumentsDirectoryUri(): Promise<string | null> {
+  const value = (await readSettingValue(PHONE_DOCUMENTS_DIRECTORY_KEY))?.trim();
+  return value ? value : null;
+}
+
+export async function savePhoneDocumentsDirectoryUri(uri: string | null): Promise<void> {
+  const trimmed = uri?.trim() ?? '';
+  if (!trimmed) {
+    const db = await getDb();
+    await db.runAsync('DELETE FROM settings WHERE key = ?', PHONE_DOCUMENTS_DIRECTORY_KEY);
+    return;
+  }
+  await writeSettingValue(PHONE_DOCUMENTS_DIRECTORY_KEY, trimmed);
 }
 
 /** Yrityskohtaiset tarjousasetukset (voimassaolo, numerointi, KTV). */
