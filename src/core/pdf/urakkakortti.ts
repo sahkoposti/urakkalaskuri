@@ -237,8 +237,10 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
 }
 
 /**
- * Kortin osiot järjestyksessä. Uusi osio (esim. myöhemmät kuvat) lisätään tähän listaan;
+ * Kortin osiot järjestyksessä. Uusi tekstiosio lisätään tähän listaan;
  * renderöijä käy listan läpi, eikä olemassa olevia osia tarvitse järjestää uudelleen.
+ * Kuvat tulevat kortin jälkeen omalle sivulleen (renderUrakkakorttiHtml, attachmentHtml),
+ * eivät lohkona tämän listan keskelle.
  */
 export type UrakkakorttiBlockKind = 'price' | 'specs' | 'print' | 'materials' | 'huomio';
 

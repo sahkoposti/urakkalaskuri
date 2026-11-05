@@ -68,6 +68,7 @@ describe('generatePdf', () => {
       relativePath: 'documents/calc-1/doc-1.pdf',
       numberOfPages: 3,
       fileName: 'Tarjous_1_A_2026-01-01.pdf',
+      warnings: [],
     });
   });
 

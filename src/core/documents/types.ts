@@ -62,4 +62,6 @@ export type ExportedDocument = {
   numberOfPages: number;
   kind: DocumentKind;
   offerNumber: number | null;
+  /** Puuttuva tiedosto tai epäonnistunut PDF-yhdistäminen. Tyhjä lista = ei huomautettavaa. */
+  warnings: string[];
 };

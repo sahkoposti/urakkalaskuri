@@ -1,6 +1,6 @@
-# Liitteet (L1–L2)
+# Liitteet (L1–L3)
 
-Pakettiversio yhä **v1.3.1**. Valitsin ja kuvateksti tulevat myöhemmin. PDF-liitteen yhdistämistä tarjoukseen ei ole vielä kytketty tulostukseen. Versio nousee 1.3.2:een vasta L4:ssä.
+Pakettiversio yhä **v1.3.1**. Valitsin ja kuvateksti tulevat myöhemmin. Kuvien pikselityö (expo-image-manipulator) tulee L4:ssä. Versio nousee 1.3.2:een vasta L4:ssä.
 
 Taulu `attachments`. Migraatio on `CREATE TABLE IF NOT EXISTS` (`ensureAttachmentsTable`) ja nostaa `PRAGMA user_version` arvoon 3, jos se on pienempi. Ajo kahdesti ei tyhjennä rivejä eikä laske versiota.
 
@@ -40,6 +40,32 @@ Rajat: yksi PDF enintään 10 Mt, liitteet yhteensä enintään 25 Mt, liitesivu
 | Yhdistäminen epäonnistuu | Liitteiden yhdistäminen epäonnistui. Tarjous voidaan jakaa ilman liitteitä. |
 
 Jos yhdistäminen heittää, kutsuja saa virheilmoituksen eikä poikkeusta. Tarjous voidaan jakaa ilman liitteitä.
+
+## Tulosteen Liitteet-osio
+
+Kohde `offer` tai `both` menee tarjoukseen, `card` tai `both` korttiin. `none` ei tulostu. Järjestys on `sort_order`.
+
+Kuvan pisin sivu pienennetään enintään 1600 pikseliin, JPEG-laatu on 0,7, eikä kuvaa suurenneta. Päätös on `imageResizePlan(leveys, korkeus)`. Oletuslataus palauttaa alkuperäisen tiedoston data-URI:na. Pienennys tehdään vasta L4:ssä injektoidussa `loadImageDataUri`-toteutuksessa.
+
+Kuvien arvioitu koko on tiedostokoko × 4/3. Yli 15 Mt antaa varoituksen. Kuvat otetaan silti mukaan.
+
+PDF:ään mahtuu 20 kuvaa. Ylimääräiset jätetään pois ja varoitus palautetaan.
+
+Asettelu on `two_per_page` (oletus) tai `one_per_page`. Osio alkaa uudelta sivulta tarjouksessa KTV-sivun jälkeen ja kortissa kortin jälkeen. Kuvateksti on `Kuva N` ja valinnainen teksti. HTML escapoidaan. PDF-liitteen nimi listataan rivillä `Liitteenä: nimi`, koska sivut liitetään yhdistämisessä tulosteen perään.
+
+Jos kohteeseen ei ole liitteitä, tarjouksen ja kortin HTML on sama kuin ennen osiota. Osion CSS on vain osiossa, ei yhteisessä tyylissä.
+
+Sivunumero `Sivu x/y` laskee HTML-sivut, myös kuvaliitteet. `knownTotalPages` korvaa `counter(pages)`:n kuten ennen. Yhdistetyissä PDF-sivuissa ei ole alatunnistetta.
+
+Puuttuva kuvatiedosto ohitetaan. Puuttuva tai lukukelvoton PDF ohitetaan. Jos yhdistäminen epäonnistuu, tarjous tallennetaan ilman niitä PDF-sivuja. Tulos sisältää `warnings`. Käyttöliittymä näyttää ne valmiin dokumentin näkymässä. Tarjouksen voi jakaa.
+
+| Tilanne | Viesti |
+|---------|--------|
+| Yli 20 kuvaa | Ylimääräiset jätettiin pois. Enintään 20 kuvaa. |
+| Kuvien arvio yli 15 Mt | Kuvien arvioitu koko ylittää 15 Mt. |
+| Kuva puuttuu | Kuvaa ei voitu lisätä: nimi. |
+| PDF puuttuu | PDF-liitettä ei voitu lukea: nimi. Tarjous voidaan jakaa ilman tätä liitettä. |
+| Yhdistäminen epäonnistuu | Liitteiden yhdistäminen epäonnistui. Tarjous voidaan jakaa ilman liitteitä. |
 
 ## Kirjasto tietoturvakatselmusta varten
 
