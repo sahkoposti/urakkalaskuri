@@ -41,6 +41,27 @@ export function parseStashedCalculation(json: string | undefined): CalculationRe
  * Muuttumaton sisältö ei kirjoita valmista riviä uudelleen.
  * Jos rivi ehdittiin alentaa ja sisältö palasi samaksi, palautetaan tallettettu valmis rivi.
  */
+/**
+ * Tyhjä sessio ei luo uutta riviä.
+ * Olemassa oleva luonnos saa tyhjennyksen päälleen.
+ * Valmis rivi päivittyy vain, kun tyhjennys on käyttäjän muutos (talletettu pohja eroaa).
+ * Pelkkä avaus ja todistamaton tyhjä tallennus eivät alenna eivätkä poista valmista riviä.
+ */
+export function emptyDraftDecision(
+  draft: PersistedWizardDraft,
+  linked: CalculationRecord | null,
+  preserveCompleted: boolean,
+): 'skip' | 'overlay' | 'keep' | 'restore' {
+  if (!linked) return 'skip';
+  if (!isDraftCalculation(linked) && preserveCompleted) return 'skip';
+  const unchanged = unchangedCompletedAction(draft, linked);
+  if (unchanged?.action === 'keep') return 'keep';
+  if (unchanged?.action === 'restore') return 'restore';
+  if (isDraftCalculation(linked)) return 'overlay';
+  if (draft.completedRecordJson) return 'overlay';
+  return 'skip';
+}
+
 export function unchangedCompletedAction(
   draft: PersistedWizardDraft,
   linked: CalculationRecord | null,

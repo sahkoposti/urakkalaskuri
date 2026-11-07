@@ -63,6 +63,7 @@ import {
   type WizardFormState,
 } from '@/src/core/wizard/wizardDraftHelpers';
 import { decideComposerFocusRestore } from '@/src/core/wizard/composerFocusRestore';
+import { createScreenLeave } from '@/src/core/wizard/screenLeave';
 import { hasFieldValueContent } from '@/src/core/wizard/wizardPageHelpers';
 import { resetToHistoryDetail } from '@/src/core/navigation/appStack';
 import { db, useApp } from '@/src/context/AppContext';
@@ -115,7 +116,8 @@ export default function CalculationComposerScreen() {
 
   const hydratedRef = useRef(false);
   const loadedEditIdRef = useRef<string | null>(null);
-  const allowExitRef = useRef(false);
+  const screenLeave = useRef(createScreenLeave()).current;
+  const completedBaselineRef = useRef<string | null>(null);
   const lastDraftUpdatedAtRef = useRef<number | null>(null);
   const boundCalculationIdRef = useRef<string | null>(null);
   const originalCreatedAtRef = useRef<Date | null>(null);
@@ -123,7 +125,6 @@ export default function CalculationComposerScreen() {
   const savedSignatureRef = useRef<string | null>(null);
   const originSignatureRef = useRef<string | null>(null);
   const resumedIncompleteDraftRef = useRef(false);
-  const leavingRef = useRef(false);
   const wizardDraftRef = useRef(wizardDraft);
   wizardDraftRef.current = wizardDraft;
   const structureLinesRef = useRef(structureLines);
@@ -221,10 +222,21 @@ export default function CalculationComposerScreen() {
     composerDirty || Boolean(wizardDraft && !shouldKeepResumeDraft()),
   );
 
-  function allowComposerExit() {
-    allowExitRef.current = true;
-    applyPreventRemove(false);
+  function draftWithBaseline() {
+    const previous = wizardDraftRef.current;
+    const json = previous?.completedRecordJson ?? completedBaselineRef.current ?? undefined;
+    if (!json || previous?.completedRecordJson) return previous;
+    if (!previous) return { completedRecordJson: json } as NonNullable<typeof previous>;
+    return { ...previous, completedRecordJson: json };
   }
+
+  screenLeave.setOnRelease(() => {
+    const state = getFormStateRef.current();
+    applyPreventRemove(
+      composerHasUnsavedChanges(state, savedSignatureRef.current) ||
+        Boolean(wizardDraftRef.current && !shouldKeepResumeDraft(state)),
+    );
+  });
 
   function bindExistingCalculation(
     id?: string | null,
@@ -269,7 +281,7 @@ export default function CalculationComposerScreen() {
   async function persistDraft(state = getFormState(), extra?: WizardDraftEditMeta | null) {
     const meta = currentEditMeta(extra);
     bindExistingCalculation(meta.editCalculationId, meta.originalCreatedAt, meta.editFormVersion);
-    const built = buildPersistedWizardDraft(state, meta, wizardDraft);
+    const built = buildPersistedWizardDraft(state, meta, draftWithBaseline());
     if (isComposerDirty(state)) await db.saveWizardDraft(built);
     else await db.saveWizardViewSession(built);
     await refreshWizardDraft();
@@ -318,14 +330,15 @@ export default function CalculationComposerScreen() {
     const { form } = persistedDraftToFormState(draft, products);
     bindExistingCalculation(draft.editCalculationId, draft.originalCreatedAt, draft.editFormVersion);
     resumedIncompleteDraftRef.current = resumedIncomplete;
+    completedBaselineRef.current = draft.completedRecordJson ?? null;
     const applied = applyFormState(form);
     if (resumedIncomplete) rememberOrigin(applied);
   }
 
   useFocusEffect(
     useCallback(() => {
-      allowExitRef.current = false;
-      leavingRef.current = false;
+      screenLeave.reset();
+      let active = true;
       // Viimeisin luonnos refistä. Callbackin riippuvuuksissa ei ole wizardDraftia,
       // joten closureen jäänyt avaushetken luonnos ylikirjoittaisi Valmis-paluun.
       const latestDraft = wizardDraftRef.current;
@@ -340,17 +353,22 @@ export default function CalculationComposerScreen() {
       if (routeEditId) {
         bindExistingCalculation(routeEditId);
         if (decision === 'none') {
-          return;
+          return () => {
+            active = false;
+            screenLeave.reset();
+          };
         }
         loadedEditIdRef.current = routeEditId;
 
         if (decision === 'restoreDraft' && latestDraft) {
           hydratedRef.current = true;
           restoreDraftForm(latestDraft, true);
-          return;
+          return () => {
+            active = false;
+            screenLeave.reset();
+          };
         }
 
-        let active = true;
         (async () => {
           const record = await db.getCalculation(routeEditId);
           if (!active || !record) return;
@@ -361,6 +379,7 @@ export default function CalculationComposerScreen() {
             return;
           }
           resumedIncompleteDraftRef.current = false;
+          completedBaselineRef.current = isDraftCalculation(record) ? null : JSON.stringify(record);
           const { form } = calculationToFormState(record, products);
           bindExistingCalculation(
             record.id,
@@ -371,6 +390,7 @@ export default function CalculationComposerScreen() {
         })();
         return () => {
           active = false;
+          screenLeave.reset();
         };
       }
 
@@ -381,14 +401,15 @@ export default function CalculationComposerScreen() {
         if (decision === 'restoreDraft') {
           restoreDraftForm(latestDraft, true);
         }
-        return;
-      }
-
-      if (decision === 'hydrateEmpty') {
+      } else if (decision === 'hydrateEmpty') {
         resumedIncompleteDraftRef.current = false;
         rememberOrigin(getFormStateRef.current());
         hydratedRef.current = true;
       }
+      return () => {
+        active = false;
+        screenLeave.reset();
+      };
     }, [routeEditId, products, settings.vatPercent, structures]),
   );
 
@@ -411,7 +432,10 @@ export default function CalculationComposerScreen() {
   const publishChainRef = useRef(Promise.resolve());
 
   async function publishComposerState(state: WizardFormState): Promise<void> {
-    if (savingRef.current || !hasWizardDraftContent(state)) return;
+    const existingId = firstNonEmptyId(currentEditMeta().editCalculationId);
+    const hasContent = hasWizardDraftContent(state);
+    // Tyhjä uusi laskenta ei luo riviä. Tyhjennys kirjoitetaan vain olemassa olevalle riville.
+    if (!hasContent && !(isComposerDirty(state) && existingId)) return;
     const run = async () => {
       const meta = currentEditMeta();
       let id = firstNonEmptyId(meta.editCalculationId);
@@ -425,11 +449,14 @@ export default function CalculationComposerScreen() {
         const existing = await db.getCalculation(id);
         if (existing) createdAt = existing.createdAt;
       }
-      if (!id) id = createId();
+      if (!id) {
+        if (!hasWizardDraftContent(state)) return;
+        id = createId();
+      }
       const draft = buildPersistedWizardDraft(
         state,
         { editCalculationId: id, originalCreatedAt: createdAt, editFormVersion: meta.editFormVersion },
-        wizardDraftRef.current,
+        draftWithBaseline(),
       );
       bindExistingCalculation(id, createdAt, meta.editFormVersion);
       await db.saveWizardDraft(draft);
@@ -446,48 +473,42 @@ export default function CalculationComposerScreen() {
   }
 
   async function saveDraftAndExit() {
-    const state = getFormState();
-    if (hasWizardDraftContent(state)) {
-      try {
-        await publishComposerState(state);
-      } catch {
-        showAlert('Tallennus epäonnistui', 'Laskentaa ei tallennettu. Yritä uudelleen.');
-        return;
-      }
+    try {
+      await screenLeave.leave(async () => {
+        await publishComposerState(getFormStateRef.current());
+      }, () => router.back());
+    } catch {
+      showAlert('Tallennus epäonnistui', 'Laskentaa ei tallennettu. Yritä uudelleen.');
     }
-    allowComposerExit();
-    router.back();
   }
 
   async function leaveKeepingDraft(onLeave: () => void) {
-    if (allowExitRef.current) {
-      onLeave();
-      return;
-    }
-    if (leavingRef.current) return;
-    leavingRef.current = true;
-    const state = getFormStateRef.current();
-    const action = decideComposerLeave({
-      allowExit: false,
-      dirty: isComposerDirty(state),
-      hasContent: hasWizardDraftContent(state),
-      keepResume: shouldKeepResumeDraft(state),
-      hasSession: Boolean(wizardDraftRef.current),
-    });
     try {
-      if (action === 'save-and-leave') {
-        await publishComposerState(state);
-      } else if (action === 'clear-and-leave') {
-        await db.clearWizardDraft();
-        await refreshWizardDraft();
-      }
-      allowComposerExit();
-      onLeave();
+      await screenLeave.leave(
+        async () => {
+          const state = getFormStateRef.current();
+          const action = decideComposerLeave({
+            allowExit: false,
+            dirty: isComposerDirty(state),
+            hasContent: hasWizardDraftContent(state),
+            keepResume: shouldKeepResumeDraft(state),
+            hasSession: Boolean(wizardDraftRef.current),
+            canUpdateExisting: Boolean(firstNonEmptyId(currentEditMeta().editCalculationId)),
+          });
+          if (action === 'save-and-leave') {
+            await publishComposerState(state);
+          } else if (action === 'clear-and-leave') {
+            await db.clearWizardDraft();
+            await refreshWizardDraft();
+          }
+        },
+        () => {
+          applyPreventRemove(false);
+          onLeave();
+        },
+      );
     } catch {
       showAlert('Tallennus epäonnistui', 'Laskentaa ei tallennettu. Yritä uudelleen.');
-    } finally {
-      // Näkymä voi jäädä pinoon. Seuraava poistuminen ei saa jäädä lukkoon.
-      leavingRef.current = false;
     }
   }
 
@@ -498,7 +519,7 @@ export default function CalculationComposerScreen() {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowExitRef.current) return;
+      if (screenLeave.shouldBypass()) return;
       const state = getFormStateRef.current();
       const action = decideComposerLeave({
         allowExit: false,
@@ -506,6 +527,7 @@ export default function CalculationComposerScreen() {
         hasContent: hasWizardDraftContent(state),
         keepResume: shouldKeepResumeDraft(state),
         hasSession: Boolean(wizardDraftRef.current),
+        canUpdateExisting: Boolean(firstNonEmptyId(currentEditMeta().editCalculationId)),
       });
       if (action === 'leave') return;
       event.preventDefault();
@@ -517,7 +539,7 @@ export default function CalculationComposerScreen() {
   useFocusEffect(
     useCallback(() => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (allowExitRef.current) return false;
+        if (screenLeave.shouldBypass()) return false;
         void leaveKeepingDraftRef.current(() => router.back());
         return true;
       });
@@ -528,17 +550,20 @@ export default function CalculationComposerScreen() {
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (next) => {
       if (next !== 'background' && next !== 'inactive') return;
-      if (savingRef.current || allowExitRef.current) return;
-      const state = getFormStateRef.current();
-      if (
-        !shouldPersistOpenComposer({
-          dirty: isComposerDirty(state),
-          hasContent: hasWizardDraftContent(state),
-        })
-      ) {
-        return;
-      }
-      void publishComposerStateRef.current(state).catch(() => {
+      void screenLeave.enqueue(async () => {
+        if (screenLeave.shouldBypass()) return;
+        const state = getFormStateRef.current();
+        if (
+          !shouldPersistOpenComposer({
+            dirty: isComposerDirty(state),
+            hasContent: hasWizardDraftContent(state),
+            canUpdateExisting: Boolean(firstNonEmptyId(currentEditMeta().editCalculationId)),
+          })
+        ) {
+          return;
+        }
+        await publishComposerStateRef.current(state);
+      }).catch(() => {
         // Taustatallennuksen epäonnistuminen ei kaada näyttöä. Poistuminen yrittää uudelleen.
       });
     });
@@ -695,8 +720,10 @@ export default function CalculationComposerScreen() {
       await refreshCalculations();
       await refreshWizardDraft();
       hydratedRef.current = false;
-      allowComposerExit();
-      resetToHistoryDetail(navigation, savedId);
+      screenLeave.allowOnce(() => {
+        applyPreventRemove(false);
+        resetToHistoryDetail(navigation, savedId);
+      });
     } catch (error) {
       console.error(error);
       showAlert('Virhe', 'Laskelman tallennus epäonnistui.');

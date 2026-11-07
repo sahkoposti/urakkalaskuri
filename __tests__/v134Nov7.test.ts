@@ -111,7 +111,13 @@ describe('v1.3.4 Nov 7 feedback', () => {
     expect(documentSiteAddress(customer, edited)).toBe('Työmaa 5, 33100 Tampere');
     const cleared: FormSnapshot = { ...edited, siteAddress: '  ', siteAddressTouched: true };
     expect(documentSiteAddress(customer, cleared)).toBe('');
-    expect(customerHeaderLines({ name: 'A', ...customer }, '')).toEqual(['A']);
+    expect(customerHeaderLines({ name: 'A', ...customer }, '')).toEqual(['A', 'Vanha 1, 00100 Helsinki']);
+    const clearedOffer = renderTarjousHtml(buildPdfContext(input(record({}, { formSnapshot: cleared }))));
+    const clearedCard = renderUrakkakorttiHtml(buildUrakkakorttiContext(input(record({}, { formSnapshot: cleared }))));
+    expect(clearedOffer).toContain('Testitie 1, 20100 Turku');
+    expect(clearedCard).toContain('Testitie 1, 20100 Turku');
+    expect(clearedOffer).not.toContain('Kohde:');
+    expect(clearedCard).not.toContain('Kohde:');
     expect(customerHeaderLines({ name: 'A', ...customer }, 'Työmaa 5, 33100 Tampere')).toEqual([
       'A',
       'Vanha 1, 00100 Helsinki',
@@ -241,6 +247,27 @@ describe('v1.3.4 Nov 7 feedback', () => {
     expect(shouldPersistOpenComposer({ dirty: true, hasContent: true })).toBe(true);
     expect(shouldPersistOpenComposer({ dirty: false, hasContent: true })).toBe(false);
     expect(shouldPersistOpenComposer({ dirty: true, hasContent: false })).toBe(false);
+    expect(shouldPersistOpenComposer({ dirty: true, hasContent: false, canUpdateExisting: true })).toBe(true);
+    expect(
+      decideComposerLeave({
+        allowExit: false,
+        dirty: true,
+        hasContent: false,
+        keepResume: true,
+        hasSession: true,
+        canUpdateExisting: true,
+      }),
+    ).toBe('save-and-leave');
+    expect(
+      decideComposerLeave({
+        allowExit: false,
+        dirty: true,
+        hasContent: false,
+        keepResume: false,
+        hasSession: false,
+        canUpdateExisting: false,
+      }),
+    ).toBe('leave');
 
     const wizard = fs.readFileSync(path.join(__dirname, '../app/wizard/index.tsx'), 'utf8');
     const leave = wizard.slice(wizard.indexOf("addListener('beforeRemove'"));

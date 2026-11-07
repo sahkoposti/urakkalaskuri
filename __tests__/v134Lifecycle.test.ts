@@ -443,9 +443,8 @@ describe('v1.3.4 calculation lifecycle', () => {
     expect(refreshedRow.structureLines?.[0].overrides ?? []).not.toContain('contractPrice');
   });
 
-  it('does not overwrite a completed calculation when every input is cleared', async () => {
-    const before = priceSnapshot(await seedFinished());
-    const empty: PersistedWizardDraft = {
+  function clearedDraft(id?: string): PersistedWizardDraft {
+    return {
       step: 0,
       customerName: '',
       customerType: 'private',
@@ -459,13 +458,66 @@ describe('v1.3.4 calculation lifecycle', () => {
       duration: '',
       lines: [],
       structureLines: [],
+      fieldValues: {},
       updatedAt: Date.now(),
-      editCalculationId: 'fin-1',
+      ...(id ? { editCalculationId: id } : {}),
       siteAddress: '',
       siteAddressTouched: false,
     };
-    await saveWizardDraft(empty);
+  }
+
+  it('does not create a history row for an empty new calculation or wipe a completed row without an edit', async () => {
+    await saveWizardDraft(clearedDraft());
+    expect(await getCalculations()).toHaveLength(0);
+    expect(await getWizardDraft()).toBeNull();
+
+    const before = priceSnapshot(await seedFinished());
+    await saveWizardDraft(clearedDraft('fin-1'));
     expect(priceSnapshot((await getCalculation('fin-1')) as CalculationRecord)).toEqual(before);
+    expect(isDraftCalculation(await getCalculation('fin-1'))).toBe(false);
+    expect(await getWizardDraft()).toBeNull();
     expect(await getCalculations()).toHaveLength(1);
+  });
+
+  it('persists a cleared draft on the same id so the old fields do not return', async () => {
+    const stored = await seedFinished();
+    await saveWizardDraft({ ...draftFrom(stored), customerPhone: '0401111111', updatedAt: 20 });
+    const before = priceSnapshot((await getCalculation('fin-1')) as CalculationRecord);
+    expect(before.status).toBe('draft');
+
+    await saveWizardDraft(clearedDraft('fin-1'));
+    const row = (await getCalculation('fin-1')) as CalculationRecord;
+    expect(await getCalculations()).toHaveLength(1);
+    expect(row.id).toBe('fin-1');
+    expect(row.status).toBe('draft');
+    expect(row.totalPriceVat).toBe(before.totalPriceVat);
+    expect(row.offerNumber).toBe(10285);
+    expect(wizardDraftFromCalculation(row)?.customerName).toBe('');
+    expect(wizardDraftFromCalculation(row)?.customerPhone).toBe('');
+    expect(wizardDraftFromCalculation(row)?.structureLines ?? []).toEqual([]);
+    expect((await getWizardDraft())?.customerName).toBe('');
+    expect((await getWizardDraft())?.customerPhone).toBe('');
+
+    const reopened = persistedDraftToFormState(wizardDraftFromCalculation(row) as PersistedWizardDraft, []).form;
+    expect(reopened.customerName).toBe('');
+    expect(reopened.customerPhone).toBe('');
+    expect(reopened.structureLines ?? []).toEqual([]);
+  });
+
+  it('demotes a completed calculation only when the clear is a real edit and keeps its prices', async () => {
+    const stored = await seedFinished();
+    const before = priceSnapshot(stored);
+    await saveWizardViewSession(draftFrom(stored));
+    expect(isDraftCalculation(await getCalculation('fin-1'))).toBe(false);
+
+    await saveWizardDraft({ ...clearedDraft('fin-1'), updatedAt: 30 });
+    const row = (await getCalculation('fin-1')) as CalculationRecord;
+    expect(await getCalculations()).toHaveLength(1);
+    expect(row.status).toBe('draft');
+    expect(row.totalPriceVat).toBe(before.totalPriceVat);
+    expect(row.totalPriceVat0).toBe(before.totalPriceVat0);
+    expect(row.offerNumber).toBe(10285);
+    expect(wizardDraftFromCalculation(row)?.customerName).toBe('');
+    await expect(exportOffer('fin-1')).rejects.toThrow('Keskeneräisestä laskelmasta ei voi tehdä dokumenttia.');
   });
 });

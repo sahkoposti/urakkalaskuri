@@ -273,16 +273,26 @@ export function decideComposerLeave(input: {
   hasContent: boolean;
   keepResume: boolean;
   hasSession: boolean;
+  /** Käyttäjä tyhjensi jo olemassa olevan laskelman. Uusi tyhjä laskenta on false. */
+  canUpdateExisting?: boolean;
 }): ComposerLeaveAction {
   if (input.allowExit) return 'leave';
-  if (input.dirty && input.hasContent) return 'save-and-leave';
+  if (input.dirty && (input.hasContent || input.canUpdateExisting === true)) return 'save-and-leave';
   if (input.keepResume || !input.hasSession) return 'leave';
   return 'clear-and-leave';
 }
 
-/** Taustalle meno tallentaa vain keskeneräisen sisällön. Ei tyhjennä sessiota. */
-export function shouldPersistOpenComposer(input: { dirty: boolean; hasContent: boolean }): boolean {
-  return input.dirty && input.hasContent;
+/**
+ * Taustalle meno tallentaa likaisen sisällön.
+ * Tyhjennyksen saa kirjoittaa vain olemassa olevan rivin päälle.
+ * Ei tyhjennä sessiota eikä luo uutta historiakertaa.
+ */
+export function shouldPersistOpenComposer(input: {
+  dirty: boolean;
+  hasContent: boolean;
+  canUpdateExisting?: boolean;
+}): boolean {
+  return input.dirty && (input.hasContent || input.canUpdateExisting === true);
 }
 
 export function buildPersistedWizardDraft(

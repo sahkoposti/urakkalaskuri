@@ -115,14 +115,9 @@ export function customerHeaderLines(customer: CustomerInfo, siteAddress?: string
   const customerAddress = nonEmpty([customer.address, postal]).join(', ');
   const site = siteAddress?.trim() ?? '';
   const addressLines: string[] = [];
-  if (siteAddress === undefined) {
-    if (customerAddress) addressLines.push(customerAddress);
-  } else if (site && site !== customerAddress) {
-    if (customerAddress) addressLines.push(customerAddress);
-    addressLines.push(`Kohde: ${site}`);
-  } else if (site) {
-    addressLines.push(site);
-  }
+  // Asiakkaan osoite on oma tietonsa. Tyhjä kohde ei korvaa eikä piilota sitä.
+  if (customerAddress) addressLines.push(customerAddress);
+  if (site && site !== customerAddress) addressLines.push(`Kohde: ${site}`);
   return nonEmpty([customer.name, ...addressLines, customer.phone, customer.email]);
 }
 
