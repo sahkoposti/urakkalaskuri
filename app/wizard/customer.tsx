@@ -14,6 +14,7 @@ import {
   serializeCustomerDetails,
   type CustomerInfo,
 } from '@/src/core/models/types';
+import { formatCustomerAddress } from '@/src/core/pdf/siteAddress';
 import { createId } from '@/src/core/utils/id';
 import {
   buildPersistedWizardDraft,
@@ -96,10 +97,19 @@ export default function WizardCustomerScreen() {
     if (!wizardDraft) return;
     const { form } = persistedDraftToFormState(wizardDraft, products);
     const info = buildInfo();
+    const siteTouched = form.siteAddressTouched === true;
     await db.saveWizardDraft(
       buildPersistedWizardDraft(
         {
           ...form,
+          siteAddress: siteTouched
+            ? (form.siteAddress ?? '')
+            : formatCustomerAddress({
+                address: info.address,
+                postalCode: info.postalCode,
+                postalLocality: info.postalLocality,
+              }),
+          siteAddressTouched: siteTouched,
           customerName: info.name,
           customerType: info.customerType ?? 'private',
           reverseVat: Boolean(info.reverseVat),

@@ -70,20 +70,23 @@ exports[`urakkakortti single line: contract, duration, crew, specs, notes area; 
   .ktv-hint { font-size: 10pt; color: #666; margin: 0 0 5mm 0; }
   .ktv-note { font-size: 10pt; color: #333; margin: 0; }
 
-  .uk-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 6mm; margin: 0 0 4mm 0; font-size: 17pt; font-weight: 700; }
-  .uk-title-text { font-weight: 700; }
+  body.doc-card { background: #fff; }
+  .uk-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 6mm; margin: 0 0 4mm 0; padding: 0 0 2mm 0; font-size: 17pt; font-weight: 700; border-bottom: 1.2mm solid #C90000; }
+  .uk-title-text { font-weight: 700; letter-spacing: 0.01em; }
   .uk-sums { margin-left: auto; text-align: right; }
-  .uk-sum { display: block; white-space: nowrap; }
-  .uk-sum-label { display: block; font-size: 9pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-  .uk-sum-ali .uk-sum-value { display: block; font-size: 17pt; font-weight: 700; }
-  .uk-sum-emp .uk-sum-label { font-size: 8pt; font-weight: 600; }
-  .uk-sum-emp .uk-sum-value { display: block; font-size: 12pt; font-weight: 600; }
+  .uk-sum { display: block; white-space: nowrap; margin: 0 0 1mm 0; }
+  .uk-sum-label { display: block; font-size: 8.5pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #C90000; }
+  .uk-sum-value { display: block; font-size: 16pt; font-weight: 700; color: #C90000; }
+  .uk-sum-emp .uk-sum-value { font-size: 15pt; }
   .uk-materials { margin: 0 0 6mm 0; }
   .uk-materials h3 { margin: 0 0 1.5mm 0; font-size: 12pt; break-after: avoid; page-break-after: avoid; }
   .uk-materials table { width: 100%; border-collapse: collapse; font-size: 11pt; }
   .uk-materials tr { break-inside: avoid; page-break-inside: avoid; }
-  .uk-materials th, .uk-materials td { text-align: left; padding: 0.8mm 2mm 0.8mm 0; border-bottom: 1px solid #ddd; }
+  .uk-materials th, .uk-materials td { text-align: left; padding: 0.8mm 2mm 0.8mm 0; border-bottom: 1px solid #ddd; color: #111; }
   .uk-materials .value { text-align: right; }
+  .uk-materials tr.uk-shade-product td { font-weight: 700; border-bottom: none; padding-top: 1.6mm; }
+  .uk-materials tr.uk-shade td:first-child { padding-left: 5mm; }
+  .uk-lisatiedot { margin: 4mm 0 6mm 0; }
 
   .doc-section { margin: 0 0 5mm 0; }
   .doc-heading, .offer-line-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
@@ -107,7 +110,7 @@ exports[`urakkakortti single line: contract, duration, crew, specs, notes area; 
   .uk-huomio h3 { margin: 0 0 1.5mm 0; font-size: 12pt; break-after: avoid; page-break-after: avoid; }
 </style>
 </head>
-<body>
+<body class="doc-card">
 <div class="header">
   <div class="logo-col"></div>
   <div class="customer"><div class="name">Matti Meikäläinen</div>Testitie 1, 20100 Turku<br />040 000 0000</div>

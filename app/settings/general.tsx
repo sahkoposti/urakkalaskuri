@@ -160,16 +160,13 @@ export default function GeneralSettingsScreen() {
           onChangeText={setDefaultCommissionPercent}
           kind="decimal"
         />
-        <Text style={styles.sectionHint}>
-          Palkkio ja kate asetetaan jokaiselle tuoterakenteelle erikseen. Tämä arvo kopioidaan
-          uuteen rakenteeseen.
-        </Text>
         <AppInput
           label="Tuntihinta (ALV 0) €/h"
           value={defaultHourlyRate}
           onChangeText={setDefaultHourlyRate}
           kind="decimal"
         />
+        <Text style={styles.sectionHint}>Varahinta, jos tuoterakenteella ei ole omaa tuntihintaa.</Text>
         <AppInput
           label="Työpäivän pituus (h)"
           value={workdayHours}
@@ -183,8 +180,7 @@ export default function GeneralSettingsScreen() {
           kind="decimal"
         />
         <Text style={styles.sectionHint}>
-          Kerroin vaikuttaa vain yhteenvedon arvioituun työn kestoon. Se kerrotaan kestolla ennen
-          pyöristystä ylöspäin (oletus 1,3). Hinnoittelu käyttää laskettua kestoa ilman kerrointa.
+          Vain yhteenvedon kesto. Hinnoittelu käyttää kestoa ilman kerrointa. Oletus 1,3.
         </Text>
         <AppInput
           label="Sivukulukerroin"
@@ -197,8 +193,7 @@ export default function GeneralSettingsScreen() {
           <Text style={styles.fieldError}>{sivukulukerroinDraftError(factorText)}</Text>
         ) : null}
         <Text style={styles.sectionHint}>
-          Urakkakortin työntekijähinta on urakka jaettuna tällä. Arvoa ei tulosteta kortille. Tyhjä = 1,5.
-          Sallittu alue on suurempi kuin 1 ja enintään 3.
+          Jakaa kortin työntekijähinnan. Ei tulostu. Tyhjä = 1,5. Sallittu yli 1 ja enintään 3.
         </Text>
         {Platform.OS === 'android' ? <PhoneFolderSettings /> : null}
         <PrimaryButton title="Tallenna" onPress={handleSave} />

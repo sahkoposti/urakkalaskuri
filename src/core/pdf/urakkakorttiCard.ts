@@ -425,6 +425,8 @@ const SNAPSHOT_EXTRA_KEYS = [
   BUSINESS_VAT_MODE_KEY,
   URAKKAKORTTI_HIDE_PRICES_KEY,
   URAKKAKORTTI_RIVIHINNAT_KEY,
+  'siteAddress',
+  'siteAddressTouched',
 ] as const;
 
 /** Wizardin uudelleenkirjoitus säilyttää laskelman JSON-avaimet. */

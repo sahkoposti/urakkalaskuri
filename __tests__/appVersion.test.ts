@@ -15,10 +15,10 @@ describe('app version label', () => {
     const app = JSON.parse(readFileSync(path.join(__dirname, '../app.json'), 'utf8')) as {
       expo: { version: string };
     };
-    expect(app.expo.version).toBe('1.3.3');
-    expect(formatAppVersionLabel(app.expo.version)).toBe('Versio 1.3.3');
+    expect(app.expo.version).toBe('1.3.4');
+    expect(formatAppVersionLabel(app.expo.version)).toBe('Versio 1.3.4');
     expect(readAppVersion()).toBe(app.expo.version);
-    expect(formatAppVersionLabel(readAppVersion())).toBe('Versio 1.3.3');
+    expect(formatAppVersionLabel(readAppVersion())).toBe('Versio 1.3.4');
     expect(formatAppVersionLabel('  1.3.3  ')).toBe('Versio 1.3.3');
     expect(formatAppVersionLabel('')).toBe('Versio');
   });

@@ -20,7 +20,13 @@ jest.mock('expo-file-system', () => ({
   },
 }));
 
-import { loadPdfLogoDataUri, pngDataUri, resetPdfLogoCache } from '../src/core/pdf/logoDataUri';
+import {
+  customLogoDataUri,
+  imageMimeFromBase64,
+  loadPdfLogoDataUri,
+  pngDataUri,
+  resetPdfLogoCache,
+} from '../src/core/pdf/logoDataUri';
 
 describe('logoDataUri', () => {
   beforeEach(() => {
@@ -38,5 +44,38 @@ describe('logoDataUri', () => {
     await loadPdfLogoDataUri();
     expect(mockDownload).toHaveBeenCalledTimes(1);
     expect(mockBase64).toHaveBeenCalledWith('file:///assets/logo.png');
+  });
+
+  it('uses a saved data or file logo and falls back when it is broken', async () => {
+    await expect(customLogoDataUri('data:image/png;base64,abc def')).resolves.toBe('data:image/png;base64,abcdef');
+    await expect(loadPdfLogoDataUri('data:image/jpeg;base64,qqqq')).resolves.toBe('data:image/jpeg;base64,qqqq');
+    expect(mockDownload).not.toHaveBeenCalled();
+
+    resetPdfLogoCache();
+    mockBase64.mockImplementation(async (uri: string) => {
+      if (uri === 'file:///custom/logo.png') throw new Error('broken');
+      return 'iVBORw0K';
+    });
+    await expect(loadPdfLogoDataUri('file:///custom/logo.png')).resolves.toBe('data:image/png;base64,iVBORw0K');
+    expect(mockDownload).toHaveBeenCalledTimes(1);
+
+    resetPdfLogoCache();
+    mockDownload.mockClear();
+    mockBase64.mockImplementation(async (uri: string) => {
+      if (uri === 'content://media/logo.jpg') return '/9j/FILEDATA';
+      if (uri === 'content://media/42') return 'iVBORw0KGgo';
+      if (uri === 'content://media/unknown') return 'not-an-image';
+      return 'iVBORw0K';
+    });
+    expect(imageMimeFromBase64('/9j/FILEDATA')).toBe('jpeg');
+    expect(imageMimeFromBase64('iVBORw0KGgo')).toBe('png');
+    expect(imageMimeFromBase64('UklGRwebp')).toBe('webp');
+    expect(imageMimeFromBase64('not-an-image')).toBeNull();
+    await expect(loadPdfLogoDataUri('content://media/logo.jpg')).resolves.toBe('data:image/jpeg;base64,/9j/FILEDATA');
+    await expect(loadPdfLogoDataUri('content://media/42')).resolves.toBe('data:image/png;base64,iVBORw0KGgo');
+    expect(mockDownload).not.toHaveBeenCalled();
+    await expect(loadPdfLogoDataUri('content://media/unknown')).resolves.toBe('data:image/png;base64,iVBORw0K');
+    expect(mockDownload).toHaveBeenCalledTimes(1);
+    await expect(customLogoDataUri('https://example.invalid/logo.png')).resolves.toBeNull();
   });
 });

@@ -29,6 +29,8 @@ import type { KtvSettings, OfferCompanySettings, OfferStructureSettings } from '
 import { readKtvPageIncluded } from './ktvPageIncluded';
 import { readKtvPersons } from './ktvPersons';
 import { readOfferValidDays } from './offerValidDays';
+import { documentSiteAddress } from './siteAddress';
+import { firstStructureLisatiedot } from './structureExtraText';
 import { formatFinnishDate, validUntil } from './validUntil';
 
 export type PriceRow = { label: string; value: string; emphasis?: boolean };
@@ -50,8 +52,10 @@ export type TarjousPdfContext = {
   vatSummary: OfferVatSummaryRow[];
   /** Summalohko. Listahinnat, sitten alennus. Pelkkä laskelman alennus käyttää vanhaa lohkoa. */
   price: { includesVat: boolean; rows: PriceRow[] };
-  /** Yrityksen Lisätiedot-teksti. Tyhjä = osio pois. */
+  /** Yrityksen Lisätiedot-teksti. Tyhjä = osio pois. Ei korvaa rakenteen tekstiä. */
   additionalInfo: string;
+  /** Ensimmäisen tuoterakenteen lisätieto. Tyhjä = osio pois. */
+  structureLisatiedot: string;
   /** Myyjän yhteystiedot. Tyhjä = lohko pois. */
   sellerLines: string[];
   /** Allekirjoituslohko. Tyhjät nimet jätetään pois; viivat tulostetaan silti. */
@@ -106,10 +110,20 @@ export function buildFooter(company: CompanyProfile): PdfFooter {
   };
 }
 
-export function customerHeaderLines(customer: CustomerInfo): string[] {
+export function customerHeaderLines(customer: CustomerInfo, siteAddress?: string): string[] {
   const postal = nonEmpty([customer.postalCode, customer.postalLocality]).join(' ');
-  const addressLine = nonEmpty([customer.address, postal]).join(', ');
-  return nonEmpty([customer.name, addressLine, customer.phone, customer.email]);
+  const customerAddress = nonEmpty([customer.address, postal]).join(', ');
+  const site = siteAddress?.trim() ?? '';
+  const addressLines: string[] = [];
+  if (siteAddress === undefined) {
+    if (customerAddress) addressLines.push(customerAddress);
+  } else if (site && site !== customerAddress) {
+    if (customerAddress) addressLines.push(customerAddress);
+    addressLines.push(`Kohde: ${site}`);
+  } else if (site) {
+    addressLines.push(site);
+  }
+  return nonEmpty([customer.name, ...addressLines, customer.phone, customer.email]);
 }
 
 function hasOfferDiscount(record: CalculationRecord): boolean {
@@ -458,6 +472,7 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
 export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext {
   const { record, company, offerCompany, generatedAt } = input;
   const customer = customerFromRecord(record);
+  const siteAddress = documentSiteAddress(customer, record.formSnapshot);
   const offerInfo: PriceRow[] = [
     ...(input.offerNumber != null ? [{ label: 'Tarjousnumero', value: String(input.offerNumber) }] : []),
     { label: 'Päiväys', value: formatFinnishDate(generatedAt) },
@@ -470,7 +485,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
   return {
     kind: 'tarjous',
     logoUri: company.logoUri,
-    customerLines: customerHeaderLines(customer),
+    customerLines: customerHeaderLines(customer, siteAddress),
     offerInfo,
     rows: buildOfferRows(input),
     sections: buildOfferSections(input),
@@ -478,6 +493,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     vatSummary: offerVatSummary(record, customer),
     price,
     additionalInfo: typeof offerCompany.additionalInfoText === 'string' ? offerCompany.additionalInfoText : '',
+    structureLisatiedot: firstStructureLisatiedot(ensureStructureLines(record), input.structures)?.text ?? '',
     sellerLines: sellerContactLines(company),
     signature: offerSignatureParties(company, customer.name),
     footer: buildFooter(company),
