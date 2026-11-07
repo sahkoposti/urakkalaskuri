@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect } from 'react';
 import { BackHandler, FlatList, Text, View } from 'react-native';
 
 import { AppCard, ScreenLoading, ScreenMessage } from '@/src/components/common';
@@ -13,7 +13,13 @@ import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 export default function HistoryScreen() {
   const styles = useThemedStyles(createStyles);
-  const { ready, calculations } = useApp();
+  const { ready, calculations, refreshCalculations } = useApp();
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshCalculations();
+    }, [refreshCalculations]),
+  );
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {

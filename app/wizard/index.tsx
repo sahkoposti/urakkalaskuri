@@ -1,6 +1,7 @@
 import { router, Stack, useFocusEffect, useLocalSearchParams, useNavigation, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AppState,
   BackHandler,
   KeyboardAvoidingView,
   Modal,
@@ -51,10 +52,13 @@ import {
   buildPersistedWizardDraft,
   composerHasUnsavedChanges,
   composerStateSignature,
+  decideComposerLeave,
   firstNonEmptyId,
+  hasWizardDraftContent,
   mergeWizardDraftEditMeta,
   persistedDraftToFormState,
   shouldKeepResumeDraftOnLeave,
+  shouldPersistOpenComposer,
   type WizardDraftEditMeta,
   type WizardFormState,
 } from '@/src/core/wizard/wizardDraftHelpers';
@@ -108,12 +112,10 @@ export default function CalculationComposerScreen() {
   const [structurePickerVisible, setStructurePickerVisible] = useState(false);
   const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
   const [updateCalcsVisible, setUpdateCalcsVisible] = useState(false);
-  const [exitDialogVisible, setExitDialogVisible] = useState(false);
 
   const hydratedRef = useRef(false);
   const loadedEditIdRef = useRef<string | null>(null);
   const allowExitRef = useRef(false);
-  const pendingExitRef = useRef<(() => void) | null>(null);
   const lastDraftUpdatedAtRef = useRef<number | null>(null);
   const boundCalculationIdRef = useRef<string | null>(null);
   const originalCreatedAtRef = useRef<Date | null>(null);
@@ -268,6 +270,7 @@ export default function CalculationComposerScreen() {
     bindExistingCalculation(meta.editCalculationId, meta.originalCreatedAt, meta.editFormVersion);
     await db.saveWizardDraft(buildPersistedWizardDraft(state, meta, wizardDraft));
     await refreshWizardDraft();
+    await refreshCalculations();
     markComposerSaved(state);
   }
 
@@ -401,80 +404,108 @@ export default function CalculationComposerScreen() {
     applyFormState(form);
   }, [wizardDraft?.updatedAt, products, routeEditId]);
 
-  function closeExitDialog() {
-    setExitDialogVisible(false);
-    pendingExitRef.current = null;
-  }
+  const publishChainRef = useRef(Promise.resolve());
+  const leavingRef = useRef(false);
 
-  function confirmExit(onLeave: () => void) {
-    pendingExitRef.current = onLeave;
-    setExitDialogVisible(true);
-  }
-
-  async function discardDraftAndExit() {
-    await db.clearWizardDraft();
-    await refreshWizardDraft();
-    allowComposerExit();
-    const action = pendingExitRef.current;
-    closeExitDialog();
-    action?.();
+  async function publishComposerState(state: WizardFormState): Promise<void> {
+    if (savingRef.current || !hasWizardDraftContent(state)) return;
+    const run = async () => {
+      const meta = currentEditMeta();
+      let id = firstNonEmptyId(meta.editCalculationId);
+      let createdAt: Date =
+        meta.originalCreatedAt instanceof Date
+          ? meta.originalCreatedAt
+          : typeof meta.originalCreatedAt === 'number'
+            ? new Date(meta.originalCreatedAt)
+            : new Date();
+      if (id) {
+        const existing = await db.getCalculation(id);
+        if (existing) createdAt = existing.createdAt;
+      }
+      if (!id) id = createId();
+      const draft = buildPersistedWizardDraft(
+        state,
+        { editCalculationId: id, originalCreatedAt: createdAt, editFormVersion: meta.editFormVersion },
+        wizardDraftRef.current,
+      );
+      bindExistingCalculation(id, createdAt, meta.editFormVersion);
+      await db.saveWizardDraft(draft);
+      await refreshWizardDraft();
+      await refreshCalculations();
+      markComposerSaved(state);
+    };
+    const next = publishChainRef.current.then(run, run);
+    publishChainRef.current = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    await next;
   }
 
   async function saveDraftAndExit() {
     const state = getFormState();
-    const meta = currentEditMeta();
-    let id = firstNonEmptyId(meta.editCalculationId);
-    let createdAt: Date =
-      meta.originalCreatedAt instanceof Date
-        ? meta.originalCreatedAt
-        : typeof meta.originalCreatedAt === 'number'
-          ? new Date(meta.originalCreatedAt)
-          : new Date();
-    if (id) {
-      const existing = await db.getCalculation(id);
-      if (existing) createdAt = existing.createdAt;
+    if (hasWizardDraftContent(state)) {
+      try {
+        await publishComposerState(state);
+      } catch {
+        showAlert('Tallennus epäonnistui', 'Laskentaa ei tallennettu. Yritä uudelleen.');
+        return;
+      }
     }
-    if (!id) id = createId();
-    const draft = buildPersistedWizardDraft(
-      state,
-      { editCalculationId: id, originalCreatedAt: createdAt, editFormVersion: meta.editFormVersion },
-      wizardDraft,
-    );
-    bindExistingCalculation(id, createdAt, meta.editFormVersion);
-    await db.saveWizardDraft(draft);
-    await refreshWizardDraft();
-    await refreshCalculations();
-    markComposerSaved(state);
     allowComposerExit();
-    const action = pendingExitRef.current;
-    closeExitDialog();
-    action?.();
+    router.back();
   }
 
-  async function leaveWithoutResumeDraft(onLeave: () => void) {
-    if (!shouldKeepResumeDraft(getFormStateRef.current())) {
-      await db.clearWizardDraft();
-      await refreshWizardDraft();
+  async function leaveKeepingDraft(onLeave: () => void) {
+    if (allowExitRef.current) {
+      onLeave();
+      return;
+    }
+    if (leavingRef.current) return;
+    leavingRef.current = true;
+    const state = getFormStateRef.current();
+    const action = decideComposerLeave({
+      allowExit: false,
+      dirty: isComposerDirty(state),
+      hasContent: hasWizardDraftContent(state),
+      keepResume: shouldKeepResumeDraft(state),
+      hasSession: Boolean(wizardDraftRef.current),
+    });
+    try {
+      if (action === 'save-and-leave') {
+        await publishComposerState(state);
+      } else if (action === 'clear-and-leave') {
+        await db.clearWizardDraft();
+        await refreshWizardDraft();
+      }
+    } catch {
+      leavingRef.current = false;
+      showAlert('Tallennus epäonnistui', 'Laskentaa ei tallennettu. Yritä uudelleen.');
+      return;
     }
     allowComposerExit();
     onLeave();
   }
 
+  const leaveKeepingDraftRef = useRef(leaveKeepingDraft);
+  leaveKeepingDraftRef.current = leaveKeepingDraft;
+  const publishComposerStateRef = useRef(publishComposerState);
+  publishComposerStateRef.current = publishComposerState;
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowExitRef.current) {
-        return;
-      }
-      if (isComposerDirty()) {
-        event.preventDefault();
-        confirmExit(() => navigation.dispatch(event.data.action));
-        return;
-      }
-      if (shouldKeepResumeDraft() || !wizardDraftRef.current) {
-        return;
-      }
+      if (allowExitRef.current) return;
+      const state = getFormStateRef.current();
+      const action = decideComposerLeave({
+        allowExit: false,
+        dirty: isComposerDirty(state),
+        hasContent: hasWizardDraftContent(state),
+        keepResume: shouldKeepResumeDraft(state),
+        hasSession: Boolean(wizardDraftRef.current),
+      });
+      if (action === 'leave') return;
       event.preventDefault();
-      void leaveWithoutResumeDraft(() => navigation.dispatch(event.data.action));
+      void leaveKeepingDraft(() => navigation.dispatch(event.data.action));
     });
     return unsubscribe;
   });
@@ -483,20 +514,32 @@ export default function CalculationComposerScreen() {
     useCallback(() => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
         if (allowExitRef.current) return false;
-        if (isComposerDirty(getFormStateRef.current())) {
-          confirmExit(() => {
-            allowComposerExit();
-            router.back();
-          });
-          return true;
-        }
-        if (shouldKeepResumeDraft(getFormStateRef.current()) || !wizardDraftRef.current) return false;
-        void leaveWithoutResumeDraft(() => router.back());
+        void leaveKeepingDraftRef.current(() => router.back());
         return true;
       });
       return () => subscription.remove();
     }, []),
   );
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next !== 'background' && next !== 'inactive') return;
+      if (savingRef.current || allowExitRef.current) return;
+      const state = getFormStateRef.current();
+      if (
+        !shouldPersistOpenComposer({
+          dirty: isComposerDirty(state),
+          hasContent: hasWizardDraftContent(state),
+        })
+      ) {
+        return;
+      }
+      void publishComposerStateRef.current(state).catch(() => {
+        // Taustatallennuksen epäonnistuminen ei kaada näyttöä. Poistuminen yrittää uudelleen.
+      });
+    });
+    return () => subscription.remove();
+  }, []);
 
   async function openCustomer() {
     await persistDraft();
@@ -669,22 +712,7 @@ export default function CalculationComposerScreen() {
     structureLines.some((line) => materialQuantitiesBlockFinish(line.materialQuantities));
 
   function handleComposerBack() {
-    if (allowExitRef.current) {
-      router.back();
-      return;
-    }
-    if (isComposerDirty(getFormStateRef.current())) {
-      confirmExit(() => {
-        allowComposerExit();
-        router.back();
-      });
-      return;
-    }
-    if (shouldKeepResumeDraft(getFormStateRef.current()) || !wizardDraftRef.current) {
-      router.back();
-      return;
-    }
-    void leaveWithoutResumeDraft(() => router.back());
+    void leaveKeepingDraft(() => router.back());
   }
 
   const customerSummary = customerName.trim()
@@ -878,29 +906,6 @@ export default function CalculationComposerScreen() {
         }}
       />
 
-      <ConfirmDialog
-        visible={exitDialogVisible}
-        title="Kesken jäänyt laskenta"
-        message="Haluatko tallentaa laskennan keskeneräisenä?"
-        onClose={closeExitDialog}
-        buttons={[
-          { title: 'Peruuta', variant: 'outlined', onPress: closeExitDialog },
-          {
-            title: 'Tallenna keskeneräisenä',
-            variant: 'primary',
-            onPress: () => {
-              void saveDraftAndExit();
-            },
-          },
-          {
-            title: 'Poistu tallentamatta',
-            variant: 'destructive',
-            onPress: () => {
-              void discardDraftAndExit();
-            },
-          },
-        ]}
-      />
     </>
   );
 }

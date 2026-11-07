@@ -217,6 +217,7 @@ export default function StructureLineFormScreen() {
 
   const { allowExit, requestExit, exitDialog, stackScreenOptions } = useUnsavedChangesGuard({
     isDirty,
+    saveOnLeave: true,
     onSave: formComplete ? persistComplete : persistIncomplete,
     onDiscard: restoreSavedLine,
     title: formComplete ? 'Tallentamattomia muutoksia' : 'Keskeneräinen lomake',

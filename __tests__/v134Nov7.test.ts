@@ -16,6 +16,10 @@ import { assignOfferNumber, NEXT_OFFER_NUMBER_KEY } from '../src/core/pdf/offerN
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
 import { documentSiteAddress, readSiteAddressState } from '../src/core/pdf/siteAddress';
+import {
+  decideComposerLeave,
+  shouldPersistOpenComposer,
+} from '../src/core/wizard/wizardDraftHelpers';
 import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
 import { input, line, record } from './pdfFixtures';
 
@@ -87,6 +91,7 @@ describe('v1.3.4 Nov 7 feedback', () => {
     }
     expect(card).toContain('class="doc-card"');
     expect(card).not.toContain('@top-left-corner');
+    expect(card).toMatch(/\.uk-sum-value \{[^}]*color: #C90000/);
     expect(card).toContain('color: #111');
     expect(offer).toContain('@top-left-corner');
     expect(offer).toContain('class="doc-offer"');
@@ -189,5 +194,69 @@ describe('v1.3.4 Nov 7 feedback', () => {
     const history = fs.readFileSync(path.join(__dirname, '../app/history/index.tsx'), 'utf8');
     expect(history).toContain('Keskeneräinen');
     expect(history).not.toContain('Poista');
+  });
+
+  it('saves a contentful composer on back and background without a confirm dialog', () => {
+    expect(
+      decideComposerLeave({
+        allowExit: false,
+        dirty: true,
+        hasContent: true,
+        keepResume: false,
+        hasSession: false,
+      }),
+    ).toBe('save-and-leave');
+    expect(
+      decideComposerLeave({
+        allowExit: false,
+        dirty: false,
+        hasContent: false,
+        keepResume: false,
+        hasSession: false,
+      }),
+    ).toBe('leave');
+    expect(
+      decideComposerLeave({
+        allowExit: false,
+        dirty: false,
+        hasContent: true,
+        keepResume: true,
+        hasSession: true,
+      }),
+    ).toBe('leave');
+    expect(
+      decideComposerLeave({
+        allowExit: false,
+        dirty: false,
+        hasContent: false,
+        keepResume: false,
+        hasSession: true,
+      }),
+    ).toBe('clear-and-leave');
+    expect(shouldPersistOpenComposer({ dirty: true, hasContent: true })).toBe(true);
+    expect(shouldPersistOpenComposer({ dirty: false, hasContent: true })).toBe(false);
+    expect(shouldPersistOpenComposer({ dirty: true, hasContent: false })).toBe(false);
+
+    const wizard = fs.readFileSync(path.join(__dirname, '../app/wizard/index.tsx'), 'utf8');
+    const leave = wizard.slice(wizard.indexOf("addListener('beforeRemove'"));
+    expect(leave).toContain('decideComposerLeave');
+    expect(leave).toContain('leaveKeepingDraft');
+    expect(wizard).toContain('AppState.addEventListener');
+    expect(wizard).toContain('shouldPersistOpenComposer');
+    expect(wizard).toContain('publishComposerState');
+    expect(wizard).toContain('refreshCalculations');
+    expect(wizard).not.toContain('Kesken jäänyt laskenta');
+    expect(wizard).toContain('setSiteAddressTouched(true)');
+    expect(wizard).toContain('<MaterialQuantitiesEditor');
+
+    const history = fs.readFileSync(path.join(__dirname, '../app/history/index.tsx'), 'utf8');
+    expect(history).toContain('useFocusEffect');
+    expect(history).toContain('refreshCalculations()');
+
+    const line = fs.readFileSync(path.join(__dirname, '../app/wizard/line/[lineId].tsx'), 'utf8');
+    expect(line).toContain('saveOnLeave: true');
+    const guard = fs.readFileSync(path.join(__dirname, '../src/hooks/useUnsavedChangesGuard.tsx'), 'utf8');
+    expect(guard).toContain("AppState.addEventListener('change'");
+    expect(guard).toContain('saveOnLeaveRef.current');
   });
 });

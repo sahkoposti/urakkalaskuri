@@ -260,6 +260,31 @@ export function shouldKeepResumeDraftOnLeave(options: {
   return options.currentSignature !== options.originSignature;
 }
 
+export type ComposerLeaveAction = 'leave' | 'save-and-leave' | 'clear-and-leave';
+
+/**
+ * Laskentasivun poistuminen.
+ * Likainen ja sisältöä sisältävä lomake tallennetaan ilman erillistä vahvistusta.
+ * Tyhjä uusi laskenta ei luo riviä. Jo tallennettu sessio, jota ei pidetä, tyhjennetään.
+ */
+export function decideComposerLeave(input: {
+  allowExit: boolean;
+  dirty: boolean;
+  hasContent: boolean;
+  keepResume: boolean;
+  hasSession: boolean;
+}): ComposerLeaveAction {
+  if (input.allowExit) return 'leave';
+  if (input.dirty && input.hasContent) return 'save-and-leave';
+  if (input.keepResume || !input.hasSession) return 'leave';
+  return 'clear-and-leave';
+}
+
+/** Taustalle meno tallentaa vain keskeneräisen sisällön. Ei tyhjennä sessiota. */
+export function shouldPersistOpenComposer(input: { dirty: boolean; hasContent: boolean }): boolean {
+  return input.dirty && input.hasContent;
+}
+
 export function buildPersistedWizardDraft(
   state: WizardFormState,
   edit?: WizardDraftEditMeta | null,

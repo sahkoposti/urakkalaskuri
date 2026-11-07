@@ -21,6 +21,15 @@ function imageDataUri(mime: string, base64: string): string {
   return `data:image/${normalized};base64,${base64.replace(/\s+/g, '')}`;
 }
 
+/** Tiedostopääte ei kerro content-URI:n tyyppiä. Tuntematon tavujono hylätään. */
+export function imageMimeFromBase64(base64: string): 'png' | 'jpeg' | 'webp' | null {
+  const compact = base64.replace(/\s+/g, '');
+  if (compact.startsWith('iVBORw0K')) return 'png';
+  if (compact.startsWith('/9j/')) return 'jpeg';
+  if (compact.startsWith('UklGR')) return 'webp';
+  return null;
+}
+
 /** data:, file: tai content: -URI. Kelvoton tai rikki → null, ei heitä. */
 export async function customLogoDataUri(uri: string | null | undefined): Promise<string | null> {
   const trimmed = uri?.trim() ?? '';
@@ -30,11 +39,10 @@ export async function customLogoDataUri(uri: string | null | undefined): Promise
   const readable = /^(file|content):/i.test(trimmed) || trimmed.startsWith('/');
   if (!readable) return null;
   try {
-    const base64 = await new File(trimmed).base64();
-    if (!base64?.trim()) return null;
-    const lower = trimmed.toLowerCase();
-    const mime = lower.endsWith('.jpg') || lower.endsWith('.jpeg') ? 'jpeg' : lower.endsWith('.webp') ? 'webp' : 'png';
-    return imageDataUri(mime, base64);
+    const bytes = (await new File(trimmed).base64()) ?? '';
+    const mime = imageMimeFromBase64(bytes);
+    if (!mime) return null;
+    return imageDataUri(mime, bytes);
   } catch {
     return null;
   }

@@ -76,7 +76,7 @@ exports[`urakkakortti single line: contract, duration, crew, specs, notes area; 
   .uk-sums { margin-left: auto; text-align: right; }
   .uk-sum { display: block; white-space: nowrap; margin: 0 0 1mm 0; }
   .uk-sum-label { display: block; font-size: 8.5pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #C90000; }
-  .uk-sum-value { display: block; font-size: 16pt; font-weight: 700; color: #111; }
+  .uk-sum-value { display: block; font-size: 16pt; font-weight: 700; color: #C90000; }
   .uk-sum-emp .uk-sum-value { font-size: 15pt; }
   .uk-materials { margin: 0 0 6mm 0; }
   .uk-materials h3 { margin: 0 0 1.5mm 0; font-size: 12pt; break-after: avoid; page-break-after: avoid; }

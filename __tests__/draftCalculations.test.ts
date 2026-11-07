@@ -71,6 +71,8 @@ import {
   isDraftCalculation,
   wizardDraftFromCalculation,
 } from '../src/core/wizard/draftCalculation';
+import { calculationToFormState } from '../src/core/wizard/calculationToWizard';
+import { persistedDraftToFormState } from '../src/core/wizard/wizardDraftHelpers';
 import { deleteCalculationAttachmentFolder } from '../src/core/attachments/attachmentFiles';
 import { record } from './pdfFixtures';
 
@@ -351,6 +353,74 @@ describe('draft calculations', () => {
     ]);
     expect(await promoteCurrentWizardDraft()).toBe('fin-edit');
     expect(await getCalculations()).toHaveLength(1);
+  });
+
+  it('keeps a cleared site address and shade rows on the same draft id', async () => {
+    await current.execAsync(V3_SQL);
+    await current.execAsync('PRAGMA user_version = 3');
+    await ensureCalculationStatusColumn(current);
+    const draft = {
+      ...session('Sävyasiakas', 11000),
+      customerAddress: 'Rekisteri 1',
+      customerPostalCode: '00100',
+      customerPostalLocality: 'Helsinki',
+      siteAddress: '',
+      siteAddressTouched: true,
+      structureLines: [
+        {
+          id: 'line-1',
+          structureId: 'manual',
+          name: 'Maalaus',
+          quantity: 1,
+          unitPriceVat0: 0,
+          materialsVat0: 0,
+          discountPercent: 0,
+          vatPercent: 25.5,
+          contractPriceVat0: 0,
+          workDurationDays: 0,
+          commissionPercent: 0,
+          commissionEur: 0,
+          marginEur: 0,
+          marginPercent: 0,
+          fieldValues: {},
+          formFilled: false,
+          overrides: [],
+          materialQuantities: [
+            {
+              id: 'mq-1',
+              productId: 'p1',
+              productName: 'Nova 7',
+              quantity: 0,
+              unit: 'l',
+              source: 'manual' as const,
+              shades: [
+                { id: 's1', name: 'G47', quantity: 3, unit: 'l' },
+                { id: 's2', name: '505X', quantity: 5, unit: 'l' },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    await saveWizardDraft(draft);
+    const row = (await getCalculations())[0];
+    expect(row?.id).toBe((await getWizardDraft())?.editCalculationId);
+    expect(row?.formSnapshot?.siteAddress).toBe('');
+    expect(row?.formSnapshot?.siteAddressTouched).toBe(true);
+    expect(row?.structureLines?.[0]?.materialQuantities?.[0]?.shades).toEqual([
+      { id: 's1', name: 'G47', quantity: 3, unit: 'l' },
+      { id: 's2', name: '505X', quantity: 5, unit: 'l' },
+    ]);
+    const stored = row ? wizardDraftFromCalculation(row) : null;
+    expect(stored?.siteAddressTouched).toBe(true);
+    const fromDraft = stored ? persistedDraftToFormState(stored, []).form : null;
+    expect(fromDraft?.siteAddress).toBe('');
+    expect(fromDraft?.siteAddressTouched).toBe(true);
+    expect(fromDraft?.structureLines?.[0]?.materialQuantities?.[0]?.shades?.[1]?.name).toBe('505X');
+    const reopened = row ? calculationToFormState(row, []).form : null;
+    expect(reopened?.siteAddress).toBe('');
+    expect(reopened?.siteAddressTouched).toBe(true);
+    expect(reopened?.structureLines?.[0]?.materialQuantities?.[0]?.shades?.[0]?.quantity).toBe(3);
   });
 
   it('does not lower a newer schema version when the column already exists', async () => {
