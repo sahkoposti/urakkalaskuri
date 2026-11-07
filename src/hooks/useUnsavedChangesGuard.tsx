@@ -1,12 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { BackHandler } from 'react-native';
+import { AppState, BackHandler } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useSaveToast } from '@/src/context/SaveToastContext';
 import { exitStackScreenOptions } from '@/src/hooks/exitStackScreenOptions';
 import { useNativeRemovePrevention } from '@/src/hooks/useNativeRemovePrevention';
+import { createScreenLeave, LeaveCancelled } from '@/src/core/wizard/screenLeave';
 
 type UseUnsavedChangesGuardOptions = {
   isDirty: boolean;
@@ -17,6 +18,15 @@ type UseUnsavedChangesGuardOptions = {
   cancelTitle?: string;
   discardTitle?: string;
   saveTitle?: string;
+  /**
+   * Likainen lomake tallennetaan poistuttaessa ja sovelluksen mennessä taustalle.
+   * Vahvistusdialogia ei näytetä. Tallennuksen `false` jättää käyttäjän sivulle.
+   */
+  saveOnLeave?: boolean;
+  /**
+   * Tausta kutsuu `onSave` ilman dialogia. Paluu näyttää dialogin, jos `saveOnLeave` on false.
+   */
+  saveOnBackground?: boolean;
 };
 
 export function useUnsavedChangesGuard({
@@ -28,27 +38,37 @@ export function useUnsavedChangesGuard({
   cancelTitle = 'Peruuta',
   discardTitle = 'Hylkää',
   saveTitle = 'Tallenna',
+  saveOnLeave = false,
+  saveOnBackground = false,
 }: UseUnsavedChangesGuardOptions) {
   const navigation = useNavigation();
   const { showSaved } = useSaveToast();
-  const allowExitRef = useRef(false);
+  const screenLeave = useRef(createScreenLeave()).current;
   const isDirtyRef = useRef(isDirty);
   const onSaveRef = useRef(onSave);
   const onDiscardRef = useRef(onDiscard);
+  const saveOnLeaveRef = useRef(saveOnLeave);
+  const saveOnBackgroundRef = useRef(saveOnBackground);
   const pendingExitRef = useRef<(() => void) | null>(null);
   const [exitDialogVisible, setExitDialogVisible] = useState(false);
 
   isDirtyRef.current = isDirty;
   onSaveRef.current = onSave;
   onDiscardRef.current = onDiscard;
+  saveOnLeaveRef.current = saveOnLeave;
+  saveOnBackgroundRef.current = saveOnBackground;
 
-  const shouldPrevent = isDirty && !allowExitRef.current;
+  const shouldPrevent = isDirty && !screenLeave.shouldBypass();
   const applyPreventRemove = useNativeRemovePrevention(shouldPrevent);
+  screenLeave.setOnRelease(() => {
+    applyPreventRemove(isDirtyRef.current);
+  });
 
   useFocusEffect(
     useCallback(() => {
-      allowExitRef.current = false;
-    }, []),
+      screenLeave.reset();
+      return () => screenLeave.reset();
+    }, [screenLeave]),
   );
 
   const closeExitDialog = useCallback(() => {
@@ -61,20 +81,17 @@ export function useUnsavedChangesGuard({
     setExitDialogVisible(true);
   }, []);
 
-  const markAllowExit = useCallback(() => {
-    allowExitRef.current = true;
-    applyPreventRemove(false);
-  }, [applyPreventRemove]);
-
   const leaveWithoutSaving = useCallback(() => {
-    void (async () => {
+    void screenLeave.enqueue(async () => {
       await onDiscardRef.current?.();
-      markAllowExit();
-      const action = pendingExitRef.current;
-      closeExitDialog();
-      action?.();
-    })();
-  }, [closeExitDialog, markAllowExit]);
+      screenLeave.allowOnce(() => {
+        applyPreventRemove(false);
+        const action = pendingExitRef.current;
+        closeExitDialog();
+        action?.();
+      });
+    });
+  }, [applyPreventRemove, closeExitDialog, screenLeave]);
 
   const save = useCallback(async (): Promise<boolean> => {
     if (!onSaveRef.current) return false;
@@ -84,61 +101,116 @@ export function useUnsavedChangesGuard({
     return true;
   }, [showSaved]);
 
-  const saveAndExit = useCallback(async () => {
-    const saved = await save();
-    if (!saved) return;
-    markAllowExit();
-    const action = pendingExitRef.current;
-    closeExitDialog();
-    action?.();
-  }, [closeExitDialog, markAllowExit, save]);
+  const saveAndExit = useCallback(() => {
+    void screenLeave.enqueue(async () => {
+      const saved = await save();
+      if (!saved) return;
+      screenLeave.allowOnce(() => {
+        applyPreventRemove(false);
+        const action = pendingExitRef.current;
+        closeExitDialog();
+        action?.();
+      });
+    });
+  }, [applyPreventRemove, closeExitDialog, save, screenLeave]);
+
+  const saveThenLeave = useCallback(
+    (onLeave: () => void) => {
+      void screenLeave
+        .leave(async () => {
+          const result = await onSaveRef.current?.();
+          if (result === false) throw new LeaveCancelled();
+        }, () => {
+          applyPreventRemove(false);
+          onLeave();
+        })
+        .catch((error: unknown) => {
+          if (error instanceof LeaveCancelled) return;
+          throw error;
+        });
+    },
+    [applyPreventRemove, screenLeave],
+  );
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowExitRef.current || !isDirtyRef.current) {
+      if (screenLeave.shouldBypass() || !isDirtyRef.current) {
         return;
       }
 
       event.preventDefault();
+      if (saveOnLeaveRef.current) {
+        saveThenLeave(() => navigation.dispatch(event.data.action));
+        return;
+      }
       confirmExit(() => navigation.dispatch(event.data.action));
     });
 
     return unsubscribe;
-  }, [navigation, confirmExit]);
+  }, [navigation, confirmExit, saveThenLeave, screenLeave]);
+
+  useEffect(() => {
+    if (!saveOnLeave && !saveOnBackground) return;
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next !== 'background' && next !== 'inactive') return;
+      void screenLeave.enqueue(async () => {
+        if (screenLeave.shouldBypass() || !isDirtyRef.current) return;
+        if (!saveOnLeaveRef.current && !saveOnBackgroundRef.current) return;
+        await onSaveRef.current?.();
+      });
+    });
+    return () => subscription.remove();
+  }, [saveOnLeave, saveOnBackground, screenLeave]);
 
   useFocusEffect(
     useCallback(() => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (allowExitRef.current || !isDirtyRef.current) {
+        if (screenLeave.shouldBypass() || !isDirtyRef.current) {
           return false;
         }
 
+        if (saveOnLeaveRef.current) {
+          saveThenLeave(() => router.back());
+          return true;
+        }
         confirmExit(() => {
-          markAllowExit();
-          router.back();
+          screenLeave.allowOnce(() => {
+            applyPreventRemove(false);
+            router.back();
+          });
         });
         return true;
       });
 
       return () => subscription.remove();
-    }, [confirmExit, markAllowExit]),
+    }, [applyPreventRemove, confirmExit, saveThenLeave, screenLeave]),
   );
 
   const allowExit = useCallback(() => {
-    markAllowExit();
-  }, [markAllowExit]);
+    screenLeave.allowOnce(() => {
+      applyPreventRemove(false);
+    });
+  }, [applyPreventRemove, screenLeave]);
 
   const requestExit = useCallback(() => {
-    if (allowExitRef.current || !isDirtyRef.current) {
-      markAllowExit();
-      router.back();
+    if (screenLeave.shouldBypass() || !isDirtyRef.current) {
+      screenLeave.allowOnce(() => {
+        applyPreventRemove(false);
+        router.back();
+      });
+      return;
+    }
+    if (saveOnLeaveRef.current) {
+      saveThenLeave(() => router.back());
       return;
     }
     confirmExit(() => {
-      markAllowExit();
-      router.back();
+      screenLeave.allowOnce(() => {
+        applyPreventRemove(false);
+        router.back();
+      });
     });
-  }, [confirmExit, markAllowExit]);
+  }, [applyPreventRemove, confirmExit, saveThenLeave, screenLeave]);
 
   const stackScreenOptions = exitStackScreenOptions(requestExit, shouldPrevent);
 

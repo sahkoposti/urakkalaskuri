@@ -178,7 +178,8 @@ describe('buildPdfContext', () => {
     expect(ctx.additionalInfo).toBe('');
     expect(ctx.sections).toHaveLength(1);
     expect(ctx.sections[0].title).toBe('Ulkomaalaus');
-    expect(ctx.sections[0].textGroups.find((group) => group.group === 'muuta')?.items).toEqual(['Sisältää telineet.']);
+    expect(ctx.structureLisatiedot).toBe('Sisältää telineet.');
+    expect(ctx.sections[0].textGroups.find((group) => group.group === 'muuta')).toBeUndefined();
     expect(JSON.stringify(ctx.sections)).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
     expect(ctx.sections[0].tableRows).toEqual(
       expect.arrayContaining([expect.objectContaining({ label: 'Työn arvioitu kesto', value: '4 työpäivää' })]),
@@ -361,9 +362,10 @@ describe('buildPdfContext', () => {
     });
     expect(ctx.rows.map((row) => row.name)).toEqual(['Sokkeli', 'Ulkomaalaus']);
     expect(ctx.sections.map((section) => section.title)).toEqual(['Sokkeli', 'Ulkomaalaus']);
+    expect(ctx.structureLisatiedot).toBe('Sisältää telineet.');
     expect(ctx.sections.map((section) => section.textGroups.find((group) => group.group === 'muuta')?.items)).toEqual([
       undefined,
-      ['Sisältää telineet.'],
+      undefined,
     ]);
     expect(JSON.stringify(ctx.sections)).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
     expect(JSON.stringify(ctx.sections)).not.toContain('Toinen teksti');

@@ -166,22 +166,24 @@ describe('urakkakortti', () => {
         missing: { additionalInfoText: 'Ei kuulu riville', offerPages: [] },
       },
     });
-    expect(ctx.sections.map((section) => section.title)).toEqual(['Ulkomaalaus']);
-    expect(ctx.sections[0].textGroups).toEqual([{ group: 'muuta', title: 'Muuta', items: [long] }]);
+    expect(ctx.sections.some((section) => JSON.stringify(section).includes('Teline'))).toBe(false);
+    expect(ctx.structureLisatiedot).toBe(long);
     expect(JSON.stringify(ctx.sections)).not.toContain('Nokihormi');
     expect(ctx.huomioitavaa).toBe('Koira pihalla');
     const html = renderUrakkakorttiHtml(ctx);
-    expect(html).toContain('>Muuta<');
+    expect(html).not.toContain('>Muuta<');
+    expect(html).toContain('Lisätiedot:');
     expect(html).toContain('Teline '.repeat(80).trim());
     expect(html).toContain('Rivi &lt;2&gt; &amp; &quot;ok&quot;');
-    expect(html).not.toContain('Lisätiedot:');
+    expect(html).toContain('<br />');
+    const lisatiedot = html.slice(html.indexOf('Lisätiedot:'), html.indexOf('>Huomioitavaa<'));
+    expect(lisatiedot).toContain('Teline');
+    expect(lisatiedot).not.toContain('Koira pihalla');
     expect(html).not.toContain('Ei kuulu riville');
     expect(html).not.toContain('VANHA_EI_TULOSTU');
     expect(html).not.toContain('Toinen vanha teksti');
     expect(html).not.toContain('Nokihormi');
     expect(html).not.toContain('Yrityksen maksuehto');
-    const muuta = html.slice(html.indexOf('doc-group-muuta'), html.indexOf('doc-group-muuta') + 800);
-    expect(muuta).not.toContain('Koira pihalla');
     expect(html).toContain('>Huomioitavaa<');
 
     const blankBase = ukInput(record({}, { structureLines: [line('a', 's1', 'Ulkomaalaus')] }));
@@ -230,9 +232,12 @@ describe('urakkakortti', () => {
       offerStructureSettings: { s1: { additionalInfoText: 'VANHA_EI_TULOSTU', offerPages: [] } },
     });
     expect(ctx.sections).toHaveLength(1);
-    expect(ctx.sections[0].textGroups.map((group) => group.group)).toEqual(['osa_alueet', 'muuta']);
-    expect(ctx.sections[0].textGroups[1].items).toEqual(['Koko muuta-teksti.']);
-    expect(renderUrakkakorttiHtml(ctx)).toContain('Portti auki');
+    expect(ctx.sections[0].textGroups.map((group) => group.group)).toEqual(['osa_alueet']);
+    expect(ctx.structureLisatiedot).toBe('Koko muuta-teksti.');
+    const html = renderUrakkakorttiHtml(ctx);
+    expect(html).toContain('Portti auki');
+    expect(html.indexOf('Portti auki')).toBeLessThan(html.indexOf('Lisätiedot:'));
+    expect(html.indexOf('Lisätiedot:')).toBeLessThan(html.indexOf('Koko muuta-teksti.'));
   });
 
   it('prints each header price once and hides the työntekijä row when the factor is missing', () => {

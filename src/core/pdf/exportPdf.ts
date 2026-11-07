@@ -50,7 +50,7 @@ export type PdfExportDeps = {
   getCompanyProfile: () => Promise<CompanyProfile>;
   getOfferCompanySettings: () => Promise<OfferCompanySettings>;
   getOfferStructureSettings: (structureId: string) => Promise<OfferStructureSettings>;
-  loadLogoDataUri: () => Promise<string | null>;
+  loadLogoDataUri: (logoUri?: string | null) => Promise<string | null>;
   generatePdf: (options: GeneratePdfOptions) => Promise<GeneratePdfResult>;
   newDocumentId: () => string;
   appVersion: () => string | null;
@@ -150,11 +150,11 @@ export async function exportTarjousPdf(
   }
   const { offerNumber } = await deps.assignOfferNumber(calculationId);
   const record = await requireCalculation(deps, calculationId);
-  const [company, offerCompany, logoDataUri] = await Promise.all([
+  const [company, offerCompany] = await Promise.all([
     deps.getCompanyProfile(),
     deps.getOfferCompanySettings(),
-    deps.loadLogoDataUri(),
   ]);
+  const logoDataUri = await deps.loadLogoDataUri(company.logoUri);
   const structureIds = [...new Set(ensureStructureLines(record).map((line) => line.structureId))];
   const offerStructureSettings = Object.fromEntries(
     await Promise.all(structureIds.map(async (id) => [id, await deps.getOfferStructureSettings(id)] as const)),
@@ -264,11 +264,11 @@ export async function exportUrakkakorttiPdf(
   if (missing.length > 0) {
     return { status: 'needsManualContract', lines: missing.map((line) => ({ id: line.id, name: line.name })) };
   }
-  const [company, logoDataUri, offerCompany] = await Promise.all([
+  const [company, offerCompany] = await Promise.all([
     deps.getCompanyProfile(),
-    deps.loadLogoDataUri(),
     deps.getOfferCompanySettings(),
   ]);
+  const logoDataUri = await deps.loadLogoDataUri(company.logoUri);
   const structureIds = [...new Set(ensureStructureLines(record).map((line) => line.structureId))];
   const offerStructureSettings = Object.fromEntries(
     await Promise.all(structureIds.map(async (id) => [id, await deps.getOfferStructureSettings(id)] as const)),
