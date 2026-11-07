@@ -6,6 +6,7 @@ import type {
   WizardLineDraft,
 } from '@/src/core/models/types';
 import { emptyCustomerInfo } from '@/src/core/models/types';
+import { formatCustomerAddress } from '@/src/core/pdf/siteAddress';
 import { hasFieldValueContent } from '@/src/core/wizard/wizardPageHelpers';
 
 export type WizardFormState = {
@@ -28,6 +29,9 @@ export type WizardFormState = {
   structureLines?: StructureLine[];
   /** Yritystarjouksen yhteinen ALV. Puuttuva = alv0. */
   businessVatMode?: 'alv0' | 'sis';
+  /** Kohteen osoite. Koskematon arvo on esitäyttö, ei tallennettu yliajo. */
+  siteAddress?: string;
+  siteAddressTouched?: boolean;
 };
 
 export type WizardDraftEditMeta = {
@@ -106,7 +110,10 @@ export function cloneStructureLine(line: StructureLine): StructureLine {
     overrides: [...(line.overrides ?? [])],
   };
   if (line.materialQuantities !== undefined) {
-    cloned.materialQuantities = line.materialQuantities.map((row) => ({ ...row }));
+    cloned.materialQuantities = line.materialQuantities.map((row) => ({
+      ...row,
+      ...(row.shades ? { shades: row.shades.map((shade) => ({ ...shade })) } : {}),
+    }));
   }
   return cloned;
 }
@@ -152,6 +159,12 @@ function structureLineSignature(line: StructureLine) {
             unit: row.unit ?? '',
             source: row.source,
             fieldKey: row.fieldKey ?? '',
+            shades: (row.shades ?? []).map((shade) => ({
+              id: shade.id,
+              name: shade.name,
+              quantity: shade.quantity,
+              unit: shade.unit ?? '',
+            })),
           })),
         }
       : {}),
@@ -175,6 +188,8 @@ export function composerStateSignature(state: WizardFormState): string {
     travelTimeOneWay: (state.travelTimeOneWay ?? '').trim(),
     structureLines: (state.structureLines ?? []).map(structureLineSignature),
     businessVatMode: state.businessVatMode === 'sis' ? 'sis' : 'alv0',
+    siteAddress: (state.siteAddress ?? '').trim(),
+    siteAddressTouched: state.siteAddressTouched === true,
   });
 }
 
@@ -194,7 +209,32 @@ export function hasWizardDraftContent(state: WizardFormState): boolean {
     Boolean(state.customerId) ||
     Boolean(state.deliveryScheduleText?.trim()) ||
     Boolean(state.travelTimeOneWay?.trim()) ||
-    (state.structureLines?.length ?? 0) > 0
+    (state.structureLines?.length ?? 0) > 0 ||
+    Boolean(state.siteAddress?.trim()) ||
+    state.siteAddressTouched === true
+  );
+}
+
+/** Sama sisältöraja tallennetulle wizard-sessiolle. Tyhjä sessio ei luo laskelmariviä. */
+export function persistedDraftHasContent(draft: PersistedWizardDraft): boolean {
+  return (
+    draft.step > 0 ||
+    draft.customerName.trim().length > 0 ||
+    draft.customerPhone.trim().length > 0 ||
+    draft.customerEmail.trim().length > 0 ||
+    draft.customerAddress.trim().length > 0 ||
+    (draft.customerPostalCode ?? '').trim().length > 0 ||
+    (draft.customerPostalLocality ?? '').trim().length > 0 ||
+    draft.customerNotes.trim().length > 0 ||
+    draft.duration.trim().length > 0 ||
+    hasFieldValueContent(draft.fieldValues ?? {}) ||
+    draft.lines.length > 0 ||
+    Boolean(draft.customerId) ||
+    Boolean(draft.deliveryScheduleText?.trim()) ||
+    Boolean(draft.travelTimeOneWay?.trim()) ||
+    (draft.structureLines?.length ?? 0) > 0 ||
+    Boolean(draft.siteAddress?.trim()) ||
+    draft.siteAddressTouched === true
   );
 }
 
@@ -265,6 +305,8 @@ export function buildPersistedWizardDraft(
     ...(state.travelTimeOneWay != null ? { travelTimeOneWay: state.travelTimeOneWay } : {}),
     ...(state.structureLines ? { structureLines: state.structureLines } : {}),
     ...(state.businessVatMode === 'sis' ? { businessVatMode: 'sis' as const } : {}),
+    siteAddress: state.siteAddress ?? '',
+    siteAddressTouched: state.siteAddressTouched === true,
   };
 }
 
@@ -311,6 +353,15 @@ export function persistedDraftToFormState(
     travelTimeOneWay: draft.travelTimeOneWay ?? '',
     structureLines: draft.structureLines,
     businessVatMode: draft.businessVatMode === 'sis' ? 'sis' : 'alv0',
+    siteAddress:
+      draft.siteAddressTouched === true
+        ? (draft.siteAddress ?? '')
+        : formatCustomerAddress({
+            address: draft.customerAddress,
+            postalCode: draft.customerPostalCode,
+            postalLocality: draft.customerPostalLocality,
+          }),
+    siteAddressTouched: draft.siteAddressTouched === true,
   };
   const wizardDraft: WizardDraft = {
     customer: {

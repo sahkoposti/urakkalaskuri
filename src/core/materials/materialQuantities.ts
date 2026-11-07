@@ -4,7 +4,7 @@ import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelper
 import { findProductById, getSelectedProductId } from '@/src/core/form/productFieldUtils';
 import { resolveTargetPrint } from '@/src/core/form/printSettings';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
-import type { MaterialQuantityRow, Product, StructureLine } from '@/src/core/models/types';
+import type { MaterialQuantityRow, MaterialShade, Product, StructureLine } from '@/src/core/models/types';
 import { defaultSettings } from '@/src/core/models/types';
 import { formatPrintedQuantity } from '@/src/core/utils/formatters';
 import { fieldValuesEqual } from '@/src/core/wizard/wizardDraftHelpers';
@@ -18,8 +18,10 @@ export const MATERIAL_QUANTITY_MAX = 100_000;
 const EMPTY_DISPLAY = '–';
 
 export type MaterialQuantityPatch = Partial<
-  Pick<MaterialQuantityRow, 'productName' | 'quantity' | 'unit' | 'productId'>
+  Pick<MaterialQuantityRow, 'productName' | 'quantity' | 'unit' | 'productId' | 'shades'>
 >;
+
+export type MaterialShadePatch = Partial<Pick<MaterialShade, 'name' | 'quantity' | 'unit'>>;
 
 function isEmptyDisplay(value: string | undefined): boolean {
   if (value == null) return true;
@@ -212,6 +214,60 @@ export function removeMaterialRow(rows: MaterialQuantityRow[], id: string): Mate
   return (rows ?? []).filter((row) => row.id !== id).map((row) => ({ ...row }));
 }
 
+function cloneShades(shades: MaterialShade[] | undefined): MaterialShade[] | undefined {
+  return shades?.map((shade) => ({ ...shade }));
+}
+
+export function addMaterialShade(rows: MaterialQuantityRow[], rowId: string): MaterialQuantityRow[] {
+  return (rows ?? []).map((row) => {
+    if (row.id !== rowId) return { ...row, shades: cloneShades(row.shades) };
+    const shades = [...(row.shades ?? []), { id: createMaterialRowId(), name: '', quantity: 0 }];
+    const next: MaterialQuantityRow = { ...row, shades };
+    if (row.source === 'form') next.source = 'manual';
+    return next;
+  });
+}
+
+export function editMaterialShade(
+  rows: MaterialQuantityRow[],
+  rowId: string,
+  shadeId: string,
+  patch: MaterialShadePatch,
+): MaterialQuantityRow[] {
+  return (rows ?? []).map((row) => {
+    if (row.id !== rowId) return { ...row, shades: cloneShades(row.shades) };
+    const shades = (row.shades ?? []).map((shade) => (shade.id === shadeId ? { ...shade, ...patch } : { ...shade }));
+    const next: MaterialQuantityRow = { ...row, shades };
+    if (row.source === 'form') next.source = 'manual';
+    return next;
+  });
+}
+
+export function removeMaterialShade(
+  rows: MaterialQuantityRow[],
+  rowId: string,
+  shadeId: string,
+): MaterialQuantityRow[] {
+  return (rows ?? []).map((row) => {
+    if (row.id !== rowId) return { ...row, shades: cloneShades(row.shades) };
+    const shades = (row.shades ?? []).filter((shade) => shade.id !== shadeId);
+    const next: MaterialQuantityRow = { ...row };
+    if (shades.length > 0) next.shades = shades;
+    else delete next.shades;
+    if (row.source === 'form') next.source = 'manual';
+    return next;
+  });
+}
+
+function shadeInvalid(shade: MaterialShade): boolean {
+  return (
+    !shade.name.trim() ||
+    !Number.isFinite(shade.quantity) ||
+    shade.quantity <= 0 ||
+    shade.quantity > MATERIAL_QUANTITY_MAX
+  );
+}
+
 /** Tiukka desimaali: pilkku tai piste, enintään 2 desimaalia, ei eksponenttia eikä välilyöntejä. */
 export function parseQuantityInput(text: string): number | null {
   if (typeof text !== 'string') return null;
@@ -236,13 +292,15 @@ export function quantityInputError(text: string): string | null {
 /** Tallentamattomat tai kelvottomat rivit estävät Yhteenveto-napin. Puuttuva avain ei estä. */
 export function materialQuantitiesBlockFinish(rows: MaterialQuantityRow[] | undefined): boolean {
   if (!rows) return false;
-  return rows.some(
-    (row) =>
-      !row.productName.trim() ||
+  return rows.some((row) => {
+    if (!row.productName.trim()) return true;
+    if (row.shades && row.shades.length > 0) return row.shades.some(shadeInvalid);
+    return (
       !Number.isFinite(row.quantity) ||
       row.quantity <= 0 ||
-      row.quantity > MATERIAL_QUANTITY_MAX,
-  );
+      row.quantity > MATERIAL_QUANTITY_MAX
+    );
+  });
 }
 
 /**
@@ -304,7 +362,10 @@ function sanitizeMaterialQuantityRow(raw: unknown): MaterialQuantityRow | undefi
   const item = raw as Record<string, unknown>;
   if (typeof item.id !== 'string' || item.id.trim() === '') return undefined;
   if (typeof item.productName !== 'string') return undefined;
-  if (typeof item.quantity !== 'number' || !Number.isFinite(item.quantity) || item.quantity <= 0) return undefined;
+  const shades = sanitizeShades(item.shades);
+  if (typeof item.quantity !== 'number' || !Number.isFinite(item.quantity) || item.quantity < 0) return undefined;
+  if (item.quantity <= 0 && (!shades || shades.length === 0)) return undefined;
+  if (item.quantity > MATERIAL_QUANTITY_MAX) return undefined;
   if (item.source !== 'form' && item.source !== 'manual') return undefined;
   const row: MaterialQuantityRow = {
     id: item.id,
@@ -315,7 +376,25 @@ function sanitizeMaterialQuantityRow(raw: unknown): MaterialQuantityRow | undefi
   if (typeof item.productId === 'string' && item.productId) row.productId = item.productId;
   if (typeof item.unit === 'string') row.unit = item.unit;
   if (typeof item.fieldKey === 'string' && item.fieldKey) row.fieldKey = item.fieldKey;
+  if (shades && shades.length > 0) row.shades = shades;
   return row;
+}
+
+function sanitizeShades(raw: unknown): MaterialShade[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const shades: MaterialShade[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const shade = item as Record<string, unknown>;
+    if (typeof shade.id !== 'string' || shade.id.trim() === '') continue;
+    if (typeof shade.name !== 'string') continue;
+    if (typeof shade.quantity !== 'number' || !Number.isFinite(shade.quantity) || shade.quantity <= 0) continue;
+    if (shade.quantity > MATERIAL_QUANTITY_MAX) continue;
+    const next: MaterialShade = { id: shade.id, name: shade.name, quantity: shade.quantity };
+    if (typeof shade.unit === 'string') next.unit = shade.unit;
+    shades.push(next);
+  }
+  return shades;
 }
 
 export function materialQuantitiesSignature(lines: StructureLine[]): string {

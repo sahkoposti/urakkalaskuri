@@ -1,6 +1,6 @@
 # Liitteet (L1–L4)
 
-Nykyinen versio on **1.3.3**. Siihen kuuluvat tarjouksen ja urakkakortin PDF, liitteen valinta yhdellä **Lisää liite** -painikkeella (kamera, galleria tai tiedosto), kuvankäsittely ja asettelu. Tarjouksen sivujako on taiton laskentaa, ei ajon aikana mitattu korkeus eikä laitteella varmistettu: kaksi kuvaa sivulla, kun kuvan enimmäiskorkeus ja pisin kuvateksti (merkki em-levyisenä, fontti +1 pt) mahtuvat kahdesti käytettävään korkeuteen; muuten yksi kuva sivulla. Yli kolmen rivin kuvateksti pakottaa yhden kuvan sivulle. Urakkakortissa on neljä pientä kuvaa sivulla. Asettelun valintaa ei näytetä. Vanha `attachmentPageLayout` ei kaada tulostetta: tarjous päättää asettelun itse. Kuvat pienennetään lisäyshetkellä (`expo-image-manipulator` 14.0.8): pisin sivu enintään 1600 px, JPEG 0,7, uusi tiedosto ilman EXIF-tietoja. Vain käsitelty tiedosto tallennetaan. PDF kopioidaan ja puretaan `prepareAttachmentPdf`-funktiolla. Raja on 20 kuvaa laskelmaa kohti, 10 Mt / tiedosto, 25 Mt yhteensä ja 50 sivua (`checkAttachmentLimits`). Yli 15 Mt:n kuvakokonaisuus varoittaa, mutta kuvat otetaan mukaan.
+Nykyinen versio on **1.3.4**. Liitteiden toiminta on sama kuin 1.3.3:ssa: tarjouksen ja urakkakortin PDF, liitteen valinta yhdellä **Lisää liite** -painikkeella (kamera, galleria tai tiedosto), kuvankäsittely ja asettelu. Tarjouksen sivujako on taiton laskentaa, ei ajon aikana mitattu korkeus eikä laitteella varmistettu: kaksi kuvaa sivulla, kun kuvan enimmäiskorkeus ja pisin kuvateksti (merkki em-levyisenä, fontti +1 pt) mahtuvat kahdesti käytettävään korkeuteen; muuten yksi kuva sivulla. Yli kolmen rivin kuvateksti pakottaa yhden kuvan sivulle. Urakkakortissa on neljä pientä kuvaa sivulla. Asettelun valintaa ei näytetä. Vanha `attachmentPageLayout` ei kaada tulostetta: tarjous päättää asettelun itse. Kuvat pienennetään lisäyshetkellä (`expo-image-manipulator` 14.0.8): pisin sivu enintään 1600 px, JPEG 0,7, uusi tiedosto ilman EXIF-tietoja. Vain käsitelty tiedosto tallennetaan. PDF kopioidaan ja puretaan `prepareAttachmentPdf`-funktiolla. Raja on 20 kuvaa laskelmaa kohti, 10 Mt / tiedosto, 25 Mt yhteensä ja 50 sivua (`checkAttachmentLimits`). Yli 15 Mt:n kuvakokonaisuus varoittaa, mutta kuvat otetaan mukaan.
 
 Vanha avain `form_snapshot.attachmentPageLayout` saa jäädä laskelmalle. Tuloste ei lue sitä. Uutta SQL-saraketta ei ole.
 
@@ -111,7 +111,7 @@ Dokumentit-välilehdellä on osio Liitteet: kuvateksti (enintään 120), kohde (
 - Marginaalit: kortin vasen ja oikea 17 mm, tarjouksen tekstisisennys 21 mm. Teksti ei osu palkkiin eikä reunaan.
 - Varapolku: puuttuva tiedosto tai epäonnistunut yhdistäminen tuottaa silti tarjouksen. Valmis-näkymässä on suomenkielinen varoitus, ja tarjouksen voi jakaa.
 - Asetteluavain `form_snapshot.attachmentPageLayout` säilyy laskelman kopiossa.
-- Sovellusversio näyttää 1.3.3.
+- Sovellusversio näyttää 1.3.4.
 - Tarjous ja urakkakortti, joissa on liitteitä; yhdistetty PDF aukeaa.
 - Jako Gmailiin.
 - Laskelman kopiointi ja Poista kopioidut liitteet.

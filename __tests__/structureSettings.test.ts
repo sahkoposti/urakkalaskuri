@@ -194,9 +194,9 @@ describe('parseHourlyRate', () => {
 
   test('näyttää tallennetun arvon pilkkudesimaalina ja paikkamerkin yleisestä hinnasta', () => {
     expect(MAX_HOURLY_RATE).toBe(500);
-    expect(HOURLY_RATE_FIELD.label).toBe('Tuntihinta, €/h (alv 0 %)');
+    expect(HOURLY_RATE_FIELD.label).toBe('Alihankkijan tuntihinta');
     expect(HOURLY_RATE_FIELD.help).toBe(
-      'Tuntihinta ilman arvonlisäveroa. Käytetään sekä urakkahinnassa että asiakashinnan kentissä. Tyhjä = yleinen tuntihinta (Asetukset → Yleinen).',
+      'Alv 0 €/h. Tyhjä käyttää Yleinen-asetuksen varahintaa.',
     );
     expect(HOURLY_RATE_FIELD.help.toLowerCase()).not.toContain('tekij');
     expect(formatHourlyRate(45.5)).toBe('45,5');

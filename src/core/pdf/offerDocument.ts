@@ -15,8 +15,7 @@ import { applyVat, offerIncludesVat } from '@/src/core/utils/priceDisplay';
 
 import { lineSpecSnapshot } from './offerPageSpecs';
 import { printableFields, type PrintRow } from './printableFields';
-import { appendPrintedText, buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from './printedSection';
-import { firstStructureLisatiedot } from './structureExtraText';
+import { buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from './printedSection';
 import type { OfferStructureSettings } from './types';
 
 /**
@@ -330,7 +329,6 @@ export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
   const includesVat = offerIncludesVat(customer, source.record.formSnapshot);
   const structureLines = ensureStructureLines(source.record);
   const lines = structureLines.filter((line) => line.quantity !== 0);
-  const printedNote = firstStructureLisatiedot(structureLines, source.structures);
   const showDiscount = lines.some((line) => line.discountPercent > 0);
   const rows: OfferRow[] = [];
   for (const line of lines) {
@@ -356,7 +354,6 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
   const includesVat = offerIncludesVat(customer, source.record.formSnapshot);
   const reverseVat = Boolean(customer.reverseVat);
   const structureLines = ensureStructureLines(source.record);
-  const printedNote = firstStructureLisatiedot(structureLines, source.structures);
   const sections: OfferSection[] = [];
   for (const line of structureLines) {
     const heading = offerHeading(line, includesVat);
@@ -369,7 +366,6 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
     const structure = matchingStructure(line, source.structures);
     if (!hasOfferForm(structure)) continue;
     const body = buildPrintedBody(offerPrintRows(line, structure, source, reverseVat));
-    if (printedNote?.lineId === line.id) appendPrintedText(body, 'muuta', printedNote.text);
     const days = resolveDisplayedWorkDurationDays(line, source.settings.weatherReserveFactor);
     if (days != null && days > 0) {
       const unit = days === 1 ? 'työpäivä' : 'työpäivää';

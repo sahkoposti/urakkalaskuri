@@ -42,14 +42,11 @@ import {
   mergeStructureLineMaterials,
 } from '@/src/core/materials/materialQuantities';
 import { createId } from '@/src/core/utils/id';
+import { applySiteAddressSnapshot } from '@/src/core/pdf/siteAddress';
 import { applyRefreshedStructurePrices, calculationWithBusinessVatMode, preserveCalculationSnapshot } from '@/src/core/pdf/urakkakorttiCard';
 import { buildCalculationRecordFromComposer } from '@/src/core/wizard/buildCalculationRecord';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
-import {
-  draftCalculationFromWizard,
-  isDraftCalculation,
-  wizardDraftFromCalculation,
-} from '@/src/core/wizard/draftCalculation';
+import { isDraftCalculation, wizardDraftFromCalculation } from '@/src/core/wizard/draftCalculation';
 import {
   buildPersistedWizardDraft,
   composerHasUnsavedChanges,
@@ -103,6 +100,8 @@ export default function CalculationComposerScreen() {
   const [customerNotes, setCustomerNotes] = useState('');
   const [deliveryScheduleText, setDeliveryScheduleText] = useState('');
   const [travelTimeOneWay, setTravelTimeOneWay] = useState('');
+  const [siteAddress, setSiteAddress] = useState('');
+  const [siteAddressTouched, setSiteAddressTouched] = useState(false);
   const [structureLines, setStructureLines] = useState<StructureLine[]>([]);
   const [businessVatMode, setBusinessVatMode] = useState<BusinessVatMode>('alv0');
   const [materialIssues, setMaterialIssues] = useState<Record<string, boolean>>({});
@@ -173,6 +172,8 @@ export default function CalculationComposerScreen() {
       customerId,
       deliveryScheduleText,
       travelTimeOneWay,
+      siteAddress,
+      siteAddressTouched,
       structureLines,
       businessVatMode,
     };
@@ -283,6 +284,8 @@ export default function CalculationComposerScreen() {
     setCustomerId(form.customerId);
     setDeliveryScheduleText(form.deliveryScheduleText ?? '');
     setTravelTimeOneWay(form.travelTimeOneWay ?? '');
+    setSiteAddress(form.siteAddress ?? '');
+    setSiteAddressTouched(form.siteAddressTouched === true);
     setBusinessVatMode(form.businessVatMode === 'sis' ? 'sis' : 'alv0');
     const incoming = hydrateLines(form, structures, settings.vatPercent);
     const lines = incoming.map((item) => {
@@ -429,11 +432,7 @@ export default function CalculationComposerScreen() {
           : new Date();
     if (id) {
       const existing = await db.getCalculation(id);
-      if (existing && !isDraftCalculation(existing)) {
-        id = undefined;
-      } else if (existing) {
-        createdAt = existing.createdAt;
-      }
+      if (existing) createdAt = existing.createdAt;
     }
     if (!id) id = createId();
     const draft = buildPersistedWizardDraft(
@@ -443,7 +442,6 @@ export default function CalculationComposerScreen() {
     );
     bindExistingCalculation(id, createdAt, meta.editFormVersion);
     await db.saveWizardDraft(draft);
-    await db.saveCalculation(draftCalculationFromWizard(draft, id, createdAt));
     await refreshWizardDraft();
     await refreshCalculations();
     markComposerSaved(state);
@@ -640,7 +638,11 @@ export default function CalculationComposerScreen() {
       );
       const priced =
         info.customerType === 'business' ? calculationWithBusinessVatMode(built, businessVatMode) : built;
-      const record = applyRefreshedStructurePrices(priced);
+      const record = applySiteAddressSnapshot(
+        applyRefreshedStructurePrices(priced),
+        siteAddress,
+        siteAddressTouched,
+      );
       await db.saveCalculation(record);
       await db.clearWizardDraft();
       await refreshCalculations();
@@ -714,6 +716,16 @@ export default function CalculationComposerScreen() {
             </View>
           </AppCard>
 
+          <AppInput
+            label="Kohteen osoite"
+            value={siteAddress}
+            onChangeText={(value) => {
+              setSiteAddressTouched(true);
+              setSiteAddress(value);
+            }}
+            kind="sentence"
+            placeholder="Asiakkaan osoite, voit muuttaa"
+          />
           <AppInput
             label="Toimitusajankohta"
             value={deliveryScheduleText}

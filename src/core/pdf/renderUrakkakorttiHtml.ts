@@ -1,4 +1,5 @@
-import { escapeHtml } from './escapeHtml';
+import { escapeHtml, renderMarkedMultiline } from './escapeHtml';
+import { PDF_DEFAULT_ACCENT } from './pdfStyles';
 import { renderPrintedGroups, renderPrintedLines, renderPrintedTable, printedSectionCss } from './renderPrintedSection';
 import { renderDocument, type RenderTarjousOptions } from './renderTarjousHtml';
 import type { UrakkakorttiSection } from './urakkakorttiSections';
@@ -37,9 +38,19 @@ function renderUrakkakorttiBlock(ctx: UrakkakorttiContext, kind: UrakkakorttiBlo
     return `<div class="spec-grid">\n${cards}\n</div>`;
   }
   if (kind === 'print') return ctx.sections.map(renderUrakkakorttiSection).join('\n');
+  if (kind === 'lisatiedot') {
+    if (!ctx.structureLisatiedot.trim()) return '';
+    return `<div class="additional-info uk-lisatiedot"><h3>Lisätiedot:</h3><div>${renderMarkedMultiline(ctx.structureLisatiedot)}</div></div>`;
+  }
   if (kind === 'materials') {
     const rows = ctx.materials
-      .map((m) => `<tr><td>${escapeHtml(m.product)}</td><td class="value">${escapeHtml(m.quantity)}</td><td>${escapeHtml(m.unit)}</td></tr>`)
+      .map((m) => {
+        if (m.shadeHeader) {
+          return `<tr class="uk-shade-product"><td colspan="3">${escapeHtml(m.product)}</td></tr>`;
+        }
+        const cls = m.shade ? ' class="uk-shade"' : '';
+        return `<tr${cls}><td>${escapeHtml(m.product)}</td><td class="value">${escapeHtml(m.quantity)}</td><td>${escapeHtml(m.unit)}</td></tr>`;
+      })
       .join('');
     return `<div class="uk-materials"><h3>Materiaalit</h3><table><thead><tr><th>Tuote</th><th class="value">Määrä</th><th>Yksikkö</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
@@ -64,27 +75,35 @@ export function renderUrakkakorttiBody(ctx: UrakkakorttiContext, attachmentHtml 
   return parts.join('\n');
 }
 
-const URAKKAKORTTI_CSS = `
-  .uk-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 6mm; margin: 0 0 4mm 0; font-size: 17pt; font-weight: 700; }
-  .uk-title-text { font-weight: 700; }
+function urakkakorttiCss(accent: string): string {
+  return `
+  body.doc-card { background: #fff; }
+  .uk-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 6mm; margin: 0 0 4mm 0; padding: 0 0 2mm 0; font-size: 17pt; font-weight: 700; border-bottom: 1.2mm solid ${accent}; }
+  .uk-title-text { font-weight: 700; letter-spacing: 0.01em; }
   .uk-sums { margin-left: auto; text-align: right; }
-  .uk-sum { display: block; white-space: nowrap; }
-  .uk-sum-label { display: block; font-size: 9pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-  .uk-sum-ali .uk-sum-value { display: block; font-size: 17pt; font-weight: 700; }
-  .uk-sum-emp .uk-sum-label { font-size: 8pt; font-weight: 600; }
-  .uk-sum-emp .uk-sum-value { display: block; font-size: 12pt; font-weight: 600; }
+  .uk-sum { display: block; white-space: nowrap; margin: 0 0 1mm 0; }
+  .uk-sum-label { display: block; font-size: 8.5pt; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: ${accent}; }
+  .uk-sum-value { display: block; font-size: 16pt; font-weight: 700; color: #111; }
+  .uk-sum-emp .uk-sum-value { font-size: 15pt; }
   .uk-materials { margin: 0 0 6mm 0; }
   .uk-materials h3 { margin: 0 0 1.5mm 0; font-size: 12pt; break-after: avoid; page-break-after: avoid; }
   .uk-materials table { width: 100%; border-collapse: collapse; font-size: 11pt; }
   .uk-materials tr { break-inside: avoid; page-break-inside: avoid; }
-  .uk-materials th, .uk-materials td { text-align: left; padding: 0.8mm 2mm 0.8mm 0; border-bottom: 1px solid #ddd; }
+  .uk-materials th, .uk-materials td { text-align: left; padding: 0.8mm 2mm 0.8mm 0; border-bottom: 1px solid #ddd; color: #111; }
   .uk-materials .value { text-align: right; }
+  .uk-materials tr.uk-shade-product td { font-weight: 700; border-bottom: none; padding-top: 1.6mm; }
+  .uk-materials tr.uk-shade td:first-child { padding-left: 5mm; }
+  .uk-lisatiedot { margin: 4mm 0 6mm 0; }
 `;
+}
+
+const HEX = /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
 
 export function renderUrakkakorttiHtml(ctx: UrakkakorttiContext, options: RenderTarjousOptions = {}): string {
-  const css = `${URAKKAKORTTI_CSS}${printedSectionCss}`;
-  return renderDocument(ctx, renderUrakkakorttiBody(ctx, options.attachmentHtml ?? ''), options).replace(
-    '</style>',
-    `${css}</style>`,
-  );
+  const accent = options.accentColor && HEX.test(options.accentColor) ? options.accentColor : PDF_DEFAULT_ACCENT;
+  const css = `${urakkakorttiCss(accent)}${printedSectionCss}`;
+  return renderDocument(ctx, renderUrakkakorttiBody(ctx, options.attachmentHtml ?? ''), {
+    ...options,
+    bodyClass: 'doc-card',
+  }).replace('</style>', `${css}</style>`);
 }

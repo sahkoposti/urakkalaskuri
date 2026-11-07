@@ -445,20 +445,42 @@ function materialDetailValue(row: MaterialQuantityRow): string {
   return [formatQuantity(row.quantity), unit].filter((part) => part.length > 0).join(' ');
 }
 
+function visibleShades(row: MaterialQuantityRow) {
+  return (row.shades ?? []).filter(
+    (shade) => shade.name.trim() && shade.quantity > 0 && !shade.name.includes('€') && !shade.unit?.includes('€'),
+  );
+}
+
 function SavedMaterialQuantities({ line }: { line: StructureLine }) {
   const styles = useThemedStyles(createStyles);
-  const rows = (line.materialQuantities ?? []).filter((row) => row.productName.trim() && row.quantity > 0);
+  const rows = (line.materialQuantities ?? []).filter((row) => {
+    if (!row.productName.trim() || row.productName.includes('€') || row.unit?.includes('€')) return false;
+    if (visibleShades(row).length > 0) return true;
+    return row.quantity > 0;
+  });
   if (rows.length === 0) return null;
   return (
     <AppCard>
       <Text style={styles.materialsTitle}>Materiaalit (urakkakortti)</Text>
-      {rows.map((row) => (
-        <ResultRow
-          key={row.id}
-          label={row.productName.replaceAll('€', '').trim() || 'Materiaali'}
-          value={materialDetailValue(row)}
-        />
-      ))}
+      {rows.map((row) => {
+        const shades = visibleShades(row);
+        const name = row.productName.replaceAll('€', '').trim() || 'Materiaali';
+        if (shades.length === 0) {
+          return <ResultRow key={row.id} label={name} value={materialDetailValue(row)} />;
+        }
+        return (
+          <View key={row.id}>
+            <Text style={styles.materialsProduct}>{name}</Text>
+            {shades.map((shade) => (
+              <ResultRow
+                key={shade.id}
+                label={shade.name.trim()}
+                value={[formatQuantity(shade.quantity), shade.unit?.trim() ?? ''].filter((part) => part.length > 0).join(' ')}
+              />
+            ))}
+          </View>
+        );
+      })}
     </AppCard>
   );
 }
@@ -539,6 +561,11 @@ function createStyles(colors: AppColorPalette) {
     },
     card: {
       marginTop: 8,
+    },
+    materialsProduct: {
+      marginTop: 8,
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      color: colors.primary,
     },
     materialsTitle: {
       fontFamily: 'IBMPlexSans_600SemiBold',

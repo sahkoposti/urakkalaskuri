@@ -80,8 +80,13 @@ describe('structure Lisätiedot on the real offer and card', () => {
     expect(card).not.toContain('Toinen vanha teksti');
     expect(offer).toContain('Lisätiedot:');
     expect(offer).toContain('Yrityksen maksuehto.');
-    expect(card).not.toContain('Lisätiedot:');
+    expect(offer.indexOf(FIRST)).toBeLessThan(offer.indexOf('class="price-block offer-totals"'));
+    expect(offer.indexOf('Yrityksen maksuehto.')).toBeGreaterThan(offer.indexOf('class="price-block offer-totals"'));
+    expect(card).toContain('Lisätiedot:');
+    expect(card.indexOf('Lisätiedot:')).toBeGreaterThan(card.indexOf('Ulkomaalaus'));
     expect(card).not.toContain('Yrityksen maksuehto.');
+    expect(offer).not.toContain('>Muuta<');
+    expect(card).not.toContain('>Muuta<');
     expect(structureRowShowsAdditionalInfo(lines, 'a', structures)).toBe(true);
     expect(structureRowShowsAdditionalInfo(lines, 'b', structures)).toBe(false);
   });

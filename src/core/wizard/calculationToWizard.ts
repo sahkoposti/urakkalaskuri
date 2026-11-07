@@ -2,6 +2,7 @@ import type { CalculationRecord, Product, WizardDraft, WizardLineDraft } from '@
 import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { formatTravelTimeHoursOneWay } from '@/src/core/form/calculationFormulaContext';
+import { formatCustomerAddress, readSiteAddressState } from '@/src/core/pdf/siteAddress';
 import { readBusinessVatMode } from '@/src/core/utils/priceDisplay';
 import type { WizardFormState } from '@/src/core/wizard/wizardDraftHelpers';
 
@@ -52,6 +53,7 @@ export function calculationToFormState(
     travelTimeOneWay: formatTravelTimeHoursOneWay(record.travelTimeHoursOneWay),
     structureLines: ensureStructureLines(record),
     businessVatMode: readBusinessVatMode(record.formSnapshot),
+    ...siteAddressFormFields(record),
   };
 
   const wizardDraft: WizardDraft = {
@@ -64,4 +66,13 @@ export function calculationToFormState(
   };
 
   return { form, wizardDraft };
+}
+
+function siteAddressFormFields(record: CalculationRecord): Pick<WizardFormState, 'siteAddress' | 'siteAddressTouched'> {
+  const customer = customerFromRecord(record);
+  const site = readSiteAddressState(record.formSnapshot);
+  if (site.missing || !site.touched) {
+    return { siteAddress: formatCustomerAddress(customer), siteAddressTouched: false };
+  }
+  return { siteAddress: site.text, siteAddressTouched: true };
 }

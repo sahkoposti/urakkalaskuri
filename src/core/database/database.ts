@@ -9,11 +9,8 @@ import type {
 } from '../models/types';
 import { defaultSettings, defaultThemeSettings } from '../models/types';
 import { createId } from '../utils/id';
-import {
-  draftCalculationFromWizard,
-  isDraftCalculation,
-  wizardDraftFromCalculation,
-} from '../wizard/draftCalculation';
+import { calculationForWizardSession } from '../wizard/draftCalculation';
+import { persistedDraftHasContent } from '../wizard/wizardDraftHelpers';
 import { parseProductAttributesJson } from '../product/productAttributes';
 import { productSortOrder } from '../product/productMutations';
 import {
@@ -466,7 +463,7 @@ export async function getWizardDraft(): Promise<PersistedWizardDraft | null> {
   }
 }
 
-export async function saveWizardDraft(draft: PersistedWizardDraft): Promise<void> {
+async function writeWizardDraftRow(draft: PersistedWizardDraft): Promise<void> {
   const db = await getDb();
   await db.runAsync(
     `INSERT OR REPLACE INTO wizard_drafts (id, step, payload, updated_at)
@@ -478,43 +475,53 @@ export async function saveWizardDraft(draft: PersistedWizardDraft): Promise<void
   );
 }
 
+function draftCreatedAt(draft: PersistedWizardDraft): Date {
+  return typeof draft.originalCreatedAt === 'number' && Number.isFinite(draft.originalCreatedAt)
+    ? new Date(draft.originalCreatedAt)
+    : new Date(draft.updatedAt);
+}
+
+/**
+ * Kirjoittaa session laskelmahistooriaan heti.
+ * Linkitetty id päivitetään, myös valmis rivi. Uutta kopiota ei luoda.
+ * Tyhjä sessio ei luo riviä. Varattu id ilman riviä luo sen saman id:n alle.
+ */
+async function publishWizardSession(draft: PersistedWizardDraft): Promise<string | null> {
+  if (!persistedDraftHasContent(draft)) return null;
+  let id = draft.editCalculationId?.trim();
+  const createdAt = draftCreatedAt(draft);
+  if (!id) {
+    id = createId();
+    const next = { ...draft, editCalculationId: id };
+    await writeWizardDraftRow(next);
+    await saveCalculation(calculationForWizardSession(next, null, id, createdAt));
+    return id;
+  }
+  const linked = await getCalculation(id);
+  const next = { ...draft, editCalculationId: id };
+  await saveCalculation(calculationForWizardSession(next, linked, id, createdAt));
+  return id;
+}
+
+export async function saveWizardDraft(draft: PersistedWizardDraft): Promise<void> {
+  await writeWizardDraftRow(draft);
+  await publishWizardSession(draft);
+}
+
 export async function clearWizardDraft(): Promise<void> {
   const db = await getDb();
   await db.runAsync('DELETE FROM wizard_drafts WHERE id = ?', WIZARD_DRAFT_ID);
 }
 
 /**
- * Säilyttää avoimen session `wizard_drafts`-rivin laskelmana.
- * Ei poista sessiota eikä muuta valmista laskelmaa keskeneräiseksi.
- * Sama kutsu kahdesti päivittää saman rivin.
+ * Säilyttää avoimen session laskelmahistooriassa.
+ * Linkitetty valmis laskelma muuttuu keskeneräiseksi samalla id:llä.
+ * Sama kutsu kahdesti päivittää saman rivin eikä luo kopiota.
  */
 export async function promoteCurrentWizardDraft(): Promise<string | null> {
   const session = await getWizardDraft();
   if (!session) return null;
-  const linkedId = session.editCalculationId?.trim();
-  if (linkedId) {
-    const linked = await getCalculation(linkedId);
-    if (linked && isDraftCalculation(linked)) {
-      await saveCalculation(draftCalculationFromWizard(session, linkedId, linked.createdAt));
-      return linkedId;
-    }
-  }
-  const existing = (await getCalculations()).find((row) => {
-    if (!isDraftCalculation(row)) return false;
-    const stored = wizardDraftFromCalculation(row);
-    return stored?.updatedAt === session.updatedAt;
-  });
-  if (existing) return existing.id;
-  const id = createId();
-  const createdAt =
-    typeof session.originalCreatedAt === 'number' && Number.isFinite(session.originalCreatedAt)
-      ? new Date(session.originalCreatedAt)
-      : new Date(session.updatedAt);
-  await saveCalculation(draftCalculationFromWizard(session, id, createdAt));
-  if (!linkedId) {
-    await saveWizardDraft({ ...session, editCalculationId: id });
-  }
-  return id;
+  return publishWizardSession(session);
 }
 
 /** Uusi laskenta: sessio säilyy keskeneräisenä rivinä, avoin luonnos tyhjennetään. */

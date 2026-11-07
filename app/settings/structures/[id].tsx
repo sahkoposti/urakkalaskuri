@@ -350,11 +350,6 @@ export default function ProductStructureDetailScreen() {
           onChangeText={setCommission}
           kind="decimal"
         />
-        <Text style={styles.sectionHint}>
-          Kate on yrityksen osuus myyntihinnasta (ALV 0). Palkkio tulee lisäksi. Kate liukuu
-          lineaarisesti pienen ja suuren urakan rajan välillä. Jokaisella tuoterakenteella on oma
-          kate.
-        </Text>
         <AppInput
           label="Pienen urakan raja (€, ALV 0)"
           value={marginLowAmount}
@@ -412,6 +407,7 @@ export default function ProductStructureDetailScreen() {
           multiline
           placeholder="Oletusteksti riville (valinnainen)"
         />
+        <Text style={styles.sectionHint}>**lihavointi** ja *kursiivi*. Tulostuu Lisätiedot-osioon.</Text>
         <AppInput
           label="Oletushinta alv0"
           value={defaultUnitPrice}

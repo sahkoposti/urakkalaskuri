@@ -289,6 +289,70 @@ describe('draft calculations', () => {
     warn.mockRestore();
   });
 
+  it('publishes the open draft immediately and edits a finished calculation in place', async () => {
+    await current.execAsync(V3_SQL);
+    await current.execAsync('PRAGMA user_version = 3');
+    await ensureCalculationStatusColumn(current);
+
+    const empty = session('', 1000);
+    empty.customerName = '';
+    empty.customerPhone = '';
+    empty.customerAddress = '';
+    empty.customerNotes = '';
+    await saveWizardDraft(empty);
+    expect(await getCalculations()).toHaveLength(0);
+
+    const fresh = session('Uusi luonnos', 9000);
+    await saveWizardDraft(fresh);
+    const listed = await getCalculations();
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.status).toBe('draft');
+    expect(listed[0]?.id).toBe((await getWizardDraft())?.editCalculationId);
+    await saveWizardDraft({
+      ...fresh,
+      customerPhone: '0409999999',
+      updatedAt: 9001,
+      editCalculationId: listed[0]?.id,
+    });
+    expect(await getCalculations()).toHaveLength(1);
+
+    await current.execAsync('DELETE FROM calculations');
+    await current.execAsync('DELETE FROM wizard_drafts');
+    const finished = {
+      ...record({ name: 'Valmis asiakas' }),
+      id: 'fin-edit',
+      offerNumber: 10285,
+      status: 'complete' as const,
+      createdAt: new Date(1000),
+    };
+    await saveCalculation(finished);
+    await current.runAsync('UPDATE calculations SET offer_number = 10285 WHERE id = ?', 'fin-edit');
+    await current.runAsync(`INSERT INTO attachments (id, calculation_id) VALUES ('att-keep', 'fin-edit')`);
+    await current.runAsync(`INSERT INTO documents (id, calculation_id) VALUES ('doc-keep', 'fin-edit')`);
+    const editing = {
+      ...session('Valmis asiakas', 8000),
+      editCalculationId: 'fin-edit',
+      originalCreatedAt: 1000,
+      structureLines: finished.structureLines,
+    };
+    await saveWizardDraft(editing);
+    const rows = await getCalculations();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.id).toBe('fin-edit');
+    expect(rows[0]?.status).toBe('draft');
+    expect(rows[0]?.offerNumber).toBe(10285);
+    expect(rows[0]?.totalPriceVat).toBe(finished.totalPriceVat);
+    expect(rows[0]?.structureLines).toHaveLength(1);
+    expect(await current.getAllAsync('SELECT id FROM attachments WHERE calculation_id = ?', 'fin-edit')).toEqual([
+      { id: 'att-keep' },
+    ]);
+    expect(await current.getAllAsync('SELECT id FROM documents WHERE calculation_id = ?', 'fin-edit')).toEqual([
+      { id: 'doc-keep' },
+    ]);
+    expect(await promoteCurrentWizardDraft()).toBe('fin-edit');
+    expect(await getCalculations()).toHaveLength(1);
+  });
+
   it('does not lower a newer schema version when the column already exists', async () => {
     await current.execAsync(V3_SQL);
     await current.execAsync("ALTER TABLE calculations ADD COLUMN status TEXT NOT NULL DEFAULT 'complete'");

@@ -160,6 +160,13 @@ export interface FormSnapshot {
    */
   offerValidDays?: number;
   /**
+   * Kohteen osoite tälle laskelmalle. Puuttuva avain = asiakkaan osoite.
+   * Tyhjä merkkijono ja `siteAddressTouched: true` = käyttäjä tyhjensi kentän.
+   * Ei muuta asiakasrekisteriä. Ei SQL-saraketta.
+   */
+  siteAddress?: string;
+  siteAddressTouched?: boolean;
+  /**
    * Keskeneräisen laskelman wizard-tila. Vain `status = draft` -rivillä.
    * Ei lomakepohjan avain. Valmis laskelma ei kirjoita tätä.
    */
@@ -213,6 +220,14 @@ export type StructureLineOverride =
   | 'contractPrice'
   | 'workDurationDisplay';
 
+/** Yhden sävyn oma määrä. Ei jaa yhtä määrää kaikille sävyille. */
+export interface MaterialShade {
+  id: string;
+  name: string;
+  quantity: number;
+  unit?: string;
+}
+
 /** Urakkakortin materiaalimäärä. Tallennetaan rivin `structure_lines`-JSON:iin. */
 export interface MaterialQuantityRow {
   id: string;
@@ -226,6 +241,11 @@ export interface MaterialQuantityRow {
    * Muokattu lomakerivi säilyttää avaimen (`source: 'manual'`) ja estää saman kentän esitäytön.
    */
   fieldKey?: string;
+  /**
+   * Tuotteen sävyt, kullakin oma määrä ja yksikkö.
+   * Puuttuva tai tyhjä lista = vanha rivi ilman sävyjä.
+   */
+  shades?: MaterialShade[];
 }
 
 export interface StructureLine {
@@ -371,4 +391,7 @@ export interface PersistedWizardDraft {
   structureLines?: StructureLine[];
   /** Yritystarjouksen ALV. Puuttuva = alv0. Ei SQL-saraketta. */
   businessVatMode?: 'alv0' | 'sis';
+  /** Kohteen osoite. Puuttuva kosketus = asiakkaan osoite. Ei SQL-saraketta. */
+  siteAddress?: string;
+  siteAddressTouched?: boolean;
 }
