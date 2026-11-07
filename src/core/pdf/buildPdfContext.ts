@@ -113,8 +113,17 @@ export function buildFooter(company: CompanyProfile): PdfFooter {
 export function customerHeaderLines(customer: CustomerInfo, siteAddress?: string): string[] {
   const postal = nonEmpty([customer.postalCode, customer.postalLocality]).join(' ');
   const customerAddress = nonEmpty([customer.address, postal]).join(', ');
-  const addressLine = siteAddress !== undefined ? siteAddress.trim() : customerAddress;
-  return nonEmpty([customer.name, addressLine, customer.phone, customer.email]);
+  const site = siteAddress?.trim() ?? '';
+  const addressLines: string[] = [];
+  if (siteAddress === undefined) {
+    if (customerAddress) addressLines.push(customerAddress);
+  } else if (site && site !== customerAddress) {
+    if (customerAddress) addressLines.push(customerAddress);
+    addressLines.push(`Kohde: ${site}`);
+  } else if (site) {
+    addressLines.push(site);
+  }
+  return nonEmpty([customer.name, ...addressLines, customer.phone, customer.email]);
 }
 
 function hasOfferDiscount(record: CalculationRecord): boolean {

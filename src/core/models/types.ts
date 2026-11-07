@@ -394,4 +394,14 @@ export interface PersistedWizardDraft {
   /** Kohteen osoite. Puuttuva kosketus = asiakkaan osoite. Ei SQL-saraketta. */
   siteAddress?: string;
   siteAddressTouched?: boolean;
+  /**
+   * Avaus ilman käyttäjän muutosta. Vain wizard-sessiossa.
+   * Ei kopioidu laskelman `form_snapshot`-JSON:iin.
+   */
+  preserveCompleted?: boolean;
+  /**
+   * Valmiin rivin tarkka kopio, jotta hylkäys voi palauttaa sen.
+   * Vain wizard-sessiossa. Ei kopioidu laskelman snapshotiin.
+   */
+  completedRecordJson?: string;
 }

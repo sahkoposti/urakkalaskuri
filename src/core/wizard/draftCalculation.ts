@@ -3,6 +3,12 @@ import type { CalculationRecord, PersistedWizardDraft } from '@/src/core/models/
 import { serializeCustomerDetails } from '@/src/core/models/types';
 import { applySiteAddressSnapshot } from '@/src/core/pdf/siteAddress';
 
+/** Sessioliput eivät kuulu laskelman snapshotiin. */
+export function wizardDraftForStorage(draft: PersistedWizardDraft): PersistedWizardDraft {
+  const { preserveCompleted: _preserve, completedRecordJson: _json, ...content } = draft;
+  return content;
+}
+
 export const CALCULATION_STATUS_DRAFT = 'draft' as const;
 export const CALCULATION_STATUS_COMPLETE = 'complete' as const;
 
@@ -82,9 +88,10 @@ export function draftCalculationFromWizard(
 }
 
 /**
- * Avoin sessio kirjoitetaan samaan laskelmaan.
+ * Käyttäjän muutos kirjoitetaan samaan laskelmaan.
  * Valmis rivi muuttuu keskeneräiseksi eikä saa kopiota.
  * Hinnat, rivit, tarjousnumero ja liitteiden avain (id) säilyvät.
+ * Pelkkä avaus ei kutsu tätä: valmis rivi jää valmiiksi.
  */
 export function overlayDraftCalculation(
   previous: CalculationRecord,
@@ -132,12 +139,13 @@ export function calculationForWizardSession(
   id: string,
   createdAt: Date,
 ): CalculationRecord {
+  const content = wizardDraftForStorage(draft);
   if (!previous) {
     return applySiteAddressSnapshot(
-      draftCalculationFromWizard(draft, id, createdAt),
-      draft.siteAddress ?? '',
-      draft.siteAddressTouched === true,
+      draftCalculationFromWizard(content, id, createdAt),
+      content.siteAddress ?? '',
+      content.siteAddressTouched === true,
     );
   }
-  return overlayDraftCalculation(previous, draft);
+  return overlayDraftCalculation(previous, content);
 }

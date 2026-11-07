@@ -112,13 +112,18 @@ describe('v1.3.4 Nov 7 feedback', () => {
     const cleared: FormSnapshot = { ...edited, siteAddress: '  ', siteAddressTouched: true };
     expect(documentSiteAddress(customer, cleared)).toBe('');
     expect(customerHeaderLines({ name: 'A', ...customer }, '')).toEqual(['A']);
+    expect(customerHeaderLines({ name: 'A', ...customer }, 'Työmaa 5, 33100 Tampere')).toEqual([
+      'A',
+      'Vanha 1, 00100 Helsinki',
+      'Kohde: Työmaa 5, 33100 Tampere',
+    ]);
     const rec = record({}, { formSnapshot: edited });
     const offer = renderTarjousHtml(buildPdfContext(input(rec)));
     const card = renderUrakkakorttiHtml(buildUrakkakorttiContext(input(rec)));
-    expect(offer).toContain('Työmaa 5, 33100 Tampere');
-    expect(card).toContain('Työmaa 5, 33100 Tampere');
-    expect(offer).not.toContain('Testitie');
-    expect(card).not.toContain('Testitie');
+    expect(offer).toContain('Kohde: Työmaa 5, 33100 Tampere');
+    expect(card).toContain('Kohde: Työmaa 5, 33100 Tampere');
+    expect(offer).toContain('Testitie 1, 20100 Turku');
+    expect(card).toContain('Testitie 1, 20100 Turku');
   });
 
   it('prints each shade with its own quantity and does not invent shades from the form', () => {
@@ -254,9 +259,14 @@ describe('v1.3.4 Nov 7 feedback', () => {
     expect(history).toContain('refreshCalculations()');
 
     const line = fs.readFileSync(path.join(__dirname, '../app/wizard/line/[lineId].tsx'), 'utf8');
-    expect(line).toContain('saveOnLeave: true');
+    expect(line).toContain("lineFormPreservesInputsOnLeave('back')");
+    expect(line).toContain("lineFormPreservesInputsOnLeave('background')");
+    expect(line).toContain('onSave: persistInputs');
+    expect(line).toContain('lineFormFinishedLine');
+    expect(line).not.toContain('saveOnLeave: true');
     const guard = fs.readFileSync(path.join(__dirname, '../src/hooks/useUnsavedChangesGuard.tsx'), 'utf8');
     expect(guard).toContain("AppState.addEventListener('change'");
     expect(guard).toContain('saveOnLeaveRef.current');
+    expect(guard).toContain('saveOnBackground');
   });
 });

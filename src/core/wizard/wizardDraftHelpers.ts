@@ -332,7 +332,16 @@ export function buildPersistedWizardDraft(
     ...(state.businessVatMode === 'sis' ? { businessVatMode: 'sis' as const } : {}),
     siteAddress: state.siteAddress ?? '',
     siteAddressTouched: state.siteAddressTouched === true,
+    ...completedRecordJsonFrom(previous),
   };
+}
+
+function completedRecordJsonFrom(
+  previous?: PersistedWizardDraft | WizardDraftEditMeta | null,
+): { completedRecordJson: string } | Record<string, never> {
+  if (!previous || !('completedRecordJson' in previous)) return {};
+  const value = previous.completedRecordJson;
+  return typeof value === 'string' && value.length > 0 ? { completedRecordJson: value } : {};
 }
 
 export function hydrateWizardLines(

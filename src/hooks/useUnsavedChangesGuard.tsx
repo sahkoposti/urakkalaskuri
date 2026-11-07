@@ -22,6 +22,10 @@ type UseUnsavedChangesGuardOptions = {
    * Vahvistusdialogia ei näytetä. Tallennuksen `false` jättää käyttäjän sivulle.
    */
   saveOnLeave?: boolean;
+  /**
+   * Tausta kutsuu `onSave` ilman dialogia. Paluu näyttää dialogin, jos `saveOnLeave` on false.
+   */
+  saveOnBackground?: boolean;
 };
 
 export function useUnsavedChangesGuard({
@@ -34,6 +38,7 @@ export function useUnsavedChangesGuard({
   discardTitle = 'Hylkää',
   saveTitle = 'Tallenna',
   saveOnLeave = false,
+  saveOnBackground = false,
 }: UseUnsavedChangesGuardOptions) {
   const navigation = useNavigation();
   const { showSaved } = useSaveToast();
@@ -42,6 +47,7 @@ export function useUnsavedChangesGuard({
   const onSaveRef = useRef(onSave);
   const onDiscardRef = useRef(onDiscard);
   const saveOnLeaveRef = useRef(saveOnLeave);
+  const saveOnBackgroundRef = useRef(saveOnBackground);
   const pendingExitRef = useRef<(() => void) | null>(null);
   const [exitDialogVisible, setExitDialogVisible] = useState(false);
 
@@ -49,6 +55,7 @@ export function useUnsavedChangesGuard({
   onSaveRef.current = onSave;
   onDiscardRef.current = onDiscard;
   saveOnLeaveRef.current = saveOnLeave;
+  saveOnBackgroundRef.current = saveOnBackground;
 
   const shouldPrevent = isDirty && !allowExitRef.current;
   const applyPreventRemove = useNativeRemovePrevention(shouldPrevent);
@@ -129,14 +136,15 @@ export function useUnsavedChangesGuard({
   }, [navigation, confirmExit, saveThenLeave]);
 
   useEffect(() => {
-    if (!saveOnLeave) return;
+    if (!saveOnLeave && !saveOnBackground) return;
     const subscription = AppState.addEventListener('change', (next) => {
       if (next !== 'background' && next !== 'inactive') return;
       if (allowExitRef.current || !isDirtyRef.current) return;
+      if (!saveOnLeaveRef.current && !saveOnBackgroundRef.current) return;
       void onSaveRef.current?.();
     });
     return () => subscription.remove();
-  }, [saveOnLeave]);
+  }, [saveOnLeave, saveOnBackground]);
 
   useFocusEffect(
     useCallback(() => {
