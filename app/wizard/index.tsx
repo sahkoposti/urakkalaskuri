@@ -63,6 +63,7 @@ import {
   type WizardFormState,
 } from '@/src/core/wizard/wizardDraftHelpers';
 import { decideComposerFocusRestore } from '@/src/core/wizard/composerFocusRestore';
+import { createComposerSaveGate } from '@/src/core/wizard/composerSaveGate';
 import { createScreenLeave } from '@/src/core/wizard/screenLeave';
 import { hasFieldValueContent } from '@/src/core/wizard/wizardPageHelpers';
 import { resetToHistoryDetail } from '@/src/core/navigation/appStack';
@@ -117,6 +118,7 @@ export default function CalculationComposerScreen() {
   const hydratedRef = useRef(false);
   const loadedEditIdRef = useRef<string | null>(null);
   const screenLeave = useRef(createScreenLeave()).current;
+  const saveGate = useRef(createComposerSaveGate()).current;
   const completedBaselineRef = useRef<string | null>(null);
   const lastDraftUpdatedAtRef = useRef<number | null>(null);
   const boundCalculationIdRef = useRef<string | null>(null);
@@ -429,47 +431,44 @@ export default function CalculationComposerScreen() {
     applyFormState(form);
   }, [wizardDraft?.updatedAt, products, routeEditId]);
 
-  const publishChainRef = useRef(Promise.resolve());
-
   async function publishComposerState(state: WizardFormState): Promise<void> {
+    // Lippu otetaan heti. Valmis, joka ehtii väliin, vanhentaa tämän kirjoituksen.
+    if (savingRef.current || saveGate.isFinishing()) return;
+    const token = saveGate.capture();
     const existingId = firstNonEmptyId(currentEditMeta().editCalculationId);
     const hasContent = hasWizardDraftContent(state);
     // Tyhjä uusi laskenta ei luo riviä. Tyhjennys kirjoitetaan vain olemassa olevalle riville.
     if (!hasContent && !(isComposerDirty(state) && existingId)) return;
-    const run = async () => {
-      const meta = currentEditMeta();
-      let id = firstNonEmptyId(meta.editCalculationId);
-      let createdAt: Date =
-        meta.originalCreatedAt instanceof Date
-          ? meta.originalCreatedAt
-          : typeof meta.originalCreatedAt === 'number'
-            ? new Date(meta.originalCreatedAt)
-            : new Date();
-      if (id) {
-        const existing = await db.getCalculation(id);
-        if (existing) createdAt = existing.createdAt;
-      }
-      if (!id) {
-        if (!hasWizardDraftContent(state)) return;
-        id = createId();
-      }
-      const draft = buildPersistedWizardDraft(
-        state,
-        { editCalculationId: id, originalCreatedAt: createdAt, editFormVersion: meta.editFormVersion },
-        draftWithBaseline(),
-      );
-      bindExistingCalculation(id, createdAt, meta.editFormVersion);
+    const meta = currentEditMeta();
+    let id = firstNonEmptyId(meta.editCalculationId);
+    let createdAt: Date =
+      meta.originalCreatedAt instanceof Date
+        ? meta.originalCreatedAt
+        : typeof meta.originalCreatedAt === 'number'
+          ? new Date(meta.originalCreatedAt)
+          : new Date();
+    if (id) {
+      const existing = await db.getCalculation(id);
+      if (existing) createdAt = existing.createdAt;
+    }
+    if (!saveGate.canCommit(token)) return;
+    if (!id) {
+      if (!hasWizardDraftContent(state)) return;
+      id = createId();
+    }
+    const draft = buildPersistedWizardDraft(
+      state,
+      { editCalculationId: id, originalCreatedAt: createdAt, editFormVersion: meta.editFormVersion },
+      draftWithBaseline(),
+    );
+    bindExistingCalculation(id, createdAt, meta.editFormVersion);
+    await saveGate.commit(token, async () => {
+      if (!saveGate.canCommit(token)) return;
       await db.saveWizardDraft(draft);
       await refreshWizardDraft();
       await refreshCalculations();
       markComposerSaved(state);
-    };
-    const next = publishChainRef.current.then(run, run);
-    publishChainRef.current = next.then(
-      () => undefined,
-      () => undefined,
-    );
-    await next;
+    });
   }
 
   async function saveDraftAndExit() {
@@ -550,20 +549,19 @@ export default function CalculationComposerScreen() {
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (next) => {
       if (next !== 'background' && next !== 'inactive') return;
-      void screenLeave.enqueue(async () => {
-        if (screenLeave.shouldBypass()) return;
-        const state = getFormStateRef.current();
-        if (
-          !shouldPersistOpenComposer({
-            dirty: isComposerDirty(state),
-            hasContent: hasWizardDraftContent(state),
-            canUpdateExisting: Boolean(firstNonEmptyId(currentEditMeta().editCalculationId)),
-          })
-        ) {
-          return;
-        }
-        await publishComposerStateRef.current(state);
-      }).catch(() => {
+      if (screenLeave.shouldBypass() || savingRef.current || saveGate.isFinishing()) return;
+      const state = getFormStateRef.current();
+      if (
+        !shouldPersistOpenComposer({
+          dirty: isComposerDirty(state),
+          hasContent: hasWizardDraftContent(state),
+          canUpdateExisting: Boolean(firstNonEmptyId(currentEditMeta().editCalculationId)),
+        })
+      ) {
+        return;
+      }
+      // Kutsu on synkroninen lipun ottoon asti. Valmis vanhentaa sen ennen tietokantakirjoitusta.
+      void publishComposerStateRef.current(state).catch(() => {
         // Taustatallennuksen epäonnistuminen ei kaada näyttöä. Poistuminen yrittää uudelleen.
       });
     });
@@ -678,51 +676,53 @@ export default function CalculationComposerScreen() {
       }
     }
 
-    if (savingRef.current) return;
+    if (savingRef.current || saveGate.isFinishing()) return;
     savingRef.current = true;
 
     try {
-      const savedCustomerId = await saveCustomerRecord(updateOldCalculations);
-      const savedId =
-        firstNonEmptyId(
-          routeEditId,
-          boundCalculationIdRef.current,
-          editCalculationId,
-          wizardDraft?.editCalculationId,
-        ) ?? createId();
-      const createdAt = originalCreatedAtRef.current ?? originalCreatedAt ?? new Date();
-      bindExistingCalculation(savedId, createdAt, editFormVersion);
-      const previous = await db.getCalculation(savedId);
-      const built = preserveCalculationSnapshot(
-        buildCalculationRecordFromComposer({
-          id: savedId,
-          customer: info,
-          customerId: savedCustomerId,
-          deliveryScheduleText,
-          travelTimeOneWay,
-          structureLines,
-          settings,
-          products,
-          structures,
-          createdAt,
-        }),
-        previous?.formSnapshot,
-      );
-      const priced =
-        info.customerType === 'business' ? calculationWithBusinessVatMode(built, businessVatMode) : built;
-      const record = applySiteAddressSnapshot(
-        applyRefreshedStructurePrices(priced),
-        siteAddress,
-        siteAddressTouched,
-      );
-      await db.saveCalculation(record);
-      await db.clearWizardDraft();
-      await refreshCalculations();
-      await refreshWizardDraft();
-      hydratedRef.current = false;
-      screenLeave.allowOnce(() => {
-        applyPreventRemove(false);
-        resetToHistoryDetail(navigation, savedId);
+      await saveGate.finish(async () => {
+        const savedCustomerId = await saveCustomerRecord(updateOldCalculations);
+        const savedId =
+          firstNonEmptyId(
+            routeEditId,
+            boundCalculationIdRef.current,
+            editCalculationId,
+            wizardDraft?.editCalculationId,
+          ) ?? createId();
+        const createdAt = originalCreatedAtRef.current ?? originalCreatedAt ?? new Date();
+        bindExistingCalculation(savedId, createdAt, editFormVersion);
+        const previous = await db.getCalculation(savedId);
+        const built = preserveCalculationSnapshot(
+          buildCalculationRecordFromComposer({
+            id: savedId,
+            customer: info,
+            customerId: savedCustomerId,
+            deliveryScheduleText,
+            travelTimeOneWay,
+            structureLines,
+            settings,
+            products,
+            structures,
+            createdAt,
+          }),
+          previous?.formSnapshot,
+        );
+        const priced =
+          info.customerType === 'business' ? calculationWithBusinessVatMode(built, businessVatMode) : built;
+        const record = applySiteAddressSnapshot(
+          applyRefreshedStructurePrices(priced),
+          siteAddress,
+          siteAddressTouched,
+        );
+        await db.saveCalculation(record);
+        await db.clearWizardDraft();
+        await refreshCalculations();
+        await refreshWizardDraft();
+        hydratedRef.current = false;
+        screenLeave.allowOnce(() => {
+          applyPreventRemove(false);
+          resetToHistoryDetail(navigation, savedId);
+        });
       });
     } catch (error) {
       console.error(error);
