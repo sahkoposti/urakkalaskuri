@@ -88,4 +88,8 @@ describe('v1.3.5', () => {
     }
     expect(textInputPropsFor(NAME_FIELD_KIND.customerName).autoCapitalize).toBe('words');
   });
+
+  it('uses code (no autocapitalize) for admin page and option titles', () => {
+    expect(textInputPropsFor('code').autoCapitalize).toBe('none');
+  });
 });
