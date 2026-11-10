@@ -603,7 +603,7 @@ describe('urakkakortti print resolver', () => {
     expect(printCtx.contractSum?.replace(/\s/g, ' ')).toBe('1 450,00 €');
 
     const printedHtml = bodyOf(renderUrakkakorttiHtml(printed));
-    expect(printedHtml).toContain('<td>Maali X</td><td class="value">18,5</td><td>l</td>');
+    expect(printedHtml).toContain('<td>Maali X</td><td class="value">18,5 l</td>');
     expect(printedHtml).toContain('Koira pihalla');
     expect(printedHtml).toContain('Viikko 40');
     expect(printedHtml).not.toMatch(/12,34|228,29/);
