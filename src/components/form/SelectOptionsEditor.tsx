@@ -62,7 +62,7 @@ export function SelectOptionsEditor({ fieldKey, options, onChange }: SelectOptio
               label="Nimi"
               value={option.label}
               onChangeText={(label) => updateOption(index, { label })}
-              kind="words"
+              kind="code"
               compact
             />
             <AppInput

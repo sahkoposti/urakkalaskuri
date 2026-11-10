@@ -79,18 +79,19 @@ describe('textInputPropsFor', () => {
       customerName: 'name',
       sellerName: 'name',
       companyName: 'words',
-      productName: 'words',
-      structureName: 'words',
-      lineName: 'words',
+      productName: 'code',
+      structureName: 'code',
+      lineName: 'code',
     });
     expect(textInputPropsFor(NAME_FIELD_KIND.customerName).autoComplete).toBe('name');
     expect(textInputPropsFor(NAME_FIELD_KIND.sellerName).textContentType).toBe('name');
-    for (const field of ['companyName', 'productName', 'structureName', 'lineName'] as const) {
+    for (const field of ['productName', 'structureName', 'lineName'] as const) {
       const props = textInputPropsFor(NAME_FIELD_KIND[field]);
-      expect(props.autoCapitalize).toBe('words');
+      expect(props.autoCapitalize).toBe('none');
       expect(props.autoComplete).not.toBe('name');
       expect(props.textContentType).not.toBe('name');
     }
+    expect(textInputPropsFor(NAME_FIELD_KIND.companyName).autoCapitalize).toBe('words');
   });
 
   test('the real name fields import the shared mapping', () => {

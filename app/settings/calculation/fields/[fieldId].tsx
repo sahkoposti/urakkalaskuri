@@ -341,7 +341,7 @@ export default function FormFieldEditorScreen() {
           label="Näyttönimi"
           value={field.label}
           onChangeText={(label) => updateFieldState({ label })}
-          kind="words"
+          kind="code"
           placeholder="Esimerkki: Kiinteä seinäpinta-ala"
           compact
         />
@@ -897,7 +897,7 @@ function PrintSettingsEditor({
           label="Tulostusteksti"
           value={settings.label === '' ? '' : (settings.label ?? '')}
           onChangeText={(label) => patchTarget(target, { label: label.length === 0 ? undefined : label })}
-          kind="words"
+          kind="code"
           placeholder="Kentän nimi"
           compact
         />

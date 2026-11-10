@@ -115,7 +115,7 @@ export const NAME_FIELD_KIND = {
   customerName: 'name',
   sellerName: 'name',
   companyName: 'words',
-  productName: 'words',
-  structureName: 'words',
-  lineName: 'words',
+  productName: 'code',
+  structureName: 'code',
+  lineName: 'code',
 } as const satisfies Record<string, TextInputKind>;

@@ -153,11 +153,11 @@ describe('v1.3.4 Nov 7 feedback', () => {
     ]);
     const rec = record({}, { structureLines: [{ ...line('a', 's1', 'Maalaus'), materialQuantities: shades }] });
     const ctx = buildUrakkakorttiContext(input(rec));
-    expect(ctx.materials.map((row) => `${row.product}|${row.quantity}|${row.unit}|${row.shadeHeader ?? ''}|${row.shade ?? ''}`)).toEqual([
-      'Nova 7|||true|',
-      'G47|3|l||true',
-      '505X|5|l||true',
-      'Pensseli|2|kpl||',
+    expect(ctx.materials.map((row) => `${row.product}|${row.quantity}|${row.unit}|${row.shadeHeader ?? ''}|${row.shade ?? ''}|${row.structureHeader ?? ''}`)).toEqual([
+      'Nova 7|||true||',
+      'G47|3|l||true|',
+      '505X|5|l||true|',
+      'Pensseli|2|kpl|||',
     ]);
     const html = renderUrakkakorttiHtml(ctx);
     expect(html).toContain('uk-shade-product');

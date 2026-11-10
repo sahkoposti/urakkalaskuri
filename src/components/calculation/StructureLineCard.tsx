@@ -5,6 +5,10 @@ import { AppCard, AppInput } from '@/src/components/common';
 import { NAME_FIELD_KIND } from '@/src/components/textInputProps';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { ThemedIcon } from '@/src/components/ThemedIcon';
+import {
+  STRUCTURE_LINE_ADDITIONAL_INFO_DEFAULT_EXPANDED,
+  structureLineAdditionalInfoHasText,
+} from '@/src/core/structure/structureLineAdditionalInfoUi';
 import { structureLineAdditionalInfoInputValue } from '@/src/core/pdf/structureExtraText';
 import { patchStructureLine } from '@/src/core/structure/applyFormToLine';
 import { hasStructureFormPages, isStructureFormIncomplete } from '@/src/core/structure/formPages';
@@ -77,6 +81,10 @@ export function StructureLineCard({
   const displayedWorkDurationDays = resolveDisplayedWorkDurationDays(
     priced,
     weatherReserveFactor,
+  );
+  const additionalInfoValue = structureLineAdditionalInfoInputValue(priced, structure);
+  const [additionalInfoExpanded, setAdditionalInfoExpanded] = useState(
+    STRUCTURE_LINE_ADDITIONAL_INFO_DEFAULT_EXPANDED,
   );
 
   function patch(next: Parameters<typeof patchStructureLine>[1]) {
@@ -155,35 +163,54 @@ export function StructureLineCard({
         </View>
       </View>
 
-      {/* Eemil 29.10.2026 #7: urakkahinta käsin muokattavissa (aina alv0); korvaa lomakkeen arvon ja laskee katteen uudelleen. */}
-      <DecimalInput
-        label="Urakkahinta € (alv0)"
-        value={priced.contractPriceVat0}
-        onChangeValue={(value) => patch({ contractPriceVat0: value })}
-      />
+      <View style={styles.fieldRow}>
+        <View style={styles.fieldHalf}>
+          <DecimalInput
+            label="Urakkahinta € (alv0)"
+            value={priced.contractPriceVat0}
+            onChangeValue={(value) => patch({ contractPriceVat0: value })}
+          />
+        </View>
+        <View style={styles.fieldHalf}>
+          <DaysInput
+            label={WORK_DURATION_DISPLAY_LABEL}
+            value={displayedWorkDurationDays}
+            onChangeValue={(value) => patch({ displayWorkDurationDays: value })}
+          />
+        </View>
+      </View>
 
-      <DaysInput
-        label={WORK_DURATION_DISPLAY_LABEL}
-        value={displayedWorkDurationDays}
-        onChangeValue={(value) => patch({ displayWorkDurationDays: value })}
-      />
+      {showAdditionalInfo ? (
+        additionalInfoExpanded ? (
+          <AppInput
+            label="Lisätiedot"
+            value={additionalInfoValue}
+            onChangeText={(value) => patch({ additionalInfo: value })}
+            kind="sentence"
+            multiline
+            placeholder="Valinnainen"
+          />
+        ) : (
+          <Pressable
+            onPress={() => setAdditionalInfoExpanded(true)}
+            style={({ pressed }) => [styles.additionalInfoRow, pressed && styles.additionalInfoRowPressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Avaa Lisätiedot"
+          >
+            <Text style={styles.additionalInfoLabel}>Lisätiedot</Text>
+            <Text style={styles.additionalInfoHint} numberOfLines={1}>
+              {structureLineAdditionalInfoHasText(additionalInfoValue) ? additionalInfoValue.trim() : 'Valinnainen'}
+            </Text>
+            <ThemedIcon name="chevron-forward" size={18} />
+          </Pressable>
+        )
+      ) : null}
 
       <DecimalInput
         label="Ale %"
         value={priced.discountPercent}
         onChangeValue={(value) => patch({ discountPercent: value })}
       />
-
-      {showAdditionalInfo ? (
-        <AppInput
-          label="Lisätiedot"
-          value={structureLineAdditionalInfoInputValue(priced, structure)}
-          onChangeText={(value) => patch({ additionalInfo: value })}
-          kind="sentence"
-          multiline
-          placeholder="Valinnainen"
-        />
-      ) : null}
 
       <View style={styles.metaRow}>
         <Text style={styles.metaLabel}>Kate ({vat0Tag()})</Text>
@@ -292,7 +319,30 @@ function DecimalInput({
 function createStyles(colors: AppColorPalette) {
   return {
     card: {
-      gap: 2,
+      gap: 0,
+    },
+    additionalInfoRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 8,
+      marginTop: 4,
+      marginBottom: 4,
+      paddingVertical: 6,
+    },
+    additionalInfoRowPressed: {
+      opacity: 0.85,
+    },
+    additionalInfoLabel: {
+      fontFamily: 'IBMPlexSans_600SemiBold',
+      fontSize: 14,
+      color: colors.text,
+    },
+    additionalInfoHint: {
+      flex: 1,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 14,
+      color: colors.text,
+      opacity: 0.65,
     },
     titleRow: {
       flexDirection: 'row' as const,
@@ -318,7 +368,7 @@ function createStyles(colors: AppColorPalette) {
     metaRow: {
       flexDirection: 'row' as const,
       justifyContent: 'space-between' as const,
-      marginTop: 6,
+      marginTop: 4,
     },
     metaLabel: {
       fontFamily: 'IBMPlexSans_400Regular',
@@ -331,8 +381,8 @@ function createStyles(colors: AppColorPalette) {
     totalRow: {
       flexDirection: 'row' as const,
       justifyContent: 'space-between' as const,
-      marginTop: 10,
-      paddingTop: 10,
+      marginTop: 6,
+      paddingTop: 6,
       borderTopWidth: 1,
       borderTopColor: colors.border,
     },
