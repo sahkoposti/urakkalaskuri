@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 import { NAME_FIELD_KIND, textInputPropsFor } from '../src/components/textInputProps';
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
@@ -91,5 +94,17 @@ describe('v1.3.5', () => {
 
   it('uses code (no autocapitalize) for admin page and option titles', () => {
     expect(textInputPropsFor('code').autoCapitalize).toBe('none');
+  });
+
+  it('keeps sentence autocapitalize for address and words for postal locality', () => {
+    const customerStep = fs.readFileSync(
+      path.join(__dirname, '../src/components/form/CustomerStep.tsx'),
+      'utf8',
+    );
+    expect(customerStep).toContain('label="Osoite"');
+    expect(customerStep).toMatch(/label="Osoite"[\s\S]*?kind="sentence"/);
+    expect(customerStep).toMatch(/label="Postitoimipaikka"[\s\S]*?kind="words"/);
+    expect(textInputPropsFor('sentence').autoCapitalize).toBe('sentences');
+    expect(textInputPropsFor('words').autoCapitalize).toBe('words');
   });
 });
