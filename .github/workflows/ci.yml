@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, cursor/v134-nov7-feedback-449a]
 
 jobs:
   test:
