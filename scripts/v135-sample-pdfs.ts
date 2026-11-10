@@ -127,8 +127,8 @@ async function main() {
   );
   if (!offerHtml.includes('class="price-block offer-totals"')) throw new Error('tarjouksen yhteensä puuttuu');
   const totalsAt = offerHtml.indexOf('class="price-block offer-totals"');
-  const structInfoAt = offerHtml.indexOf('**Pitkä**');
-  if (structInfoAt < totalsAt) throw new Error('rakenteen Lisätiedot ennen hintoja');
+  const lisatiedotAt = offerHtml.indexOf('Lisätiedot:');
+  if (lisatiedotAt < totalsAt) throw new Error('Lisätiedot ennen hintoja');
   if (!cardHtml.includes('uk-structure')) throw new Error('materiaalien rakenneotsikot puuttuvat');
   writeHtml('tarjous-1-3-5', offerHtml);
   writeHtml('urakkakortti-1-3-5', cardHtml);
