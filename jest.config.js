@@ -18,6 +18,8 @@ module.exports = {
       displayName: 'screens',
       preset: 'jest-expo',
       testMatch: ['<rootDir>/__tests__/screens/**/*.test.tsx'],
+      globalSetup: '<rootDir>/__tests__/screens/globalSetup.js',
+      setupFiles: ['<rootDir>/__tests__/screens/setTz.js'],
       setupFilesAfterEnv: ['<rootDir>/__tests__/screens/setup.ts'],
       moduleNameMapper: sharedMapper,
       rootDir: __dirname,

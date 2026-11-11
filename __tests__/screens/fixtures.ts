@@ -12,15 +12,15 @@ import { DEFAULT_STRUCTURE_ID } from '@/src/core/structure/types';
 import { structure } from '../pdfFixtures';
 import { record as pdfRecord } from '../pdfFixtures';
 
-/** Kiinteä kellonaika näyttösnapshotteihin (10.10.2026 klo 12:00). */
-export const SCREEN_FIXED_DATE = new Date(2026, 9, 10, 12, 0, 0, 0);
+/** Kiinteä kellonaika näyttösnapshotteihin (2026-10-10T12:00:00.000Z, timezone-agnostic). */
+export const SCREEN_FIXED_DATE = new Date('2026-10-10T12:00:00.000Z');
 export const SCREEN_FIXED_TIMESTAMP = SCREEN_FIXED_DATE.getTime();
 
 const form = normalizeFormDefinition(createMinimalFormDefinition());
 
 export const fixtureStructures: ProductStructure[] = [
-  structure('s1', 'Ulkomaalaus'),
-  structure('s2', 'Sokkeli'),
+  { ...structure('s1', 'Ulkomaalaus'), createdAt: SCREEN_FIXED_DATE, updatedAt: SCREEN_FIXED_DATE },
+  { ...structure('s2', 'Sokkeli'), createdAt: SCREEN_FIXED_DATE, updatedAt: SCREEN_FIXED_DATE },
 ];
 
 export const fixtureProducts: Product[] = [
