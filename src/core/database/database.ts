@@ -65,7 +65,7 @@ export {
   getCustomer,
   getCustomers,
   upsertCustomer,
-} from '../../features/asiakkaat';
+} from '../../features/asiakkaat/storage/customers';
 
 function parseThemeSettings(map: Record<string, string>): ThemeSettings {
   return {
