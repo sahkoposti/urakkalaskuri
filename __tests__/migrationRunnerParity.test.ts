@@ -1,4 +1,3 @@
-import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
@@ -339,8 +338,8 @@ describe('migration runner parity with 13a0c86 connection.ts', () => {
 });
 
 describe('migration SQL text', () => {
-  it('keeps every SQL literal from 13a0c86 connection.ts', () => {
-    const oldSource = execSync('git show 13a0c86:src/core/database/connection.ts', { encoding: 'utf8' });
+  it('keeps every SQL literal from the frozen 13a0c86 connection.ts', () => {
+    const oldSource = fs.readFileSync(path.join(__dirname, 'fixtures/legacyConnection.ts'), 'utf8');
     const literals = [...oldSource.matchAll(/`(?:\\`|[^`])*`|'(?:\\'|[^'])*'/gs)]
       .map((match) => match[0].slice(1, -1))
       .filter((text) => /CREATE|ALTER|UPDATE|INSERT|DELETE|PRAGMA|SELECT/i.test(text));
