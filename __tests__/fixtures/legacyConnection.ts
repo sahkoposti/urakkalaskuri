@@ -1,0 +1,676 @@
+/**
+ * Frozen database init from commit 13a0c86 (`src/core/database/connection.ts`).
+ * Import paths use `@/src/core/...` so this copy can live under `__tests__/fixtures`.
+ * SQL strings and control flow are otherwise unchanged.
+ */
+import * as SQLite from 'expo-sqlite';
+
+import { sanitizeMaterialQuantities } from '@/src/core/materials/materialQuantities';
+import type { FormSnapshot, StructureLine } from '@/src/core/models/types';
+import { defaultSettings, parseCustomerDetails } from '@/src/core/models/types';
+import { createDefaultFormDefinition } from '@/src/core/form/defaultFormDefinition';
+import { isCustomerFormPage, normalizeFormDefinition } from '@/src/core/form/formDefinitionHelpers';
+import { structureLineFromLegacyRecord } from '@/src/core/structure/legacyCalculation';
+import { withDerivedLinePricing } from '@/src/core/structure/linePricing';
+import { DEFAULT_STRUCTURE_ID } from '@/src/core/structure/types';
+
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+
+export const ACTIVE_STRUCTURE_KEY = 'active_structure_id';
+
+/** Nollaa välimuistin (esim. hot reload / kuollut native-kahva Androidilla). */
+export function resetDatabaseConnection(): void {
+  dbPromise = null;
+}
+
+export async function getDb(): Promise<SQLite.SQLiteDatabase> {
+  if (!dbPromise) {
+    dbPromise = openDatabase().catch((error) => {
+      dbPromise = null;
+      throw error;
+    });
+  }
+  return dbPromise;
+}
+
+export function inferVatPercent(row: Record<string, unknown>): number {
+  const totalVat0 = row.total_price_vat0 as number;
+  const vatAmount = row.vat_amount as number;
+  if (totalVat0 <= 0 || vatAmount <= 0) {
+    return defaultSettings.vatPercent;
+  }
+  return (vatAmount / totalVat0) * 100;
+}
+
+export function parseFormSnapshot(raw: unknown): FormSnapshot | undefined {
+  if (typeof raw !== 'string' || !raw.trim()) return undefined;
+  try {
+    return JSON.parse(raw) as FormSnapshot;
+  } catch {
+    return undefined;
+  }
+}
+
+export function parseStructureLines(raw: unknown): StructureLine[] | undefined {
+  if (typeof raw !== 'string' || !raw.trim()) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as StructureLine[];
+    if (!Array.isArray(parsed) || parsed.length === 0) return undefined;
+    return parsed.map((line) => {
+      const next = { ...line };
+      if (Object.prototype.hasOwnProperty.call(line, 'materialQuantities')) {
+        const quantities = sanitizeMaterialQuantities(line.materialQuantities);
+        if (quantities === undefined) delete next.materialQuantities;
+        else next.materialQuantities = quantities;
+      }
+      return withDerivedLinePricing(next);
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+async function migrateDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
+  const calculationColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(calculations)');
+  if (!calculationColumns.some((column) => column.name === 'vat_percent')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN vat_percent REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'form_snapshot')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN form_snapshot TEXT');
+  }
+  if (!calculationColumns.some((column) => column.name === 'discount_percent')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN discount_percent REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'discount_eur')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN discount_eur REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'total_price_vat_before_discount')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN total_price_vat_before_discount REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'total_price_vat0_before_discount')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN total_price_vat0_before_discount REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'offer_number')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN offer_number INTEGER');
+  }
+
+  const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
+  if (!productColumns.some((column) => column.name === 'attributes')) {
+    await db.execAsync('ALTER TABLE products ADD COLUMN attributes TEXT');
+  }
+  await migrateProductPrices(db);
+  await migrateProductSortOrder(db);
+
+  await db.runAsync('DELETE FROM settings WHERE key = ?', 'wizard_step_order');
+  await migrateProductStructures(db);
+  await migrateStripCustomerFormPages(db);
+  await ensureDocumentsTable(db);
+  await ensureAttachmentsTable(db);
+  await ensureCalculationStatusColumn(db);
+}
+
+/** Uusi taulu. CREATE IF NOT EXISTS, ei muuta vanhoja tauluja. Turvallista ajaa kahdesti. */
+export const DOCUMENTS_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS documents (
+  id TEXT PRIMARY KEY,
+  calculation_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('tarjous', 'urakkakortti')),
+  offer_number INTEGER,
+  version INTEGER NOT NULL,
+  file_rel_path TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  inputs_json TEXT,
+  summary_json TEXT,
+  app_version TEXT,
+  created_at TEXT NOT NULL,
+  phone_save_status TEXT NOT NULL DEFAULT 'skipped' CHECK (phone_save_status IN ('ok', 'failed', 'skipped')),
+  phone_uri TEXT,
+  phone_save_error TEXT
+);
+CREATE INDEX IF NOT EXISTS documents_calculation_id_idx ON documents (calculation_id);
+`;
+
+/**
+ * documents-taulun skeema. 2 lisää phone_save_error-sarakkeen.
+ * Nosto on idempotentti eikä laske versiota.
+ */
+export const DOCUMENT_SCHEMA_VERSION = 2;
+
+/**
+ * Liitteet. user_version 3 lisää attachments-taulun.
+ * Nosto on idempotentti eikä laske versiota.
+ */
+export const ATTACHMENT_SCHEMA_VERSION = 3;
+
+/**
+ * Laskelman tila. user_version 4 lisää `calculations.status`.
+ * Oletus `complete`, joten vanhat rivit säilyvät valmiina. Nosto on idempotentti.
+ */
+export const CALCULATION_STATUS_SCHEMA_VERSION = 4;
+
+export const ATTACHMENTS_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS attachments (
+  id TEXT PRIMARY KEY NOT NULL,
+  calculation_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('image', 'pdf')),
+  destination TEXT NOT NULL DEFAULT 'none' CHECK (destination IN ('offer', 'card', 'both', 'none')),
+  caption TEXT NOT NULL DEFAULT '' CHECK (length(caption) <= 120),
+  file_rel_path TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  width INTEGER,
+  height INTEGER,
+  sort_order INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS attachments_calculation_sort_idx ON attachments (calculation_id, sort_order);
+`;
+
+type DocumentsDb = {
+  execAsync(sql: string): Promise<void>;
+  getFirstAsync(sql: string, ...args: unknown[]): Promise<Record<string, unknown> | null>;
+  getAllAsync(sql: string, ...args: unknown[]): Promise<readonly Record<string, unknown>[]>;
+};
+
+export async function ensureDocumentsTable(db: DocumentsDb): Promise<void> {
+  await db.execAsync(DOCUMENTS_SCHEMA_SQL);
+  const columns = await db.getAllAsync('PRAGMA table_info(documents)');
+  const names = columns.map((column) => String(column.name ?? ''));
+  if (!names.includes('phone_save_error')) {
+    await db.execAsync('ALTER TABLE documents ADD COLUMN phone_save_error TEXT');
+  }
+  const row = await db.getFirstAsync('PRAGMA user_version');
+  const current = Number(row?.user_version ?? 0);
+  if (!Number.isFinite(current) || current < DOCUMENT_SCHEMA_VERSION) {
+    await db.execAsync(`PRAGMA user_version = ${DOCUMENT_SCHEMA_VERSION}`);
+  }
+}
+
+/** Liitetaulu. CREATE IF NOT EXISTS, ei muuta vanhoja tauluja. Turvallista ajaa kahdesti. */
+export async function ensureAttachmentsTable(db: DocumentsDb): Promise<void> {
+  await db.execAsync(ATTACHMENTS_SCHEMA_SQL);
+  const row = await db.getFirstAsync('PRAGMA user_version');
+  const current = Number(row?.user_version ?? 0);
+  if (!Number.isFinite(current) || current < ATTACHMENT_SCHEMA_VERSION) {
+    await db.execAsync(`PRAGMA user_version = ${ATTACHMENT_SCHEMA_VERSION}`);
+  }
+}
+
+/** `status`-sarake. Turvallista ajaa kahdesti ja jos sarake on jo olemassa. */
+export async function ensureCalculationStatusColumn(db: DocumentsDb): Promise<void> {
+  const columns = await db.getAllAsync('PRAGMA table_info(calculations)');
+  const names = columns.map((column) => String(column.name ?? ''));
+  if (names.length > 0 && !names.includes('status')) {
+    await db.execAsync("ALTER TABLE calculations ADD COLUMN status TEXT NOT NULL DEFAULT 'complete'");
+  }
+  const row = await db.getFirstAsync('PRAGMA user_version');
+  const current = Number(row?.user_version ?? 0);
+  if (!Number.isFinite(current) || current < CALCULATION_STATUS_SCHEMA_VERSION) {
+    await db.execAsync(`PRAGMA user_version = ${CALCULATION_STATUS_SCHEMA_VERSION}`);
+  }
+}
+
+async function migrateProductPrices(db: SQLite.SQLiteDatabase): Promise<void> {
+  const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
+  if (!productColumns.some((column) => column.name === 'purchase_price_vat0')) {
+    await db.execAsync('ALTER TABLE products ADD COLUMN purchase_price_vat0 REAL');
+  }
+  if (!productColumns.some((column) => column.name === 'sale_price_vat0')) {
+    await db.execAsync('ALTER TABLE products ADD COLUMN sale_price_vat0 REAL');
+  }
+  await db.execAsync(`
+    UPDATE products
+    SET purchase_price_vat0 = unit_price_vat0
+    WHERE purchase_price_vat0 IS NULL
+  `);
+  await db.execAsync(`
+    UPDATE products
+    SET sale_price_vat0 = COALESCE(purchase_price_vat0, unit_price_vat0)
+    WHERE sale_price_vat0 IS NULL
+  `);
+}
+
+async function migrateProductSortOrder(db: SQLite.SQLiteDatabase): Promise<void> {
+  const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
+  if (productColumns.some((column) => column.name === 'sort_order')) return;
+  await db.execAsync('ALTER TABLE products ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0');
+  const rows = await db.getAllAsync<{ id: string }>(
+    'SELECT id FROM products ORDER BY name COLLATE NOCASE ASC, id ASC',
+  );
+  for (let index = 0; index < rows.length; index += 1) {
+    await db.runAsync('UPDATE products SET sort_order = ? WHERE id = ?', index, rows[index].id);
+  }
+}
+
+async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
+  const db = await SQLite.openDatabaseAsync('urakkalaskuri.db', {
+    useNewConnection: true,
+  });
+  await db.execAsync(`
+    PRAGMA foreign_keys = ON;
+    CREATE TABLE IF NOT EXISTS products (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      unit TEXT NOT NULL,
+      unit_price_vat0 REAL NOT NULL,
+      description TEXT,
+      created_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS calculations (
+      id TEXT PRIMARY KEY NOT NULL,
+      project_name TEXT NOT NULL,
+      customer TEXT,
+      group_duration_h REAL NOT NULL,
+      crew_size INTEGER NOT NULL,
+      hourly_rate REAL NOT NULL,
+      margin_percent REAL NOT NULL,
+      commission_percent REAL NOT NULL,
+      contract_price_vat0 REAL NOT NULL,
+      materials_vat0 REAL NOT NULL,
+      margin_eur REAL NOT NULL,
+      commission_eur REAL NOT NULL,
+      total_price_vat0 REAL NOT NULL,
+      vat_amount REAL NOT NULL,
+      total_price_vat REAL NOT NULL,
+      work_duration_days REAL NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS calculation_lines (
+      id TEXT PRIMARY KEY NOT NULL,
+      calculation_id TEXT NOT NULL,
+      product_id TEXT,
+      product_name TEXT NOT NULL,
+      unit TEXT NOT NULL,
+      unit_price_vat0 REAL NOT NULL,
+      quantity REAL NOT NULL,
+      line_total_vat0 REAL NOT NULL,
+      FOREIGN KEY (calculation_id) REFERENCES calculations(id)
+    );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS wizard_drafts (
+      id TEXT PRIMARY KEY NOT NULL,
+      step INTEGER NOT NULL,
+      payload TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+  `);
+
+  await migrateDatabase(db);
+
+  const settingsCount = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM settings',
+  );
+  if ((settingsCount?.count ?? 0) === 0) {
+    for (const [key, value] of Object.entries(defaultSettingRows)) {
+      await db.runAsync('INSERT INTO settings (key, value) VALUES (?, ?)', key, value);
+    }
+  }
+
+  return db;
+}
+
+const defaultSettingRows: Record<string, string> = {
+  vat_percent: String(defaultSettings.vatPercent),
+  default_margin_percent: String(defaultSettings.defaultMarginPercent),
+  margin_low_amount: String(defaultSettings.marginLowAmount),
+  margin_low_percent: String(defaultSettings.marginLowPercent),
+  margin_high_amount: String(defaultSettings.marginHighAmount),
+  margin_high_percent: String(defaultSettings.marginHighPercent),
+  default_commission_percent: String(defaultSettings.defaultCommissionPercent),
+  default_hourly_rate: String(defaultSettings.defaultHourlyRate),
+  default_crew_size: String(defaultSettings.defaultCrewSize),
+  workday_hours: String(defaultSettings.workdayHours),
+  weather_reserve_factor: String(defaultSettings.weatherReserveFactor),
+  theme_accent_color: defaultSettings.theme.accentColor,
+  theme_primary_color: defaultSettings.theme.primaryColor,
+  theme_text_color: defaultSettings.theme.textColor,
+  theme_surface_color: defaultSettings.theme.surfaceColor,
+  theme_background_image_uri: defaultSettings.theme.backgroundImageUri,
+  theme_background_opacity: String(defaultSettings.theme.backgroundOpacity),
+};
+
+async function migrateProductStructures(db: SQLite.SQLiteDatabase): Promise<void> {
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS product_structures (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      unit TEXT,
+      form_json TEXT NOT NULL,
+      commission_percent REAL NOT NULL,
+      sort_order INTEGER NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      default_additional_info TEXT,
+      default_unit_price_vat0 REAL,
+      default_contract_price_vat0 REAL,
+      default_materials_vat0 REAL,
+      default_display_work_duration_days INTEGER,
+      crew_size REAL,
+      hourly_rate REAL
+    );
+    CREATE TABLE IF NOT EXISTS customers (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      customer_type TEXT NOT NULL,
+      reverse_vat INTEGER NOT NULL,
+      phone TEXT,
+      email TEXT,
+      address TEXT,
+      postal_code TEXT,
+      postal_locality TEXT,
+      notes TEXT,
+      updated_at INTEGER NOT NULL
+    );
+  `);
+
+  const productColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(products)');
+  if (!productColumns.some((column) => column.name === 'structure_id')) {
+    await db.execAsync('ALTER TABLE products ADD COLUMN structure_id TEXT');
+  }
+  if (!productColumns.some((column) => column.name === 'structure_ids')) {
+    await db.execAsync('ALTER TABLE products ADD COLUMN structure_ids TEXT');
+  }
+
+  const calculationColumns = await db.getAllAsync<{ name: string }>(
+    'PRAGMA table_info(calculations)',
+  );
+  if (!calculationColumns.some((column) => column.name === 'customer_id')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN customer_id TEXT');
+  }
+  if (!calculationColumns.some((column) => column.name === 'delivery_schedule_text')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN delivery_schedule_text TEXT');
+  }
+  if (!calculationColumns.some((column) => column.name === 'travel_time_one_way_h')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN travel_time_one_way_h REAL');
+  }
+  if (!calculationColumns.some((column) => column.name === 'structure_lines')) {
+    await db.execAsync('ALTER TABLE calculations ADD COLUMN structure_lines TEXT');
+  }
+
+  const structureCount = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM product_structures',
+  );
+  if ((structureCount?.count ?? 0) === 0) {
+    const formRow = await db.getFirstAsync<{ value: string }>(
+      'SELECT value FROM settings WHERE key = ? LIMIT 1',
+      'form_definition',
+    );
+    let form = normalizeFormDefinition(createDefaultFormDefinition());
+    if (formRow?.value) {
+      try {
+        form = normalizeFormDefinition(JSON.parse(formRow.value));
+      } catch {
+        form = normalizeFormDefinition(createDefaultFormDefinition());
+      }
+    }
+    const settingsRow = await db.getFirstAsync<{ value: string }>(
+      'SELECT value FROM settings WHERE key = ? LIMIT 1',
+      'default_commission_percent',
+    );
+    const commission = Number.parseFloat(
+      settingsRow?.value ?? String(defaultSettings.defaultCommissionPercent),
+    );
+    const now = Date.now();
+    await db.runAsync(
+      `INSERT INTO product_structures (
+        id, name, unit, form_json, commission_percent, sort_order, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      DEFAULT_STRUCTURE_ID,
+      form.name || 'Julkisivumaalaus',
+      null,
+      JSON.stringify(form),
+      Number.isFinite(commission) ? commission : defaultSettings.defaultCommissionPercent,
+      0,
+      now,
+      now,
+    );
+    await db.runAsync(
+      'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+      ACTIVE_STRUCTURE_KEY,
+      DEFAULT_STRUCTURE_ID,
+    );
+  }
+
+  await migrateProductStructureDefaults(db);
+
+  await db.runAsync(
+    `UPDATE products SET structure_id = ? WHERE structure_id IS NULL OR structure_id = ''`,
+    DEFAULT_STRUCTURE_ID,
+  );
+
+  const calcRows = await db.getAllAsync<Record<string, unknown>>(
+    'SELECT * FROM calculations',
+  );
+  const customerByName = new Map<string, string>();
+  const existingCustomers = await db.getAllAsync<Record<string, unknown>>('SELECT * FROM customers');
+  for (const row of existingCustomers) {
+    customerByName.set((row.name as string).trim().toLocaleLowerCase('fi'), row.id as string);
+  }
+
+  for (const row of calcRows) {
+    const name = String(row.project_name ?? '').trim();
+    let customerId = (row.customer_id as string | null) ?? null;
+    if (!customerId && name) {
+      const key = name.toLocaleLowerCase('fi');
+      customerId = customerByName.get(key) ?? null;
+      if (!customerId) {
+        customerId = `migrated_${key.replace(/[^a-z0-9]+/gi, '_').slice(0, 40)}_${row.id}`;
+        const details = parseCustomerDetails((row.customer as string | null) ?? undefined);
+        await db.runAsync(
+          `INSERT INTO customers (
+            id, name, customer_type, reverse_vat, phone, email, address,
+            postal_code, postal_locality, notes, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          customerId,
+          name,
+          details.customerType ?? 'private',
+          details.reverseVat ? 1 : 0,
+          details.phone ?? null,
+          details.email ?? null,
+          details.address ?? null,
+          details.postalCode ?? null,
+          details.postalLocality ?? null,
+          details.notes ?? null,
+          Date.now(),
+        );
+        customerByName.set(key, customerId);
+      }
+      await db.runAsync(
+        'UPDATE calculations SET customer_id = ? WHERE id = ?',
+        customerId,
+        row.id as string,
+      );
+    }
+
+    if (!row.structure_lines) {
+      const snapshot = parseFormSnapshot(row.form_snapshot);
+      const nameRow = await db.getFirstAsync<{ name: string }>(
+        'SELECT name FROM product_structures WHERE id = ? LIMIT 1',
+        DEFAULT_STRUCTURE_ID,
+      );
+      const line = structureLineFromLegacyRecord(
+        {
+          id: row.id as string,
+          contractPriceVat0: row.contract_price_vat0 as number,
+          materialsVat0: row.materials_vat0 as number,
+          discountPercent: (row.discount_percent as number | null) ?? 0,
+          vatPercent: (row.vat_percent as number | null) ?? inferVatPercent(row),
+          workDurationDays: row.work_duration_days as number,
+          commissionPercent: row.commission_percent as number,
+          commissionEur: row.commission_eur as number,
+          marginEur: row.margin_eur as number,
+          marginPercent: row.margin_percent as number,
+          totalPriceVat0BeforeDiscount:
+            (row.total_price_vat0_before_discount as number | null) ??
+            (row.total_price_vat0 as number),
+          formSnapshot: snapshot,
+        },
+        nameRow?.name ?? 'Laskenta',
+        DEFAULT_STRUCTURE_ID,
+      );
+      await db.runAsync(
+        'UPDATE calculations SET structure_lines = ? WHERE id = ?',
+        JSON.stringify([line]),
+        row.id as string,
+      );
+    }
+  }
+}
+
+async function migrateProductStructureDefaults(db: SQLite.SQLiteDatabase): Promise<void> {
+  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(product_structures)');
+  const names = new Set(columns.map((column) => column.name));
+  if (!names.has('default_additional_info')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN default_additional_info TEXT');
+  }
+  if (!names.has('default_unit_price_vat0')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN default_unit_price_vat0 REAL');
+  }
+  if (!names.has('default_contract_price_vat0')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN default_contract_price_vat0 REAL');
+  }
+  if (!names.has('default_materials_vat0')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN default_materials_vat0 REAL');
+  }
+  if (!names.has('default_display_work_duration_days')) {
+    await db.execAsync(
+      'ALTER TABLE product_structures ADD COLUMN default_display_work_duration_days INTEGER',
+    );
+  }
+  if (!names.has('crew_size')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN crew_size REAL');
+  }
+  if (!names.has('hourly_rate')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN hourly_rate REAL');
+  }
+  if (!names.has('margin_low_amount')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN margin_low_amount REAL');
+  }
+  if (!names.has('margin_low_percent')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN margin_low_percent REAL');
+  }
+  if (!names.has('margin_high_amount')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN margin_high_amount REAL');
+  }
+  if (!names.has('margin_high_percent')) {
+    await db.execAsync('ALTER TABLE product_structures ADD COLUMN margin_high_percent REAL');
+  }
+  const crewFallback = Number.parseFloat(String(defaultSettings.defaultCrewSize));
+  const settingsCrew = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    'default_crew_size',
+  );
+  const migratedCrew = Number.parseFloat(settingsCrew?.value ?? '');
+  const crewSize =
+    Number.isFinite(migratedCrew) && migratedCrew > 0
+      ? migratedCrew
+      : Number.isFinite(crewFallback) && crewFallback > 0
+        ? crewFallback
+        : 2;
+  await db.runAsync(
+    'UPDATE product_structures SET crew_size = ? WHERE crew_size IS NULL OR crew_size <= 0',
+    crewSize,
+  );
+
+  const marginLowAmount = await readSettingNumber(
+    db,
+    'margin_low_amount',
+    defaultSettings.marginLowAmount,
+  );
+  const marginLowPercent = await readSettingNumber(
+    db,
+    'margin_low_percent',
+    defaultSettings.marginLowPercent,
+  );
+  const marginHighAmount = await readSettingNumber(
+    db,
+    'margin_high_amount',
+    defaultSettings.marginHighAmount,
+  );
+  const marginHighPercent = await readSettingNumber(
+    db,
+    'margin_high_percent',
+    defaultSettings.marginHighPercent,
+  );
+  await db.runAsync(
+    `UPDATE product_structures
+     SET margin_low_amount = ?,
+         margin_low_percent = ?,
+         margin_high_amount = ?,
+         margin_high_percent = ?
+     WHERE margin_low_amount IS NULL
+        OR margin_low_amount <= 0
+        OR margin_low_percent IS NULL
+        OR margin_high_amount IS NULL
+        OR margin_high_amount <= 0
+        OR margin_high_percent IS NULL`,
+    marginLowAmount,
+    marginLowPercent,
+    marginHighAmount,
+    marginHighPercent,
+  );
+}
+
+async function readSettingNumber(
+  db: SQLite.SQLiteDatabase,
+  key: string,
+  fallback: number,
+): Promise<number> {
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    key,
+  );
+  const parsed = Number.parseFloat(row?.value ?? '');
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function rawFormHasCustomerPage(raw: unknown): boolean {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return false;
+  const pages = (raw as { pages?: { id?: string; system?: string }[] }).pages;
+  if (!Array.isArray(pages)) return false;
+  return pages.some((page) =>
+    isCustomerFormPage({ id: page.id ?? '', system: page.system as 'customer' | 'materials' | undefined }),
+  );
+}
+
+async function migrateStripCustomerFormPages(db: SQLite.SQLiteDatabase): Promise<void> {
+  const rows = await db.getAllAsync<{ id: string; form_json: string }>(
+    'SELECT id, form_json FROM product_structures',
+  );
+  const now = Date.now();
+  for (const row of rows) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(row.form_json);
+    } catch {
+      continue;
+    }
+    if (!rawFormHasCustomerPage(parsed)) continue;
+    await db.runAsync(
+      'UPDATE product_structures SET form_json = ?, updated_at = ? WHERE id = ?',
+      JSON.stringify(normalizeFormDefinition(parsed)),
+      now,
+      row.id,
+    );
+  }
+
+  const settingsRow = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ? LIMIT 1',
+    'form_definition',
+  );
+  if (!settingsRow?.value) return;
+  try {
+    const parsed = JSON.parse(settingsRow.value);
+    if (!rawFormHasCustomerPage(parsed)) return;
+    await db.runAsync(
+      'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+      'form_definition',
+      JSON.stringify(normalizeFormDefinition(parsed)),
+    );
+  } catch {
+    /* säilytä vanha rivi jos JSON on rikki */
+  }
+}
