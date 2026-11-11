@@ -96,7 +96,7 @@ describe('textInputPropsFor', () => {
 
   test('the real name fields import the shared mapping', () => {
     const uses: Record<string, string> = {
-      'src/components/form/CustomerStep.tsx': 'NAME_FIELD_KIND.customerName',
+      'src/features/asiakkaat/components/CustomerStep.tsx': 'NAME_FIELD_KIND.customerName',
       'app/settings/company.tsx': 'NAME_FIELD_KIND.sellerName',
       'src/components/product/ProductForm.tsx': 'NAME_FIELD_KIND.productName',
       'app/settings/structures/[id].tsx': 'NAME_FIELD_KIND.structureName',
