@@ -50,7 +50,9 @@
     "web": "expo start --web",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "kombot": "npx --yes tsx --tsconfig tsconfig.json scripts/rintamamiestalo-kombot.ts"
+    "kombot": "npx --yes tsx --tsconfig tsconfig.json scripts/rintamamiestalo-kombot.ts",
+    "style-hash": "npx --yes tsx --tsconfig tsconfig.json scripts/style-hash.ts",
+    "style-hash:write": "npx --yes tsx --tsconfig tsconfig.json scripts/style-hash.ts --write"
   },
   "private": true
 }
