@@ -58,7 +58,8 @@
     "kombot": "npx --yes tsx --tsconfig tsconfig.json scripts/rintamamiestalo-kombot.ts",
     "style-hash": "npx --yes tsx --tsconfig tsconfig.json scripts/style-hash.ts",
     "style-hash:write": "npx --yes tsx --tsconfig tsconfig.json scripts/style-hash.ts --write",
-    "lint:boundaries": "eslint --max-warnings 10000 app src"
+    "lint:boundaries": "eslint --max-warnings 10000 app src",
+    "verify:lockfile-prod": "node scripts/verify-lockfile-prod.mjs"
   },
   "private": true
 }
