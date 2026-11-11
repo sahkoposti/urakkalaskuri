@@ -1,7 +1,6 @@
 import { createRequire } from 'module';
 import path from 'path';
 
-import tsParser from '@typescript-eslint/parser';
 import { RuleTester } from 'eslint';
 
 const nodeRequire = createRequire(__filename);
@@ -20,10 +19,6 @@ const ruleTester = new RuleTester({
   languageOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
-    parser: tsParser,
-    parserOptions: {
-      ecmaFeatures: { jsx: true },
-    },
   },
 });
 
