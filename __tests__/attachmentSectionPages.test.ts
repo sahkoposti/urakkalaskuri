@@ -15,8 +15,8 @@ import {
   attachmentCardContentWidthMm,
   attachmentPairUsableMm,
   renderAttachmentSectionHtml,
-} from '@/src/core/attachments/attachmentSectionHtml';
-import type { AttachmentSectionLayout } from '@/src/core/attachments/attachmentPrintPlan';
+} from '@/src/features/attachments/lib/attachmentSectionHtml';
+import type { AttachmentSectionLayout } from '@/src/features/attachments/lib/attachmentPrintPlan';
 import { PDF_USABLE_BODY_MM } from '@/src/core/pdf/pdfStyles';
 import { renderDocument } from '@/src/core/pdf/renderTarjousHtml';
 

@@ -1,6 +1,9 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
-import { isSafeCalculationFolderId, UNSAFE_CALCULATION_FOLDER_ID_WARNING } from '../documents/calculationFolderId';
+import {
+  isSafeCalculationFolderId,
+  UNSAFE_CALCULATION_FOLDER_ID_WARNING,
+} from '@/src/core/documents/calculationFolderId';
 
 import { attachmentPathParts, attachmentRelativePath, attachmentRelativePathFromUris } from './attachmentPaths';
 

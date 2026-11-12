@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 
 import { PrimaryButton, ScreenLoading, ScreenMessage } from '@/src/components/common';
-import { CustomerStep } from '@/src/components/form/CustomerStep';
+import { CustomerStep } from '../components/CustomerStep';
 import { UpdateOldCalculationsDialog } from '@/src/components/UpdateOldCalculationsDialog';
 import {
   customerFromInfo,

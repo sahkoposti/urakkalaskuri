@@ -1,7 +1,7 @@
 import { exportTarjousPdf, exportUrakkakorttiPdf, type PdfExportDeps } from '../src/core/pdf/exportPdf';
 import { assignOfferNumber } from '../src/core/pdf/offerNumber';
 import { recordWithManualContractPrices } from '../src/core/pdf/manualContract';
-import type { Attachment } from '../src/core/attachments/types';
+import type { Attachment } from '../src/features/attachments/lib/types';
 import type { GeneratePdfOptions } from '../src/core/pdf/generatePdf';
 import type { NewDocumentInput } from '../src/core/documents/types';
 import type { CalculationRecord } from '../src/core/models/types';

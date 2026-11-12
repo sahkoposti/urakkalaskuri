@@ -1,6 +1,6 @@
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'uuid' }));
 jest.mock('expo-sqlite', () => ({}));
-jest.mock('../src/core/attachments/attachmentsRepository', () => ({
+jest.mock('../src/features/attachments/storage/attachmentsRepository', () => ({
   copyAttachmentsForCalculation: async () => [],
 }));
 

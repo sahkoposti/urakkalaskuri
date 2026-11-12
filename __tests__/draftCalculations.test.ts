@@ -8,7 +8,7 @@ jest.mock('expo-crypto', () => ({
   },
 }));
 
-jest.mock('../src/core/attachments/attachmentFiles', () => ({
+jest.mock('../src/features/attachments/lib/attachmentFiles', () => ({
   deleteCalculationAttachmentFolder: jest.fn(),
 }));
 jest.mock('../src/core/documents/documentFiles', () => ({
@@ -73,7 +73,7 @@ import {
 } from '../src/core/wizard/draftCalculation';
 import { calculationToFormState } from '../src/core/wizard/calculationToWizard';
 import { persistedDraftToFormState } from '../src/core/wizard/wizardDraftHelpers';
-import { deleteCalculationAttachmentFolder } from '../src/core/attachments/attachmentFiles';
+import { deleteCalculationAttachmentFolder } from '../src/features/attachments/lib/attachmentFiles';
 import { record } from './pdfFixtures';
 
 const V3_SQL = `
@@ -237,7 +237,7 @@ describe('draft calculations', () => {
   });
 
   it('keeps the rows and skips folder deletes when the transaction fails', async () => {
-    const folders = jest.requireMock('../src/core/attachments/attachmentFiles') as {
+    const folders = jest.requireMock('../src/features/attachments/lib/attachmentFiles') as {
       deleteCalculationAttachmentFolder: jest.Mock;
     };
     const documents = jest.requireMock('../src/core/documents/documentFiles') as {
@@ -264,7 +264,7 @@ describe('draft calculations', () => {
   });
 
   it('drops the rows even when a folder delete fails afterwards', async () => {
-    const folders = jest.requireMock('../src/core/attachments/attachmentFiles') as {
+    const folders = jest.requireMock('../src/features/attachments/lib/attachmentFiles') as {
       deleteCalculationAttachmentFolder: jest.Mock;
     };
     const documents = jest.requireMock('../src/core/documents/documentFiles') as {

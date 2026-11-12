@@ -7,7 +7,7 @@ import {
   offerAttachmentLayoutForHeight,
   offerCaptionContentWidthMm,
   resolveOfferAttachmentLayout,
-} from '../src/core/attachments/attachmentSectionHtml';
+} from '../src/features/attachments/lib/attachmentSectionHtml';
 
 const MM_PER_PT = 25.4 / 72;
 

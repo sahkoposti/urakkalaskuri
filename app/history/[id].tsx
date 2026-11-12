@@ -2,9 +2,12 @@ import { router, Stack, useFocusEffect, useLocalSearchParams, useNavigation } fr
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CalculationDetailView } from '@/src/components/calculation/CalculationDetailView';
-import { ATTACHMENT_REMOVE_COPIED_LABEL } from '@/src/core/attachments/attachmentMessages';
-import { listAttachments, removeAllAttachments } from '@/src/core/attachments/attachmentsRepository';
-import { commitCalculationCopy } from '@/src/core/attachments/commitCalculationCopy';
+import {
+  ATTACHMENT_REMOVE_COPIED_LABEL,
+  commitCalculationCopy,
+  listAttachments,
+  removeAllAttachments,
+} from '@/src/features/attachments';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { ScreenLoading, ScreenMessage } from '@/src/components/common';
 import {

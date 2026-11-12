@@ -8,15 +8,15 @@ import {
   ATTACHMENT_PDF_TOO_LARGE_MESSAGE,
   ATTACHMENT_PDF_TOO_MANY_PAGES_MESSAGE,
   attachmentPdfFailureMessage,
-} from '../src/core/attachments/attachmentMessages';
-import { mergeOfferPdf, mergeOfferPdfSafe } from '../src/core/attachments/mergeOfferPdf';
+} from '../src/features/attachments/lib/attachmentMessages';
+import { mergeOfferPdf, mergeOfferPdfSafe } from '../src/features/attachments/lib/mergeOfferPdf';
 import {
   MAX_ATTACHMENT_PDF_BYTES,
   MAX_ATTACHMENT_PDF_PAGES,
   MAX_TOTAL_ATTACHMENT_BYTES,
   checkAttachmentLimits,
   prepareAttachmentPdf,
-} from '../src/core/attachments/validateAttachmentPdf';
+} from '../src/features/attachments/lib/validateAttachmentPdf';
 
 async function pdf(pages: [number, number][], encrypt?: { ownerPassword: string; userPassword?: string; algorithm?: EncryptionAlgorithm; allowWeakCryptography?: boolean }): Promise<Uint8Array> {
   const doc = await PDFDocument.create();

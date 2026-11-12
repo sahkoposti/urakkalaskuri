@@ -1,6 +1,6 @@
 import { PDFDocument } from '@cantoo/pdf-lib';
 
-import { attachmentDestinationCounts } from '@/src/core/attachments/attachmentCounts';
+import { attachmentDestinationCounts } from '@/src/features/attachments/lib/attachmentCounts';
 import {
   ATTACHMENT_COPY_FAILED_MESSAGE,
   ATTACHMENT_FILE_KIND_MESSAGE,
@@ -12,26 +12,26 @@ import {
   ATTACHMENT_REMOVE_COPIED_LABEL,
   attachmentCountLabel,
   attachmentPdfFailureMessage,
-} from '@/src/core/attachments/attachmentMessages';
+} from '@/src/features/attachments/lib/attachmentMessages';
 import {
   calculationWithAttachmentPageLayout,
   readAttachmentPageLayout,
-} from '@/src/core/attachments/attachmentPageLayout';
-import { ATTACHMENT_IMAGE_JPEG_QUALITY } from '@/src/core/attachments/attachmentPrintPlan';
-import { clampCaption } from '@/src/core/attachments/attachmentCaption';
-import { calculationCopyNotice, commitCalculationCopy } from '@/src/core/attachments/commitCalculationCopy';
+} from '@/src/features/attachments/lib/attachmentPageLayout';
+import { ATTACHMENT_IMAGE_JPEG_QUALITY } from '@/src/features/attachments/lib/attachmentPrintPlan';
+import { clampCaption } from '@/src/features/attachments/lib/attachmentCaption';
+import { calculationCopyNotice, commitCalculationCopy } from '@/src/features/attachments/lib/commitCalculationCopy';
 import {
   ingestPickedAttachment,
   type IngestAttachmentDeps,
   type PickedAttachment,
-} from '@/src/core/attachments/ingestAttachment';
-import { pickedFileKind } from '@/src/core/attachments/pickedFileKind';
+} from '@/src/features/attachments/lib/ingestAttachment';
+import { pickedFileKind } from '@/src/features/attachments/lib/pickedFileKind';
 import {
   attachmentImageNeedsProcessing,
   processAttachmentImage,
   type ImageManipulator,
-} from '@/src/core/attachments/processAttachmentImage';
-import { ATTACHMENT_CAPTION_MAX, type Attachment } from '@/src/core/attachments/types';
+} from '@/src/features/attachments/lib/processAttachmentImage';
+import { ATTACHMENT_CAPTION_MAX, type Attachment } from '@/src/features/attachments/lib/types';
 import type { CalculationRecord } from '@/src/core/models/types';
 
 function item(partial: Partial<Attachment> & Pick<Attachment, 'id' | 'kind'>): Attachment {

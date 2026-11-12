@@ -17,16 +17,16 @@ import {
   imageSectionExceedsWarning,
   imagesPerPage,
   splitAttachments,
-} from '../src/core/attachments/attachmentPrintPlan';
+} from '../src/features/attachments/lib/attachmentPrintPlan';
 import {
   ATTACHMENT_IMAGE_SECTION_TOO_LARGE_MESSAGE,
   attachmentImageMissingMessage,
   attachmentImagesCappedMessage,
   attachmentPdfMissingMessage,
-} from '../src/core/attachments/attachmentMessages';
-import { appendAttachmentSection, renderAttachmentSectionHtml } from '../src/core/attachments/attachmentSectionHtml';
-import { prepareAttachmentPrint } from '../src/core/attachments/prepareAttachmentPrint';
-import type { Attachment } from '../src/core/attachments/types';
+} from '../src/features/attachments/lib/attachmentMessages';
+import { appendAttachmentSection, renderAttachmentSectionHtml } from '../src/features/attachments/lib/attachmentSectionHtml';
+import { prepareAttachmentPrint } from '../src/features/attachments/lib/prepareAttachmentPrint';
+import type { Attachment } from '../src/features/attachments/lib/types';
 import { input, record } from './pdfFixtures';
 
 const PNG =

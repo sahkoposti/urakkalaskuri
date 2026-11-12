@@ -13,7 +13,7 @@ jest.mock('../src/core/documents/documentFiles', () => ({
     removedFolders.push(id);
   },
 }));
-jest.mock('../src/core/attachments/attachmentFiles', () => ({
+jest.mock('../src/features/attachments/lib/attachmentFiles', () => ({
   deleteCalculationAttachmentFolder: (id: string) => {
     removedAttachmentFolders.push(id);
   },
