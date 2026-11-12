@@ -7,23 +7,23 @@ import { AppPicker } from '@/src/components/AppPicker';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { ReorderControls } from '@/src/components/ReorderControls';
 import { AppInput, OutlinedButton, SectionTitle } from '@/src/components/common';
-import { addPickedAttachment } from '@/src/core/attachments/addPickedAttachment';
-import { attachmentDestinationCounts } from '@/src/core/attachments/attachmentCounts';
-import { attachmentFileUri } from '@/src/core/attachments/attachmentFiles';
+import { addPickedAttachment } from '../lib/addPickedAttachment';
+import { attachmentDestinationCounts } from '../lib/attachmentCounts';
+import { attachmentFileUri } from '../lib/attachmentFiles';
 import {
   ATTACHMENT_ADD_LABEL,
   ATTACHMENT_CAMERA_DENIED_MESSAGE,
   attachmentFormCountLabel,
-} from '@/src/core/attachments/attachmentMessages';
-import { clampCaption } from '@/src/core/attachments/attachmentCaption';
+} from '../lib/attachmentMessages';
+import { clampCaption } from '../lib/attachmentCaption';
 import {
   moveAttachment,
   removeAttachment,
   updateAttachment,
-} from '@/src/core/attachments/attachmentsRepository';
-import type { PickedAttachment } from '@/src/core/attachments/ingestAttachment';
-import type { Attachment, AttachmentDestination } from '@/src/core/attachments/types';
-import { ATTACHMENT_CAPTION_MAX } from '@/src/core/attachments/types';
+} from '../storage/attachmentsRepository';
+import type { PickedAttachment } from '../lib/ingestAttachment';
+import type { Attachment, AttachmentDestination } from '../lib/types';
+import { ATTACHMENT_CAPTION_MAX } from '../lib/types';
 import type { CalculationRecord } from '@/src/core/models/types';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
 import type { AppColorPalette } from '@/src/theme/colors';

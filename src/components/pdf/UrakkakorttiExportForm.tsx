@@ -1,9 +1,9 @@
 import { Text } from 'react-native';
 
-import { AttachmentSummaryLink } from '@/src/components/attachments/AttachmentSection';
+import { AttachmentSummaryLink } from '@/src/features/attachments/ui';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
 import { AppInput, OutlinedButton } from '@/src/components/common';
-import type { Attachment } from '@/src/core/attachments/types';
+import type { Attachment } from '@/src/features/attachments';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
 
 import { CARD_EXPORT_FIELD_KINDS } from './exportFormFieldKinds';

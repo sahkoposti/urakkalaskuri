@@ -1,8 +1,8 @@
 import { getDb } from '@/src/core/database/connection';
 import { createId } from '@/src/core/utils/id';
 
-import { copyAttachmentFile, removeStoredAttachment } from './attachmentFiles';
-import { attachmentRelativePath, extensionOfRelativePath } from './attachmentPaths';
+import { copyAttachmentFile, removeStoredAttachment } from '../lib/attachmentFiles';
+import { attachmentRelativePath, extensionOfRelativePath } from '../lib/attachmentPaths';
 import {
   ATTACHMENT_CAPTION_MAX,
   type Attachment,
@@ -10,7 +10,7 @@ import {
   type AttachmentDestination,
   type AttachmentKind,
   type NewAttachmentInput,
-} from './types';
+} from '../lib/types';
 
 type AttachmentRow = {
   id: string;
@@ -184,7 +184,7 @@ export async function removeAttachment(id: string): Promise<void> {
 export async function removeAllAttachments(calculationId: string): Promise<void> {
   const db = await getDb();
   await db.runAsync('DELETE FROM attachments WHERE calculation_id = ?', calculationId);
-  const { deleteCalculationAttachmentFolder } = await import('./attachmentFiles');
+  const { deleteCalculationAttachmentFolder } = await import('../lib/attachmentFiles');
   deleteCalculationAttachmentFolder(calculationId);
 }
 

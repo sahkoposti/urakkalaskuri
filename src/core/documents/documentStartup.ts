@@ -1,5 +1,9 @@
-import { deleteCalculationAttachmentFolder, listAttachmentDiskPaths, removeStoredAttachment } from '@/src/core/attachments/attachmentFiles';
-import { listAttachmentFilePaths } from '@/src/core/attachments/attachmentsRepository';
+import {
+  deleteCalculationAttachmentFolder,
+  listAttachmentDiskPaths,
+  listAttachmentFilePaths,
+  removeStoredAttachment,
+} from '@/src/features/attachments';
 import { getDb } from '@/src/core/database/connection';
 
 import { isSafeCalculationFolderId, UNSAFE_CALCULATION_FOLDER_ID_WARNING } from './calculationFolderId';

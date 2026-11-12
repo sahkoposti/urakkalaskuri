@@ -1,5 +1,6 @@
 import { asiakkaatFeature } from './asiakkaat/feature';
 import { tuotteetFeature } from './products/feature';
+import { liitteetFeature } from './attachments/feature';
 
 export type FeatureId =
   | 'asiakkaat'
@@ -32,7 +33,7 @@ export const FEATURES: readonly FeatureDefinition[] = [
   { id: 'tarjous', label: 'Tarjous', enabled: true },
   { id: 'urakkakortti', label: 'Urakkakortti', enabled: true },
   { id: 'materiaalit', label: 'Materiaalit', enabled: true },
-  { id: 'liitteet', label: 'Liitteet', enabled: true },
+  { id: liitteetFeature.id, label: liitteetFeature.label, enabled: true },
   { id: 'asetukset', label: 'Asetukset', enabled: true },
 ] as const;
 

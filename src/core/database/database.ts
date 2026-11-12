@@ -43,7 +43,7 @@ import { parseCrewSize } from '../structure/structureSettings';
 import { ensureStructureLines } from '../structure/legacyCalculation';
 import { recordWithManualContractPrices } from '../pdf/manualContract';
 import { storedHourlyRate } from '../structure/structureSettings';
-import type { AttachmentCopyFailure } from '../attachments/types';
+import type { AttachmentCopyFailure } from '../../features/attachments/lib/types';
 import {
   ACTIVE_STRUCTURE_KEY,
   getDb,
@@ -345,7 +345,7 @@ export async function copyCalculationRecord(
   createdAt: Date = new Date(),
 ): Promise<CalculationCopyResult> {
   const record = cloneCalculationRecord(source, newId, createdAt);
-  const { copyAttachmentsForCalculation } = await import('../attachments/attachmentsRepository');
+  const { copyAttachmentsForCalculation } = await import('../../features/attachments/storage/attachmentsRepository');
   const attachmentCopyFailures = await copyAttachmentsForCalculation(source.id, record.id);
   return { record, attachmentCopyFailures };
 }
@@ -359,7 +359,7 @@ export async function deleteCalculation(id: string): Promise<void> {
     await db.runAsync('DELETE FROM calculations WHERE id = ?', id);
   });
   const { deleteCalculationDocumentFolder } = await import('../documents/documentFiles');
-  const { deleteCalculationAttachmentFolder } = await import('../attachments/attachmentFiles');
+  const { deleteCalculationAttachmentFolder } = await import('../../features/attachments/lib/attachmentFiles');
   try {
     deleteCalculationDocumentFolder(id);
   } catch (error) {
