@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, cursor/v134-nov7-feedback-449a, cursor/v135-ui-pdf-fixes-49bc]
+    branches: [main, cursor/v134-nov7-feedback-449a, cursor/v135-ui-pdf-fixes-49bc, cursor/modularity-0-2-f97a]
 
 jobs:
   test:
