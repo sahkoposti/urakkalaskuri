@@ -1,3 +1,4 @@
+import * as ExpoRouter from 'expo-router';
 import { router } from 'expo-router';
 import { Text } from 'react-native';
 import renderer, { act } from 'react-test-renderer';
@@ -17,6 +18,34 @@ function wizardDraftWithStructureLine(): PersistedWizardDraft {
     structureLines: [line(LINE_ID, 's1', 'Ulkomaalaus')],
     updatedAt: SCREEN_FIXED_TIMESTAMP + 1,
   };
+}
+
+function countLineFormPushes(): number {
+  return jest.mocked(router.push).mock.calls.filter((call) => {
+    const target = call[0] as { pathname?: string };
+    return target?.pathname === '/wizard/line/[lineId]';
+  }).length;
+}
+
+function countCustomerPushes(): number {
+  return jest.mocked(router.push).mock.calls.filter((call) => {
+    const target = call[0] as { pathname?: string };
+    return target?.pathname === '/wizard/customer';
+  }).length;
+}
+
+function simulateScreenRefocus() {
+  for (const [effect] of jest.mocked(ExpoRouter.useFocusEffect).mock.calls) {
+    effect();
+  }
+}
+
+async function flushMicrotasks() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
 }
 
 function pressableAncestor(node: renderer.ReactTestInstance): renderer.ReactTestInstance | null {
@@ -70,17 +99,37 @@ describe('wizard composer double navigation', () => {
       await Promise.resolve();
     });
 
+    expect(countLineFormPushes()).toBe(1);
     const linePushes = jest
       .mocked(router.push)
-      .mock.calls.filter((call) => {
-        const target = call[0] as { pathname?: string };
-        return target?.pathname === '/wizard/line/[lineId]';
-      });
-    expect(linePushes).toHaveLength(1);
+      .mock.calls.filter((call) => (call[0] as { pathname?: string })?.pathname === '/wizard/line/[lineId]');
     expect(linePushes[0]?.[0]).toMatchObject({
       pathname: '/wizard/line/[lineId]',
       params: expect.objectContaining({ lineId: LINE_ID }),
     });
+  });
+
+  it('keeps the line form guarded through push then allows a second open after refocus', async () => {
+    const tree = renderScreen(<CalculationComposerScreen />);
+    const gear = tree.root.findByProps({ accessibilityLabel: 'Avaa lomake' });
+
+    await act(async () => {
+      gear.props.onPress();
+    });
+    await flushMicrotasks();
+    expect(countLineFormPushes()).toBe(1);
+
+    await act(() => {
+      gear.props.onPress();
+    });
+    expect(countLineFormPushes()).toBe(1);
+
+    simulateScreenRefocus();
+    await act(async () => {
+      gear.props.onPress();
+    });
+    await flushMicrotasks();
+    expect(countLineFormPushes()).toBe(2);
   });
 
   it('pushes the customer route only once when the customer card is pressed twice quickly', async () => {
@@ -96,12 +145,30 @@ describe('wizard composer double navigation', () => {
       await Promise.resolve();
     });
 
-    const customerPushes = jest
-      .mocked(router.push)
-      .mock.calls.filter((call) => {
-        const target = call[0] as { pathname?: string };
-        return target?.pathname === '/wizard/customer';
-      });
-    expect(customerPushes).toHaveLength(1);
+    expect(countCustomerPushes()).toBe(1);
+  });
+
+  it('keeps the customer route guarded through push then allows a second open after refocus', async () => {
+    const tree = renderScreen(<CalculationComposerScreen />);
+    const customerCard = findPressableWithText(tree.root, 'Fiktiivinen Asiakas');
+    const onPress = customerCard.props.onPress as () => void;
+
+    await act(async () => {
+      onPress();
+    });
+    await flushMicrotasks();
+    expect(countCustomerPushes()).toBe(1);
+
+    await act(() => {
+      onPress();
+    });
+    expect(countCustomerPushes()).toBe(1);
+
+    simulateScreenRefocus();
+    await act(async () => {
+      onPress();
+    });
+    await flushMicrotasks();
+    expect(countCustomerPushes()).toBe(2);
   });
 });
