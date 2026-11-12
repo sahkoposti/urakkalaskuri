@@ -131,6 +131,9 @@ export default function CalculationComposerScreen() {
   wizardDraftRef.current = wizardDraft;
   const structureLinesRef = useRef(structureLines);
   structureLinesRef.current = structureLines;
+  const lineFormNavInFlightRef = useRef(false);
+  const customerNavInFlightRef = useRef(false);
+  const SUBSCREEN_NAV_RELEASE_MS = 5000;
 
   const setMaterialLineValidity = useCallback((lineId: string, valid: boolean) => {
     setMaterialIssues((current) => {
@@ -339,6 +342,8 @@ export default function CalculationComposerScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      lineFormNavInFlightRef.current = false;
+      customerNavInFlightRef.current = false;
       screenLeave.reset();
       let active = true;
       // Viimeisin luonnos refistä. Callbackin riippuvuuksissa ei ole wizardDraftia,
@@ -569,28 +574,48 @@ export default function CalculationComposerScreen() {
   }, []);
 
   async function openCustomer() {
-    await persistDraft();
-    const editId = firstNonEmptyId(
-      routeEditId,
-      boundCalculationIdRef.current,
-      editCalculationId,
-      wizardDraft?.editCalculationId,
-    );
-    router.push({ pathname: '/wizard/customer', params: editId ? { editId } : {} } as Href);
+    if (customerNavInFlightRef.current) return;
+    customerNavInFlightRef.current = true;
+    const releaseOnTimeout = setTimeout(() => {
+      customerNavInFlightRef.current = false;
+    }, SUBSCREEN_NAV_RELEASE_MS);
+    try {
+      await persistDraft();
+      const editId = firstNonEmptyId(
+        routeEditId,
+        boundCalculationIdRef.current,
+        editCalculationId,
+        wizardDraft?.editCalculationId,
+      );
+      router.push({ pathname: '/wizard/customer', params: editId ? { editId } : {} } as Href);
+    } finally {
+      clearTimeout(releaseOnTimeout);
+      customerNavInFlightRef.current = false;
+    }
   }
 
   async function openLineForm(lineId: string) {
-    await persistDraft();
-    const editId = firstNonEmptyId(
-      routeEditId,
-      boundCalculationIdRef.current,
-      editCalculationId,
-      wizardDraft?.editCalculationId,
-    );
-    router.push({
-      pathname: '/wizard/line/[lineId]',
-      params: editId ? { lineId, editId } : { lineId },
-    } as Href);
+    if (lineFormNavInFlightRef.current) return;
+    lineFormNavInFlightRef.current = true;
+    const releaseOnTimeout = setTimeout(() => {
+      lineFormNavInFlightRef.current = false;
+    }, SUBSCREEN_NAV_RELEASE_MS);
+    try {
+      await persistDraft();
+      const editId = firstNonEmptyId(
+        routeEditId,
+        boundCalculationIdRef.current,
+        editCalculationId,
+        wizardDraft?.editCalculationId,
+      );
+      router.push({
+        pathname: '/wizard/line/[lineId]',
+        params: editId ? { lineId, editId } : { lineId },
+      } as Href);
+    } finally {
+      clearTimeout(releaseOnTimeout);
+      lineFormNavInFlightRef.current = false;
+    }
   }
 
   function addStructure(structureId: string) {

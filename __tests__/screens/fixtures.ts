@@ -162,6 +162,9 @@ export const mockDb = {
   deleteProduct: jest.fn(noopAsync),
   upsertCustomer: jest.fn(noopAsync),
   saveWizardDraft: jest.fn(noopAsync),
+  saveWizardViewSession: jest.fn(noopAsync),
   updateCalculationCustomerSnapshots: jest.fn(noopAsync),
   getCustomers: jest.fn(async () => fixtureCustomers),
 };
+
+export const mockFixtureApp = buildFixtureAppContext();
