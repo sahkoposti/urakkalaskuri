@@ -1,3 +1,4 @@
+import { asiakkaatFeature } from '../src/features/asiakkaat/feature';
 import { FEATURES, type FeatureId, isFeatureEnabled } from '../src/features/registry';
 
 describe('feature registry', () => {
@@ -10,6 +11,15 @@ describe('feature registry', () => {
     for (const feature of FEATURES) {
       expect(feature.enabled).toBe(true);
     }
+  });
+
+  it('wires asiakkaat from the module manifest', () => {
+    const asiakkaat = FEATURES.find((feature) => feature.id === 'asiakkaat');
+    expect(asiakkaat).toEqual({
+      id: asiakkaatFeature.id,
+      label: asiakkaatFeature.label,
+      enabled: true,
+    });
   });
 
   it('isFeatureEnabled reflects enabled features only', () => {

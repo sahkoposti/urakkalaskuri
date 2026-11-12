@@ -1,3 +1,5 @@
+import { asiakkaatFeature } from './asiakkaat/feature';
+
 export type FeatureId =
   | 'asiakkaat'
   | 'tuotteet'
@@ -21,7 +23,7 @@ export type FeatureDefinition = {
  * Moduuli ei koskaan poista tauluja tai sarakkeita tietokannasta.
  */
 export const FEATURES: readonly FeatureDefinition[] = [
-  { id: 'asiakkaat', label: 'Asiakkaat', enabled: true },
+  { id: asiakkaatFeature.id, label: asiakkaatFeature.label, enabled: true },
   { id: 'tuotteet', label: 'Tuotteet', enabled: true },
   { id: 'tuoterakenteet', label: 'Tuoterakenteet', enabled: true },
   { id: 'laskenta', label: 'Laskenta', enabled: true },
