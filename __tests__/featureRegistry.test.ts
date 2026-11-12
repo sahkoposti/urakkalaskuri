@@ -1,4 +1,5 @@
 import { asiakkaatFeature } from '../src/features/asiakkaat/feature';
+import { tuotteetFeature } from '../src/features/products/feature';
 import { FEATURES, type FeatureId, isFeatureEnabled } from '../src/features/registry';
 
 describe('feature registry', () => {
@@ -18,6 +19,15 @@ describe('feature registry', () => {
     expect(asiakkaat).toEqual({
       id: asiakkaatFeature.id,
       label: asiakkaatFeature.label,
+      enabled: true,
+    });
+  });
+
+  it('wires tuotteet from the module manifest', () => {
+    const tuotteet = FEATURES.find((feature) => feature.id === 'tuotteet');
+    expect(tuotteet).toEqual({
+      id: tuotteetFeature.id,
+      label: tuotteetFeature.label,
       enabled: true,
     });
   });

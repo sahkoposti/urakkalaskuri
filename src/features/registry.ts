@@ -1,4 +1,5 @@
 import { asiakkaatFeature } from './asiakkaat/feature';
+import { tuotteetFeature } from './products/feature';
 
 export type FeatureId =
   | 'asiakkaat'
@@ -24,7 +25,7 @@ export type FeatureDefinition = {
  */
 export const FEATURES: readonly FeatureDefinition[] = [
   { id: asiakkaatFeature.id, label: asiakkaatFeature.label, enabled: true },
-  { id: 'tuotteet', label: 'Tuotteet', enabled: true },
+  { id: tuotteetFeature.id, label: tuotteetFeature.label, enabled: true },
   { id: 'tuoterakenteet', label: 'Tuoterakenteet', enabled: true },
   { id: 'laskenta', label: 'Laskenta', enabled: true },
   { id: 'historia', label: 'Historia', enabled: true },

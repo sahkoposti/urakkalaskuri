@@ -98,7 +98,7 @@ describe('textInputPropsFor', () => {
     const uses: Record<string, string> = {
       'src/features/asiakkaat/components/CustomerStep.tsx': 'NAME_FIELD_KIND.customerName',
       'app/settings/company.tsx': 'NAME_FIELD_KIND.sellerName',
-      'src/components/product/ProductForm.tsx': 'NAME_FIELD_KIND.productName',
+      'src/features/products/components/ProductForm.tsx': 'NAME_FIELD_KIND.productName',
       'app/settings/structures/[id].tsx': 'NAME_FIELD_KIND.structureName',
       'src/components/calculation/StructureLineCard.tsx': 'NAME_FIELD_KIND.lineName',
     };
