@@ -4,6 +4,7 @@ import { act, type ReactTestInstance } from 'react-test-renderer';
 
 import { MaterialQuantitiesEditor } from '@/src/components/calculation/MaterialQuantitiesEditor';
 import { StructureLineCard } from '@/src/components/calculation/StructureLineCard';
+import { AppPicker } from '@/src/components/AppPicker';
 import type { MaterialQuantityRow, StructureLine } from '@/src/core/models/types';
 
 import { line } from '../pdfFixtures';
@@ -151,6 +152,23 @@ function textInOrder(node: ReactTestInstance): string[] {
 
 function materialSections(root: ReactTestInstance): ReactTestInstance[] {
   return root.findAllByType(View).filter((node) => node.props?.testID === 'structure-materials');
+}
+
+function findAddButton(root: ReactTestInstance): ReactTestInstance {
+  let add: ReactTestInstance | null =
+    materialSections(root)[0]
+      .findAllByType(Text)
+      .find((node) => node.props.children === 'Lisää materiaali') ?? null;
+  while (add && typeof add.props.onPress !== 'function') add = add.parent;
+  if (!add) throw new Error('Lisää materiaali puuttuu');
+  return add;
+}
+
+function minTouchHeight(node: ReactTestInstance): number {
+  const raw = typeof node.props.style === 'function' ? node.props.style({ pressed: false }) : node.props.style;
+  const flat = (Array.isArray(raw) ? raw.flat(4) : [raw]).filter((item) => item && typeof item === 'object');
+  const heights = flat.map((item) => item.minHeight).filter((value) => typeof value === 'number');
+  return heights.length > 0 ? Math.max(...heights) : 0;
 }
 
 function pressLabeled(root: ReactTestInstance, label: string) {
@@ -314,5 +332,124 @@ describe('materials after the structure cards', () => {
     );
     expect(onChangeLine).not.toHaveBeenCalled();
     expect(saved.materialQuantities?.[0]).toMatchObject({ productName: 'Maali A', quantity: 1, unit: 'l' });
+  });
+
+  it('does not let a zero-quantity line block finishing, and still blocks a non-zero line', () => {
+    const validity: Record<string, boolean> = {};
+    const hidden = {
+      ...line('z', 's1', 'Nolla'),
+      quantity: 0,
+      materialQuantities: [{ id: 'bad-z', productName: '', quantity: 0, source: 'manual' as const }],
+    };
+    const shown = {
+      ...line('a', 's2', 'Näkyy'),
+      quantity: 2,
+      materialQuantities: [{ id: 'bad-a', productName: '', quantity: 0, source: 'manual' as const }],
+    };
+    renderScreen(
+      <MaterialQuantitiesEditor
+        lines={[{ line: hidden }, { line: shown }]}
+        products={[]}
+        onChangeLine={() => undefined}
+        onValidityChange={(lineId, valid) => {
+          validity[lineId] = valid;
+        }}
+      />,
+    );
+    expect(validity.z).toBe(true);
+    expect(validity.a).toBe(false);
+  });
+
+  it('adds a material on the last non-zero line and keeps zero lines out of the chooser', () => {
+    function Harness() {
+      const [lines, setLines] = useState([
+        lineWithMaterial('l1', 'Maali A'),
+        {
+          ...line('z', 's2', 'Nolla'),
+          quantity: 0,
+          materialQuantities: [
+            { id: 'h1', productName: 'Piilo', quantity: 1, unit: 'l', source: 'manual' as const },
+            { id: 'h2', productName: 'Toinen', quantity: 1, unit: 'l', source: 'manual' as const },
+          ],
+        },
+        line('l3', 's3', 'Viimeinen'),
+      ]);
+      return (
+        <MaterialQuantitiesEditor
+          lines={lines.map((item) => ({ line: item }))}
+          products={[]}
+          onChangeLine={(next) => setLines((current) => current.map((row) => (row.id === next.id ? next : row)))}
+        />
+      );
+    }
+    const tree = renderScreen(<Harness />);
+    const section = materialSections(tree.root)[0];
+    expect(textInOrder(section)).toContain('2 materiaalia piilotettu, koska rakenteen määrä on 0');
+    expect(textInOrder(section)).not.toContain('Piilo');
+    const add = findAddButton(tree.root);
+    act(() => {
+      add.props.onPress();
+    });
+    const picker = tree.root.findByType(AppPicker);
+    expect(picker.props.items.map((item: { label: string }) => item.label)).toEqual(['Rakenne l1', 'Viimeinen']);
+    expect(picker.props.selectedValue).toBe('l3');
+    act(() => {
+      picker.props.onValueChange('z');
+    });
+    expect(tree.root.findByType(AppPicker).props.selectedValue).toBe('l3');
+  });
+
+  it('uses the singular notice for one hidden row and omits it when nothing is hidden', () => {
+    const hidden = renderScreen(
+      <MaterialQuantitiesEditor
+        lines={[
+          {
+            line: {
+              ...line('z', 's1', 'Nolla'),
+              quantity: 0,
+              materialQuantities: [{ id: 'h', productName: 'Piilo', quantity: 1, unit: 'l', source: 'manual' }],
+            },
+          },
+          { line: lineWithMaterial('l1', 'Maali A') },
+        ]}
+        products={[]}
+        onChangeLine={() => undefined}
+      />,
+    );
+    expect(textInOrder(materialSections(hidden.root)[0])).toContain(
+      '1 materiaali piilotettu, koska rakenteen määrä on 0',
+    );
+    const plain = renderScreen(
+      <MaterialQuantitiesEditor
+        lines={[{ line: lineWithMaterial('l1', 'Maali A') }]}
+        products={[]}
+        onChangeLine={() => undefined}
+      />,
+    );
+    expect(textInOrder(materialSections(plain.root)[0]).join('\n')).not.toContain('piilotettu');
+  });
+
+  it('disables adding when every line has quantity 0', () => {
+    const onChangeLine = jest.fn();
+    const tree = renderScreen(
+      <MaterialQuantitiesEditor
+        lines={[
+          { line: { ...line('z', 's1', 'Nolla'), quantity: 0 } },
+          { line: { ...line('z2', 's2', 'Toinen'), quantity: 0 } },
+        ]}
+        products={[]}
+        onChangeLine={onChangeLine}
+      />,
+    );
+    const add = findAddButton(tree.root);
+    expect(add.props.disabled).toBe(true);
+    expect(add.props.accessibilityState.disabled).toBe(true);
+    expect(minTouchHeight(add)).toBeGreaterThanOrEqual(44);
+    expect(() => {
+      act(() => {
+        add.props.onPress();
+      });
+    }).not.toThrow();
+    expect(onChangeLine).not.toHaveBeenCalled();
   });
 });

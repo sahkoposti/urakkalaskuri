@@ -204,6 +204,7 @@ function PressableButton({ title, onPress, disabled, variant, styleOverrides }: 
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityState={disabled ? { disabled: true } : undefined}
       style={({ pressed }) => [
         styles.buttonBase,
         variant === 'primary' ? styles.primaryButton : styles.outlinedButton,

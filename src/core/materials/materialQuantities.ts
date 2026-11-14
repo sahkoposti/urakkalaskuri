@@ -7,6 +7,7 @@ import type { MaterialQuantityRow, MaterialShade, Product, StructureLine } from 
 import { defaultSettings } from '@/src/core/models/types';
 import { formatPrintedQuantity } from '@/src/core/utils/formatters';
 import { fieldValuesEqual } from '@/src/core/wizard/wizardDraftHelpers';
+import { structureLineQuantityIsZero } from '@/src/core/materials/mergeMaterialRows';
 
 /**
  * Käyttäjän syöttämä enimmäismäärä. Esitäytön kaava-arvoa ei rajata tähän.
@@ -297,8 +298,12 @@ export function quantityInputError(text: string): string | null {
   return 'Tarkista määrä';
 }
 
-/** Tallentamattomat tai kelvottomat rivit estävät Yhteenveto-napin. Puuttuva avain ei estä. */
-export function materialQuantitiesBlockFinish(rows: MaterialQuantityRow[] | undefined): boolean {
+/** Tallentamattomat tai kelvottomat rivit estävät Yhteenveto-napin. Puuttuva avain ei estä. Määrä tasan 0 ei estä. */
+export function materialQuantitiesBlockFinish(
+  rows: MaterialQuantityRow[] | undefined,
+  line?: { quantity: number | null | undefined },
+): boolean {
+  if (line && structureLineQuantityIsZero(line)) return false;
   if (!rows) return false;
   return rows.some((row) => {
     if (!row.productName.trim()) return true;

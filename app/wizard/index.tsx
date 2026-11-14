@@ -730,7 +730,7 @@ export default function CalculationComposerScreen() {
       return;
     }
     if (
-      structureLines.some((line) => materialQuantitiesBlockFinish(line.materialQuantities)) ||
+      structureLines.some((line) => materialQuantitiesBlockFinish(line.materialQuantities, line)) ||
       Object.keys(materialIssues).length > 0
     ) {
       showAlert('Materiaalit', 'Tarkista materiaalimäärät ennen yhteenvetoa.');
@@ -809,7 +809,7 @@ export default function CalculationComposerScreen() {
   );
   const hasInvalidMaterials =
     Object.keys(materialIssues).length > 0 ||
-    structureLines.some((line) => materialQuantitiesBlockFinish(line.materialQuantities));
+    structureLines.some((line) => materialQuantitiesBlockFinish(line.materialQuantities, line));
 
   function handleComposerBack() {
     void leaveKeepingDraft(() => router.back());

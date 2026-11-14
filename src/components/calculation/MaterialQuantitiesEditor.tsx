@@ -20,6 +20,7 @@ import {
   mapMaterialEdit,
   mergedMaterialsForLines,
   moveMaterialRow,
+  structureLineQuantityIsZero,
   type MaterialContribution,
   type MaterialLineEntry,
   type MergedMaterialRow,
@@ -73,6 +74,7 @@ export function MaterialQuantitiesEditor({
   }
 
   function lineInvalid(entry: MaterialLineEntry): boolean {
+    if (structureLineQuantityIsZero(entry.line)) return false;
     return rowsFor(entry.line).some((row) => {
       if (!row.productName.trim()) return true;
       const shades = row.shades ?? [];
@@ -116,7 +118,7 @@ export function MaterialQuantitiesEditor({
   }
 
   function addMaterial() {
-    const entry = lines[lines.length - 1];
+    const entry = [...lines].reverse().find((item) => !structureLineQuantityIsZero(item.line));
     if (!entry) return;
     const rows = addManualMaterialRow(rowsFor(entry.line));
     onChangeLine({ ...entry.line, materialQuantities: rows });
@@ -137,7 +139,10 @@ export function MaterialQuantitiesEditor({
     field: styles.fieldDense,
   };
   const addMaterialButton = { button: styles.addMaterialButton };
-  const lineChoices = lines.map((entry) => ({ value: entry.line.id, label: entry.line.name }));
+  const editableLines = lines.filter((entry) => !structureLineQuantityIsZero(entry.line));
+  const canAddMaterial = editableLines.length > 0;
+  const hiddenMaterialCount = hiddenStoredMaterialCount(lines);
+  const lineChoices = editableLines.map((entry) => ({ value: entry.line.id, label: entry.line.name }));
 
   function renderShadeEditor(lineId: string, row: MaterialQuantityRow) {
     const shades = row.shades ?? [];
@@ -320,7 +325,7 @@ export function MaterialQuantitiesEditor({
     const only = group.contributions.length === 1 ? storedRow(group.contributions[0]) : undefined;
     const showLineChoice =
       !multiple &&
-      lines.length > 1 &&
+      editableLines.length > 1 &&
       only?.source === 'manual' &&
       !only.fieldKey &&
       !only.productName.trim();
@@ -334,6 +339,8 @@ export function MaterialQuantitiesEditor({
             selectedValue={group.contributions[0].lineId}
             items={lineChoices}
             onValueChange={(lineId) => {
+              const target = lines.find((entry) => entry.line.id === lineId);
+              if (!target || structureLineQuantityIsZero(target.line)) return;
               if (lineId === group.contributions[0].lineId) return;
               commit(
                 moveMaterialRow(structureLines, group.contributions[0].lineId, only.id, lineId, rowsFor),
@@ -452,8 +459,14 @@ export function MaterialQuantitiesEditor({
         underlineStyle={styles.sectionUnderline}
       />
       <Text style={styles.hint}>Yhdellä tuotteella voi olla useita sävyjä. Jokaisella sävyllä on oma määrä.</Text>
+      {hiddenMaterialCount > 0 ? <Text style={styles.hint}>{hiddenMaterialNoticeText(hiddenMaterialCount)}</Text> : null}
       {merged.map((group) => renderMerged(group))}
-      <OutlinedButton title="Lisää materiaali" onPress={addMaterial} styleOverrides={addMaterialButton} />
+      <OutlinedButton
+        title="Lisää materiaali"
+        onPress={addMaterial}
+        disabled={canAddMaterial ? undefined : true}
+        styleOverrides={addMaterialButton}
+      />
       <ConfirmDialog
         visible={pendingDeleteKey != null}
         title="Poista materiaali?"
@@ -466,6 +479,20 @@ export function MaterialQuantitiesEditor({
       />
     </View>
   );
+}
+
+function hiddenStoredMaterialCount(entries: MaterialLineEntry[]): number {
+  const ids = new Set<string>();
+  for (const entry of entries) {
+    if (!structureLineQuantityIsZero(entry.line)) continue;
+    for (const row of entry.line.materialQuantities ?? []) ids.add(`${entry.line.id}\0${row.id}`);
+  }
+  return ids.size;
+}
+
+function hiddenMaterialNoticeText(count: number): string {
+  if (count === 1) return '1 materiaali piilotettu, koska rakenteen määrä on 0';
+  return `${count} materiaalia piilotettu, koska rakenteen määrä on 0`;
 }
 
 function createStyles(colors: AppColorPalette) {

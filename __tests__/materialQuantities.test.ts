@@ -469,6 +469,11 @@ describe('effective quantities block an unfinished summary', () => {
     expect(materialQuantitiesBlockFinish([formRow(49)])).toBe(false);
     expect(materialQuantitiesBlockFinish([{ ...manualRow, productName: '  ' }])).toBe(true);
     expect(materialQuantitiesBlockFinish([{ ...manualRow, quantity: 0 }])).toBe(true);
+    expect(materialQuantitiesBlockFinish([{ ...manualRow, productName: '  ' }], { quantity: 0 })).toBe(false);
+    expect(materialQuantitiesBlockFinish([{ ...manualRow, productName: '  ' }], { quantity: -0 })).toBe(false);
+    expect(materialQuantitiesBlockFinish([{ ...manualRow, productName: '  ' }], { quantity: 2 })).toBe(true);
+    expect(materialQuantitiesBlockFinish([{ ...manualRow, productName: '  ' }], { quantity: Number.NaN })).toBe(true);
+    expect(materialQuantitiesBlockFinish([{ ...manualRow, productName: '  ' }], { quantity: undefined })).toBe(true);
   });
 });
 
