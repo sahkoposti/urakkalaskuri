@@ -46,9 +46,9 @@ jest.mock('expo-file-system', () => {
 
 import { PDFDocument } from '@cantoo/pdf-lib';
 
-import { ATTACHMENT_PDF_MERGE_FAILED_MESSAGE } from '../src/core/attachments/attachmentMessages';
-import type { AttachmentPdfDeps } from '../src/core/attachments/prepareAttachmentPrint';
-import type { Attachment } from '../src/core/attachments/types';
+import { ATTACHMENT_PDF_MERGE_FAILED_MESSAGE } from '../src/features/attachments/lib/attachmentMessages';
+import type { AttachmentPdfDeps } from '../src/features/attachments/lib/prepareAttachmentPrint';
+import type { Attachment } from '../src/features/attachments/lib/types';
 import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
 import { generatePdf } from '../src/core/pdf/generatePdf';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';

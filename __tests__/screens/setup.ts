@@ -1,6 +1,12 @@
-import { buildFixtureAppContext, mockDb } from './fixtures';
+import { mockDb, mockFixtureApp } from './fixtures';
 
-const mockFixtureApp = buildFixtureAppContext();
+const mockNavigation = {
+  setOptions: jest.fn(),
+  addListener: jest.fn(() => jest.fn()),
+  removeListener: jest.fn(),
+  getParent: jest.fn(),
+  dispatch: jest.fn(),
+};
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -15,6 +21,7 @@ jest.mock('expo-router', () => {
       Screen: () => null,
     },
     useLocalSearchParams: jest.fn(() => ({})),
+    useNavigation: () => mockNavigation,
     useFocusEffect: jest.fn((effect: () => void | (() => void)) => {
       effect();
     }),
@@ -51,22 +58,19 @@ jest.mock('@react-native-picker/picker', () => {
 });
 
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({
-    setOptions: jest.fn(),
-    addListener: jest.fn(() => jest.fn()),
-    removeListener: jest.fn(),
-    getParent: jest.fn(),
-    dispatch: jest.fn(),
-  }),
+  useNavigation: () => mockNavigation,
   useFocusEffect: jest.fn((effect: () => void | (() => void)) => {
     effect();
+  }),
+  useRoute: () => ({ key: 'wizard-composer-test' }),
+  usePreventRemoveContext: () => ({
+    setPreventRemove: jest.fn(),
+    notifyPreventRemove: jest.fn(),
   }),
 }));
 
 jest.mock('@/src/hooks/useNativeRemovePrevention', () => ({
-  useNativeRemovePrevention: () => ({
-    applyPreventRemove: jest.fn(),
-  }),
+  useNativeRemovePrevention: jest.fn(() => jest.fn()),
 }));
 
 jest.mock('@/src/context/SaveToastContext', () => ({

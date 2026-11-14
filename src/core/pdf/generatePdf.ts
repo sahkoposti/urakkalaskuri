@@ -1,19 +1,19 @@
 import { printToFileAsync } from 'expo-print';
 
-import { defaultAttachmentPdfDeps } from '@/src/core/attachments/attachmentPdfIo';
-import { ATTACHMENT_PDF_MERGE_FAILED_MESSAGE } from '@/src/core/attachments/attachmentMessages';
-import { appendAttachmentSection } from '@/src/core/attachments/attachmentSectionHtml';
-import { mergeOfferPdfSafe } from '@/src/core/attachments/mergeOfferPdf';
 import {
-  prepareAttachmentPrint,
-  type AttachmentPdfDeps,
-} from '@/src/core/attachments/prepareAttachmentPrint';
+  appendAttachmentSection,
+  ATTACHMENT_PDF_MERGE_FAILED_MESSAGE,
+  defaultAttachmentPdfDeps,
+  mergeOfferPdfSafe,
+} from '@/src/features/attachments';
 import {
   DEFAULT_ATTACHMENT_PAGE_LAYOUT,
+  prepareAttachmentPrint,
+  type Attachment,
+  type AttachmentPdfDeps,
   type AttachmentSectionLayout,
   type AttachmentTarget,
-} from '@/src/core/attachments/attachmentPrintPlan';
-import type { Attachment } from '@/src/core/attachments/types';
+} from '@/src/features/attachments';
 import { placePrintedPdf } from '@/src/core/documents/documentFiles';
 
 /** A4 pystyssä, 72 PPI (expo-print käyttää pikseleitä). */

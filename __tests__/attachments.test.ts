@@ -14,7 +14,7 @@ const copiedFiles: string[] = [];
 const copyFailures = new Set<string>();
 const diskPaths: string[] = [];
 
-jest.mock('../src/core/attachments/attachmentFiles', () => ({
+jest.mock('../src/features/attachments/lib/attachmentFiles', () => ({
   copyAttachmentFile: (source: string, target: string) => {
     if (copyFailures.has(source)) throw new Error('levy täynnä');
     copiedFiles.push(`${source} => ${target}`);
@@ -87,7 +87,7 @@ import {
   attachmentRelativePath,
   attachmentRelativePathFromUris,
   extensionForMime,
-} from '../src/core/attachments/attachmentPaths';
+} from '../src/features/attachments/lib/attachmentPaths';
 import {
   addAttachment,
   attachmentTotals,
@@ -98,8 +98,8 @@ import {
   removeAllAttachments,
   removeAttachment,
   updateAttachment,
-} from '../src/core/attachments/attachmentsRepository';
-import type { NewAttachmentInput } from '../src/core/attachments/types';
+} from '../src/features/attachments/storage/attachmentsRepository';
+import type { NewAttachmentInput } from '../src/features/attachments/lib/types';
 import { record } from './pdfFixtures';
 
 function draft(overrides: Partial<NewAttachmentInput> = {}): NewAttachmentInput {

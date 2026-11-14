@@ -8,7 +8,7 @@ jest.mock('expo-crypto', () => ({
   },
 }));
 
-jest.mock('../src/core/attachments/attachmentFiles', () => ({
+jest.mock('../src/features/attachments/lib/attachmentFiles', () => ({
   deleteCalculationAttachmentFolder: jest.fn(),
 }));
 jest.mock('../src/core/documents/documentFiles', () => ({

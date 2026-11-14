@@ -1,3 +1,4 @@
+export { asiakkaatFeature } from './feature';
 export { CustomerStep } from './components/CustomerStep';
 export { default as CustomerDetailScreen } from './screens/CustomerDetailScreen';
 export { default as CustomersListScreen } from './screens/CustomersListScreen';

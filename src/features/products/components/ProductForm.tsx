@@ -3,9 +3,9 @@ import { NAME_FIELD_KIND } from '@/src/components/textInputProps';
 import {
   attributeFieldValues,
   ProductAttributeFields,
-} from '@/src/components/product/ProductAttributeFields';
-import { ProductPriceFields } from '@/src/components/product/ProductPriceFields';
-import { ProductStructureAssignment } from '@/src/components/product/ProductStructureAssignment';
+} from './ProductAttributeFields';
+import { ProductPriceFields } from './ProductPriceFields';
+import { ProductStructureAssignment } from './ProductStructureAssignment';
 import type { Product } from '@/src/core/models/types';
 import {
   productPurchasePriceVat0,

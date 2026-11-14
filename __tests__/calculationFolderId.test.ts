@@ -17,7 +17,7 @@ jest.mock('expo-file-system', () => ({
   Paths: { document: 'doc' },
 }));
 
-import { deleteCalculationAttachmentFolder } from '../src/core/attachments/attachmentFiles';
+import { deleteCalculationAttachmentFolder } from '../src/features/attachments/lib/attachmentFiles';
 import { UNSAFE_CALCULATION_FOLDER_ID_WARNING } from '../src/core/documents/calculationFolderId';
 import { deleteCalculationDocumentFolder } from '../src/core/documents/documentFiles';
 

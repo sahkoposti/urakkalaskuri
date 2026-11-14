@@ -1,7 +1,6 @@
 import { randomUUID } from 'expo-crypto';
 
-import { defaultAttachmentPdfDeps } from '../attachments/attachmentPdfIo';
-import { listAttachments } from '../attachments/attachmentsRepository';
+import { defaultAttachmentPdfDeps, listAttachments } from '@/src/features/attachments';
 import { readAppVersion } from '../documents/appVersion';
 import { removeStoredPdf } from '../documents/documentFiles';
 import { insertDocument } from '../documents/documentsRepository';

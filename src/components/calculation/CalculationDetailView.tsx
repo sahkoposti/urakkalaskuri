@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { AttachmentSection } from '@/src/components/attachments/AttachmentSection';
+import { AttachmentSection } from '@/src/features/attachments/ui';
 import { DetailTabBar } from '@/src/components/calculation/DetailTabBar';
 import { ManualContractDialog } from '@/src/components/calculation/ManualContractDialog';
 import { FormSummarySection } from '@/src/components/form/FormSummarySection';
@@ -34,8 +34,7 @@ import {
   hasFormVersionMismatch,
 } from '@/src/core/form/formVersion';
 import type { FormDefinition } from '@/src/core/form/types';
-import { listAttachments } from '@/src/core/attachments/attachmentsRepository';
-import type { Attachment } from '@/src/core/attachments/types';
+import { listAttachments, type Attachment } from '@/src/features/attachments';
 import type { CalculationRecord, CustomerInfo, MaterialQuantityRow, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';

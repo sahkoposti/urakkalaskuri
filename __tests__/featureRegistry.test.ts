@@ -1,3 +1,6 @@
+import { asiakkaatFeature } from '../src/features/asiakkaat/feature';
+import { liitteetFeature } from '../src/features/attachments/feature';
+import { tuotteetFeature } from '../src/features/products/feature';
 import { FEATURES, type FeatureId, isFeatureEnabled } from '../src/features/registry';
 
 describe('feature registry', () => {
@@ -10,6 +13,33 @@ describe('feature registry', () => {
     for (const feature of FEATURES) {
       expect(feature.enabled).toBe(true);
     }
+  });
+
+  it('wires asiakkaat from the module manifest', () => {
+    const asiakkaat = FEATURES.find((feature) => feature.id === 'asiakkaat');
+    expect(asiakkaat).toEqual({
+      id: asiakkaatFeature.id,
+      label: asiakkaatFeature.label,
+      enabled: true,
+    });
+  });
+
+  it('wires liitteet from the module manifest', () => {
+    const liitteet = FEATURES.find((feature) => feature.id === 'liitteet');
+    expect(liitteet).toEqual({
+      id: liitteetFeature.id,
+      label: liitteetFeature.label,
+      enabled: true,
+    });
+  });
+
+  it('wires tuotteet from the module manifest', () => {
+    const tuotteet = FEATURES.find((feature) => feature.id === 'tuotteet');
+    expect(tuotteet).toEqual({
+      id: tuotteetFeature.id,
+      label: tuotteetFeature.label,
+      enabled: true,
+    });
   });
 
   it('isFeatureEnabled reflects enabled features only', () => {

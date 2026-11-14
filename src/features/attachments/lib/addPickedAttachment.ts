@@ -3,7 +3,7 @@ import { PDFDocument } from '@cantoo/pdf-lib';
 
 import { createId } from '@/src/core/utils/id';
 
-import { addAttachment, listAttachments } from './attachmentsRepository';
+import { addAttachment, listAttachments } from '../storage/attachmentsRepository';
 import {
   attachmentFileUri,
   placeAttachmentFile,

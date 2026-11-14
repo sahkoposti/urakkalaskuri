@@ -1,7 +1,10 @@
-import { resolveOfferAttachmentLayout } from '../attachments/attachmentSectionHtml';
-import { attachmentsForDestination, splitAttachments } from '../attachments/attachmentPrintPlan';
-import type { Attachment } from '../attachments/types';
-import type { AttachmentPdfDeps } from '../attachments/prepareAttachmentPrint';
+import {
+  attachmentsForDestination,
+  resolveOfferAttachmentLayout,
+  splitAttachments,
+  type Attachment,
+  type AttachmentPdfDeps,
+} from '@/src/features/attachments';
 import type { CompanyProfile } from '../company/types';
 import type { AppSettings, CalculationRecord, Product } from '../models/types';
 import { customerFromRecord } from '../models/types';
