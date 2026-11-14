@@ -836,7 +836,7 @@ export default function CalculationComposerScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <SectionTitle title="Asiakas" containerStyle={styles.sectionTitleFlush} />
+          <SectionTitle title="Asiakas" {...screenSectionTitleStyle} />
           <AppCard style={styles.screenCard} onPress={() => void openCustomer()}>
             <View style={styles.customerRow}>
               <Text style={styles.customerText}>{customerSummary}</Text>
@@ -875,7 +875,7 @@ export default function CalculationComposerScreen() {
           />
           </View>
 
-          <SectionTitle title="Tuoterakenteet" containerStyle={styles.sectionTitleFlush} />
+          <SectionTitle title="Tuoterakenteet" {...screenSectionTitleStyle} />
           {showBusinessVatChoice ? (
             <ChoiceToggle
               label="Hintojen ALV"
@@ -922,14 +922,20 @@ export default function CalculationComposerScreen() {
           </View>
 
           <View style={styles.actions}>
-          <OutlinedButton title="Lisää tuoterakenne" onPress={() => setStructurePickerVisible(true)} />
+          <OutlinedButton
+            title="Lisää tuoterakenne"
+            onPress={() => setStructurePickerVisible(true)}
+            styleOverrides={screenButtonOverride}
+          />
           <PrimaryButton
             title="Yhteenveto"
             onPress={() => void finishCalculation(false)}
             disabled={hasIncompleteForm || hasInvalidMaterials}
+            styleOverrides={screenButtonOverride}
           />
           <OutlinedButton
             title="Tallenna ja sulje"
+            styleOverrides={screenButtonOverride}
             onPress={() => {
               if (hasIncompleteForm || hasInvalidMaterials || structureLines.length === 0) {
                 void saveDraftAndExit();
@@ -1046,6 +1052,20 @@ function hydrateLines(
 const screenFieldSpacing = {
   wrap: { marginBottom: 0 },
   label: { marginBottom: spacing.xs },
+  field: { paddingVertical: control.denseInputPaddingVertical },
+};
+
+const screenSectionTitleStyle = {
+  containerStyle: { marginBottom: 0 },
+  underlineStyle: { marginTop: spacing.xs },
+};
+
+const screenButtonOverride = {
+  button: {
+    minHeight: control.minTouch,
+    paddingVertical: spacing.sm,
+    justifyContent: 'center' as const,
+  },
 };
 
 const screenToggleSpacing = {
@@ -1064,14 +1084,11 @@ function createStyles(colors: AppColorPalette) {
       flex: 1,
     },
     content: {
-      padding: spacing.lg,
-      gap: spacing.md,
-    },
-    sectionTitleFlush: {
-      marginBottom: 0,
+      padding: spacing.md,
+      gap: spacing.sm,
     },
     screenCard: {
-      padding: spacing.lg,
+      padding: spacing.md,
     },
     fieldGroup: {
       gap: spacing.sm,

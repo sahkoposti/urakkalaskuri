@@ -61,9 +61,11 @@ type SectionTitleProps = {
   center?: boolean;
   /** Opt-in. Default wrap spacing is unchanged. */
   containerStyle?: StyleProp<ViewStyle>;
+  /** Opt-in. Default underline spacing is unchanged. */
+  underlineStyle?: StyleProp<ViewStyle>;
 };
 
-export function SectionTitle({ title, center = false, containerStyle }: SectionTitleProps) {
+export function SectionTitle({ title, center = false, containerStyle, underlineStyle }: SectionTitleProps) {
   const styles = useThemedStyles(createCommonStyles);
   return (
     <View
@@ -74,7 +76,7 @@ export function SectionTitle({ title, center = false, containerStyle }: SectionT
       ]}
     >
       <Text style={[styles.sectionTitle, center && styles.centerText]}>{title}</Text>
-      <View style={styles.sectionUnderline} />
+      <View style={underlineStyle ? [styles.sectionUnderline, underlineStyle] : styles.sectionUnderline} />
     </View>
   );
 }
@@ -153,15 +155,18 @@ type PrimaryButtonProps = {
   title: string;
   onPress: () => void;
   disabled?: boolean;
+  /** Opt-in. Default button spacing is unchanged. */
+  styleOverrides?: { button?: StyleProp<ViewStyle> };
 };
 
-export function PrimaryButton({ title, onPress, disabled }: PrimaryButtonProps) {
+export function PrimaryButton({ title, onPress, disabled, styleOverrides }: PrimaryButtonProps) {
   return (
     <PressableButton
       title={title}
       onPress={onPress}
       disabled={disabled}
       variant="primary"
+      styleOverrides={styleOverrides}
     />
   );
 }
@@ -170,15 +175,17 @@ type OutlinedButtonProps = {
   title: string;
   onPress: () => void;
   disabled?: boolean;
+  styleOverrides?: { button?: StyleProp<ViewStyle> };
 };
 
-export function OutlinedButton({ title, onPress, disabled }: OutlinedButtonProps) {
+export function OutlinedButton({ title, onPress, disabled, styleOverrides }: OutlinedButtonProps) {
   return (
     <PressableButton
       title={title}
       onPress={onPress}
       disabled={disabled}
       variant="outlined"
+      styleOverrides={styleOverrides}
     />
   );
 }
@@ -188,9 +195,10 @@ type PressableButtonProps = {
   onPress: () => void;
   disabled?: boolean;
   variant: 'primary' | 'outlined';
+  styleOverrides?: { button?: StyleProp<ViewStyle> };
 };
 
-function PressableButton({ title, onPress, disabled, variant }: PressableButtonProps) {
+function PressableButton({ title, onPress, disabled, variant, styleOverrides }: PressableButtonProps) {
   const styles = useThemedStyles(createCommonStyles);
   return (
     <Pressable
@@ -199,6 +207,7 @@ function PressableButton({ title, onPress, disabled, variant }: PressableButtonP
       style={({ pressed }) => [
         styles.buttonBase,
         variant === 'primary' ? styles.primaryButton : styles.outlinedButton,
+        ...(styleOverrides?.button ? [styleOverrides.button] : []),
         disabled && styles.buttonDisabled,
         pressed && !disabled ? styles.buttonPressed : null,
       ]}
