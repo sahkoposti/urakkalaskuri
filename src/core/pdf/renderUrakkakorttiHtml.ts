@@ -43,16 +43,22 @@ function renderUrakkakorttiBlock(ctx: UrakkakorttiContext, kind: UrakkakorttiBlo
     return `<div class="additional-info uk-lisatiedot"><h3>Lisätiedot:</h3><div>${renderMarkedMultiline(ctx.structureLisatiedot)}</div></div>`;
   }
   if (kind === 'materials') {
+    const ownPage = ctx.materials.some((m) => m.structureHeader);
     const rows = ctx.materials
       .map((m) => {
-        if (m.shadeHeader) {
-          return `<tr class="uk-shade-product"><td colspan="3">${escapeHtml(m.product)}</td></tr>`;
+        if (m.structureHeader) {
+          return `<tr class="uk-structure"><td colspan="2">${escapeHtml(m.product)}</td></tr>`;
         }
+        if (m.shadeHeader) {
+          return `<tr class="uk-shade-product"><td colspan="2">${escapeHtml(m.product)}</td></tr>`;
+        }
+        const qtyUnit = [m.quantity, m.unit].filter((part) => part.trim()).join(' ');
         const cls = m.shade ? ' class="uk-shade"' : '';
-        return `<tr${cls}><td>${escapeHtml(m.product)}</td><td class="value">${escapeHtml(m.quantity)}</td><td>${escapeHtml(m.unit)}</td></tr>`;
+        return `<tr${cls}><td>${escapeHtml(m.product)}</td><td class="value">${escapeHtml(qtyUnit)}</td></tr>`;
       })
       .join('');
-    return `<div class="uk-materials"><h3>Materiaalit</h3><table><thead><tr><th>Tuote</th><th class="value">Määrä</th><th>Yksikkö</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    const pageCls = ownPage ? ' uk-materials-page' : '';
+    return `<div class="uk-materials${pageCls}"><h3>Materiaalit</h3><table><thead><tr><th>Tuote</th><th class="value">Määrä</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   return `<div class="uk-huomio"><h3>Huomioitavaa</h3>${renderPrintedLines(ctx.huomioitavaa)}</div>`;
 }
@@ -86,11 +92,13 @@ function urakkakorttiCss(accent: string): string {
   .uk-sum-value { display: block; font-size: 16pt; font-weight: 700; color: ${accent}; }
   .uk-sum-emp .uk-sum-value { font-size: 15pt; }
   .uk-materials { margin: 0 0 6mm 0; }
+  .uk-materials.uk-materials-page { break-before: page; page-break-before: always; }
   .uk-materials h3 { margin: 0 0 1.5mm 0; font-size: 12pt; break-after: avoid; page-break-after: avoid; }
   .uk-materials table { width: 100%; border-collapse: collapse; font-size: 11pt; }
   .uk-materials tr { break-inside: avoid; page-break-inside: avoid; }
   .uk-materials th, .uk-materials td { text-align: left; padding: 0.8mm 2mm 0.8mm 0; border-bottom: 1px solid #ddd; color: #111; }
   .uk-materials .value { text-align: right; }
+  .uk-materials tr.uk-structure td { font-weight: 700; font-size: 11.5pt; border-bottom: none; padding-top: 2.4mm; }
   .uk-materials tr.uk-shade-product td { font-weight: 700; border-bottom: none; padding-top: 1.6mm; }
   .uk-materials tr.uk-shade td:first-child { padding-left: 5mm; }
   .uk-lisatiedot { margin: 4mm 0 6mm 0; }

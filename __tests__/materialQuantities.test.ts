@@ -373,7 +373,7 @@ describe('urakkakortti material table', () => {
       structures: [paintStructure],
       products: [vinha],
     }))));
-    expect(singleHtml).toContain('<td>Tikkurila Vinha</td><td class="value">49,5</td><td>litraa</td>');
+    expect(singleHtml).toContain('<td>Tikkurila Vinha</td><td class="value">49,5 litraa</td>');
     const materials = singleHtml.match(/<div class="uk-materials">[\s\S]*?<\/div>/)?.[0] ?? '';
     expect(materials).not.toContain('€');
 
@@ -391,9 +391,13 @@ describe('urakkakortti material table', () => {
       },
     );
     const multiHtml = bodyOf(renderUrakkakorttiHtml(buildUrakkakorttiContext(ukInput(multi, { products: [vinha] }))));
-    expect(multiHtml).toContain('Ulkomaalaus: Tikkurila Vinha');
-    expect(multiHtml).toContain('Sokkeli: Pohjuste');
-    expect(multiHtml).toContain('>3<');
+    expect(multiHtml).toContain('class="uk-structure"');
+    expect(multiHtml).toContain('>Ulkomaalaus<');
+    expect(multiHtml).toContain('>Sokkeli<');
+    expect(multiHtml).toContain('Tikkurila Vinha');
+    expect(multiHtml).toContain('Pohjuste');
+    expect(multiHtml).toContain('3 l');
+    expect(multiHtml.indexOf('Materiaalit')).toBeGreaterThan(multiHtml.indexOf('Sokkeli'));
   });
 
   test('an empty saved list prints no table, even when legacy lines exist', () => {
@@ -420,7 +424,7 @@ describe('urakkakortti material table', () => {
     expect(ctx.materials).toEqual(urakkakorttiMaterials(rec));
     expect(ctx.sections[0].tableRows.map((row) => row.value)).toContain('Tikkurila Vinha');
     expect(ctx.sections[0].tableRows.map((row) => row.value).join(' ')).not.toContain('49');
-    expect(bodyOf(renderUrakkakorttiHtml(ctx))).toContain('<td>Maali X</td><td class="value">18,5</td><td>l</td>');
+    expect(bodyOf(renderUrakkakorttiHtml(ctx))).toContain('<td>Maali X</td><td class="value">18,5 l</td>');
   });
 
   test('no saved rows and no legacy lines keep the table absent', () => {

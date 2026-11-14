@@ -93,7 +93,7 @@ export function MaterialQuantitiesEditor({
                   label="Tuote"
                   value={row.productName}
                   onChangeText={(value) => commit(editMaterialQuantity(baseRows(), row.id, { productName: value }))}
-                  kind="words"
+                  kind="code"
                 />
                 {shades.length === 0 ? (
                   <>

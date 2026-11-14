@@ -98,7 +98,7 @@ export function CustomerStep({
         onChangeText={onEmailChange}
         kind="email"
       />
-      <AppInput label="Osoite" value={address} onChangeText={onAddressChange} kind="words" />
+      <AppInput label="Osoite" value={address} onChangeText={onAddressChange} kind="sentence" />
       <AppInput
         label="Postinumero"
         value={postalCode}

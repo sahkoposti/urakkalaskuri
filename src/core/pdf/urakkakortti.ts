@@ -42,6 +42,8 @@ export type UrakkakorttiMaterialRow = {
   /** Sävy tuotteen alla. Tuoterivi on otsikko, kun sillä on sävyjä. */
   shade?: boolean;
   shadeHeader?: boolean;
+  /** Usean rakenteen kortilla: rakenneotsikko ennen sen tuotteita. */
+  structureHeader?: boolean;
 };
 
 export type UrakkakorttiContext = {
@@ -176,16 +178,19 @@ function resolveUrakkakorttiMaterialTable(input: BuildUrakkakorttiInput): {
 
   const rows: UrakkakorttiMaterialRow[] = [];
   const omitPaintQuantityLineIds = new Set<string>();
-  const prefix = lines.length > 1;
+  const multiStructure = lines.length > 1;
   for (const line of lines) {
     const quantities = effectiveMaterialQuantities(line, lineForm(input, line.structureId), input.products).filter(
       rowPrintable,
     );
     if (quantities.length === 0) continue;
     omitPaintQuantityLineIds.add(line.id);
+    if (multiStructure) {
+      rows.push({ product: line.name.trim(), quantity: '', unit: '', structureHeader: true });
+    }
     for (const row of quantities) {
       const name = row.productName.trim();
-      const product = prefix ? `${line.name}: ${name}` : name;
+      const product = name;
       const shades = (row.shades ?? []).filter(
         (shade) => shade.name.trim() && Number.isFinite(shade.quantity) && shade.quantity > 0,
       );
@@ -283,7 +288,7 @@ export function urakkakorttiBodyBlocks(ctx: UrakkakorttiContext): UrakkakorttiBl
   if (ctx.specGrid.mode !== 'none') blocks.push('specs');
   if (ctx.sections.length > 0) blocks.push('print');
   if (ctx.structureLisatiedot.trim()) blocks.push('lisatiedot');
-  if (ctx.materials.length > 0) blocks.push('materials');
   if (ctx.huomioitavaa.trim()) blocks.push('huomio');
+  if (ctx.materials.length > 0) blocks.push('materials');
   return blocks;
 }

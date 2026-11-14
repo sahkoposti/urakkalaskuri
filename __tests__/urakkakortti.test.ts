@@ -131,7 +131,7 @@ describe('urakkakortti', () => {
       lines: [{ id: 'm1', productName: 'Maali X', unit: 'l', unitPriceVat0: 12.34, quantity: 18.5, lineTotalVat0: 228.29 }],
     });
     const html = bodyOf(renderUrakkakorttiHtml(buildUrakkakorttiContext(ukInput(rec))));
-    expect(html).toContain('<td>Maali X</td><td class="value">18,5</td><td>l</td>');
+    expect(html).toContain('<td>Maali X</td><td class="value">18,5 l</td>');
     expect(html).not.toMatch(/12,34|228,29/);
     expect(bodyOf(renderUrakkakorttiHtml(buildUrakkakorttiContext(ukInput(record({})))))).not.toContain('Materiaalit');
   });
