@@ -162,7 +162,7 @@ describe('prefillMaterialQuantities', () => {
     expect(row.unit).toBe('litraa');
   });
 
-  test('skips hidden, empty, missing quantityKey and the wrong group', () => {
+  test('skips hidden, empty and a product_select without an urakkakortti quantityKey', () => {
     const hidden = formOf([
       field({ id: 'show', key: 'nayta', type: 'boolean', label: 'Näytä' }),
       field({
@@ -189,11 +189,122 @@ describe('prefillMaterialQuantities', () => {
     const noKey = formOf([paintField({ urakkakortti: { group: 'maali' } }), litres]);
     expect(prefillMaterialQuantities(paintLine(), noKey, [vinha])).toEqual([]);
 
-    const wrongGroup = formOf([
-      paintField({ urakkakortti: { group: 'tieto', quantityKey: 'maalit_yhteensa_litraa' } }),
+    const otherGroupNoKey = formOf([
+      paintField({ urakkakortti: { group: 'muuta' } }),
       litres,
     ]);
-    expect(prefillMaterialQuantities(paintLine(), wrongGroup, [vinha])).toEqual([]);
+    expect(prefillMaterialQuantities(paintLine(), otherGroupNoKey, [vinha])).toEqual([]);
+  });
+
+  test('a non-maali product_select with an urakkakortti quantityKey pre-fills', () => {
+    const vaha: Product = {
+      id: 'vaha',
+      name: 'Fiktiivinen vaha',
+      unit: 'l',
+      unitPriceVat0: 8,
+      createdAt: new Date(2026, 0, 1),
+    };
+    const waxLitres = field({ id: 'vq', key: 'vahan_maara', type: 'number', unit: 'litraa' });
+    const waxForm = formOf([
+      field({
+        id: 'wax',
+        key: 'vahaus',
+        type: 'product_select',
+        label: 'Vahaus',
+        print: { urakkakortti: { group: 'muuta', quantityKey: 'vahan_maara' } },
+      }),
+      waxLitres,
+    ]);
+    const [row] = prefillMaterialQuantities(
+      {
+        ...line('l-wax', 's-wax', 'Vahaus'),
+        fieldValues: { vahaus: 'vaha', vahan_maara: '4' },
+        snapshot: snap([
+          { key: 'vahaus', label: 'Vahaus', value: 'Fiktiivinen vaha' },
+          { key: 'vahan_maara', label: 'Vahan määrä', value: '4 litraa', unit: 'litraa' },
+        ]),
+      },
+      waxForm,
+      [vaha],
+    );
+    expect(row).toMatchObject({
+      id: 'form:vahaus',
+      productId: 'vaha',
+      productName: 'Fiktiivinen vaha',
+      quantity: 4,
+      unit: 'litraa',
+      source: 'form',
+      fieldKey: 'vahaus',
+    });
+  });
+
+  test('maali prefill keeps the same row, order and values', () => {
+    const [row] = prefillMaterialQuantities(paintLine(), paintForm, [vinha]);
+    expect(row).toEqual(formRow(49));
+
+    const second = field({
+      id: 'primer',
+      key: 'pohjamaali',
+      type: 'product_select',
+      print: { urakkakortti: { group: 'maali', quantityKey: 'pohjamaali_litraa' } },
+    });
+    const primerLitres = field({ id: 'pl', key: 'pohjamaali_litraa', type: 'number', unit: 'litraa' });
+    const ordered = formOf(
+      [paintField({ urakkakortti: { group: 'maali', quantityKey: 'maalit_yhteensa_litraa' } }), second, litres, primerLitres],
+      ['primer', 'paint', 'litres', 'pl'],
+    );
+    const rows = prefillMaterialQuantities(
+      paintLine({
+        fieldValues: {
+          kaytettava_maali: 'vinha',
+          maalit_yhteensa_litraa: '49',
+          pohjamaali: 'vinha',
+          pohjamaali_litraa: '3',
+        },
+        snapshot: snap([]),
+      }),
+      ordered,
+      [vinha],
+    );
+    expect(rows.map((item) => `${item.fieldKey}:${item.quantity}:${item.unit}`)).toEqual([
+      'pohjamaali:3:litraa',
+      'kaytettava_maali:49:litraa',
+    ]);
+  });
+
+  test('saved materialQuantities are returned unchanged when the line is loaded', () => {
+    const saved: MaterialQuantityRow[] = [
+      { id: 'kept', productName: 'Tallennettu pensseli', quantity: 2, unit: 'kpl', source: 'manual' },
+    ];
+    const vaha: Product = {
+      id: 'vaha',
+      name: 'Fiktiivinen vaha',
+      unit: 'l',
+      unitPriceVat0: 8,
+      createdAt: new Date(2026, 0, 1),
+    };
+    const form = formOf([
+      paintField({ urakkakortti: { group: 'maali', quantityKey: 'maalit_yhteensa_litraa' } }),
+      litres,
+      field({
+        id: 'wax',
+        key: 'vahaus',
+        type: 'product_select',
+        print: { urakkakortti: { group: 'muuta', quantityKey: 'vahan_maara' } },
+      }),
+      field({ id: 'vq', key: 'vahan_maara', type: 'number', unit: 'litraa' }),
+    ]);
+    const stored = paintLine({
+      materialQuantities: saved,
+      fieldValues: {
+        kaytettava_maali: 'vinha',
+        maalit_yhteensa_litraa: '49',
+        vahaus: 'vaha',
+        vahan_maara: '4',
+      },
+    });
+    expect(effectiveMaterialQuantities(stored, form, [vinha, vaha])).toEqual(saved);
+    expect(stored.materialQuantities).toEqual(saved);
   });
 
   test('follows form order', () => {
