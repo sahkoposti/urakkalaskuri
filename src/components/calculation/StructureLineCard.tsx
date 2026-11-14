@@ -91,15 +91,31 @@ export function StructureLineCard({
     onChange(patchStructureLine(priced, next));
   }
 
+  const inputDense = {
+    wrap: styles.inputWrapDense,
+    label: styles.inputLabelDense,
+    field: styles.inputFieldDense,
+  };
+  const inputDenseMultiline = {
+    wrap: styles.inputWrapDense,
+    label: styles.inputLabelDense,
+    field: styles.inputMultilineDense,
+  };
+  const toggleDense = {
+    row: styles.toggleRowDense,
+    label: styles.toggleLabelDense,
+    button: styles.toggleButtonDense,
+  };
+
   return (
     <AppCard style={styles.card}>
       <View style={styles.titleRow}>
         {showGear && onOpenForm ? (
-          <Pressable onPress={onOpenForm} hitSlop={8} accessibilityLabel="Avaa lomake">
+          <Pressable onPress={onOpenForm} hitSlop={11} accessibilityLabel="Avaa lomake">
             <ThemedIcon name="settings" size={22} />
           </Pressable>
         ) : null}
-        <Pressable onPress={onDelete} hitSlop={8} accessibilityLabel="Poista rivi">
+        <Pressable onPress={onDelete} hitSlop={11} accessibilityLabel="Poista rivi">
           <ThemedIcon name="trash" size={22} />
         </Pressable>
       </View>
@@ -109,6 +125,7 @@ export function StructureLineCard({
         onChangeText={(value) => patch({ name: value })}
         kind={NAME_FIELD_KIND.lineName}
         placeholder="Tuoterakenne"
+        spacingOverrides={inputDense}
       />
       {formIncomplete ? <Text style={styles.incomplete}>Keskeneräinen lomake</Text> : null}
 
@@ -118,6 +135,7 @@ export function StructureLineCard({
             label="Määrä"
             value={priced.quantity}
             onChangeValue={(value) => patch({ quantity: value })}
+            spacingOverrides={inputDense}
           />
         </View>
         <View style={styles.fieldHalf}>
@@ -126,6 +144,7 @@ export function StructureLineCard({
             value={priced.unit ?? ''}
             onChangeText={(value) => patch({ unit: value })}
             kind="code"
+            spacingOverrides={inputDense}
           />
         </View>
       </View>
@@ -139,6 +158,7 @@ export function StructureLineCard({
             { value: true, label: vatInclTag(vatPercent) },
           ]}
           onChange={(next) => patch({ pricesIncludeVat: next })}
+          spacingOverrides={toggleDense}
         />
       )}
 
@@ -150,6 +170,7 @@ export function StructureLineCard({
             onChangeValue={(value) =>
               patch({ unitPriceVat0: fromCardAmount(value, includeVat, vatPercent) })
             }
+            spacingOverrides={inputDense}
           />
         </View>
         <View style={styles.fieldHalf}>
@@ -159,6 +180,7 @@ export function StructureLineCard({
             onChangeValue={(value) =>
               patch({ materialsVat0: fromCardAmount(value, includeVat, vatPercent) })
             }
+            spacingOverrides={inputDense}
           />
         </View>
       </View>
@@ -169,6 +191,7 @@ export function StructureLineCard({
             label="Urakkahinta € (alv0)"
             value={priced.contractPriceVat0}
             onChangeValue={(value) => patch({ contractPriceVat0: value })}
+            spacingOverrides={inputDense}
           />
         </View>
         <View style={styles.fieldHalf}>
@@ -176,6 +199,7 @@ export function StructureLineCard({
             label={WORK_DURATION_DISPLAY_LABEL}
             value={displayedWorkDurationDays}
             onChangeValue={(value) => patch({ displayWorkDurationDays: value })}
+            spacingOverrides={inputDense}
           />
         </View>
       </View>
@@ -189,10 +213,12 @@ export function StructureLineCard({
             kind="sentence"
             multiline
             placeholder="Valinnainen"
+            spacingOverrides={inputDenseMultiline}
           />
         ) : (
           <Pressable
             onPress={() => setAdditionalInfoExpanded(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
             style={({ pressed }) => [styles.additionalInfoRow, pressed && styles.additionalInfoRowPressed]}
             accessibilityRole="button"
             accessibilityLabel="Avaa Lisätiedot"
@@ -210,6 +236,7 @@ export function StructureLineCard({
         label="Ale %"
         value={priced.discountPercent}
         onChangeValue={(value) => patch({ discountPercent: value })}
+        spacingOverrides={inputDense}
       />
 
       <View style={styles.metaRow}>
@@ -232,10 +259,16 @@ function DaysInput({
   label,
   value,
   onChangeValue,
+  spacingOverrides,
 }: {
   label: string;
   value: number | undefined;
   onChangeValue: (value: number | null) => void;
+  spacingOverrides?: {
+    wrap?: object;
+    label?: object;
+    field?: object;
+  };
 }) {
   const display = value != null && value > 0 ? String(value) : '';
   const [text, setText] = useState(display);
@@ -255,6 +288,7 @@ function DaysInput({
       value={text}
       kind="decimal"
       placeholder="Valinnainen"
+      spacingOverrides={spacingOverrides}
       onChangeText={(raw) => {
         const next = limitDecimalInput(raw, 0);
         setText(next);
@@ -282,10 +316,16 @@ function DecimalInput({
   label,
   value,
   onChangeValue,
+  spacingOverrides,
 }: {
   label: string;
   value: number;
   onChangeValue: (value: number) => void;
+  spacingOverrides?: {
+    wrap?: object;
+    label?: object;
+    field?: object;
+  };
 }) {
   const [text, setText] = useState(formatFixed2(value));
   const lastSent = useRef(roundToCents(value));
@@ -303,6 +343,7 @@ function DecimalInput({
       label={label}
       value={text}
       kind="decimal"
+      spacingOverrides={spacingOverrides}
       onChangeText={(raw) => {
         const next = limitDecimalInput(raw);
         setText(next);
@@ -320,14 +361,17 @@ function createStyles(colors: AppColorPalette) {
   return {
     card: {
       gap: 0,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
     },
     additionalInfoRow: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
       gap: 8,
-      marginTop: 4,
-      marginBottom: 4,
-      paddingVertical: 6,
+      marginTop: 0,
+      marginBottom: 0,
+      paddingVertical: 4,
+      minHeight: 44,
     },
     additionalInfoRowPressed: {
       opacity: 0.85,
@@ -349,11 +393,11 @@ function createStyles(colors: AppColorPalette) {
       alignItems: 'flex-start' as const,
       justifyContent: 'flex-end' as const,
       gap: 8,
-      marginBottom: 8,
+      marginBottom: 4,
     },
     incomplete: {
-      marginTop: 2,
-      marginBottom: 6,
+      marginTop: 1,
+      marginBottom: 3,
       fontFamily: 'IBMPlexSans_400Regular',
       fontSize: 13,
       color: colors.accent,
@@ -368,7 +412,7 @@ function createStyles(colors: AppColorPalette) {
     metaRow: {
       flexDirection: 'row' as const,
       justifyContent: 'space-between' as const,
-      marginTop: 4,
+      marginTop: 2,
     },
     metaLabel: {
       fontFamily: 'IBMPlexSans_400Regular',
@@ -381,8 +425,8 @@ function createStyles(colors: AppColorPalette) {
     totalRow: {
       flexDirection: 'row' as const,
       justifyContent: 'space-between' as const,
-      marginTop: 6,
-      paddingTop: 6,
+      marginTop: 3,
+      paddingTop: 4,
       borderTopWidth: 1,
       borderTopColor: colors.border,
     },
@@ -394,6 +438,31 @@ function createStyles(colors: AppColorPalette) {
       fontFamily: 'IBMPlexSans_700Bold',
       color: colors.accent,
       fontSize: 16,
+    },
+    inputWrapDense: {
+      marginBottom: 5,
+    },
+    inputLabelDense: {
+      marginBottom: 3,
+    },
+    inputFieldDense: {
+      paddingVertical: 7,
+    },
+    inputMultilineDense: {
+      minHeight: 72,
+      paddingVertical: 7,
+      textAlignVertical: 'top' as const,
+    },
+    toggleRowDense: {
+      marginBottom: 5,
+    },
+    toggleLabelDense: {
+      marginBottom: 3,
+    },
+    toggleButtonDense: {
+      paddingVertical: 8,
+      minHeight: 44,
+      justifyContent: 'center' as const,
     },
   };
 }

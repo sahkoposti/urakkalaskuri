@@ -9,6 +9,7 @@ import {
   type StyleProp,
   type SwitchProps,
   type TextInputProps,
+  type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -260,6 +261,12 @@ type AppInputProps = {
   multiline?: boolean;
   placeholder?: string;
   compact?: boolean;
+  /** Vain kutsuja: ylimääräiset tyylit pystytiivistykseen (ei vaikuta oletustyyleihin). */
+  spacingOverrides?: {
+    wrap?: StyleProp<ViewStyle>;
+    label?: StyleProp<TextStyle>;
+    field?: StyleProp<TextStyle>;
+  };
   trailing?: ReactNode;
   onFocus?: TextInputProps['onFocus'];
   onBlur?: TextInputProps['onBlur'];
@@ -278,6 +285,7 @@ export function AppInput({
   multiline = false,
   placeholder,
   compact = false,
+  spacingOverrides,
   trailing,
   onFocus,
   onBlur,
@@ -291,6 +299,7 @@ export function AppInput({
     compact && styles.inputCompact,
     multiline && styles.inputMultiline,
     compact && multiline && styles.inputMultilineCompact,
+    ...(spacingOverrides?.field ? [spacingOverrides.field] : []),
   ];
 
   const field = (
@@ -312,8 +321,22 @@ export function AppInput({
   );
 
   return (
-    <View style={[styles.inputWrap, compact && styles.inputWrapCompact]}>
-      <Text style={[styles.inputLabel, compact && styles.inputLabelCompact]}>{label}</Text>
+    <View
+      style={[
+        styles.inputWrap,
+        compact && styles.inputWrapCompact,
+        ...(spacingOverrides?.wrap ? [spacingOverrides.wrap] : []),
+      ]}
+    >
+      <Text
+        style={[
+          styles.inputLabel,
+          compact && styles.inputLabelCompact,
+          ...(spacingOverrides?.label ? [spacingOverrides.label] : []),
+        ]}
+      >
+        {label}
+      </Text>
       {trailing ? (
         <View style={styles.inputInnerRow}>
           {field}

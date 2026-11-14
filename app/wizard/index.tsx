@@ -881,6 +881,7 @@ export default function CalculationComposerScreen() {
               onChange={setBusinessVatMode}
             />
           ) : null}
+          <View style={styles.structureLinesList}>
           {structureLines.map((line) => (
             <View key={line.id} style={styles.lineBlock}>
               <StructureLineCard
@@ -911,6 +912,7 @@ export default function CalculationComposerScreen() {
               />
             </View>
           ))}
+          </View>
 
           <OutlinedButton title="Lisää tuoterakenne" onPress={() => setStructurePickerVisible(true)} />
           <PrimaryButton
@@ -1042,8 +1044,11 @@ function createStyles(colors: AppColorPalette) {
       paddingBottom: 40,
       gap: 10,
     },
+    structureLinesList: {
+      gap: 4,
+    },
     lineBlock: {
-      gap: 8,
+      gap: 4,
     },
     customerRow: {
       flexDirection: 'row' as const,
