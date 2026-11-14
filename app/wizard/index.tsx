@@ -1,6 +1,7 @@
 import { router, Stack, useFocusEffect, useLocalSearchParams, useNavigation, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AppState,
   BackHandler,
   KeyboardAvoidingView,
   Modal,
@@ -42,26 +43,28 @@ import {
   mergeStructureLineMaterials,
 } from '@/src/core/materials/materialQuantities';
 import { createId } from '@/src/core/utils/id';
+import { applySiteAddressSnapshot } from '@/src/core/pdf/siteAddress';
 import { applyRefreshedStructurePrices, calculationWithBusinessVatMode, preserveCalculationSnapshot } from '@/src/core/pdf/urakkakorttiCard';
 import { buildCalculationRecordFromComposer } from '@/src/core/wizard/buildCalculationRecord';
 import { calculationToFormState } from '@/src/core/wizard/calculationToWizard';
-import {
-  draftCalculationFromWizard,
-  isDraftCalculation,
-  wizardDraftFromCalculation,
-} from '@/src/core/wizard/draftCalculation';
+import { isDraftCalculation, wizardDraftFromCalculation } from '@/src/core/wizard/draftCalculation';
 import {
   buildPersistedWizardDraft,
   composerHasUnsavedChanges,
   composerStateSignature,
+  decideComposerLeave,
   firstNonEmptyId,
+  hasWizardDraftContent,
   mergeWizardDraftEditMeta,
   persistedDraftToFormState,
   shouldKeepResumeDraftOnLeave,
+  shouldPersistOpenComposer,
   type WizardDraftEditMeta,
   type WizardFormState,
 } from '@/src/core/wizard/wizardDraftHelpers';
 import { decideComposerFocusRestore } from '@/src/core/wizard/composerFocusRestore';
+import { createComposerSaveGate } from '@/src/core/wizard/composerSaveGate';
+import { createScreenLeave } from '@/src/core/wizard/screenLeave';
 import { hasFieldValueContent } from '@/src/core/wizard/wizardPageHelpers';
 import { resetToHistoryDetail } from '@/src/core/navigation/appStack';
 import { db, useApp } from '@/src/context/AppContext';
@@ -103,18 +106,20 @@ export default function CalculationComposerScreen() {
   const [customerNotes, setCustomerNotes] = useState('');
   const [deliveryScheduleText, setDeliveryScheduleText] = useState('');
   const [travelTimeOneWay, setTravelTimeOneWay] = useState('');
+  const [siteAddress, setSiteAddress] = useState('');
+  const [siteAddressTouched, setSiteAddressTouched] = useState(false);
   const [structureLines, setStructureLines] = useState<StructureLine[]>([]);
   const [businessVatMode, setBusinessVatMode] = useState<BusinessVatMode>('alv0');
   const [materialIssues, setMaterialIssues] = useState<Record<string, boolean>>({});
   const [structurePickerVisible, setStructurePickerVisible] = useState(false);
   const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
   const [updateCalcsVisible, setUpdateCalcsVisible] = useState(false);
-  const [exitDialogVisible, setExitDialogVisible] = useState(false);
 
   const hydratedRef = useRef(false);
   const loadedEditIdRef = useRef<string | null>(null);
-  const allowExitRef = useRef(false);
-  const pendingExitRef = useRef<(() => void) | null>(null);
+  const screenLeave = useRef(createScreenLeave()).current;
+  const saveGate = useRef(createComposerSaveGate()).current;
+  const completedBaselineRef = useRef<string | null>(null);
   const lastDraftUpdatedAtRef = useRef<number | null>(null);
   const boundCalculationIdRef = useRef<string | null>(null);
   const originalCreatedAtRef = useRef<Date | null>(null);
@@ -173,6 +178,8 @@ export default function CalculationComposerScreen() {
       customerId,
       deliveryScheduleText,
       travelTimeOneWay,
+      siteAddress,
+      siteAddressTouched,
       structureLines,
       businessVatMode,
     };
@@ -217,10 +224,21 @@ export default function CalculationComposerScreen() {
     composerDirty || Boolean(wizardDraft && !shouldKeepResumeDraft()),
   );
 
-  function allowComposerExit() {
-    allowExitRef.current = true;
-    applyPreventRemove(false);
+  function draftWithBaseline() {
+    const previous = wizardDraftRef.current;
+    const json = previous?.completedRecordJson ?? completedBaselineRef.current ?? undefined;
+    if (!json || previous?.completedRecordJson) return previous;
+    if (!previous) return { completedRecordJson: json } as NonNullable<typeof previous>;
+    return { ...previous, completedRecordJson: json };
   }
+
+  screenLeave.setOnRelease(() => {
+    const state = getFormStateRef.current();
+    applyPreventRemove(
+      composerHasUnsavedChanges(state, savedSignatureRef.current) ||
+        Boolean(wizardDraftRef.current && !shouldKeepResumeDraft(state)),
+    );
+  });
 
   function bindExistingCalculation(
     id?: string | null,
@@ -265,12 +283,15 @@ export default function CalculationComposerScreen() {
   async function persistDraft(state = getFormState(), extra?: WizardDraftEditMeta | null) {
     const meta = currentEditMeta(extra);
     bindExistingCalculation(meta.editCalculationId, meta.originalCreatedAt, meta.editFormVersion);
-    await db.saveWizardDraft(buildPersistedWizardDraft(state, meta, wizardDraft));
+    const built = buildPersistedWizardDraft(state, meta, draftWithBaseline());
+    if (isComposerDirty(state)) await db.saveWizardDraft(built);
+    else await db.saveWizardViewSession(built);
     await refreshWizardDraft();
+    await refreshCalculations();
     markComposerSaved(state);
   }
 
-  function applyFormState(form: WizardFormState) {
+  function applyFormState(form: WizardFormState): WizardFormState {
     setCustomerName(form.customerName);
     setCustomerType(form.customerType);
     setReverseVat(form.reverseVat);
@@ -283,6 +304,8 @@ export default function CalculationComposerScreen() {
     setCustomerId(form.customerId);
     setDeliveryScheduleText(form.deliveryScheduleText ?? '');
     setTravelTimeOneWay(form.travelTimeOneWay ?? '');
+    setSiteAddress(form.siteAddress ?? '');
+    setSiteAddressTouched(form.siteAddressTouched === true);
     setBusinessVatMode(form.businessVatMode === 'sis' ? 'sis' : 'alv0');
     const incoming = hydrateLines(form, structures, settings.vatPercent);
     const lines = incoming.map((item) => {
@@ -293,25 +316,31 @@ export default function CalculationComposerScreen() {
     setStructureLines(lines);
     const nextForm = { ...form, structureLines: lines };
     markComposerSaved(nextForm);
-    if (materialQuantitiesSignature(incoming) !== materialQuantitiesSignature(lines)) {
+    // Esitäyttö ei ole käyttäjän muutos. Valmista laskelmaa ei tallenneta siitä.
+    // Jo keskeneräinen sessio saa esitäytön, jotta se ei katoa.
+    if (
+      resumedIncompleteDraftRef.current &&
+      materialQuantitiesSignature(incoming) !== materialQuantitiesSignature(lines)
+    ) {
       void persistDraft(nextForm);
     }
+    return nextForm;
   }
 
   function restoreDraftForm(draft: NonNullable<typeof wizardDraft>, resumedIncomplete: boolean) {
     lastDraftUpdatedAtRef.current = draft.updatedAt;
     const { form } = persistedDraftToFormState(draft, products);
     bindExistingCalculation(draft.editCalculationId, draft.originalCreatedAt, draft.editFormVersion);
-    applyFormState(form);
     resumedIncompleteDraftRef.current = resumedIncomplete;
-    if (resumedIncomplete) {
-      rememberOrigin(form);
-    }
+    completedBaselineRef.current = draft.completedRecordJson ?? null;
+    const applied = applyFormState(form);
+    if (resumedIncomplete) rememberOrigin(applied);
   }
 
   useFocusEffect(
     useCallback(() => {
-      allowExitRef.current = false;
+      screenLeave.reset();
+      let active = true;
       // Viimeisin luonnos refistä. Callbackin riippuvuuksissa ei ole wizardDraftia,
       // joten closureen jäänyt avaushetken luonnos ylikirjoittaisi Valmis-paluun.
       const latestDraft = wizardDraftRef.current;
@@ -326,17 +355,22 @@ export default function CalculationComposerScreen() {
       if (routeEditId) {
         bindExistingCalculation(routeEditId);
         if (decision === 'none') {
-          return;
+          return () => {
+            active = false;
+            screenLeave.reset();
+          };
         }
         loadedEditIdRef.current = routeEditId;
 
         if (decision === 'restoreDraft' && latestDraft) {
           hydratedRef.current = true;
           restoreDraftForm(latestDraft, true);
-          return;
+          return () => {
+            active = false;
+            screenLeave.reset();
+          };
         }
 
-        let active = true;
         (async () => {
           const record = await db.getCalculation(routeEditId);
           if (!active || !record) return;
@@ -347,20 +381,18 @@ export default function CalculationComposerScreen() {
             return;
           }
           resumedIncompleteDraftRef.current = false;
+          completedBaselineRef.current = isDraftCalculation(record) ? null : JSON.stringify(record);
           const { form } = calculationToFormState(record, products);
           bindExistingCalculation(
             record.id,
             record.createdAt,
             record.formSnapshot?.formVersion ?? null,
           );
-          applyFormState(form);
-          rememberOrigin({
-            ...form,
-            structureLines: hydrateLines(form, structures, settings.vatPercent),
-          });
+          rememberOrigin(applyFormState(form));
         })();
         return () => {
           active = false;
+          screenLeave.reset();
         };
       }
 
@@ -371,14 +403,15 @@ export default function CalculationComposerScreen() {
         if (decision === 'restoreDraft') {
           restoreDraftForm(latestDraft, true);
         }
-        return;
-      }
-
-      if (decision === 'hydrateEmpty') {
+      } else if (decision === 'hydrateEmpty') {
         resumedIncompleteDraftRef.current = false;
         rememberOrigin(getFormStateRef.current());
         hydratedRef.current = true;
       }
+      return () => {
+        active = false;
+        screenLeave.reset();
+      };
     }, [routeEditId, products, settings.vatPercent, structures]),
   );
 
@@ -398,27 +431,14 @@ export default function CalculationComposerScreen() {
     applyFormState(form);
   }, [wizardDraft?.updatedAt, products, routeEditId]);
 
-  function closeExitDialog() {
-    setExitDialogVisible(false);
-    pendingExitRef.current = null;
-  }
-
-  function confirmExit(onLeave: () => void) {
-    pendingExitRef.current = onLeave;
-    setExitDialogVisible(true);
-  }
-
-  async function discardDraftAndExit() {
-    await db.clearWizardDraft();
-    await refreshWizardDraft();
-    allowComposerExit();
-    const action = pendingExitRef.current;
-    closeExitDialog();
-    action?.();
-  }
-
-  async function saveDraftAndExit() {
-    const state = getFormState();
+  async function publishComposerState(state: WizardFormState): Promise<void> {
+    // Lippu otetaan heti. Valmis, joka ehtii väliin, vanhentaa tämän kirjoituksen.
+    if (savingRef.current || saveGate.isFinishing()) return;
+    const token = saveGate.capture();
+    const existingId = firstNonEmptyId(currentEditMeta().editCalculationId);
+    const hasContent = hasWizardDraftContent(state);
+    // Tyhjä uusi laskenta ei luo riviä. Tyhjennys kirjoitetaan vain olemassa olevalle riville.
+    if (!hasContent && !(isComposerDirty(state) && existingId)) return;
     const meta = currentEditMeta();
     let id = firstNonEmptyId(meta.editCalculationId);
     let createdAt: Date =
@@ -429,54 +449,88 @@ export default function CalculationComposerScreen() {
           : new Date();
     if (id) {
       const existing = await db.getCalculation(id);
-      if (existing && !isDraftCalculation(existing)) {
-        id = undefined;
-      } else if (existing) {
-        createdAt = existing.createdAt;
-      }
+      if (existing) createdAt = existing.createdAt;
     }
-    if (!id) id = createId();
+    if (!saveGate.canCommit(token)) return;
+    if (!id) {
+      if (!hasWizardDraftContent(state)) return;
+      id = createId();
+    }
     const draft = buildPersistedWizardDraft(
       state,
       { editCalculationId: id, originalCreatedAt: createdAt, editFormVersion: meta.editFormVersion },
-      wizardDraft,
+      draftWithBaseline(),
     );
     bindExistingCalculation(id, createdAt, meta.editFormVersion);
-    await db.saveWizardDraft(draft);
-    await db.saveCalculation(draftCalculationFromWizard(draft, id, createdAt));
-    await refreshWizardDraft();
-    await refreshCalculations();
-    markComposerSaved(state);
-    allowComposerExit();
-    const action = pendingExitRef.current;
-    closeExitDialog();
-    action?.();
+    await saveGate.commit(token, async () => {
+      if (!saveGate.canCommit(token)) return;
+      await db.saveWizardDraft(draft);
+      await refreshWizardDraft();
+      await refreshCalculations();
+      markComposerSaved(state);
+    });
   }
 
-  async function leaveWithoutResumeDraft(onLeave: () => void) {
-    if (!shouldKeepResumeDraft(getFormStateRef.current())) {
-      await db.clearWizardDraft();
-      await refreshWizardDraft();
+  async function saveDraftAndExit() {
+    try {
+      await screenLeave.leave(async () => {
+        await publishComposerState(getFormStateRef.current());
+      }, () => router.back());
+    } catch {
+      showAlert('Tallennus epäonnistui', 'Laskentaa ei tallennettu. Yritä uudelleen.');
     }
-    allowComposerExit();
-    onLeave();
   }
+
+  async function leaveKeepingDraft(onLeave: () => void) {
+    try {
+      await screenLeave.leave(
+        async () => {
+          const state = getFormStateRef.current();
+          const action = decideComposerLeave({
+            allowExit: false,
+            dirty: isComposerDirty(state),
+            hasContent: hasWizardDraftContent(state),
+            keepResume: shouldKeepResumeDraft(state),
+            hasSession: Boolean(wizardDraftRef.current),
+            canUpdateExisting: Boolean(firstNonEmptyId(currentEditMeta().editCalculationId)),
+          });
+          if (action === 'save-and-leave') {
+            await publishComposerState(state);
+          } else if (action === 'clear-and-leave') {
+            await db.clearWizardDraft();
+            await refreshWizardDraft();
+          }
+        },
+        () => {
+          applyPreventRemove(false);
+          onLeave();
+        },
+      );
+    } catch {
+      showAlert('Tallennus epäonnistui', 'Laskentaa ei tallennettu. Yritä uudelleen.');
+    }
+  }
+
+  const leaveKeepingDraftRef = useRef(leaveKeepingDraft);
+  leaveKeepingDraftRef.current = leaveKeepingDraft;
+  const publishComposerStateRef = useRef(publishComposerState);
+  publishComposerStateRef.current = publishComposerState;
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowExitRef.current) {
-        return;
-      }
-      if (isComposerDirty()) {
-        event.preventDefault();
-        confirmExit(() => navigation.dispatch(event.data.action));
-        return;
-      }
-      if (shouldKeepResumeDraft() || !wizardDraftRef.current) {
-        return;
-      }
+      if (screenLeave.shouldBypass()) return;
+      const state = getFormStateRef.current();
+      const action = decideComposerLeave({
+        allowExit: false,
+        dirty: isComposerDirty(state),
+        hasContent: hasWizardDraftContent(state),
+        keepResume: shouldKeepResumeDraft(state),
+        hasSession: Boolean(wizardDraftRef.current),
+        canUpdateExisting: Boolean(firstNonEmptyId(currentEditMeta().editCalculationId)),
+      });
+      if (action === 'leave') return;
       event.preventDefault();
-      void leaveWithoutResumeDraft(() => navigation.dispatch(event.data.action));
+      void leaveKeepingDraft(() => navigation.dispatch(event.data.action));
     });
     return unsubscribe;
   });
@@ -484,21 +538,35 @@ export default function CalculationComposerScreen() {
   useFocusEffect(
     useCallback(() => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (allowExitRef.current) return false;
-        if (isComposerDirty(getFormStateRef.current())) {
-          confirmExit(() => {
-            allowComposerExit();
-            router.back();
-          });
-          return true;
-        }
-        if (shouldKeepResumeDraft(getFormStateRef.current()) || !wizardDraftRef.current) return false;
-        void leaveWithoutResumeDraft(() => router.back());
+        if (screenLeave.shouldBypass()) return false;
+        void leaveKeepingDraftRef.current(() => router.back());
         return true;
       });
       return () => subscription.remove();
     }, []),
   );
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next !== 'background' && next !== 'inactive') return;
+      if (screenLeave.shouldBypass() || savingRef.current || saveGate.isFinishing()) return;
+      const state = getFormStateRef.current();
+      if (
+        !shouldPersistOpenComposer({
+          dirty: isComposerDirty(state),
+          hasContent: hasWizardDraftContent(state),
+          canUpdateExisting: Boolean(firstNonEmptyId(currentEditMeta().editCalculationId)),
+        })
+      ) {
+        return;
+      }
+      // Kutsu on synkroninen lipun ottoon asti. Valmis vanhentaa sen ennen tietokantakirjoitusta.
+      void publishComposerStateRef.current(state).catch(() => {
+        // Taustatallennuksen epäonnistuminen ei kaada näyttöä. Poistuminen yrittää uudelleen.
+      });
+    });
+    return () => subscription.remove();
+  }, []);
 
   async function openCustomer() {
     await persistDraft();
@@ -608,46 +676,54 @@ export default function CalculationComposerScreen() {
       }
     }
 
-    if (savingRef.current) return;
+    if (savingRef.current || saveGate.isFinishing()) return;
     savingRef.current = true;
 
     try {
-      const savedCustomerId = await saveCustomerRecord(updateOldCalculations);
-      const savedId =
-        firstNonEmptyId(
-          routeEditId,
-          boundCalculationIdRef.current,
-          editCalculationId,
-          wizardDraft?.editCalculationId,
-        ) ?? createId();
-      const createdAt = originalCreatedAtRef.current ?? originalCreatedAt ?? new Date();
-      bindExistingCalculation(savedId, createdAt, editFormVersion);
-      const previous = await db.getCalculation(savedId);
-      const built = preserveCalculationSnapshot(
-        buildCalculationRecordFromComposer({
-          id: savedId,
-          customer: info,
-          customerId: savedCustomerId,
-          deliveryScheduleText,
-          travelTimeOneWay,
-          structureLines,
-          settings,
-          products,
-          structures,
-          createdAt,
-        }),
-        previous?.formSnapshot,
-      );
-      const priced =
-        info.customerType === 'business' ? calculationWithBusinessVatMode(built, businessVatMode) : built;
-      const record = applyRefreshedStructurePrices(priced);
-      await db.saveCalculation(record);
-      await db.clearWizardDraft();
-      await refreshCalculations();
-      await refreshWizardDraft();
-      hydratedRef.current = false;
-      allowComposerExit();
-      resetToHistoryDetail(navigation, savedId);
+      await saveGate.finish(async () => {
+        const savedCustomerId = await saveCustomerRecord(updateOldCalculations);
+        const savedId =
+          firstNonEmptyId(
+            routeEditId,
+            boundCalculationIdRef.current,
+            editCalculationId,
+            wizardDraft?.editCalculationId,
+          ) ?? createId();
+        const createdAt = originalCreatedAtRef.current ?? originalCreatedAt ?? new Date();
+        bindExistingCalculation(savedId, createdAt, editFormVersion);
+        const previous = await db.getCalculation(savedId);
+        const built = preserveCalculationSnapshot(
+          buildCalculationRecordFromComposer({
+            id: savedId,
+            customer: info,
+            customerId: savedCustomerId,
+            deliveryScheduleText,
+            travelTimeOneWay,
+            structureLines,
+            settings,
+            products,
+            structures,
+            createdAt,
+          }),
+          previous?.formSnapshot,
+        );
+        const priced =
+          info.customerType === 'business' ? calculationWithBusinessVatMode(built, businessVatMode) : built;
+        const record = applySiteAddressSnapshot(
+          applyRefreshedStructurePrices(priced),
+          siteAddress,
+          siteAddressTouched,
+        );
+        await db.saveCalculation(record);
+        await db.clearWizardDraft();
+        await refreshCalculations();
+        await refreshWizardDraft();
+        hydratedRef.current = false;
+        screenLeave.allowOnce(() => {
+          applyPreventRemove(false);
+          resetToHistoryDetail(navigation, savedId);
+        });
+      });
     } catch (error) {
       console.error(error);
       showAlert('Virhe', 'Laskelman tallennus epäonnistui.');
@@ -667,22 +743,7 @@ export default function CalculationComposerScreen() {
     structureLines.some((line) => materialQuantitiesBlockFinish(line.materialQuantities));
 
   function handleComposerBack() {
-    if (allowExitRef.current) {
-      router.back();
-      return;
-    }
-    if (isComposerDirty(getFormStateRef.current())) {
-      confirmExit(() => {
-        allowComposerExit();
-        router.back();
-      });
-      return;
-    }
-    if (shouldKeepResumeDraft(getFormStateRef.current()) || !wizardDraftRef.current) {
-      router.back();
-      return;
-    }
-    void leaveWithoutResumeDraft(() => router.back());
+    void leaveKeepingDraft(() => router.back());
   }
 
   const customerSummary = customerName.trim()
@@ -714,6 +775,16 @@ export default function CalculationComposerScreen() {
             </View>
           </AppCard>
 
+          <AppInput
+            label="Kohteen osoite"
+            value={siteAddress}
+            onChangeText={(value) => {
+              setSiteAddressTouched(true);
+              setSiteAddress(value);
+            }}
+            kind="sentence"
+            placeholder="Asiakkaan osoite, voit muuttaa"
+          />
           <AppInput
             label="Toimitusajankohta"
             value={deliveryScheduleText}
@@ -866,29 +937,6 @@ export default function CalculationComposerScreen() {
         }}
       />
 
-      <ConfirmDialog
-        visible={exitDialogVisible}
-        title="Kesken jäänyt laskenta"
-        message="Haluatko tallentaa laskennan keskeneräisenä?"
-        onClose={closeExitDialog}
-        buttons={[
-          { title: 'Peruuta', variant: 'outlined', onPress: closeExitDialog },
-          {
-            title: 'Tallenna keskeneräisenä',
-            variant: 'primary',
-            onPress: () => {
-              void saveDraftAndExit();
-            },
-          },
-          {
-            title: 'Poistu tallentamatta',
-            variant: 'destructive',
-            onPress: () => {
-              void discardDraftAndExit();
-            },
-          },
-        ]}
-      />
     </>
   );
 }

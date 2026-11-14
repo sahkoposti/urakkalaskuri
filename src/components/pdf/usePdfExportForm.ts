@@ -260,7 +260,7 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     };
     setReadyDocument(saved);
     setReadyShare(shareTarget);
-    setReadyPhone(await copyPhoneDocument(saved.id, shareTarget, false));
+    setReadyPhone(null);
   };
 
   const pickPhoneDirectory = () =>

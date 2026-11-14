@@ -1,7 +1,8 @@
 import { router, Stack, type Href } from 'expo-router';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Linking, Pressable, Text, View } from 'react-native';
 
 import { AppCard, ScreenLoading, ScreenMessage } from '@/src/components/common';
+import { telUrlForSavedPhone } from '@/src/core/customer/phoneLink';
 import { formatDate } from '@/src/core/utils/formatters';
 import { db, useApp } from '@/src/context/AppContext';
 import { useThemedAlert } from '@/src/context/ThemedAlertContext';
@@ -53,9 +54,29 @@ export default function CustomersScreen() {
                     {item.postalLocality || item.address || formatDate(item.updatedAt)}
                   </Text>
                 </View>
-                <Pressable onPress={() => handleDelete(item.id)}>
-                  <Text style={styles.delete}>Poista</Text>
-                </Pressable>
+                <View style={styles.actions}>
+                  {telUrlForSavedPhone(item.phone) ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Soita"
+                      onPress={() => {
+                        const tel = telUrlForSavedPhone(item.phone);
+                        if (tel) void Linking.openURL(tel);
+                      }}
+                      style={styles.action}
+                    >
+                      <Text style={styles.call}>Soita</Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Poista"
+                    onPress={() => handleDelete(item.id)}
+                    style={styles.action}
+                  >
+                    <Text style={styles.delete}>Poista</Text>
+                  </Pressable>
+                </View>
               </View>
             </AppCard>
           )}
@@ -92,6 +113,20 @@ function createStyles(colors: AppColorPalette) {
       marginTop: 4,
       color: colors.text,
       fontFamily: 'IBMPlexSans_400Regular',
+    },
+    actions: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+    },
+    action: {
+      minHeight: 44,
+      minWidth: 44,
+      justifyContent: 'center' as const,
+      paddingHorizontal: 8,
+    },
+    call: {
+      color: colors.primary,
+      fontFamily: 'IBMPlexSans_600SemiBold',
     },
     delete: {
       color: colors.accent,

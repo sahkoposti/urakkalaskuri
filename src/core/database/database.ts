@@ -9,11 +9,9 @@ import type {
 } from '../models/types';
 import { defaultSettings, defaultThemeSettings } from '../models/types';
 import { createId } from '../utils/id';
-import {
-  draftCalculationFromWizard,
-  isDraftCalculation,
-  wizardDraftFromCalculation,
-} from '../wizard/draftCalculation';
+import { calculationForWizardSession, isDraftCalculation, wizardDraftForStorage } from '../wizard/draftCalculation';
+import { emptyDraftDecision, unchangedCompletedAction } from '../wizard/draftSession';
+import { persistedDraftHasContent } from '../wizard/wizardDraftHelpers';
 import { parseProductAttributesJson } from '../product/productAttributes';
 import { productSortOrder } from '../product/productMutations';
 import {
@@ -466,7 +464,7 @@ export async function getWizardDraft(): Promise<PersistedWizardDraft | null> {
   }
 }
 
-export async function saveWizardDraft(draft: PersistedWizardDraft): Promise<void> {
+async function writeWizardDraftRow(draft: PersistedWizardDraft): Promise<void> {
   const db = await getDb();
   await db.runAsync(
     `INSERT OR REPLACE INTO wizard_drafts (id, step, payload, updated_at)
@@ -478,43 +476,140 @@ export async function saveWizardDraft(draft: PersistedWizardDraft): Promise<void
   );
 }
 
+function draftCreatedAt(draft: PersistedWizardDraft): Date {
+  return typeof draft.originalCreatedAt === 'number' && Number.isFinite(draft.originalCreatedAt)
+    ? new Date(draft.originalCreatedAt)
+    : new Date(draft.updatedAt);
+}
+
+/**
+ * Kirjoittaa session laskelmahistooriaan heti, kun sisältö on käyttäjän muutosta.
+ * Pelkkä avaus (`preserveCompleted`) ei alenna valmista riviä eikä vaihda sen hintoja.
+ * Linkitetty keskeneräinen rivi päivittyy. Uutta kopiota ei luoda.
+ * Tyhjä uusi sessio ei luo riviä. Tyhjennys päivittää olemassa olevan luonnoksen.
+ * Valmis rivi tyhjenee vain, kun tyhjennys on käyttäjän muutos. Riviä ei poisteta.
+ * Samaksi palautettu sisältö palauttaa talletetun valmiin rivin.
+ */
+async function publishWizardSession(
+  draft: PersistedWizardDraft,
+  options?: { preserveCompleted?: boolean },
+): Promise<string | null> {
+  const content = wizardDraftForStorage(draft);
+  const createdAt = draftCreatedAt(content);
+  const preserveCompleted = options?.preserveCompleted === true || draft.preserveCompleted === true;
+  let id = content.editCalculationId?.trim();
+  if (!persistedDraftHasContent(content)) {
+    if (!id) return null;
+    const linked = await getCalculation(id);
+    const decision = emptyDraftDecision(draft, linked, preserveCompleted);
+    if (decision === 'skip' || decision === 'keep' || !linked) return id;
+    if (decision === 'restore') {
+      const unchanged = unchangedCompletedAction(draft, linked);
+      if (unchanged?.action === 'restore') await saveCalculation(unchanged.record);
+      return id;
+    }
+    await saveCalculation(calculationForWizardSession({ ...content, editCalculationId: id }, linked, id, createdAt));
+    return id;
+  }
+  if (!id) {
+    if (preserveCompleted) return null;
+    id = createId();
+    const next = { ...content, editCalculationId: id };
+    await writeWizardDraftRow(next);
+    await saveCalculation(calculationForWizardSession(next, null, id, createdAt));
+    return id;
+  }
+  const linked = await getCalculation(id);
+  if (linked && !isDraftCalculation(linked) && preserveCompleted) return id;
+  const unchanged = unchangedCompletedAction(draft, linked);
+  if (unchanged?.action === 'keep') return id;
+  if (unchanged?.action === 'restore') {
+    await saveCalculation(unchanged.record);
+    return id;
+  }
+  let session = draft;
+  if (linked && !isDraftCalculation(linked) && !draft.completedRecordJson) {
+    session = { ...draft, completedRecordJson: JSON.stringify(linked) };
+    await writeWizardDraftRow(session);
+  }
+  const next = { ...content, editCalculationId: id };
+  await saveCalculation(calculationForWizardSession(next, linked, id, createdAt));
+  return id;
+}
+
+export async function saveWizardDraft(draft: PersistedWizardDraft): Promise<void> {
+  const content = wizardDraftForStorage(draft);
+  let completedRecordJson = draft.completedRecordJson;
+  if (!completedRecordJson && content.editCalculationId) {
+    const existing = await getWizardDraft();
+    if (existing?.editCalculationId === content.editCalculationId && existing.completedRecordJson) {
+      completedRecordJson = existing.completedRecordJson;
+    }
+  }
+  const stored: PersistedWizardDraft = {
+    ...content,
+    ...(completedRecordJson ? { completedRecordJson } : {}),
+  };
+  if (!persistedDraftHasContent(content)) {
+    const id = content.editCalculationId?.trim();
+    const linked = id ? await getCalculation(id) : null;
+    const decision = emptyDraftDecision(stored, linked, false);
+    if (decision === 'skip' || decision === 'keep' || !linked || !id) return;
+    if (decision === 'restore') {
+      const unchanged = unchangedCompletedAction(stored, linked);
+      if (unchanged?.action === 'restore') await saveCalculation(unchanged.record);
+      return;
+    }
+    await writeWizardDraftRow(stored);
+    await saveCalculation(
+      calculationForWizardSession({ ...content, editCalculationId: id }, linked, id, draftCreatedAt(content)),
+    );
+    return;
+  }
+  await writeWizardDraftRow(stored);
+  await publishWizardSession(stored);
+}
+
+/**
+ * Rivin tai asiakkaan avaus. Sessio kirjoitetaan, jotta lomake näkee sen.
+ * Valmis laskelma ja sen hinnat jäävät ennalleen.
+ */
+export async function saveWizardViewSession(draft: PersistedWizardDraft): Promise<void> {
+  const content = wizardDraftForStorage(draft);
+  const id = content.editCalculationId?.trim();
+  let completedRecordJson = draft.completedRecordJson;
+  if (!completedRecordJson && id) {
+    const linked = await getCalculation(id);
+    if (linked && !isDraftCalculation(linked)) completedRecordJson = JSON.stringify(linked);
+  }
+  const stored: PersistedWizardDraft = {
+    ...content,
+    preserveCompleted: true,
+    ...(completedRecordJson ? { completedRecordJson } : {}),
+  };
+  if (!persistedDraftHasContent(content)) {
+    const linked = id ? await getCalculation(id) : null;
+    if (emptyDraftDecision(stored, linked, true) !== 'overlay') return;
+  }
+  await writeWizardDraftRow(stored);
+  await publishWizardSession(stored, { preserveCompleted: true });
+}
+
 export async function clearWizardDraft(): Promise<void> {
   const db = await getDb();
   await db.runAsync('DELETE FROM wizard_drafts WHERE id = ?', WIZARD_DRAFT_ID);
 }
 
 /**
- * Säilyttää avoimen session `wizard_drafts`-rivin laskelmana.
- * Ei poista sessiota eikä muuta valmista laskelmaa keskeneräiseksi.
- * Sama kutsu kahdesti päivittää saman rivin.
+ * Säilyttää avoimen session laskelmahistooriassa.
+ * Käyttäjän muuttama valmis laskelma muuttuu keskeneräiseksi samalla id:llä.
+ * Pelkkä avaus ei alenna valmista riviä.
+ * Sama kutsu kahdesti päivittää saman rivin eikä luo kopiota.
  */
 export async function promoteCurrentWizardDraft(): Promise<string | null> {
   const session = await getWizardDraft();
   if (!session) return null;
-  const linkedId = session.editCalculationId?.trim();
-  if (linkedId) {
-    const linked = await getCalculation(linkedId);
-    if (linked && isDraftCalculation(linked)) {
-      await saveCalculation(draftCalculationFromWizard(session, linkedId, linked.createdAt));
-      return linkedId;
-    }
-  }
-  const existing = (await getCalculations()).find((row) => {
-    if (!isDraftCalculation(row)) return false;
-    const stored = wizardDraftFromCalculation(row);
-    return stored?.updatedAt === session.updatedAt;
-  });
-  if (existing) return existing.id;
-  const id = createId();
-  const createdAt =
-    typeof session.originalCreatedAt === 'number' && Number.isFinite(session.originalCreatedAt)
-      ? new Date(session.originalCreatedAt)
-      : new Date(session.updatedAt);
-  await saveCalculation(draftCalculationFromWizard(session, id, createdAt));
-  if (!linkedId) {
-    await saveWizardDraft({ ...session, editCalculationId: id });
-  }
-  return id;
+  return publishWizardSession(session, { preserveCompleted: session.preserveCompleted === true });
 }
 
 /** Uusi laskenta: sessio säilyy keskeneräisenä rivinä, avoin luonnos tyhjennetään. */

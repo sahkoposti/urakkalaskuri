@@ -27,9 +27,9 @@ export const pdfExportDeps: PdfExportDeps = {
   getCompanyProfile,
   getOfferCompanySettings,
   getOfferStructureSettings,
-  loadLogoDataUri: async () => {
+  loadLogoDataUri: async (logoUri) => {
     try {
-      return await loadPdfLogoDataUri();
+      return await loadPdfLogoDataUri(logoUri);
     } catch {
       return null; // logon puuttuminen ei estä PDF:ää
     }

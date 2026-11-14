@@ -2,7 +2,7 @@
 
 ColoRajattoman urakkalaskuri – **Expo/React Native** -sovellus tarjoushintojen laskentaan (Android).
 
-Pakettiversio **v1.3.3** (`app.json` / `package.json`). Laskelma = asiakas + toimitusajankohta + tuoterakennerivit.
+Pakettiversio **v1.3.4** (`app.json` / `package.json`). Laskelma = asiakas + kohteen osoite + toimitusajankohta + matka-aika + tuoterakennerivit. Hyväksyntä: [docs/v1.3.4-hyvaksyminen.md](docs/v1.3.4-hyvaksyminen.md).
 
 | Dokumentti | Sisältö |
 |------------|---------|

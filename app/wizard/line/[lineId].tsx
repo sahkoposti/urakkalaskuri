@@ -21,15 +21,18 @@ import { buildCalculationFormulaContext } from '@/src/core/form/calculationFormu
 import { wizardFieldsForPage } from '@/src/core/form/formDefinitionHelpers';
 import { buildFormSnapshot } from '@/src/core/form/formSummaryHelpers';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
-import { applyFormResultToLine, saveIncompleteFormToLine } from '@/src/core/structure/applyFormToLine';
 import { structureFormPages } from '@/src/core/structure/formPages';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import {
-  buildPersistedWizardDraft,
+  draftReplacingLine,
+  lineFormFinishedLine,
+  lineFormInputLine,
+  lineFormPreservesInputsOnLeave,
+} from '@/src/core/wizard/draftSession';
+import {
   cloneStructureLine,
   firstNonEmptyId,
   lineFormNeedsExitPrompt,
-  mergeWizardDraftEditMeta,
   persistedDraftToFormState,
 } from '@/src/core/wizard/wizardDraftHelpers';
 import {
@@ -143,34 +146,15 @@ export default function StructureLineFormScreen() {
 
   async function writeLineToDraft(nextLine: NonNullable<typeof line>): Promise<boolean> {
     if (!wizardDraft) return false;
-    const { form } = persistedDraftToFormState(wizardDraft, products);
-    const nextLines = (form.structureLines ?? []).map((item) =>
-      item.id === nextLine.id ? nextLine : item,
-    );
-    await db.saveWizardDraft(
-      buildPersistedWizardDraft(
-        { ...form, structureLines: nextLines },
-        mergeWizardDraftEditMeta(
-          {
-            editCalculationId: routeEditId,
-            originalCreatedAt: wizardDraft.originalCreatedAt,
-            editFormVersion: wizardDraft.editFormVersion,
-          },
-          wizardDraft,
-        ),
-        wizardDraft,
-      ),
-    );
+    await db.saveWizardDraft(draftReplacingLine(wizardDraft, products, nextLine, routeEditId));
     await refreshWizardDraft();
     return true;
   }
 
-  async function persistIncomplete(): Promise<boolean> {
+  async function persistInputs(): Promise<boolean> {
     if (!line) return false;
-    const next = saveIncompleteFormToLine(line, fieldValues);
-    const saved = await writeLineToDraft(next);
-    if (saved) savedLineRef.current = cloneStructureLine(next);
-    return saved;
+    // Kentät talteen. Hintaa ja yliajoa ei kosketa, eikä hylkäyksen pohjaa siirretä.
+    return writeLineToDraft(lineFormInputLine(line, fieldValues));
   }
 
   async function persistComplete(): Promise<boolean> {
@@ -191,12 +175,13 @@ export default function StructureLineFormScreen() {
         context,
         structureProducts,
       );
-      const nextLine = applyFormResultToLine(
+      const nextLine = lineFormFinishedLine(
         line,
         result,
         fieldValues,
         structure.commissionPercent,
-        { formVersion: structure.form.version, snapshot, refreshPrices },
+        refreshPrices,
+        { formVersion: structure.form.version, snapshot },
       );
       return writeLineToDraft(nextLine);
     } catch (error) {
@@ -215,16 +200,20 @@ export default function StructureLineFormScreen() {
     await writeLineToDraft(cloneStructureLine(saved));
   }
 
+  const backLeave = lineFormPreservesInputsOnLeave('back');
+  const backgroundLeave = lineFormPreservesInputsOnLeave('background');
   const { allowExit, requestExit, exitDialog, stackScreenOptions } = useUnsavedChangesGuard({
     isDirty,
-    onSave: formComplete ? persistComplete : persistIncomplete,
+    saveOnLeave: backLeave === 'save-inputs',
+    saveOnBackground: backgroundLeave === 'save-inputs',
+    onSave: persistInputs,
     onDiscard: restoreSavedLine,
     title: formComplete ? 'Tallentamattomia muutoksia' : 'Keskeneräinen lomake',
     message: formComplete
-      ? 'Haluatko tallentaa lomakkeen?'
+      ? 'Haluatko säilyttää kentät? Hinta päivittyy vain Valmis-painikkeella.'
       : 'Haluatko tallentaa lomakkeen keskeneräisenä? Sulje tallentamatta palauttaa edellisen tallennetun lomakkeen.',
     discardTitle: 'Sulje tallentamatta',
-    saveTitle: formComplete ? 'Tallenna' : 'Tallenna keskeneräisenä',
+    saveTitle: formComplete ? 'Säilytä kentät' : 'Tallenna keskeneräisenä',
   });
 
   if (!line || !structure) {

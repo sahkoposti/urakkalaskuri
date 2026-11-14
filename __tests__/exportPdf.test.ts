@@ -285,10 +285,10 @@ describe('exportUrakkakorttiPdf', () => {
     expect(done).toMatchObject({ status: 'done', kind: 'urakkakortti', offerNumber: null });
     expect(inserted[0]?.offerNumber).toBeNull();
     expect(printed[0].html).toContain('Sisältää telineet.');
-    expect(printed[0].html).toContain('>Muuta<');
+    expect(printed[0].html).toContain('Lisätiedot:');
+    expect(printed[0].html).not.toContain('>Muuta<');
     expect(printed[0].html).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
     expect(printed[0].html).not.toContain('VANHA_EI_TULOSTU');
-    expect(printed[0].html).not.toContain('Lisätiedot:');
   });
 
   it('does not print company Lisätiedot on the card when the offer text is set', async () => {
@@ -304,10 +304,10 @@ describe('exportUrakkakorttiPdf', () => {
     });
     const done = await exportUrakkakorttiPdf('c1', app, deps);
     expect(done.status).toBe('done');
-    expect(printed[0].html).not.toContain('Lisätiedot:');
+    expect(printed[0].html).toContain('Lisätiedot:');
     expect(printed[0].html).not.toContain(companyText);
     expect(printed[0].html).toContain('Sisältää telineet.');
-    expect(printed[0].html).toContain('>Muuta<');
+    expect(printed[0].html).not.toContain('>Muuta<');
     expect(printed[0].html).not.toContain('ELAVA_OLETUS_EI_TULOSTU');
     expect(printed[0].html).not.toContain('VANHA_EI_TULOSTU');
   });

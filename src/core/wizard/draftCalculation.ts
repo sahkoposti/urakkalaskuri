@@ -1,5 +1,13 @@
+import { parseTravelTimeHoursOneWay } from '@/src/core/form/calculationFormulaContext';
 import type { CalculationRecord, PersistedWizardDraft } from '@/src/core/models/types';
 import { serializeCustomerDetails } from '@/src/core/models/types';
+import { applySiteAddressSnapshot } from '@/src/core/pdf/siteAddress';
+
+/** Sessioliput eivät kuulu laskelman snapshotiin. */
+export function wizardDraftForStorage(draft: PersistedWizardDraft): PersistedWizardDraft {
+  const { preserveCompleted: _preserve, completedRecordJson: _json, ...content } = draft;
+  return content;
+}
 
 export const CALCULATION_STATUS_DRAFT = 'draft' as const;
 export const CALCULATION_STATUS_COMPLETE = 'complete' as const;
@@ -77,4 +85,67 @@ export function draftCalculationFromWizard(
     structureLines: draft.structureLines,
     status: CALCULATION_STATUS_DRAFT,
   };
+}
+
+/**
+ * Käyttäjän muutos kirjoitetaan samaan laskelmaan.
+ * Valmis rivi muuttuu keskeneräiseksi eikä saa kopiota.
+ * Hinnat, rivit, tarjousnumero ja liitteiden avain (id) säilyvät.
+ * Pelkkä avaus ei kutsu tätä: valmis rivi jää valmiiksi.
+ */
+export function overlayDraftCalculation(
+  previous: CalculationRecord,
+  draft: PersistedWizardDraft,
+): CalculationRecord {
+  const fresh = draftCalculationFromWizard(draft, previous.id, previous.createdAt);
+  const snapshot = {
+    ...(fresh.formSnapshot ?? { formId: 'wizard-draft', formVersion: 0, fields: [] }),
+    ...(previous.formSnapshot ?? {}),
+    wizardDraft: fresh.formSnapshot?.wizardDraft,
+    fields: previous.formSnapshot?.fields?.length
+      ? previous.formSnapshot.fields
+      : (fresh.formSnapshot?.fields ?? []),
+    formId: previous.formSnapshot?.formId || fresh.formSnapshot?.formId || 'wizard-draft',
+    formVersion: previous.formSnapshot?.formVersion ?? fresh.formSnapshot?.formVersion ?? 0,
+  };
+  const withSite = applySiteAddressSnapshot(
+    { ...previous, formSnapshot: snapshot },
+    draft.siteAddress ?? '',
+    draft.siteAddressTouched === true,
+  );
+  return {
+    ...previous,
+    projectName: fresh.projectName,
+    customer: fresh.customer,
+    customerId: draft.customerId,
+    deliveryScheduleText: draft.deliveryScheduleText ?? previous.deliveryScheduleText,
+    travelTimeHoursOneWay:
+      draft.travelTimeOneWay !== undefined
+        ? parseTravelTimeHoursOneWay(draft.travelTimeOneWay) || undefined
+        : previous.travelTimeHoursOneWay,
+    structureLines: draft.structureLines ?? previous.structureLines,
+    status: CALCULATION_STATUS_DRAFT,
+    formSnapshot: withSite.formSnapshot,
+    createdAt: previous.createdAt,
+    offerNumber: previous.offerNumber,
+    lines: previous.lines,
+  };
+}
+
+/** Uusi sessio tai olemassa olevan rivin päivitys. Ei luo toista id:tä. */
+export function calculationForWizardSession(
+  draft: PersistedWizardDraft,
+  previous: CalculationRecord | null,
+  id: string,
+  createdAt: Date,
+): CalculationRecord {
+  const content = wizardDraftForStorage(draft);
+  if (!previous) {
+    return applySiteAddressSnapshot(
+      draftCalculationFromWizard(content, id, createdAt),
+      content.siteAddress ?? '',
+      content.siteAddressTouched === true,
+    );
+  }
+  return overlayDraftCalculation(previous, content);
 }

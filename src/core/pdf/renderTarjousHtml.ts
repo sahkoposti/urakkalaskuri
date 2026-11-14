@@ -1,5 +1,5 @@
 import type { PdfFooter, PriceRow, TarjousPdfContext } from './buildPdfContext';
-import { escapeHtml, escapeMultiline } from './escapeHtml';
+import { escapeHtml, escapeMultiline, renderMarkedMultiline } from './escapeHtml';
 import { renderKotitalousPageHtml } from './renderKotitalousPageHtml';
 import { offerDocumentCss, pdfStyles } from './pdfStyles';
 import type { OfferSection, OfferVatSummaryRow } from './offerDocument';
@@ -106,9 +106,10 @@ function renderPriceBlock(price: TarjousPdfContext['price'], vatSummary: OfferVa
   return `<div class="price-block offer-totals"><div class="col">${renderVatSummary(vatSummary)}${priceTable(price.rows)}</div></div>`;
 }
 
-function renderAdditionalInfo(text: string): string {
+function renderAdditionalInfo(text: string, marked = false): string {
   if (!text.trim()) return '';
-  return `<div class="additional-info"><h3>Lisätiedot:</h3><div>${escapeMultiline(text)}</div></div>`;
+  const body = marked ? renderMarkedMultiline(text) : escapeMultiline(text);
+  return `<div class="additional-info"><h3>Lisätiedot:</h3><div>${body}</div></div>`;
 }
 
 function signaturePen(label: string): string {
@@ -163,6 +164,7 @@ export function renderTarjousBody(ctx: TarjousPdfContext, attachmentHtml = ''): 
     renderOfferTitle(),
     renderDelivery(ctx.deliveryScheduleText),
     ...sections,
+    renderAdditionalInfo(ctx.structureLisatiedot, true),
     renderPriceBlock(ctx.price, ctx.vatSummary),
     renderAdditionalInfo(ctx.additionalInfo),
     renderSignature(ctx.signature),

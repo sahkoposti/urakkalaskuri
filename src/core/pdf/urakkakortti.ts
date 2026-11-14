@@ -20,6 +20,8 @@ import {
   type UrakkakorttiMode,
 } from './urakkakorttiCard';
 import { lineSpecSnapshot, specCardsFromSnapshot, type SpecCard } from './offerPageSpecs';
+import { documentSiteAddress } from './siteAddress';
+import { firstStructureLisatiedot } from './structureExtraText';
 import { specGridLayout, type SpecGridLayout } from './specGridLayout';
 import { buildUrakkakorttiSections, lineUsesUrakkakorttiPrint, type UrakkakorttiSection } from './urakkakorttiSections';
 import type { OfferStructureSettings } from './types';
@@ -33,7 +35,14 @@ export type { UrakkakorttiSection } from './urakkakorttiSections';
  * EI: asiakashinta, ALV, kate, palkkio, materiaalihinnat, KTV, voimassaolo, tarjousnumero, tarjouksen lisätiedot.
  */
 
-export type UrakkakorttiMaterialRow = { product: string; quantity: string; unit: string };
+export type UrakkakorttiMaterialRow = {
+  product: string;
+  quantity: string;
+  unit: string;
+  /** Sävy tuotteen alla. Tuoterivi on otsikko, kun sillä on sävyjä. */
+  shade?: boolean;
+  shadeHeader?: boolean;
+};
 
 export type UrakkakorttiContext = {
   kind: 'urakkakortti';
@@ -46,6 +55,8 @@ export type UrakkakorttiContext = {
   /** Print-tilan rivit. Tyhjä, kun laskelma on pelkkää vanhaa pohjaa. */
   sections: UrakkakorttiSection[];
   materials: UrakkakorttiMaterialRow[];
+  /** Ensimmäisen tuoterakenteen lisätieto rakenteiden jälkeen. Tyhjä = osio pois. */
+  structureLisatiedot: string;
   /** Asiakkaan lisätietojen lähde (`customer.notes`). Ei tulosteta otsikolla kahteen kertaan. */
   customerNotes: string;
   /** Huomioitavaa-osion teksti. Tyhjä = osiota ei tulosteta. */
@@ -134,7 +145,18 @@ function lineForm(input: BuildUrakkakorttiInput, structureId: string): FormDefin
 }
 
 function rowHasEuro(row: MaterialQuantityRow): boolean {
-  return row.productName.includes('€') || Boolean(row.unit?.includes('€'));
+  return (
+    row.productName.includes('€') ||
+    Boolean(row.unit?.includes('€')) ||
+    Boolean(row.shades?.some((shade) => shade.name.includes('€') || shade.unit?.includes('€')))
+  );
+}
+
+function rowPrintable(row: MaterialQuantityRow): boolean {
+  if (!row.productName.trim() || rowHasEuro(row)) return false;
+  const shades = row.shades ?? [];
+  if (shades.some((shade) => shade.name.trim() && shade.quantity > 0)) return true;
+  return Number.isFinite(row.quantity) && row.quantity > 0;
 }
 
 /**
@@ -157,17 +179,33 @@ function resolveUrakkakorttiMaterialTable(input: BuildUrakkakorttiInput): {
   const prefix = lines.length > 1;
   for (const line of lines) {
     const quantities = effectiveMaterialQuantities(line, lineForm(input, line.structureId), input.products).filter(
-      (row) => row.productName.trim() && Number.isFinite(row.quantity) && row.quantity > 0 && !rowHasEuro(row),
+      rowPrintable,
     );
     if (quantities.length === 0) continue;
     omitPaintQuantityLineIds.add(line.id);
     for (const row of quantities) {
       const name = row.productName.trim();
-      rows.push({
-        product: prefix ? `${line.name}: ${name}` : name,
-        quantity: formatQuantity(row.quantity),
-        unit: row.unit?.trim() ?? '',
-      });
+      const product = prefix ? `${line.name}: ${name}` : name;
+      const shades = (row.shades ?? []).filter(
+        (shade) => shade.name.trim() && Number.isFinite(shade.quantity) && shade.quantity > 0,
+      );
+      if (shades.length === 0) {
+        rows.push({
+          product,
+          quantity: formatQuantity(row.quantity),
+          unit: row.unit?.trim() ?? '',
+        });
+        continue;
+      }
+      rows.push({ product, quantity: '', unit: '', shadeHeader: true });
+      for (const shade of shades) {
+        rows.push({
+          product: shade.name.trim(),
+          quantity: formatQuantity(shade.quantity),
+          unit: shade.unit?.trim() ?? '',
+          shade: true,
+        });
+      }
     }
   }
   return { rows, omitPaintQuantityLineIds };
@@ -207,7 +245,10 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
   return {
     kind: 'urakkakortti',
     // Kohde: nimi + osoite + puhelin (ei sähköpostia tarvita maalarille, mutta ei haitta).
-    customerLines: customerHeaderLines({ ...customer, email: undefined }),
+    customerLines: customerHeaderLines(
+      { ...customer, email: undefined },
+      documentSiteAddress(customer, record.formSnapshot),
+    ),
     offerInfo: [{ label: 'Päiväys', value: formatFinnishDate(input.generatedAt) }],
     contractRows,
     infoRows,
@@ -217,6 +258,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
       offerStructureSettings: input.offerStructureSettings,
     }),
     materials: materialTable.rows,
+    structureLisatiedot: firstStructureLisatiedot(lines, input.structures)?.text ?? '',
     customerNotes: customer.notes?.trim() ?? '',
     huomioitavaa: effectiveHuomioitavaa(record),
     mode,
@@ -233,13 +275,14 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
  * Kuvat tulevat kortin jälkeen omalle sivulleen (renderUrakkakorttiHtml, attachmentHtml),
  * eivät lohkona tämän listan keskelle.
  */
-export type UrakkakorttiBlockKind = 'price' | 'specs' | 'print' | 'materials' | 'huomio';
+export type UrakkakorttiBlockKind = 'price' | 'specs' | 'print' | 'lisatiedot' | 'materials' | 'huomio';
 
 export function urakkakorttiBodyBlocks(ctx: UrakkakorttiContext): UrakkakorttiBlockKind[] {
   const blocks: UrakkakorttiBlockKind[] = [];
   if (ctx.contractRows.length > 0 || ctx.infoRows.length > 0) blocks.push('price');
   if (ctx.specGrid.mode !== 'none') blocks.push('specs');
   if (ctx.sections.length > 0) blocks.push('print');
+  if (ctx.structureLisatiedot.trim()) blocks.push('lisatiedot');
   if (ctx.materials.length > 0) blocks.push('materials');
   if (ctx.huomioitavaa.trim()) blocks.push('huomio');
   return blocks;
