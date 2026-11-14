@@ -475,7 +475,7 @@ describe('effective quantities block an unfinished summary', () => {
 describe('urakkakortti material table', () => {
   const paintStructure: ProductStructure = { ...structure('s-paint', 'Ulkomaalaus'), form: paintForm };
 
-  test('saved rows are shown for one line and prefixed when there are several', () => {
+  test('saved rows are shown for one line and merged without a line prefix when there are several', () => {
     const single = record(
       {},
       { lines: [], structureLines: [paintLine({ materialQuantities: [formRow(49.5)] })] },
@@ -502,12 +502,14 @@ describe('urakkakortti material table', () => {
       },
     );
     const multiHtml = bodyOf(renderUrakkakorttiHtml(buildUrakkakorttiContext(ukInput(multi, { products: [vinha] }))));
-    expect(multiHtml).toContain('class="uk-structure"');
-    expect(multiHtml).toContain('>Ulkomaalaus<');
-    expect(multiHtml).toContain('>Sokkeli<');
-    expect(multiHtml).toContain('Tikkurila Vinha');
-    expect(multiHtml).toContain('Pohjuste');
-    expect(multiHtml).toContain('3 l');
+    const multiMaterials = multiHtml.slice(multiHtml.indexOf('Materiaalit'));
+    expect(multiMaterials).not.toContain('uk-structure');
+    expect(multiMaterials).not.toContain('>Ulkomaalaus<');
+    expect(multiMaterials).not.toContain('>Sokkeli<');
+    expect(multiMaterials).not.toContain('Ulkomaalaus:');
+    expect(multiMaterials).toContain('Tikkurila Vinha');
+    expect(multiMaterials).toContain('Pohjuste');
+    expect(multiMaterials).toContain('3 l');
     expect(multiHtml.indexOf('Materiaalit')).toBeGreaterThan(multiHtml.indexOf('Sokkeli'));
   });
 

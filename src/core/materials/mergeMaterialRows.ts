@@ -66,11 +66,12 @@ function shadeMergeKey(shade: MaterialShade): string {
 }
 
 /**
- * Yhdistää rivit näyttöä varten.
+ * Yksi yhdistäjä näytölle ja urakkakortin PDF:lle.
  * Avain: productId jos se on, muuten tuotenimi (trim, kirjainkoko). Lisäksi yksikkö samoin.
  * Tyhjä tuotenimi ei yhdisty. Eri yksikkö ei yhdisty. Sävyt yhdistyvät nimen ja yksikön mukaan.
+ * Järjestys on ensimmäinen esiintyminen.
  */
-export function mergeMaterialRows(sources: MaterialRowSource[]): MergedMaterialRow[] {
+export function mergeLineMaterials(sources: MaterialRowSource[]): MergedMaterialRow[] {
   const groups: MergedMaterialRow[] = [];
   const indexByKey = new Map<string, number>();
 
@@ -102,6 +103,8 @@ export function mergeMaterialRows(sources: MaterialRowSource[]): MergedMaterialR
   }
   return groups;
 }
+
+export const mergeMaterialRows = mergeLineMaterials;
 
 function mergeShades(group: MergedMaterialRow, source: MaterialRowSource) {
   const shades = source.row.shades ?? [];
@@ -140,7 +143,7 @@ export function mergedMaterialsForLines(
       sources.push({ lineId: entry.line.id, lineName: entry.line.name, row });
     }
   }
-  return mergeMaterialRows(sources);
+  return mergeLineMaterials(sources);
 }
 
 export function baseMaterialRows(

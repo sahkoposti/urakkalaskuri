@@ -7,10 +7,12 @@ import {
 } from '../src/core/materials/materialQuantities';
 import {
   mapMaterialEdit,
+  mergeLineMaterials,
   mergeMaterialRows,
   mergedMaterialsForLines,
   moveMaterialRow,
   type MaterialRowSource,
+  type MergedMaterialRow,
 } from '../src/core/materials/mergeMaterialRows';
 import type { MaterialQuantityRow, StructureLine } from '../src/core/models/types';
 import { input, line, record } from './pdfFixtures';
@@ -29,7 +31,7 @@ function withRows(id: string, name: string, rows: MaterialQuantityRow[]): Struct
 
 describe('mergeMaterialRows', () => {
   test('merges by productId and sums quantities and shades', () => {
-    const merged = mergeMaterialRows([
+    const merged = mergeLineMaterials([
       source('l1', 'Seinä', row({
         id: 'a',
         productId: 'p1',
@@ -68,7 +70,7 @@ describe('mergeMaterialRows', () => {
   });
 
   test('merges name case and whitespace, and keeps a different unit apart', () => {
-    const merged = mergeMaterialRows([
+    const merged = mergeLineMaterials([
       source('l1', 'A', row({ id: 'a', productName: ' Maali ', quantity: 1, unit: 'l' })),
       source('l2', 'B', row({ id: 'b', productName: 'maali', quantity: 2, unit: 'L' })),
       source('l3', 'C', row({ id: 'c', productName: 'Maali', quantity: 9, unit: 'kg' })),
@@ -80,7 +82,7 @@ describe('mergeMaterialRows', () => {
   });
 
   test('empty names never merge, even with the same productId', () => {
-    const merged = mergeMaterialRows([
+    const merged = mergeLineMaterials([
       source('l1', 'A', row({ id: 'a', productId: 'p1', productName: '  ', quantity: 1, unit: 'l' })),
       source('l1', 'A', row({ id: 'b', productId: 'p1', productName: '', quantity: 1, unit: 'l' })),
       source('l2', 'B', row({ id: 'c', productName: 'Maali', quantity: 4, unit: 'l' })),
@@ -90,7 +92,7 @@ describe('mergeMaterialRows', () => {
   });
 
   test('a name without productId does not merge into a productId row', () => {
-    const merged = mergeMaterialRows([
+    const merged = mergeLineMaterials([
       source('l1', 'A', row({ id: 'a', productId: 'p1', productName: 'Maali', quantity: 1, unit: 'l' })),
       source('l2', 'B', row({ id: 'b', productName: 'Maali', quantity: 2, unit: 'l' })),
     ]);
@@ -102,7 +104,7 @@ describe('mergeMaterialRows', () => {
       withRows('l1', 'Seinä', [row({ id: 'a', productId: 'p1', productName: 'Maali', quantity: 2, unit: 'l', source: 'form', fieldKey: 'maali' })]),
       withRows('l2', 'Sokkeli', [row({ id: 'b', productId: 'p1', productName: 'Maali', quantity: 3, unit: 'l', source: 'form', fieldKey: 'maali' })]),
     ];
-    const group = mergeMaterialRows([
+    const group = mergeLineMaterials([
       source('l1', 'Seinä', lines[0].materialQuantities![0]),
       source('l2', 'Sokkeli', lines[1].materialQuantities![0]),
     ])[0];
@@ -164,21 +166,124 @@ describe('mergeMaterialRows', () => {
     expect(merged[0].contributions).toHaveLength(2);
   });
 
-  test('urakkakortti still prints each structure line, not the merged total', () => {
-    const lines = [
-      withRows('l1', 'Seinä', [row({ id: 'a', productName: 'Maali', quantity: 2, unit: 'l' })]),
-      withRows('l2', 'Sokkeli', [row({ id: 'b', productName: 'Maali', quantity: 3, unit: 'l' })]),
-    ];
-    const html = renderUrakkakorttiHtml(
-      buildUrakkakorttiContext({
-        ...input(record({}, { structureLines: lines })),
-        record: record({}, { structureLines: lines }),
+  test('keeps first-appearance order', () => {
+    const merged = mergeLineMaterials([
+      source('l1', 'A', row({ id: 'b', productName: 'Pensseli', quantity: 1, unit: 'kpl' })),
+      source('l2', 'B', row({ id: 'a', productName: 'Maali', quantity: 2, unit: 'l' })),
+      source('l2', 'B', row({ id: 'c', productName: 'pensseli', quantity: 4, unit: 'KPL' })),
+    ]);
+    expect(merged.map((item) => item.productName)).toEqual(['Pensseli', 'Maali']);
+    expect(merged[0].quantity).toBe(5);
+  });
+
+  test('mergeMaterialRows is the same function', () => {
+    expect(mergeMaterialRows).toBe(mergeLineMaterials);
+  });
+});
+
+function printableProjection(groups: MergedMaterialRow[]) {
+  return groups
+    .filter((group) => group.productName.trim())
+    .map((group) => {
+      const shades = group.shades.filter((shade) => shade.name.trim() && shade.quantity > 0);
+      return {
+        product: group.productName.trim(),
+        unit: shades.length === 0 ? (group.unit ?? '').trim().toLowerCase() : '',
+        quantity: shades.length === 0 ? group.quantity : 0,
+        shades: shades.map((shade) => ({
+          name: shade.name.trim().toLowerCase(),
+          unit: (shade.unit ?? '').trim().toLowerCase(),
+          quantity: shade.quantity,
+        })),
+      };
+    });
+}
+
+function pdfProjection(rows: { product: string; quantity: string; unit: string; shadeHeader?: boolean; shade?: boolean; structureHeader?: boolean }[]) {
+  expect(rows.some((row) => row.structureHeader)).toBe(false);
+  const groups: {
+    product: string;
+    unit: string;
+    quantity: number;
+    shades: { name: string; unit: string; quantity: number }[];
+  }[] = [];
+  for (const row of rows) {
+    if (row.shade) {
+      groups.at(-1)?.shades.push({
+        name: row.product.trim().toLowerCase(),
+        unit: row.unit.trim().toLowerCase(),
+        quantity: Number(row.quantity.replace(',', '.')),
+      });
+      continue;
+    }
+    groups.push({
+      product: row.product.trim(),
+      unit: row.shadeHeader ? '' : row.unit.trim().toLowerCase(),
+      quantity: row.shadeHeader ? 0 : Number(row.quantity.replace(',', '.')),
+      shades: [],
+    });
+  }
+  return groups;
+}
+
+describe('screen and urakkakortti PDF share mergeLineMaterials', () => {
+  const lines = [
+    withRows('l1', 'Seinä', [
+      row({
+        id: 'a',
+        productId: 'p1',
+        productName: 'Nova',
+        quantity: 2,
+        unit: 'l',
+        shades: [
+          { id: 's1', name: 'G47', quantity: 3, unit: 'l' },
+          { id: 's2', name: 'NCS', quantity: 1, unit: 'kpl' },
+        ],
       }),
-    );
-    expect(html).toContain('Seinä');
-    expect(html).toContain('Sokkeli');
-    expect(html).toContain('>2 l<');
-    expect(html).toContain('>3 l<');
-    expect(html).not.toContain('>5 l<');
+      row({ id: 'brush', productName: 'Pensseli', quantity: 1, unit: 'kpl' }),
+    ]),
+    withRows('l2', 'Sokkeli', [
+      row({
+        id: 'b',
+        productId: 'p1',
+        productName: 'Eri nimi',
+        quantity: 4,
+        unit: 'L',
+        shades: [{ id: 's3', name: ' g47 ', quantity: 2, unit: 'L' }],
+      }),
+      row({ id: 'c', productName: 'Maali', quantity: 9, unit: 'kg' }),
+      row({ id: 'empty', productName: '  ', quantity: 1, unit: 'l' }),
+    ]),
+  ];
+
+  test('view-model sums match the PDF table for the same lines', () => {
+    const screen = mergedMaterialsForLines(lines.map((item) => ({ line: item })), []);
+    const ctx = buildUrakkakorttiContext(input(record({}, { structureLines: lines })));
+    expect(pdfProjection(ctx.materials)).toEqual(printableProjection(screen));
+    expect(screen.some((group) => !group.productName.trim())).toBe(true);
+    expect(ctx.materials.map((row) => row.product)).not.toContain('Seinä');
+    expect(ctx.materials.map((row) => row.product)).not.toContain('Sokkeli');
+  });
+
+  test('merged rows print the product name only, and a single line stays unprefixed', () => {
+    const html = renderUrakkakorttiHtml(buildUrakkakorttiContext(input(record({}, { structureLines: lines }))));
+    const materials = html.slice(html.indexOf('class="uk-materials'));
+    expect(materials).toContain('>5 l<');
+    expect(materials).not.toContain('>2 l<');
+    expect(materials).not.toContain('>3 l<');
+    expect(materials).not.toContain('Seinä:');
+    expect(materials).not.toContain('Sokkeli:');
+    expect(materials).not.toContain('uk-structure');
+    expect(materials).toContain('Nova');
+    expect(materials).not.toContain('Eri nimi');
+
+    const single = [lines[0]];
+    const singleCtx = buildUrakkakorttiContext(input(record({}, { structureLines: single })));
+    expect(singleCtx.materials.map((row) => `${row.product}|${row.quantity}|${row.unit}|${row.shadeHeader ?? ''}|${row.shade ?? ''}|${row.structureHeader ?? ''}`)).toEqual([
+      'Nova|||true||',
+      'G47|3|l||true|',
+      'NCS|1|kpl||true|',
+      'Pensseli|1|kpl|||',
+    ]);
   });
 });
