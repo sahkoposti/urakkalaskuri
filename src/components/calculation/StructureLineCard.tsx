@@ -375,9 +375,9 @@ function createStyles(colors: AppColorPalette) {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
       gap: 8,
-      marginTop: 0,
+      marginTop: 9,
       marginBottom: 0,
-      paddingVertical: 2,
+      paddingVertical: 4,
     },
     additionalInfoRowPressed: {
       opacity: 0.85,
@@ -398,7 +398,7 @@ function createStyles(colors: AppColorPalette) {
       flexDirection: 'row' as const,
       alignItems: 'flex-start' as const,
       justifyContent: 'flex-end' as const,
-      gap: 8,
+      gap: 22,
       marginBottom: 1,
     },
     incomplete: {
@@ -452,11 +452,11 @@ function createStyles(colors: AppColorPalette) {
       marginBottom: 1,
     },
     inputFieldDense: {
-      paddingVertical: 8,
+      paddingVertical: 10,
     },
     inputMultilineDense: {
       minHeight: 72,
-      paddingVertical: 8,
+      paddingVertical: 10,
       textAlignVertical: 'top' as const,
     },
     toggleRowDense: {

@@ -40,7 +40,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
         {
           "alignItems": "flex-start",
           "flexDirection": "row",
-          "gap": 8,
+          "gap": 22,
           "justifyContent": "flex-end",
           "marginBottom": 1,
         }
@@ -139,7 +139,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
             false,
             false,
             {
-              "paddingVertical": 8,
+              "paddingVertical": 10,
             },
           ]
         }
@@ -218,7 +218,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -290,7 +290,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -371,7 +371,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -443,7 +443,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -524,7 +524,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -597,7 +597,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -654,8 +654,8 @@ exports[`structure card screenshots matches single-card render snapshot (busines
             "flexDirection": "row",
             "gap": 8,
             "marginBottom": 0,
-            "marginTop": 0,
-            "paddingVertical": 2,
+            "marginTop": 9,
+            "paddingVertical": 4,
           },
           false,
         ]
@@ -744,7 +744,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
             false,
             false,
             {
-              "paddingVertical": 8,
+              "paddingVertical": 10,
             },
           ]
         }
@@ -864,7 +864,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "alignItems": "flex-start",
           "flexDirection": "row",
-          "gap": 8,
+          "gap": 22,
           "justifyContent": "flex-end",
           "marginBottom": 1,
         }
@@ -983,7 +983,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 8,
+              "paddingVertical": 10,
             },
           ]
         }
@@ -1062,7 +1062,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -1134,7 +1134,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -1215,7 +1215,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -1287,7 +1287,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -1368,7 +1368,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -1441,7 +1441,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -1498,8 +1498,8 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             "flexDirection": "row",
             "gap": 8,
             "marginBottom": 0,
-            "marginTop": 0,
-            "paddingVertical": 2,
+            "marginTop": 9,
+            "paddingVertical": 4,
           },
           false,
         ]
@@ -1608,7 +1608,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 8,
+              "paddingVertical": 10,
             },
           ]
         }
@@ -1716,7 +1716,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "alignItems": "flex-start",
           "flexDirection": "row",
-          "gap": 8,
+          "gap": 22,
           "justifyContent": "flex-end",
           "marginBottom": 1,
         }
@@ -1835,7 +1835,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 8,
+              "paddingVertical": 10,
             },
           ]
         }
@@ -1914,7 +1914,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -1986,7 +1986,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -2067,7 +2067,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -2139,7 +2139,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -2220,7 +2220,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -2293,7 +2293,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -2359,7 +2359,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 8,
+              "paddingVertical": 10,
             },
           ]
         }
@@ -2467,7 +2467,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "alignItems": "flex-start",
           "flexDirection": "row",
-          "gap": 8,
+          "gap": 22,
           "justifyContent": "flex-end",
           "marginBottom": 1,
         }
@@ -2586,7 +2586,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 8,
+              "paddingVertical": 10,
             },
           ]
         }
@@ -2665,7 +2665,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -2737,7 +2737,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -2818,7 +2818,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -2890,7 +2890,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -2971,7 +2971,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -3044,7 +3044,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 8,
+                  "paddingVertical": 10,
                 },
               ]
             }
@@ -3110,7 +3110,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 8,
+              "paddingVertical": 10,
             },
           ]
         }
