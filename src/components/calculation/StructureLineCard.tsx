@@ -362,7 +362,7 @@ function createStyles(colors: AppColorPalette) {
   return {
     card: {
       gap: 0,
-      paddingVertical: 6,
+      paddingVertical: 5,
       paddingHorizontal: 16,
     },
     additionalInfoHitSlop: {
@@ -399,7 +399,7 @@ function createStyles(colors: AppColorPalette) {
       alignItems: 'flex-start' as const,
       justifyContent: 'flex-end' as const,
       gap: 8,
-      marginBottom: 2,
+      marginBottom: 1,
     },
     incomplete: {
       marginTop: 1,
@@ -418,7 +418,7 @@ function createStyles(colors: AppColorPalette) {
     metaRow: {
       flexDirection: 'row' as const,
       justifyContent: 'space-between' as const,
-      marginTop: 1,
+      marginTop: 0,
     },
     metaLabel: {
       fontFamily: 'IBMPlexSans_400Regular',
@@ -431,8 +431,8 @@ function createStyles(colors: AppColorPalette) {
     totalRow: {
       flexDirection: 'row' as const,
       justifyContent: 'space-between' as const,
-      marginTop: 2,
-      paddingTop: 3,
+      marginTop: 1,
+      paddingTop: 2,
       borderTopWidth: 1,
       borderTopColor: colors.border,
     },
@@ -446,24 +446,24 @@ function createStyles(colors: AppColorPalette) {
       fontSize: 16,
     },
     inputWrapDense: {
-      marginBottom: 3,
-    },
-    inputLabelDense: {
       marginBottom: 2,
     },
+    inputLabelDense: {
+      marginBottom: 1,
+    },
     inputFieldDense: {
-      paddingVertical: 5,
+      paddingVertical: 8,
     },
     inputMultilineDense: {
       minHeight: 72,
-      paddingVertical: 5,
+      paddingVertical: 8,
       textAlignVertical: 'top' as const,
     },
     toggleRowDense: {
-      marginBottom: 3,
+      marginBottom: 2,
     },
     toggleLabelDense: {
-      marginBottom: 2,
+      marginBottom: 1,
     },
     toggleButtonDense: {
       paddingVertical: 6,

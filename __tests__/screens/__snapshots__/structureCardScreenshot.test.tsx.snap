@@ -30,7 +30,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
         {
           "gap": 0,
           "paddingHorizontal": 16,
-          "paddingVertical": 6,
+          "paddingVertical": 5,
         },
       ]
     }
@@ -42,7 +42,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
           "flexDirection": "row",
           "gap": 8,
           "justifyContent": "flex-end",
-          "marginBottom": 2,
+          "marginBottom": 1,
         }
       }
     >
@@ -90,7 +90,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
           },
           false,
           {
-            "marginBottom": 3,
+            "marginBottom": 2,
           },
         ]
       }
@@ -105,7 +105,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
             },
             false,
             {
-              "marginBottom": 2,
+              "marginBottom": 1,
             },
           ]
         }
@@ -139,7 +139,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
             false,
             false,
             {
-              "paddingVertical": 5,
+              "paddingVertical": 8,
             },
           ]
         }
@@ -170,7 +170,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -185,7 +185,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -218,7 +218,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -242,7 +242,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -257,7 +257,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -290,7 +290,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -323,7 +323,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -338,7 +338,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -371,7 +371,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -395,7 +395,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -410,7 +410,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -443,7 +443,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -476,7 +476,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -491,7 +491,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -524,7 +524,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -548,7 +548,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -563,7 +563,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -597,7 +597,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -696,7 +696,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
           },
           false,
           {
-            "marginBottom": 3,
+            "marginBottom": 2,
           },
         ]
       }
@@ -711,7 +711,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
             },
             false,
             {
-              "marginBottom": 2,
+              "marginBottom": 1,
             },
           ]
         }
@@ -744,7 +744,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
             false,
             false,
             {
-              "paddingVertical": 5,
+              "paddingVertical": 8,
             },
           ]
         }
@@ -757,7 +757,7 @@ exports[`structure card screenshots matches single-card render snapshot (busines
         {
           "flexDirection": "row",
           "justifyContent": "space-between",
-          "marginTop": 1,
+          "marginTop": 0,
         }
       }
     >
@@ -793,8 +793,8 @@ exports[`structure card screenshots matches single-card render snapshot (busines
           "borderTopWidth": 1,
           "flexDirection": "row",
           "justifyContent": "space-between",
-          "marginTop": 2,
-          "paddingTop": 3,
+          "marginTop": 1,
+          "paddingTop": 2,
         }
       }
     >
@@ -854,7 +854,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "gap": 0,
           "paddingHorizontal": 16,
-          "paddingVertical": 6,
+          "paddingVertical": 5,
         },
       ]
     }
@@ -866,7 +866,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           "flexDirection": "row",
           "gap": 8,
           "justifyContent": "flex-end",
-          "marginBottom": 2,
+          "marginBottom": 1,
         }
       }
     >
@@ -934,7 +934,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           },
           false,
           {
-            "marginBottom": 3,
+            "marginBottom": 2,
           },
         ]
       }
@@ -949,7 +949,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             },
             false,
             {
-              "marginBottom": 2,
+              "marginBottom": 1,
             },
           ]
         }
@@ -983,7 +983,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 5,
+              "paddingVertical": 8,
             },
           ]
         }
@@ -1014,7 +1014,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -1029,7 +1029,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -1062,7 +1062,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -1086,7 +1086,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -1101,7 +1101,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -1134,7 +1134,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -1167,7 +1167,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -1182,7 +1182,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -1215,7 +1215,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -1239,7 +1239,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -1254,7 +1254,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -1287,7 +1287,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -1320,7 +1320,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -1335,7 +1335,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -1368,7 +1368,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -1392,7 +1392,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -1407,7 +1407,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -1441,7 +1441,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -1560,7 +1560,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           },
           false,
           {
-            "marginBottom": 3,
+            "marginBottom": 2,
           },
         ]
       }
@@ -1575,7 +1575,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             },
             false,
             {
-              "marginBottom": 2,
+              "marginBottom": 1,
             },
           ]
         }
@@ -1608,7 +1608,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 5,
+              "paddingVertical": 8,
             },
           ]
         }
@@ -1621,7 +1621,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "flexDirection": "row",
           "justifyContent": "space-between",
-          "marginTop": 1,
+          "marginTop": 0,
         }
       }
     >
@@ -1657,8 +1657,8 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           "borderTopWidth": 1,
           "flexDirection": "row",
           "justifyContent": "space-between",
-          "marginTop": 2,
-          "paddingTop": 3,
+          "marginTop": 1,
+          "paddingTop": 2,
         }
       }
     >
@@ -1706,7 +1706,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "gap": 0,
           "paddingHorizontal": 16,
-          "paddingVertical": 6,
+          "paddingVertical": 5,
         },
       ]
     }
@@ -1718,7 +1718,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           "flexDirection": "row",
           "gap": 8,
           "justifyContent": "flex-end",
-          "marginBottom": 2,
+          "marginBottom": 1,
         }
       }
     >
@@ -1786,7 +1786,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           },
           false,
           {
-            "marginBottom": 3,
+            "marginBottom": 2,
           },
         ]
       }
@@ -1801,7 +1801,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             },
             false,
             {
-              "marginBottom": 2,
+              "marginBottom": 1,
             },
           ]
         }
@@ -1835,7 +1835,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 5,
+              "paddingVertical": 8,
             },
           ]
         }
@@ -1866,7 +1866,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -1881,7 +1881,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -1914,7 +1914,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -1938,7 +1938,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -1953,7 +1953,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -1986,7 +1986,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -2019,7 +2019,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -2034,7 +2034,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -2067,7 +2067,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -2091,7 +2091,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -2106,7 +2106,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -2139,7 +2139,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -2172,7 +2172,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -2187,7 +2187,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -2220,7 +2220,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -2244,7 +2244,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -2259,7 +2259,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -2293,7 +2293,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -2311,7 +2311,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           },
           false,
           {
-            "marginBottom": 3,
+            "marginBottom": 2,
           },
         ]
       }
@@ -2326,7 +2326,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             },
             false,
             {
-              "marginBottom": 2,
+              "marginBottom": 1,
             },
           ]
         }
@@ -2359,7 +2359,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 5,
+              "paddingVertical": 8,
             },
           ]
         }
@@ -2372,7 +2372,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "flexDirection": "row",
           "justifyContent": "space-between",
-          "marginTop": 1,
+          "marginTop": 0,
         }
       }
     >
@@ -2408,8 +2408,8 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           "borderTopWidth": 1,
           "flexDirection": "row",
           "justifyContent": "space-between",
-          "marginTop": 2,
-          "paddingTop": 3,
+          "marginTop": 1,
+          "paddingTop": 2,
         }
       }
     >
@@ -2457,7 +2457,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "gap": 0,
           "paddingHorizontal": 16,
-          "paddingVertical": 6,
+          "paddingVertical": 5,
         },
       ]
     }
@@ -2469,7 +2469,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           "flexDirection": "row",
           "gap": 8,
           "justifyContent": "flex-end",
-          "marginBottom": 2,
+          "marginBottom": 1,
         }
       }
     >
@@ -2537,7 +2537,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           },
           false,
           {
-            "marginBottom": 3,
+            "marginBottom": 2,
           },
         ]
       }
@@ -2552,7 +2552,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             },
             false,
             {
-              "marginBottom": 2,
+              "marginBottom": 1,
             },
           ]
         }
@@ -2586,7 +2586,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 5,
+              "paddingVertical": 8,
             },
           ]
         }
@@ -2617,7 +2617,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -2632,7 +2632,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -2665,7 +2665,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -2689,7 +2689,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -2704,7 +2704,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -2737,7 +2737,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -2770,7 +2770,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -2785,7 +2785,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -2818,7 +2818,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -2842,7 +2842,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -2857,7 +2857,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -2890,7 +2890,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -2923,7 +2923,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -2938,7 +2938,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -2971,7 +2971,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -2995,7 +2995,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
               },
               false,
               {
-                "marginBottom": 3,
+                "marginBottom": 2,
               },
             ]
           }
@@ -3010,7 +3010,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 },
                 false,
                 {
-                  "marginBottom": 2,
+                  "marginBottom": 1,
                 },
               ]
             }
@@ -3044,7 +3044,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
                 false,
                 false,
                 {
-                  "paddingVertical": 5,
+                  "paddingVertical": 8,
                 },
               ]
             }
@@ -3062,7 +3062,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           },
           false,
           {
-            "marginBottom": 3,
+            "marginBottom": 2,
           },
         ]
       }
@@ -3077,7 +3077,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             },
             false,
             {
-              "marginBottom": 2,
+              "marginBottom": 1,
             },
           ]
         }
@@ -3110,7 +3110,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
             false,
             false,
             {
-              "paddingVertical": 5,
+              "paddingVertical": 8,
             },
           ]
         }
@@ -3123,7 +3123,7 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "flexDirection": "row",
           "justifyContent": "space-between",
-          "marginTop": 1,
+          "marginTop": 0,
         }
       }
     >
@@ -3159,8 +3159,8 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           "borderTopWidth": 1,
           "flexDirection": "row",
           "justifyContent": "space-between",
-          "marginTop": 2,
-          "paddingTop": 3,
+          "marginTop": 1,
+          "paddingTop": 2,
         }
       }
     >
