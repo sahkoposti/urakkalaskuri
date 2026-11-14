@@ -98,7 +98,7 @@ describe('v1.3.5', () => {
 
   it('keeps sentence autocapitalize for address and words for postal locality', () => {
     const customerStep = fs.readFileSync(
-      path.join(__dirname, '../src/components/form/CustomerStep.tsx'),
+      path.join(__dirname, '../src/features/asiakkaat/components/CustomerStep.tsx'),
       'utf8',
     );
     expect(customerStep).toContain('label="Osoite"');

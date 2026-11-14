@@ -1,0 +1,4326 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`main screen render snapshots app/customers/[id].tsx 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#F9FAFA",
+      "flex": 1,
+    }
+  }
+>
+  <View
+    onLayout={[Function]}
+    style={
+      [
+        {
+          "flex": 1,
+        },
+        {
+          "paddingBottom": 0,
+        },
+      ]
+    }
+  >
+    <RCTScrollView
+      contentContainerStyle={
+        {
+          "padding": 20,
+          "paddingBottom": 40,
+        }
+      }
+      keyboardShouldPersistTaps="handled"
+    >
+      <View>
+        <View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Nimi *
+            </Text>
+            <TextInput
+              autoCapitalize="words"
+              autoComplete="name"
+              autoCorrect={true}
+              keyboardType="default"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="name"
+              value="Fiktiivinen Asiakas"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Puh.
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="tel"
+              autoCorrect={false}
+              keyboardType="phone-pad"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="telephoneNumber"
+              value="040 111 2222"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Sähköposti
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              keyboardType="email-address"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="emailAddress"
+              value="fiktiivinen@esimerkki.test"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Osoite
+            </Text>
+            <TextInput
+              autoCapitalize="sentences"
+              autoComplete="off"
+              autoCorrect={true}
+              keyboardType="default"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="none"
+              value="Kultatie 7"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Postinumero
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="postal-code"
+              autoCorrect={false}
+              keyboardType="numeric"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholder="Esim. 20100"
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="postalCode"
+              value="33100"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Postitoimipaikka
+            </Text>
+            <TextInput
+              autoCapitalize="words"
+              autoComplete="off"
+              autoCorrect={true}
+              keyboardType="default"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholder="Täyttyy postinumerosta"
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="none"
+              value="Tampere"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Lisätiedot
+            </Text>
+            <TextInput
+              autoCapitalize="sentences"
+              autoComplete="off"
+              autoCorrect={true}
+              keyboardType="default"
+              multiline={true}
+              onChangeText={[Function]}
+              placeholder="Valinnainen"
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  {
+                    "minHeight": 90,
+                    "textAlignVertical": "top",
+                  },
+                  false,
+                ]
+              }
+              textContentType="none"
+              value="Snapshot-fixture"
+            />
+          </View>
+          <View
+            style={
+              {
+                "marginBottom": 8,
+              }
+            }
+          >
+            <Text
+              style={
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 14,
+                  "marginBottom": 6,
+                  "paddingHorizontal": 0,
+                }
+              }
+            >
+              Asiakastyyppi
+            </Text>
+            <View
+              accessibilityLabel="Asiakastyyppi: Yksityisasiakas"
+              accessibilityRole="button"
+              accessibilityState={
+                {
+                  "busy": undefined,
+                  "checked": undefined,
+                  "disabled": undefined,
+                  "expanded": undefined,
+                  "selected": undefined,
+                }
+              }
+              accessibilityValue={
+                {
+                  "max": undefined,
+                  "min": undefined,
+                  "now": undefined,
+                  "text": undefined,
+                }
+              }
+              accessible={true}
+              collapsable={false}
+              focusable={true}
+              onBlur={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onResponderGrant={[Function]}
+              onResponderMove={[Function]}
+              onResponderRelease={[Function]}
+              onResponderTerminate={[Function]}
+              onResponderTerminationRequest={[Function]}
+              onStartShouldSetResponder={[Function]}
+              style={
+                [
+                  {
+                    "alignItems": "center",
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "minHeight": 48,
+                    "paddingHorizontal": 12,
+                  },
+                  false,
+                ]
+              }
+            >
+              <Text
+                numberOfLines={1}
+                style={
+                  [
+                    {
+                      "color": "#3C3C3C",
+                      "flex": 1,
+                      "fontFamily": "IBMPlexSans_400Regular",
+                      "fontSize": 16,
+                    },
+                    false,
+                  ]
+                }
+              >
+                Yksityisasiakas
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#C90000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "fontSize": 16,
+                  }
+                }
+              >
+                ▾
+              </Text>
+            </View>
+          </View>
+        </View>
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 5,
+                "paddingHorizontal": 32,
+                "paddingVertical": 16,
+              },
+              {
+                "backgroundColor": "#C90000",
+              },
+              undefined,
+              null,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 16,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+              ]
+            }
+          >
+            Tallenna
+          </Text>
+        </View>
+      </View>
+    </RCTScrollView>
+  </View>
+</View>
+`;
+
+exports[`main screen render snapshots app/customers/index.tsx 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#F9FAFA",
+      "flex": 1,
+    }
+  }
+>
+  <RCTScrollView
+    ItemSeparatorComponent={[Function]}
+    contentContainerStyle={
+      {
+        "padding": 16,
+        "paddingBottom": 40,
+      }
+    }
+    data={
+      [
+        {
+          "address": "Kultatie 7",
+          "customerType": "private",
+          "email": "fiktiivinen@esimerkki.test",
+          "id": "cust_fixture_1",
+          "name": "Fiktiivinen Asiakas",
+          "notes": "Snapshot-fixture",
+          "phone": "040 111 2222",
+          "postalCode": "33100",
+          "postalLocality": "Tampere",
+          "reverseVat": false,
+          "updatedAt": 2026-10-10T12:00:00.000Z,
+        },
+        {
+          "address": "Esimerkkikatu 2",
+          "customerType": "business",
+          "email": "toinen@esimerkki.test",
+          "id": "cust_fixture_2",
+          "name": "Toinen Fiktiivinen",
+          "notes": "",
+          "phone": "050 999 8888",
+          "postalCode": "20100",
+          "postalLocality": "Turku",
+          "reverseVat": true,
+          "updatedAt": 2026-10-10T12:00:00.000Z,
+        },
+      ]
+    }
+    getItem={[Function]}
+    getItemCount={[Function]}
+    keyExtractor={[Function]}
+    onContentSizeChange={[Function]}
+    onLayout={[Function]}
+    onMomentumScrollBegin={[Function]}
+    onMomentumScrollEnd={[Function]}
+    onScroll={[Function]}
+    onScrollBeginDrag={[Function]}
+    onScrollEndDrag={[Function]}
+    removeClippedSubviews={false}
+    renderItem={[Function]}
+    scrollEventThrottle={0.0001}
+    stickyHeaderIndices={[]}
+    viewabilityConfigCallbackPairs={[]}
+  >
+    <View>
+      <View
+        onFocusCapture={[Function]}
+        onLayout={[Function]}
+        style={null}
+      >
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "backgroundColor": "#FFFFFF",
+                "borderColor": "#E1E8ED",
+                "borderRadius": 5,
+                "borderWidth": 1,
+                "elevation": 2,
+                "padding": 16,
+                "shadowColor": "#000",
+                "shadowOffset": {
+                  "height": 2,
+                  "width": 0,
+                },
+                "shadowOpacity": 0.08,
+                "shadowRadius": 4,
+              },
+              undefined,
+              false,
+            ]
+          }
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+              }
+            }
+          >
+            <View
+              style={
+                {
+                  "flex": 1,
+                }
+              }
+            >
+              <Text
+                style={
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                  }
+                }
+              >
+                Fiktiivinen Asiakas
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  }
+                }
+              >
+                Tampere
+              </Text>
+            </View>
+            <View
+              style={
+                {
+                  "alignItems": "center",
+                  "flexDirection": "row",
+                }
+              }
+            >
+              <View
+                accessibilityLabel="Soita"
+                accessibilityRole="button"
+                accessibilityState={
+                  {
+                    "busy": undefined,
+                    "checked": undefined,
+                    "disabled": undefined,
+                    "expanded": undefined,
+                    "selected": undefined,
+                  }
+                }
+                accessibilityValue={
+                  {
+                    "max": undefined,
+                    "min": undefined,
+                    "now": undefined,
+                    "text": undefined,
+                  }
+                }
+                accessible={true}
+                collapsable={false}
+                focusable={true}
+                onBlur={[Function]}
+                onClick={[Function]}
+                onFocus={[Function]}
+                onResponderGrant={[Function]}
+                onResponderMove={[Function]}
+                onResponderRelease={[Function]}
+                onResponderTerminate={[Function]}
+                onResponderTerminationRequest={[Function]}
+                onStartShouldSetResponder={[Function]}
+                style={
+                  {
+                    "justifyContent": "center",
+                    "minHeight": 44,
+                    "minWidth": 44,
+                    "paddingHorizontal": 8,
+                  }
+                }
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#000000",
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                    }
+                  }
+                >
+                  Soita
+                </Text>
+              </View>
+              <View
+                accessibilityLabel="Poista"
+                accessibilityRole="button"
+                accessibilityState={
+                  {
+                    "busy": undefined,
+                    "checked": undefined,
+                    "disabled": undefined,
+                    "expanded": undefined,
+                    "selected": undefined,
+                  }
+                }
+                accessibilityValue={
+                  {
+                    "max": undefined,
+                    "min": undefined,
+                    "now": undefined,
+                    "text": undefined,
+                  }
+                }
+                accessible={true}
+                collapsable={false}
+                focusable={true}
+                onBlur={[Function]}
+                onClick={[Function]}
+                onFocus={[Function]}
+                onResponderGrant={[Function]}
+                onResponderMove={[Function]}
+                onResponderRelease={[Function]}
+                onResponderTerminate={[Function]}
+                onResponderTerminationRequest={[Function]}
+                onStartShouldSetResponder={[Function]}
+                style={
+                  {
+                    "justifyContent": "center",
+                    "minHeight": 44,
+                    "minWidth": 44,
+                    "paddingHorizontal": 8,
+                  }
+                }
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#C90000",
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                    }
+                  }
+                >
+                  Poista
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        <View
+          style={
+            {
+              "height": 8,
+            }
+          }
+        />
+      </View>
+      <View
+        onFocusCapture={[Function]}
+        onLayout={[Function]}
+        style={null}
+      >
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "backgroundColor": "#FFFFFF",
+                "borderColor": "#E1E8ED",
+                "borderRadius": 5,
+                "borderWidth": 1,
+                "elevation": 2,
+                "padding": 16,
+                "shadowColor": "#000",
+                "shadowOffset": {
+                  "height": 2,
+                  "width": 0,
+                },
+                "shadowOpacity": 0.08,
+                "shadowRadius": 4,
+              },
+              undefined,
+              false,
+            ]
+          }
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+              }
+            }
+          >
+            <View
+              style={
+                {
+                  "flex": 1,
+                }
+              }
+            >
+              <Text
+                style={
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                  }
+                }
+              >
+                Toinen Fiktiivinen
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  }
+                }
+              >
+                Turku
+              </Text>
+            </View>
+            <View
+              style={
+                {
+                  "alignItems": "center",
+                  "flexDirection": "row",
+                }
+              }
+            >
+              <View
+                accessibilityLabel="Soita"
+                accessibilityRole="button"
+                accessibilityState={
+                  {
+                    "busy": undefined,
+                    "checked": undefined,
+                    "disabled": undefined,
+                    "expanded": undefined,
+                    "selected": undefined,
+                  }
+                }
+                accessibilityValue={
+                  {
+                    "max": undefined,
+                    "min": undefined,
+                    "now": undefined,
+                    "text": undefined,
+                  }
+                }
+                accessible={true}
+                collapsable={false}
+                focusable={true}
+                onBlur={[Function]}
+                onClick={[Function]}
+                onFocus={[Function]}
+                onResponderGrant={[Function]}
+                onResponderMove={[Function]}
+                onResponderRelease={[Function]}
+                onResponderTerminate={[Function]}
+                onResponderTerminationRequest={[Function]}
+                onStartShouldSetResponder={[Function]}
+                style={
+                  {
+                    "justifyContent": "center",
+                    "minHeight": 44,
+                    "minWidth": 44,
+                    "paddingHorizontal": 8,
+                  }
+                }
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#000000",
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                    }
+                  }
+                >
+                  Soita
+                </Text>
+              </View>
+              <View
+                accessibilityLabel="Poista"
+                accessibilityRole="button"
+                accessibilityState={
+                  {
+                    "busy": undefined,
+                    "checked": undefined,
+                    "disabled": undefined,
+                    "expanded": undefined,
+                    "selected": undefined,
+                  }
+                }
+                accessibilityValue={
+                  {
+                    "max": undefined,
+                    "min": undefined,
+                    "now": undefined,
+                    "text": undefined,
+                  }
+                }
+                accessible={true}
+                collapsable={false}
+                focusable={true}
+                onBlur={[Function]}
+                onClick={[Function]}
+                onFocus={[Function]}
+                onResponderGrant={[Function]}
+                onResponderMove={[Function]}
+                onResponderRelease={[Function]}
+                onResponderTerminate={[Function]}
+                onResponderTerminationRequest={[Function]}
+                onStartShouldSetResponder={[Function]}
+                style={
+                  {
+                    "justifyContent": "center",
+                    "minHeight": 44,
+                    "minWidth": 44,
+                    "paddingHorizontal": 8,
+                  }
+                }
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#C90000",
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                    }
+                  }
+                >
+                  Poista
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+    </View>
+  </RCTScrollView>
+</View>
+`;
+
+exports[`main screen render snapshots app/history/index.tsx 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#F9FAFA",
+      "flex": 1,
+    }
+  }
+>
+  <RCTScrollView
+    ItemSeparatorComponent={[Function]}
+    contentContainerStyle={
+      {
+        "padding": 16,
+      }
+    }
+    data={
+      [
+        {
+          "commissionEur": 77.77,
+          "commissionPercent": 5,
+          "contractPriceVat0": 2000,
+          "createdAt": 2026-10-10T12:00:00.000Z,
+          "crewSize": 2,
+          "customer": "{"customerType":"private","reverseVat":false,"phone":"040 000 0000","address":"Testitie 1","postalCode":"20100","postalLocality":"Turku"}",
+          "discountEur": 0,
+          "discountPercent": 0,
+          "groupDurationHours": 10,
+          "hourlyRate": 50,
+          "id": "calc_fixture_1",
+          "lines": [],
+          "marginEur": 333.33,
+          "marginPercent": 20,
+          "materialsVat0": 400,
+          "projectName": "Fiktiivinen Kohde",
+          "status": "complete",
+          "structureLines": [
+            {
+              "commissionEur": 77.77,
+              "commissionPercent": 5,
+              "contractPriceVat0": 1000,
+              "discountPercent": 0,
+              "fieldValues": {
+                "kiintea_seinapinta_ala_m2": "120",
+              },
+              "formFilled": true,
+              "id": "l1",
+              "marginEur": 333.33,
+              "marginPercent": 20,
+              "materialsVat0": 200,
+              "name": "Ulkomaalaus",
+              "overrides": [],
+              "quantity": 1,
+              "snapshot": {
+                "fieldValues": {
+                  "kiintea_seinapinta_ala_m2": "120",
+                  "laudoitustyyppi": "1.15",
+                },
+                "fields": [
+                  {
+                    "key": "kiintea_seinapinta_ala_m2",
+                    "label": "Kiinteä seinäpinta-ala",
+                    "pageTitle": "Pinta-alat",
+                    "unit": "m²",
+                    "value": "120,0 m²",
+                  },
+                  {
+                    "key": "aukkovahennykset",
+                    "label": "Aukkovähennykset",
+                    "pageTitle": "Pinta-alat",
+                    "unit": "m²",
+                    "value": "–",
+                  },
+                  {
+                    "key": "laudoitustyyppi",
+                    "label": "Laudoitustyyppi",
+                    "pageTitle": "Pinta-alat",
+                    "unit": undefined,
+                    "value": "Paneeli",
+                  },
+                  {
+                    "key": "laskenta_seinapinta_ala_m2",
+                    "label": "Seinäpinta-ala (laskettu)",
+                    "pageTitle": "Pinta-alat",
+                    "unit": "m²",
+                    "value": "–",
+                  },
+                ],
+                "formId": "default",
+                "formVersion": 8,
+              },
+              "structureId": "s1",
+              "unitPriceVat0": 1000,
+              "vatPercent": 25.5,
+              "workDurationDays": 3,
+            },
+          ],
+          "totalPriceVat": 2510,
+          "totalPriceVat0": 2000,
+          "totalPriceVat0BeforeDiscount": 2000,
+          "totalPriceVatBeforeDiscount": 2510,
+          "vatAmount": 510,
+          "vatPercent": 25.5,
+          "workDurationDays": 3,
+        },
+        {
+          "commissionEur": 77.77,
+          "commissionPercent": 5,
+          "contractPriceVat0": 2000,
+          "createdAt": 2026-10-10T12:00:00.000Z,
+          "crewSize": 2,
+          "customer": "{"customerType":"private","reverseVat":false,"phone":"040 000 0000","address":"Testitie 1","postalCode":"20100","postalLocality":"Turku"}",
+          "discountEur": 0,
+          "discountPercent": 0,
+          "groupDurationHours": 10,
+          "hourlyRate": 50,
+          "id": "calc_fixture_draft",
+          "lines": [],
+          "marginEur": 333.33,
+          "marginPercent": 20,
+          "materialsVat0": 400,
+          "projectName": "Luonnos-fixture",
+          "status": "draft",
+          "structureLines": [
+            {
+              "commissionEur": 77.77,
+              "commissionPercent": 5,
+              "contractPriceVat0": 1000,
+              "discountPercent": 0,
+              "fieldValues": {
+                "kiintea_seinapinta_ala_m2": "120",
+              },
+              "formFilled": true,
+              "id": "l1",
+              "marginEur": 333.33,
+              "marginPercent": 20,
+              "materialsVat0": 200,
+              "name": "Ulkomaalaus",
+              "overrides": [],
+              "quantity": 1,
+              "snapshot": {
+                "fieldValues": {
+                  "kiintea_seinapinta_ala_m2": "120",
+                  "laudoitustyyppi": "1.15",
+                },
+                "fields": [
+                  {
+                    "key": "kiintea_seinapinta_ala_m2",
+                    "label": "Kiinteä seinäpinta-ala",
+                    "pageTitle": "Pinta-alat",
+                    "unit": "m²",
+                    "value": "120,0 m²",
+                  },
+                  {
+                    "key": "aukkovahennykset",
+                    "label": "Aukkovähennykset",
+                    "pageTitle": "Pinta-alat",
+                    "unit": "m²",
+                    "value": "–",
+                  },
+                  {
+                    "key": "laudoitustyyppi",
+                    "label": "Laudoitustyyppi",
+                    "pageTitle": "Pinta-alat",
+                    "unit": undefined,
+                    "value": "Paneeli",
+                  },
+                  {
+                    "key": "laskenta_seinapinta_ala_m2",
+                    "label": "Seinäpinta-ala (laskettu)",
+                    "pageTitle": "Pinta-alat",
+                    "unit": "m²",
+                    "value": "–",
+                  },
+                ],
+                "formId": "default",
+                "formVersion": 8,
+              },
+              "structureId": "s1",
+              "unitPriceVat0": 1000,
+              "vatPercent": 25.5,
+              "workDurationDays": 3,
+            },
+          ],
+          "totalPriceVat": 2510,
+          "totalPriceVat0": 2000,
+          "totalPriceVat0BeforeDiscount": 2000,
+          "totalPriceVatBeforeDiscount": 2510,
+          "vatAmount": 510,
+          "vatPercent": 25.5,
+          "workDurationDays": 3,
+        },
+      ]
+    }
+    getItem={[Function]}
+    getItemCount={[Function]}
+    keyExtractor={[Function]}
+    onContentSizeChange={[Function]}
+    onLayout={[Function]}
+    onMomentumScrollBegin={[Function]}
+    onMomentumScrollEnd={[Function]}
+    onScroll={[Function]}
+    onScrollBeginDrag={[Function]}
+    onScrollEndDrag={[Function]}
+    removeClippedSubviews={false}
+    renderItem={[Function]}
+    scrollEventThrottle={0.0001}
+    stickyHeaderIndices={[]}
+    viewabilityConfigCallbackPairs={[]}
+  >
+    <View>
+      <View
+        onFocusCapture={[Function]}
+        onLayout={[Function]}
+        style={null}
+      >
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "backgroundColor": "#FFFFFF",
+                "borderColor": "#E1E8ED",
+                "borderRadius": 5,
+                "borderWidth": 1,
+                "elevation": 2,
+                "padding": 16,
+                "shadowColor": "#000",
+                "shadowOffset": {
+                  "height": 2,
+                  "width": 0,
+                },
+                "shadowOpacity": 0.08,
+                "shadowRadius": 4,
+              },
+              undefined,
+              false,
+            ]
+          }
+        >
+          <Text
+            style={
+              {
+                "color": "#000000",
+                "fontFamily": "IBMPlexSans_700Bold",
+                "fontSize": 16,
+              }
+            }
+          >
+            Fiktiivinen Kohde
+          </Text>
+          <Text
+            style={
+              {
+                "color": "#3C3C3C",
+                "fontFamily": "IBMPlexSans_400Regular",
+                "marginTop": 4,
+              }
+            }
+          >
+            040 000 0000
+          </Text>
+          <Text
+            style={
+              {
+                "color": "#000000",
+                "fontFamily": "IBMPlexSans_600SemiBold",
+                "marginTop": 8,
+              }
+            }
+          >
+            1 255,00 €
+          </Text>
+          <Text
+            style={
+              {
+                "color": "#3C3C3C",
+                "fontFamily": "IBMPlexSans_400Regular",
+                "marginTop": 4,
+              }
+            }
+          >
+            10.10.2026
+          </Text>
+        </View>
+        <View
+          style={
+            {
+              "height": 8,
+            }
+          }
+        />
+      </View>
+      <View
+        onFocusCapture={[Function]}
+        onLayout={[Function]}
+        style={null}
+      >
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "backgroundColor": "#FFFFFF",
+                "borderColor": "#E1E8ED",
+                "borderRadius": 5,
+                "borderWidth": 1,
+                "elevation": 2,
+                "padding": 16,
+                "shadowColor": "#000",
+                "shadowOffset": {
+                  "height": 2,
+                  "width": 0,
+                },
+                "shadowOpacity": 0.08,
+                "shadowRadius": 4,
+              },
+              undefined,
+              false,
+            ]
+          }
+        >
+          <Text
+            style={
+              {
+                "color": "#000000",
+                "fontFamily": "IBMPlexSans_700Bold",
+                "fontSize": 16,
+              }
+            }
+          >
+            Luonnos-fixture
+          </Text>
+          <Text
+            style={
+              {
+                "alignSelf": "flex-start",
+                "color": "#C90000",
+                "fontFamily": "IBMPlexSans_700Bold",
+                "fontSize": 13,
+                "marginTop": 6,
+              }
+            }
+          >
+            Keskeneräinen
+          </Text>
+          <Text
+            style={
+              {
+                "color": "#3C3C3C",
+                "fontFamily": "IBMPlexSans_400Regular",
+                "marginTop": 4,
+              }
+            }
+          >
+            040 000 0000
+          </Text>
+          <Text
+            style={
+              {
+                "color": "#3C3C3C",
+                "fontFamily": "IBMPlexSans_400Regular",
+                "marginTop": 4,
+              }
+            }
+          >
+            10.10.2026
+          </Text>
+        </View>
+      </View>
+    </View>
+  </RCTScrollView>
+</View>
+`;
+
+exports[`main screen render snapshots app/index.tsx (home) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#F9FAFA",
+      "flex": 1,
+    }
+  }
+>
+  <RCTScrollView
+    contentContainerStyle={
+      {
+        "padding": 20,
+        "paddingBottom": 40,
+      }
+    }
+  >
+    <View>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "gap": 8,
+            "marginBottom": 24,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 8,
+              },
+              {
+                "alignItems": "center",
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_700Bold",
+                  "fontSize": 24,
+                },
+                {
+                  "textAlign": "center",
+                },
+              ]
+            }
+          >
+            Urakkalaskuri
+          </Text>
+          <View
+            style={
+              {
+                "backgroundColor": "#C90000",
+                "height": 3,
+                "marginTop": 8,
+                "width": 40,
+              }
+            }
+          />
+        </View>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "elevation": 2,
+              "padding": 16,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.08,
+              "shadowRadius": 4,
+            },
+            [
+              {
+                "marginBottom": 12,
+              },
+              {
+                "backgroundColor": "#C90000",
+                "borderColor": "#C90000",
+              },
+            ],
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                    "fontSize": 17,
+                  },
+                  {
+                    "color": "#FFFFFF",
+                  },
+                ]
+              }
+            >
+              Uusi laskenta
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  },
+                  {
+                    "color": "#FFFFFF",
+                  },
+                ]
+              }
+            >
+              Aloita laskenta
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+              ]
+            }
+          >
+            ›
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "elevation": 2,
+              "padding": 16,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.08,
+              "shadowRadius": 4,
+            },
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+            ],
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                    "fontSize": 17,
+                  },
+                  false,
+                ]
+              }
+            >
+              Historia
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  },
+                  false,
+                ]
+              }
+            >
+              Aiempien laskelmien lista
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                },
+                false,
+              ]
+            }
+          >
+            ›
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "elevation": 2,
+              "padding": 16,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.08,
+              "shadowRadius": 4,
+            },
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+            ],
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                    "fontSize": 17,
+                  },
+                  false,
+                ]
+              }
+            >
+              Tuotteet
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  },
+                  false,
+                ]
+              }
+            >
+              Materiaalit ja hinnat
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                },
+                false,
+              ]
+            }
+          >
+            ›
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "elevation": 2,
+              "padding": 16,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.08,
+              "shadowRadius": 4,
+            },
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+            ],
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                    "fontSize": 17,
+                  },
+                  false,
+                ]
+              }
+            >
+              Asiakkaat
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  },
+                  false,
+                ]
+              }
+            >
+              Asiakasrekisteri
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                },
+                false,
+              ]
+            }
+          >
+            ›
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "elevation": 2,
+              "padding": 16,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.08,
+              "shadowRadius": 4,
+            },
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+            ],
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                    "fontSize": 17,
+                  },
+                  false,
+                ]
+              }
+            >
+              Asetukset
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  },
+                  false,
+                ]
+              }
+            >
+              ALV, kate, tuoterakenteet
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                },
+                false,
+              ]
+            }
+          >
+            ›
+          </Text>
+        </View>
+      </View>
+    </View>
+  </RCTScrollView>
+</View>
+`;
+
+exports[`main screen render snapshots app/products/index.tsx 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#F9FAFA",
+      "flex": 1,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "flex": 1,
+      }
+    }
+  >
+    <RCTScrollView
+      ItemSeparatorComponent={[Function]}
+      contentContainerStyle={
+        {
+          "padding": 16,
+          "paddingBottom": 96,
+        }
+      }
+      data={
+        [
+          {
+            "createdAt": 2026-10-10T12:00:00.000Z,
+            "id": "prod_a",
+            "name": "Nova 7",
+            "purchasePriceVat0": 40,
+            "salePriceVat0": 45,
+            "sortOrder": 0,
+            "structureIds": [
+              "s1",
+              "s2",
+            ],
+            "unit": "l",
+            "unitPriceVat0": 45,
+          },
+          {
+            "createdAt": 2026-10-10T12:00:00.000Z,
+            "id": "prod_b",
+            "name": "Pensseli 100mm",
+            "purchasePriceVat0": 10,
+            "salePriceVat0": 12,
+            "sortOrder": 1,
+            "structureIds": [
+              "s1",
+            ],
+            "unit": "kpl",
+            "unitPriceVat0": 12,
+          },
+        ]
+      }
+      getItem={[Function]}
+      getItemCount={[Function]}
+      keyExtractor={[Function]}
+      onContentSizeChange={[Function]}
+      onLayout={[Function]}
+      onMomentumScrollBegin={[Function]}
+      onMomentumScrollEnd={[Function]}
+      onScroll={[Function]}
+      onScrollBeginDrag={[Function]}
+      onScrollEndDrag={[Function]}
+      removeClippedSubviews={false}
+      renderItem={[Function]}
+      scrollEventThrottle={0.0001}
+      stickyHeaderIndices={[]}
+      viewabilityConfigCallbackPairs={[]}
+    >
+      <View>
+        <View
+          onFocusCapture={[Function]}
+          onLayout={[Function]}
+          style={null}
+        >
+          <View
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "elevation": 2,
+                  "padding": 16,
+                  "shadowColor": "#000",
+                  "shadowOffset": {
+                    "height": 2,
+                    "width": 0,
+                  },
+                  "shadowOpacity": 0.08,
+                  "shadowRadius": 4,
+                },
+                undefined,
+              ]
+            }
+          >
+            <View
+              accessibilityState={
+                {
+                  "busy": undefined,
+                  "checked": undefined,
+                  "disabled": undefined,
+                  "expanded": undefined,
+                  "selected": undefined,
+                }
+              }
+              accessibilityValue={
+                {
+                  "max": undefined,
+                  "min": undefined,
+                  "now": undefined,
+                  "text": undefined,
+                }
+              }
+              accessible={true}
+              collapsable={false}
+              focusable={true}
+              onBlur={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onResponderGrant={[Function]}
+              onResponderMove={[Function]}
+              onResponderRelease={[Function]}
+              onResponderTerminate={[Function]}
+              onResponderTerminationRequest={[Function]}
+              onStartShouldSetResponder={[Function]}
+            >
+              <Text
+                style={
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                  }
+                }
+              >
+                Nova 7
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  }
+                }
+              >
+                Osto 
+                40,00 €
+                 · Myynti
+                 
+                45,00 €
+                 / 
+                l
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "fontSize": 13,
+                    "marginTop": 2,
+                  }
+                }
+              >
+                Kate 
+                5,00 €
+                 (
+                11,1 %
+                )
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "fontSize": 13,
+                    "marginTop": 2,
+                  }
+                }
+              >
+                Ulkomaalaus, Sokkeli
+              </Text>
+            </View>
+            <View
+              style={
+                {
+                  "alignItems": "center",
+                  "flexDirection": "row",
+                  "flexWrap": "wrap",
+                  "gap": 8,
+                  "justifyContent": "flex-end",
+                  "marginTop": 10,
+                }
+              }
+            >
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "gap": 8,
+                  }
+                }
+              >
+                <View
+                  accessibilityState={
+                    {
+                      "busy": undefined,
+                      "checked": undefined,
+                      "disabled": true,
+                      "expanded": undefined,
+                      "selected": undefined,
+                    }
+                  }
+                  accessibilityValue={
+                    {
+                      "max": undefined,
+                      "min": undefined,
+                      "now": undefined,
+                      "text": undefined,
+                    }
+                  }
+                  accessible={true}
+                  collapsable={false}
+                  focusable={true}
+                  onBlur={[Function]}
+                  onClick={[Function]}
+                  onFocus={[Function]}
+                  onResponderGrant={[Function]}
+                  onResponderMove={[Function]}
+                  onResponderRelease={[Function]}
+                  onResponderTerminate={[Function]}
+                  onResponderTerminationRequest={[Function]}
+                  onStartShouldSetResponder={[Function]}
+                  style={
+                    [
+                      {
+                        "alignItems": "center",
+                        "backgroundColor": "#FFFFFF",
+                        "borderColor": "#C90000",
+                        "borderRadius": 5,
+                        "borderWidth": 1,
+                        "height": 36,
+                        "justifyContent": "center",
+                        "width": 36,
+                      },
+                      {
+                        "opacity": 0.35,
+                      },
+                    ]
+                  }
+                >
+                  <Text
+                    style={
+                      {
+                        "color": "#C90000",
+                        "fontFamily": "IBMPlexSans_700Bold",
+                        "fontSize": 18,
+                        "lineHeight": 20,
+                      }
+                    }
+                  >
+                    ↑
+                  </Text>
+                </View>
+                <View
+                  accessibilityState={
+                    {
+                      "busy": undefined,
+                      "checked": undefined,
+                      "disabled": false,
+                      "expanded": undefined,
+                      "selected": undefined,
+                    }
+                  }
+                  accessibilityValue={
+                    {
+                      "max": undefined,
+                      "min": undefined,
+                      "now": undefined,
+                      "text": undefined,
+                    }
+                  }
+                  accessible={true}
+                  collapsable={false}
+                  focusable={true}
+                  onBlur={[Function]}
+                  onClick={[Function]}
+                  onFocus={[Function]}
+                  onResponderGrant={[Function]}
+                  onResponderMove={[Function]}
+                  onResponderRelease={[Function]}
+                  onResponderTerminate={[Function]}
+                  onResponderTerminationRequest={[Function]}
+                  onStartShouldSetResponder={[Function]}
+                  style={
+                    [
+                      {
+                        "alignItems": "center",
+                        "backgroundColor": "#FFFFFF",
+                        "borderColor": "#C90000",
+                        "borderRadius": 5,
+                        "borderWidth": 1,
+                        "height": 36,
+                        "justifyContent": "center",
+                        "width": 36,
+                      },
+                      false,
+                    ]
+                  }
+                >
+                  <Text
+                    style={
+                      {
+                        "color": "#C90000",
+                        "fontFamily": "IBMPlexSans_700Bold",
+                        "fontSize": 18,
+                        "lineHeight": 20,
+                      }
+                    }
+                  >
+                    ↓
+                  </Text>
+                </View>
+              </View>
+              <View
+                accessibilityState={
+                  {
+                    "busy": undefined,
+                    "checked": undefined,
+                    "disabled": undefined,
+                    "expanded": undefined,
+                    "selected": undefined,
+                  }
+                }
+                accessibilityValue={
+                  {
+                    "max": undefined,
+                    "min": undefined,
+                    "now": undefined,
+                    "text": undefined,
+                  }
+                }
+                accessible={true}
+                collapsable={false}
+                focusable={true}
+                onBlur={[Function]}
+                onClick={[Function]}
+                onFocus={[Function]}
+                onResponderGrant={[Function]}
+                onResponderMove={[Function]}
+                onResponderRelease={[Function]}
+                onResponderTerminate={[Function]}
+                onResponderTerminationRequest={[Function]}
+                onStartShouldSetResponder={[Function]}
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#000000",
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                    }
+                  }
+                >
+                  Kopioi
+                </Text>
+              </View>
+              <View
+                accessibilityState={
+                  {
+                    "busy": undefined,
+                    "checked": undefined,
+                    "disabled": undefined,
+                    "expanded": undefined,
+                    "selected": undefined,
+                  }
+                }
+                accessibilityValue={
+                  {
+                    "max": undefined,
+                    "min": undefined,
+                    "now": undefined,
+                    "text": undefined,
+                  }
+                }
+                accessible={true}
+                collapsable={false}
+                focusable={true}
+                onBlur={[Function]}
+                onClick={[Function]}
+                onFocus={[Function]}
+                onResponderGrant={[Function]}
+                onResponderMove={[Function]}
+                onResponderRelease={[Function]}
+                onResponderTerminate={[Function]}
+                onResponderTerminationRequest={[Function]}
+                onStartShouldSetResponder={[Function]}
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#C90000",
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                    }
+                  }
+                >
+                  Poista
+                </Text>
+              </View>
+            </View>
+          </View>
+          <View
+            style={
+              {
+                "height": 8,
+              }
+            }
+          />
+        </View>
+        <View
+          onFocusCapture={[Function]}
+          onLayout={[Function]}
+          style={null}
+        >
+          <View
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "elevation": 2,
+                  "padding": 16,
+                  "shadowColor": "#000",
+                  "shadowOffset": {
+                    "height": 2,
+                    "width": 0,
+                  },
+                  "shadowOpacity": 0.08,
+                  "shadowRadius": 4,
+                },
+                undefined,
+              ]
+            }
+          >
+            <View
+              accessibilityState={
+                {
+                  "busy": undefined,
+                  "checked": undefined,
+                  "disabled": undefined,
+                  "expanded": undefined,
+                  "selected": undefined,
+                }
+              }
+              accessibilityValue={
+                {
+                  "max": undefined,
+                  "min": undefined,
+                  "now": undefined,
+                  "text": undefined,
+                }
+              }
+              accessible={true}
+              collapsable={false}
+              focusable={true}
+              onBlur={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onResponderGrant={[Function]}
+              onResponderMove={[Function]}
+              onResponderRelease={[Function]}
+              onResponderTerminate={[Function]}
+              onResponderTerminationRequest={[Function]}
+              onStartShouldSetResponder={[Function]}
+            >
+              <Text
+                style={
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                  }
+                }
+              >
+                Pensseli 100mm
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  }
+                }
+              >
+                Osto 
+                10,00 €
+                 · Myynti
+                 
+                12,00 €
+                 / 
+                kpl
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "fontSize": 13,
+                    "marginTop": 2,
+                  }
+                }
+              >
+                Kate 
+                2,00 €
+                 (
+                16,7 %
+                )
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "fontSize": 13,
+                    "marginTop": 2,
+                  }
+                }
+              >
+                Ulkomaalaus
+              </Text>
+            </View>
+            <View
+              style={
+                {
+                  "alignItems": "center",
+                  "flexDirection": "row",
+                  "flexWrap": "wrap",
+                  "gap": 8,
+                  "justifyContent": "flex-end",
+                  "marginTop": 10,
+                }
+              }
+            >
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "gap": 8,
+                  }
+                }
+              >
+                <View
+                  accessibilityState={
+                    {
+                      "busy": undefined,
+                      "checked": undefined,
+                      "disabled": false,
+                      "expanded": undefined,
+                      "selected": undefined,
+                    }
+                  }
+                  accessibilityValue={
+                    {
+                      "max": undefined,
+                      "min": undefined,
+                      "now": undefined,
+                      "text": undefined,
+                    }
+                  }
+                  accessible={true}
+                  collapsable={false}
+                  focusable={true}
+                  onBlur={[Function]}
+                  onClick={[Function]}
+                  onFocus={[Function]}
+                  onResponderGrant={[Function]}
+                  onResponderMove={[Function]}
+                  onResponderRelease={[Function]}
+                  onResponderTerminate={[Function]}
+                  onResponderTerminationRequest={[Function]}
+                  onStartShouldSetResponder={[Function]}
+                  style={
+                    [
+                      {
+                        "alignItems": "center",
+                        "backgroundColor": "#FFFFFF",
+                        "borderColor": "#C90000",
+                        "borderRadius": 5,
+                        "borderWidth": 1,
+                        "height": 36,
+                        "justifyContent": "center",
+                        "width": 36,
+                      },
+                      false,
+                    ]
+                  }
+                >
+                  <Text
+                    style={
+                      {
+                        "color": "#C90000",
+                        "fontFamily": "IBMPlexSans_700Bold",
+                        "fontSize": 18,
+                        "lineHeight": 20,
+                      }
+                    }
+                  >
+                    ↑
+                  </Text>
+                </View>
+                <View
+                  accessibilityState={
+                    {
+                      "busy": undefined,
+                      "checked": undefined,
+                      "disabled": true,
+                      "expanded": undefined,
+                      "selected": undefined,
+                    }
+                  }
+                  accessibilityValue={
+                    {
+                      "max": undefined,
+                      "min": undefined,
+                      "now": undefined,
+                      "text": undefined,
+                    }
+                  }
+                  accessible={true}
+                  collapsable={false}
+                  focusable={true}
+                  onBlur={[Function]}
+                  onClick={[Function]}
+                  onFocus={[Function]}
+                  onResponderGrant={[Function]}
+                  onResponderMove={[Function]}
+                  onResponderRelease={[Function]}
+                  onResponderTerminate={[Function]}
+                  onResponderTerminationRequest={[Function]}
+                  onStartShouldSetResponder={[Function]}
+                  style={
+                    [
+                      {
+                        "alignItems": "center",
+                        "backgroundColor": "#FFFFFF",
+                        "borderColor": "#C90000",
+                        "borderRadius": 5,
+                        "borderWidth": 1,
+                        "height": 36,
+                        "justifyContent": "center",
+                        "width": 36,
+                      },
+                      {
+                        "opacity": 0.35,
+                      },
+                    ]
+                  }
+                >
+                  <Text
+                    style={
+                      {
+                        "color": "#C90000",
+                        "fontFamily": "IBMPlexSans_700Bold",
+                        "fontSize": 18,
+                        "lineHeight": 20,
+                      }
+                    }
+                  >
+                    ↓
+                  </Text>
+                </View>
+              </View>
+              <View
+                accessibilityState={
+                  {
+                    "busy": undefined,
+                    "checked": undefined,
+                    "disabled": undefined,
+                    "expanded": undefined,
+                    "selected": undefined,
+                  }
+                }
+                accessibilityValue={
+                  {
+                    "max": undefined,
+                    "min": undefined,
+                    "now": undefined,
+                    "text": undefined,
+                  }
+                }
+                accessible={true}
+                collapsable={false}
+                focusable={true}
+                onBlur={[Function]}
+                onClick={[Function]}
+                onFocus={[Function]}
+                onResponderGrant={[Function]}
+                onResponderMove={[Function]}
+                onResponderRelease={[Function]}
+                onResponderTerminate={[Function]}
+                onResponderTerminationRequest={[Function]}
+                onStartShouldSetResponder={[Function]}
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#000000",
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                    }
+                  }
+                >
+                  Kopioi
+                </Text>
+              </View>
+              <View
+                accessibilityState={
+                  {
+                    "busy": undefined,
+                    "checked": undefined,
+                    "disabled": undefined,
+                    "expanded": undefined,
+                    "selected": undefined,
+                  }
+                }
+                accessibilityValue={
+                  {
+                    "max": undefined,
+                    "min": undefined,
+                    "now": undefined,
+                    "text": undefined,
+                  }
+                }
+                accessible={true}
+                collapsable={false}
+                focusable={true}
+                onBlur={[Function]}
+                onClick={[Function]}
+                onFocus={[Function]}
+                onResponderGrant={[Function]}
+                onResponderMove={[Function]}
+                onResponderRelease={[Function]}
+                onResponderTerminate={[Function]}
+                onResponderTerminationRequest={[Function]}
+                onStartShouldSetResponder={[Function]}
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#C90000",
+                      "fontFamily": "IBMPlexSans_600SemiBold",
+                    }
+                  }
+                >
+                  Poista
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+    </RCTScrollView>
+    <View
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "#C90000",
+          "borderRadius": 28,
+          "bottom": 24,
+          "elevation": 4,
+          "height": 56,
+          "justifyContent": "center",
+          "position": "absolute",
+          "right": 20,
+          "width": 56,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#FFFFFF",
+            "fontFamily": "IBMPlexSans_700Bold",
+            "fontSize": 28,
+            "lineHeight": 30,
+          }
+        }
+      >
+        +
+      </Text>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`main screen render snapshots app/settings/index.tsx 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#F9FAFA",
+      "flex": 1,
+    }
+  }
+>
+  <RCTScrollView
+    contentContainerStyle={
+      {
+        "padding": 20,
+        "paddingBottom": 40,
+      }
+    }
+  >
+    <View>
+      <View
+        style={
+          [
+            {
+              "marginBottom": 8,
+            },
+            false,
+          ]
+        }
+      >
+        <Text
+          style={
+            [
+              {
+                "color": "#000000",
+                "fontFamily": "IBMPlexSans_700Bold",
+                "fontSize": 24,
+              },
+              false,
+            ]
+          }
+        >
+          Asetukset
+        </Text>
+        <View
+          style={
+            {
+              "backgroundColor": "#C90000",
+              "height": 3,
+              "marginTop": 8,
+              "width": 40,
+            }
+          }
+        />
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "elevation": 2,
+              "padding": 16,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.08,
+              "shadowRadius": 4,
+            },
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+            ],
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                    "fontSize": 17,
+                  },
+                  false,
+                ]
+              }
+            >
+              Yleinen
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  },
+                  false,
+                ]
+              }
+            >
+              ALV, palkkio-oletus, tuntihinta, säävaraus, sivukulukerroin
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                },
+                false,
+              ]
+            }
+          >
+            ›
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "elevation": 2,
+              "padding": 16,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.08,
+              "shadowRadius": 4,
+            },
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+            ],
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                    "fontSize": 17,
+                  },
+                  false,
+                ]
+              }
+            >
+              Tuoterakenteet
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  },
+                  false,
+                ]
+              }
+            >
+              Lomakkeet, kate, palkkio ja työryhmä
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                },
+                false,
+              ]
+            }
+          >
+            ›
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "elevation": 2,
+              "padding": 16,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.08,
+              "shadowRadius": 4,
+            },
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+            ],
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                    "fontSize": 17,
+                  },
+                  false,
+                ]
+              }
+            >
+              Tarjous
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  },
+                  false,
+                ]
+              }
+            >
+              Numerointi, voimassaolo, lisätiedot, kotitalousvähennys
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                },
+                false,
+              ]
+            }
+          >
+            ›
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "elevation": 2,
+              "padding": 16,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.08,
+              "shadowRadius": 4,
+            },
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+            ],
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                    "fontSize": 17,
+                  },
+                  false,
+                ]
+              }
+            >
+              Yritys
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  },
+                  false,
+                ]
+              }
+            >
+              Yhteystiedot, Y-tunnus, logo
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                },
+                false,
+              ]
+            }
+          >
+            ›
+          </Text>
+        </View>
+      </View>
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "elevation": 2,
+              "padding": 16,
+              "shadowColor": "#000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.08,
+              "shadowRadius": 4,
+            },
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+            ],
+            false,
+          ]
+        }
+      >
+        <View
+          style={
+            {
+              "alignItems": "center",
+              "flexDirection": "row",
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "flex": 1,
+              }
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_700Bold",
+                    "fontSize": 17,
+                  },
+                  false,
+                ]
+              }
+            >
+              Teema
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "marginTop": 4,
+                  },
+                  false,
+                ]
+              }
+            >
+              Värit, taustakuva
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontSize": 28,
+                  "lineHeight": 28,
+                },
+                false,
+              ]
+            }
+          >
+            ›
+          </Text>
+        </View>
+      </View>
+      <Text
+        style={
+          {
+            "color": "#333",
+            "fontSize": 13,
+            "marginTop": 16,
+          }
+        }
+      >
+        Versio 1.3.5
+      </Text>
+    </View>
+  </RCTScrollView>
+</View>
+`;
+
+exports[`main screen render snapshots app/wizard/customer.tsx (CustomerStep) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#F9FAFA",
+      "flex": 1,
+    }
+  }
+>
+  <View
+    onLayout={[Function]}
+    style={
+      [
+        {
+          "flex": 1,
+        },
+        {
+          "paddingBottom": 0,
+        },
+      ]
+    }
+  >
+    <RCTScrollView
+      contentContainerStyle={
+        {
+          "padding": 20,
+          "paddingBottom": 40,
+        }
+      }
+      keyboardShouldPersistTaps="handled"
+    >
+      <View>
+        <View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Nimi *
+            </Text>
+            <TextInput
+              autoCapitalize="words"
+              autoComplete="name"
+              autoCorrect={true}
+              keyboardType="default"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="name"
+              value="Fiktiivinen Asiakas"
+            />
+          </View>
+          <View
+            style={
+              {
+                "backgroundColor": "#FFFFFF",
+                "borderColor": "#E1E8ED",
+                "borderRadius": 5,
+                "borderWidth": 1,
+                "marginBottom": 12,
+                "marginTop": -6,
+                "overflow": "hidden",
+              }
+            }
+          >
+            <View
+              accessibilityState={
+                {
+                  "busy": undefined,
+                  "checked": undefined,
+                  "disabled": undefined,
+                  "expanded": undefined,
+                  "selected": undefined,
+                }
+              }
+              accessibilityValue={
+                {
+                  "max": undefined,
+                  "min": undefined,
+                  "now": undefined,
+                  "text": undefined,
+                }
+              }
+              accessible={true}
+              collapsable={false}
+              focusable={true}
+              onBlur={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onResponderGrant={[Function]}
+              onResponderMove={[Function]}
+              onResponderRelease={[Function]}
+              onResponderTerminate={[Function]}
+              onResponderTerminationRequest={[Function]}
+              onStartShouldSetResponder={[Function]}
+              style={
+                [
+                  {
+                    "borderBottomColor": "#E1E8ED",
+                    "borderBottomWidth": 1,
+                    "paddingHorizontal": 12,
+                    "paddingVertical": 10,
+                  },
+                  false,
+                ]
+              }
+            >
+              <Text
+                style={
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                  }
+                }
+              >
+                Fiktiivinen Asiakas · Tampere
+              </Text>
+            </View>
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Puh.
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="tel"
+              autoCorrect={false}
+              keyboardType="phone-pad"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="telephoneNumber"
+              value="040 111 2222"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Sähköposti
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              keyboardType="email-address"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="emailAddress"
+              value="fiktiivinen@esimerkki.test"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Osoite
+            </Text>
+            <TextInput
+              autoCapitalize="sentences"
+              autoComplete="off"
+              autoCorrect={true}
+              keyboardType="default"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="none"
+              value="Kultatie 7"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Postinumero
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="postal-code"
+              autoCorrect={false}
+              keyboardType="numeric"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholder="Esim. 20100"
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="postalCode"
+              value="33100"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Postitoimipaikka
+            </Text>
+            <TextInput
+              autoCapitalize="words"
+              autoComplete="off"
+              autoCorrect={true}
+              keyboardType="default"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholder="Täyttyy postinumerosta"
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="none"
+              value="Tampere"
+            />
+          </View>
+          <View
+            style={
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                ]
+              }
+            >
+              Lisätiedot
+            </Text>
+            <TextInput
+              autoCapitalize="sentences"
+              autoComplete="off"
+              autoCorrect={true}
+              keyboardType="default"
+              multiline={true}
+              onChangeText={[Function]}
+              placeholder="Valinnainen"
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  {
+                    "minHeight": 90,
+                    "textAlignVertical": "top",
+                  },
+                  false,
+                ]
+              }
+              textContentType="none"
+              value="Snapshot-fixture"
+            />
+          </View>
+          <View
+            style={
+              {
+                "marginBottom": 8,
+              }
+            }
+          >
+            <Text
+              style={
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 14,
+                  "marginBottom": 6,
+                  "paddingHorizontal": 0,
+                }
+              }
+            >
+              Asiakastyyppi
+            </Text>
+            <View
+              accessibilityLabel="Asiakastyyppi: Yksityisasiakas"
+              accessibilityRole="button"
+              accessibilityState={
+                {
+                  "busy": undefined,
+                  "checked": undefined,
+                  "disabled": undefined,
+                  "expanded": undefined,
+                  "selected": undefined,
+                }
+              }
+              accessibilityValue={
+                {
+                  "max": undefined,
+                  "min": undefined,
+                  "now": undefined,
+                  "text": undefined,
+                }
+              }
+              accessible={true}
+              collapsable={false}
+              focusable={true}
+              onBlur={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onResponderGrant={[Function]}
+              onResponderMove={[Function]}
+              onResponderRelease={[Function]}
+              onResponderTerminate={[Function]}
+              onResponderTerminationRequest={[Function]}
+              onStartShouldSetResponder={[Function]}
+              style={
+                [
+                  {
+                    "alignItems": "center",
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "flexDirection": "row",
+                    "gap": 8,
+                    "minHeight": 48,
+                    "paddingHorizontal": 12,
+                  },
+                  false,
+                ]
+              }
+            >
+              <Text
+                numberOfLines={1}
+                style={
+                  [
+                    {
+                      "color": "#3C3C3C",
+                      "flex": 1,
+                      "fontFamily": "IBMPlexSans_400Regular",
+                      "fontSize": 16,
+                    },
+                    false,
+                  ]
+                }
+              >
+                Yksityisasiakas
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#C90000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "fontSize": 16,
+                  }
+                }
+              >
+                ▾
+              </Text>
+            </View>
+          </View>
+        </View>
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 5,
+                "paddingHorizontal": 32,
+                "paddingVertical": 16,
+              },
+              {
+                "backgroundColor": "#C90000",
+              },
+              undefined,
+              null,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 16,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+              ]
+            }
+          >
+            Valmis
+          </Text>
+        </View>
+      </View>
+    </RCTScrollView>
+  </View>
+</View>
+`;

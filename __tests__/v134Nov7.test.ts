@@ -190,7 +190,10 @@ describe('v1.3.4 Nov 7 feedback', () => {
     expect(telUrlForSavedPhone('')).toBeNull();
     expect(telUrlForSavedPhone('1234')).toBeNull();
     expect(telUrlForSavedPhone('soita minulle')).toBeNull();
-    const customers = fs.readFileSync(path.join(__dirname, '../app/customers/index.tsx'), 'utf8');
+    const customers = fs.readFileSync(
+      path.join(__dirname, '../src/features/asiakkaat/screens/CustomersListScreen.tsx'),
+      'utf8',
+    );
     expect(customers).toContain('Soita');
     expect(customers).toContain('telUrlForSavedPhone');
     expect(customers).toContain('Poista');
