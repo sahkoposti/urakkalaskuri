@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { MaterialQuantitiesEditor } from '@/src/components/calculation/MaterialQuantitiesEditor';
 import { AppCard, AppInput } from '@/src/components/common';
 import { NAME_FIELD_KIND } from '@/src/components/textInputProps';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
@@ -19,7 +20,8 @@ import {
   toCardAmount,
   withDerivedLinePricing,
 } from '@/src/core/structure/linePricing';
-import type { StructureLine } from '@/src/core/models/types';
+import type { FormDefinition } from '@/src/core/form/types';
+import type { Product, StructureLine } from '@/src/core/models/types';
 import { isManualStructureId, type ProductStructure } from '@/src/core/structure/types';
 import { vat0Tag, vatInclTag } from '@/src/core/utils/priceDisplay';
 import {
@@ -55,6 +57,10 @@ type StructureLineCardProps = {
   onDelete: () => void;
   /** Myöhemmän rivin oma teksti piilotetaan, kun aiemmalla rivillä on jo lisätiedot. */
   showAdditionalInfo?: boolean;
+  /** Same line data as the card. Omitted form skips material prefill. */
+  form?: FormDefinition;
+  products?: Product[];
+  onValidityChange?: (lineId: string, valid: boolean) => void;
 };
 
 export function StructureLineCard({
@@ -67,6 +73,9 @@ export function StructureLineCard({
   onOpenForm,
   onDelete,
   showAdditionalInfo = true,
+  form,
+  products = [],
+  onValidityChange,
 }: StructureLineCardProps) {
   const styles = useThemedStyles(createStyles);
   const priced = withDerivedLinePricing(line);
@@ -253,6 +262,13 @@ export function StructureLineCard({
           {formatCurrency(toCardAmount(lineTotalVat0(priced), includeVat, vatPercent))}
         </Text>
       </View>
+      <MaterialQuantitiesEditor
+        line={line}
+        form={form}
+        products={products}
+        onChange={onChange}
+        onValidityChange={onValidityChange}
+      />
     </AppCard>
   );
 }

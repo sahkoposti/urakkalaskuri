@@ -12,434 +12,468 @@ exports[`MaterialQuantitiesEditor screen layout matches snapshot with määrä a
   <View
     style={
       {
-        "gap": 8,
+        "borderTopColor": "#E1E8ED",
+        "borderTopWidth": 0.5,
+        "marginTop": 12,
+        "paddingTop": 12,
       }
     }
+    testID="structure-materials"
   >
-    <View
-      style={
-        {
-          "gap": 8,
-        }
-      }
-    >
+    <View>
       <Text
         style={
           {
             "color": "#000000",
             "fontFamily": "IBMPlexSans_600SemiBold",
             "fontSize": 15,
+            "marginBottom": 4,
           }
         }
       >
         Materiaalit (urakkakortti)
       </Text>
-      <Text
-        style={
-          {
-            "color": "#3C3C3C",
-            "fontFamily": "IBMPlexSans_400Regular",
-            "fontSize": 13,
-          }
-        }
-      >
-        Yhdellä tuotteella voi olla useita sävyjä. Jokaisella sävyllä on oma määrä.
-      </Text>
       <View
         style={
           {
-            "borderBottomColor": "#E1E8ED",
-            "borderBottomWidth": 1,
             "gap": 8,
-            "paddingBottom": 8,
           }
         }
       >
-        <View
+        <Text
           style={
-            [
-              {
-                "marginBottom": 12,
-              },
-              false,
-              {
-                "marginBottom": 0,
-              },
-            ]
+            {
+              "color": "#3C3C3C",
+              "fontFamily": "IBMPlexSans_400Regular",
+              "fontSize": 13,
+            }
           }
         >
-          <Text
-            style={
-              [
-                {
-                  "color": "#3C3C3C",
-                  "fontFamily": "IBMPlexSans_600SemiBold",
-                  "marginBottom": 6,
-                },
-                false,
-                {
-                  "marginBottom": 4,
-                },
-              ]
-            }
-          >
-            Tuote
-          </Text>
-          <TextInput
-            autoCapitalize="none"
-            autoComplete="off"
-            autoCorrect={false}
-            keyboardType="default"
-            multiline={false}
-            onChangeText={[Function]}
-            placeholderTextColor="#999"
-            style={
-              [
-                {
-                  "backgroundColor": "#FFFFFF",
-                  "borderColor": "#E1E8ED",
-                  "borderRadius": 5,
-                  "borderWidth": 1,
-                  "color": "#000000",
-                  "fontFamily": "IBMPlexSans_400Regular",
-                  "paddingHorizontal": 14,
-                  "paddingVertical": 12,
-                },
-                null,
-                null,
-                false,
-                false,
-                false,
-              ]
-            }
-            textContentType="none"
-            value="Fiktiivinen maali"
-          />
-        </View>
+          Yhdellä tuotteella voi olla useita sävyjä. Jokaisella sävyllä on oma määrä.
+        </Text>
         <View
           style={
             {
-              "alignItems": "flex-start",
-              "flexDirection": "row",
+              "borderBottomColor": "#E1E8ED",
+              "borderBottomWidth": 1,
               "gap": 8,
+              "paddingBottom": 8,
             }
           }
-          testID="material-qty-unit-row"
         >
           <View
             style={
-              {
-                "flex": 1.35,
-              }
+              [
+                {
+                  "marginBottom": 12,
+                },
+                false,
+                {
+                  "marginBottom": 0,
+                },
+              ]
             }
           >
-            <View
+            <Text
               style={
                 [
                   {
-                    "marginBottom": 12,
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
                   },
                   false,
                   {
-                    "marginBottom": 0,
+                    "marginBottom": 4,
                   },
                 ]
               }
             >
-              <Text
+              Tuote
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect={false}
+              keyboardType="default"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                ]
+              }
+              textContentType="none"
+              value="Fiktiivinen maali"
+            />
+          </View>
+          <View
+            style={
+              {
+                "alignItems": "flex-start",
+                "flexDirection": "row",
+                "gap": 8,
+              }
+            }
+            testID="material-qty-unit-row"
+          >
+            <View
+              style={
+                {
+                  "flex": 1.35,
+                }
+              }
+            >
+              <View
                 style={
                   [
                     {
-                      "color": "#3C3C3C",
-                      "fontFamily": "IBMPlexSans_600SemiBold",
-                      "marginBottom": 6,
+                      "marginBottom": 12,
                     },
                     false,
                     {
-                      "marginBottom": 4,
+                      "marginBottom": 0,
                     },
                   ]
                 }
               >
-                Määrä
-              </Text>
-              <TextInput
-                autoCapitalize="none"
-                autoComplete="off"
-                autoCorrect={false}
-                keyboardType="decimal-pad"
-                multiline={false}
-                onChangeText={[Function]}
-                placeholderTextColor="#999"
+                <Text
+                  style={
+                    [
+                      {
+                        "color": "#3C3C3C",
+                        "fontFamily": "IBMPlexSans_600SemiBold",
+                        "marginBottom": 6,
+                      },
+                      false,
+                      {
+                        "marginBottom": 4,
+                      },
+                    ]
+                  }
+                >
+                  Määrä
+                </Text>
+                <TextInput
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  autoCorrect={false}
+                  keyboardType="decimal-pad"
+                  multiline={false}
+                  onChangeText={[Function]}
+                  placeholderTextColor="#999"
+                  style={
+                    [
+                      {
+                        "backgroundColor": "#FFFFFF",
+                        "borderColor": "#E1E8ED",
+                        "borderRadius": 5,
+                        "borderWidth": 1,
+                        "color": "#000000",
+                        "fontFamily": "IBMPlexSans_400Regular",
+                        "paddingHorizontal": 14,
+                        "paddingVertical": 12,
+                      },
+                      null,
+                      null,
+                      false,
+                      false,
+                      false,
+                    ]
+                  }
+                  textContentType="none"
+                  value="2,5"
+                />
+              </View>
+            </View>
+            <View
+              style={
+                {
+                  "flex": 0.65,
+                }
+              }
+            >
+              <View
                 style={
                   [
                     {
-                      "backgroundColor": "#FFFFFF",
-                      "borderColor": "#E1E8ED",
-                      "borderRadius": 5,
-                      "borderWidth": 1,
-                      "color": "#000000",
-                      "fontFamily": "IBMPlexSans_400Regular",
-                      "paddingHorizontal": 14,
-                      "paddingVertical": 12,
+                      "marginBottom": 12,
                     },
-                    null,
-                    null,
                     false,
-                    false,
-                    false,
+                    {
+                      "marginBottom": 0,
+                    },
                   ]
                 }
-                textContentType="none"
-                value="2,5"
-              />
+              >
+                <Text
+                  style={
+                    [
+                      {
+                        "color": "#3C3C3C",
+                        "fontFamily": "IBMPlexSans_600SemiBold",
+                        "marginBottom": 6,
+                      },
+                      false,
+                      {
+                        "marginBottom": 4,
+                      },
+                    ]
+                  }
+                >
+                  Yksikkö
+                </Text>
+                <TextInput
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  autoCorrect={false}
+                  keyboardType="default"
+                  multiline={false}
+                  onChangeText={[Function]}
+                  placeholderTextColor="#999"
+                  style={
+                    [
+                      {
+                        "backgroundColor": "#FFFFFF",
+                        "borderColor": "#E1E8ED",
+                        "borderRadius": 5,
+                        "borderWidth": 1,
+                        "color": "#000000",
+                        "fontFamily": "IBMPlexSans_400Regular",
+                        "paddingHorizontal": 14,
+                        "paddingVertical": 12,
+                      },
+                      null,
+                      null,
+                      false,
+                      false,
+                      false,
+                    ]
+                  }
+                  textContentType="none"
+                  value="l"
+                />
+              </View>
             </View>
           </View>
           <View
             style={
               {
-                "flex": 0.65,
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 8,
+                "justifyContent": "flex-end",
               }
             }
+            testID="material-inline-actions"
           >
             <View
+              accessibilityLabel="Lisää sävy"
+              accessibilityState={
+                {
+                  "busy": undefined,
+                  "checked": undefined,
+                  "disabled": undefined,
+                  "expanded": undefined,
+                  "selected": undefined,
+                }
+              }
+              accessibilityValue={
+                {
+                  "max": undefined,
+                  "min": undefined,
+                  "now": undefined,
+                  "text": undefined,
+                }
+              }
+              accessible={true}
+              collapsable={false}
+              focusable={true}
+              onBlur={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onResponderGrant={[Function]}
+              onResponderMove={[Function]}
+              onResponderRelease={[Function]}
+              onResponderTerminate={[Function]}
+              onResponderTerminationRequest={[Function]}
+              onStartShouldSetResponder={[Function]}
               style={
                 [
                   {
-                    "marginBottom": 12,
+                    "alignItems": "center",
+                    "justifyContent": "center",
+                    "minHeight": 44,
+                    "minWidth": 44,
+                    "paddingHorizontal": 8,
                   },
                   false,
-                  {
-                    "marginBottom": 0,
-                  },
                 ]
               }
             >
               <Text
                 style={
-                  [
-                    {
-                      "color": "#3C3C3C",
-                      "fontFamily": "IBMPlexSans_600SemiBold",
-                      "marginBottom": 6,
-                    },
-                    false,
-                    {
-                      "marginBottom": 4,
-                    },
-                  ]
+                  {
+                    "color": "#C90000",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "fontSize": 14,
+                  }
                 }
               >
-                Yksikkö
+                Lisää sävy
               </Text>
-              <TextInput
-                autoCapitalize="none"
-                autoComplete="off"
-                autoCorrect={false}
-                keyboardType="default"
-                multiline={false}
-                onChangeText={[Function]}
-                placeholderTextColor="#999"
-                style={
-                  [
-                    {
-                      "backgroundColor": "#FFFFFF",
-                      "borderColor": "#E1E8ED",
-                      "borderRadius": 5,
-                      "borderWidth": 1,
-                      "color": "#000000",
-                      "fontFamily": "IBMPlexSans_400Regular",
-                      "paddingHorizontal": 14,
-                      "paddingVertical": 12,
-                    },
-                    null,
-                    null,
-                    false,
-                    false,
-                    false,
-                  ]
+            </View>
+            <View
+              accessibilityLabel="Poista materiaali"
+              accessibilityState={
+                {
+                  "busy": undefined,
+                  "checked": undefined,
+                  "disabled": undefined,
+                  "expanded": undefined,
+                  "selected": undefined,
                 }
-                textContentType="none"
-                value="l"
-              />
+              }
+              accessibilityValue={
+                {
+                  "max": undefined,
+                  "min": undefined,
+                  "now": undefined,
+                  "text": undefined,
+                }
+              }
+              accessible={true}
+              collapsable={false}
+              focusable={true}
+              onBlur={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onResponderGrant={[Function]}
+              onResponderMove={[Function]}
+              onResponderRelease={[Function]}
+              onResponderTerminate={[Function]}
+              onResponderTerminationRequest={[Function]}
+              onStartShouldSetResponder={[Function]}
+              style={
+                [
+                  {
+                    "alignItems": "center",
+                    "justifyContent": "center",
+                    "minHeight": 44,
+                    "minWidth": 44,
+                    "paddingHorizontal": 8,
+                  },
+                  false,
+                ]
+              }
+            >
+              <Text
+                style={
+                  {
+                    "color": "#C90000",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "fontSize": 14,
+                  }
+                }
+              >
+                Poista
+              </Text>
             </View>
           </View>
-        </View>
-        <View
-          accessibilityLabel="Lisää sävy"
-          accessibilityState={
-            {
-              "busy": undefined,
-              "checked": undefined,
-              "disabled": undefined,
-              "expanded": undefined,
-              "selected": undefined,
-            }
-          }
-          accessibilityValue={
-            {
-              "max": undefined,
-              "min": undefined,
-              "now": undefined,
-              "text": undefined,
-            }
-          }
-          accessible={true}
-          collapsable={false}
-          focusable={true}
-          onBlur={[Function]}
-          onClick={[Function]}
-          onFocus={[Function]}
-          onResponderGrant={[Function]}
-          onResponderMove={[Function]}
-          onResponderRelease={[Function]}
-          onResponderTerminate={[Function]}
-          onResponderTerminationRequest={[Function]}
-          onStartShouldSetResponder={[Function]}
-          style={
-            [
-              {
-                "alignSelf": "flex-start",
-                "justifyContent": "center",
-                "minHeight": 44,
-                "paddingVertical": 4,
-              },
-              false,
-            ]
-          }
-        >
-          <Text
-            style={
-              {
-                "color": "#C90000",
-                "fontFamily": "IBMPlexSans_600SemiBold",
-                "fontSize": 14,
-              }
-            }
-          >
-            Lisää sävy
-          </Text>
-        </View>
-        <View
-          accessibilityLabel="Poista materiaali"
-          accessibilityState={
-            {
-              "busy": undefined,
-              "checked": undefined,
-              "disabled": undefined,
-              "expanded": undefined,
-              "selected": undefined,
-            }
-          }
-          accessibilityValue={
-            {
-              "max": undefined,
-              "min": undefined,
-              "now": undefined,
-              "text": undefined,
-            }
-          }
-          accessible={true}
-          collapsable={false}
-          focusable={true}
-          onBlur={[Function]}
-          onClick={[Function]}
-          onFocus={[Function]}
-          onResponderGrant={[Function]}
-          onResponderMove={[Function]}
-          onResponderRelease={[Function]}
-          onResponderTerminate={[Function]}
-          onResponderTerminationRequest={[Function]}
-          onStartShouldSetResponder={[Function]}
-          style={
-            [
-              {
-                "alignSelf": "flex-start",
-                "justifyContent": "center",
-                "minHeight": 44,
-                "paddingVertical": 4,
-              },
-              false,
-            ]
-          }
-        >
-          <Text
-            style={
-              {
-                "color": "#C90000",
-                "fontFamily": "IBMPlexSans_600SemiBold",
-                "fontSize": 14,
-              }
-            }
-          >
-            Poista
-          </Text>
         </View>
       </View>
     </View>
     <View
-      accessibilityState={
-        {
-          "busy": undefined,
-          "checked": undefined,
-          "disabled": undefined,
-          "expanded": undefined,
-          "selected": undefined,
-        }
-      }
-      accessibilityValue={
-        {
-          "max": undefined,
-          "min": undefined,
-          "now": undefined,
-          "text": undefined,
-        }
-      }
-      accessible={true}
-      collapsable={false}
-      focusable={true}
-      onBlur={[Function]}
-      onClick={[Function]}
-      onFocus={[Function]}
-      onResponderGrant={[Function]}
-      onResponderMove={[Function]}
-      onResponderRelease={[Function]}
-      onResponderTerminate={[Function]}
-      onResponderTerminationRequest={[Function]}
-      onStartShouldSetResponder={[Function]}
       style={
-        [
-          {
-            "alignItems": "center",
-            "borderRadius": 5,
-            "paddingHorizontal": 32,
-            "paddingVertical": 16,
-          },
-          {
-            "backgroundColor": "#FFFFFF",
-            "borderColor": "#C90000",
-            "borderWidth": 1,
-          },
-          undefined,
-          null,
-        ]
+        {
+          "marginTop": 8,
+        }
       }
     >
-      <Text
+      <View
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
         style={
           [
             {
-              "fontFamily": "IBMPlexSans_600SemiBold",
-              "fontSize": 16,
+              "alignItems": "center",
+              "borderRadius": 5,
+              "paddingHorizontal": 32,
+              "paddingVertical": 16,
             },
             {
-              "color": "#C90000",
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#C90000",
+              "borderWidth": 1,
             },
+            {
+              "justifyContent": "center",
+              "minHeight": 44,
+              "paddingVertical": 8,
+            },
+            undefined,
+            null,
           ]
         }
       >
-        Lisää materiaali
-      </Text>
+        <Text
+          style={
+            [
+              {
+                "fontFamily": "IBMPlexSans_600SemiBold",
+                "fontSize": 16,
+              },
+              {
+                "color": "#C90000",
+              },
+            ]
+          }
+        >
+          Lisää materiaali
+        </Text>
+      </View>
     </View>
   </View>
 </View>

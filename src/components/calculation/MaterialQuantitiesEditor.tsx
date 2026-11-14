@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppInput, OutlinedButton } from '@/src/components/common';
 import type { FormDefinition } from '@/src/core/form/types';
@@ -82,12 +82,16 @@ export function MaterialQuantitiesEditor({
     wrap: styles.fieldWrap,
     label: styles.fieldLabel,
   };
+  const addMaterialButton = {
+    button: styles.addMaterialButton,
+  };
 
   return (
-    <View style={styles.wrap}>
+    <View style={styles.wrap} testID="structure-materials">
       {showSection ? (
-        <View style={styles.section}>
+        <View>
           <Text style={styles.title}>Materiaalit (urakkakortti)</Text>
+          <View style={styles.section}>
           <Text style={styles.hint}>Yhdellä tuotteella voi olla useita sävyjä. Jokaisella sävyllä on oma määrä.</Text>
           {displayed.map((row) => {
             const shades = row.shades ?? [];
@@ -184,38 +188,49 @@ export function MaterialQuantitiesEditor({
                             </View>
                           </View>
                           {shadeError ? <Text style={styles.error}>{shadeError}</Text> : null}
-                          <Pressable
-                            onPress={() => commit(removeMaterialShade(baseRows(), row.id, shade.id))}
-                            accessibilityLabel="Poista sävy"
-                            style={({ pressed }) => [styles.remove, pressed && styles.removePressed]}
-                          >
-                            <Text style={styles.removeText}>Poista sävy</Text>
-                          </Pressable>
+                          <View style={styles.inlineActions}>
+                            <Pressable
+                              onPress={() => commit(removeMaterialShade(baseRows(), row.id, shade.id))}
+                              accessibilityLabel="Poista sävy"
+                              style={({ pressed }) => [styles.inlineAction, pressed && styles.removePressed]}
+                            >
+                              <Text style={styles.removeText}>Poista sävy</Text>
+                            </Pressable>
+                          </View>
                         </View>
                       );
                     })}
                   </View>
                 )}
-                <Pressable
-                  onPress={() => commit(addMaterialShade(baseRows(), row.id))}
-                  accessibilityLabel="Lisää sävy"
-                  style={({ pressed }) => [styles.remove, pressed && styles.removePressed]}
-                >
-                  <Text style={styles.removeText}>Lisää sävy</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => commit(removeMaterialRow(baseRows(), row.id))}
-                  accessibilityLabel="Poista materiaali"
-                  style={({ pressed }) => [styles.remove, pressed && styles.removePressed]}
-                >
-                  <Text style={styles.removeText}>Poista</Text>
-                </Pressable>
+                <View style={styles.inlineActions} testID="material-inline-actions">
+                  <Pressable
+                    onPress={() => commit(addMaterialShade(baseRows(), row.id))}
+                    accessibilityLabel="Lisää sävy"
+                    style={({ pressed }) => [styles.inlineAction, pressed && styles.removePressed]}
+                  >
+                    <Text style={styles.removeText}>Lisää sävy</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => commit(removeMaterialRow(baseRows(), row.id))}
+                    accessibilityLabel="Poista materiaali"
+                    style={({ pressed }) => [styles.inlineAction, pressed && styles.removePressed]}
+                  >
+                    <Text style={styles.removeText}>Poista</Text>
+                  </Pressable>
+                </View>
               </View>
             );
           })}
+          </View>
         </View>
       ) : null}
-      <OutlinedButton title="Lisää materiaali" onPress={() => commit(addManualMaterialRow(baseRows()))} />
+      <View style={showSection ? styles.addAfterRows : undefined}>
+        <OutlinedButton
+          title="Lisää materiaali"
+          onPress={() => commit(addManualMaterialRow(baseRows()))}
+          styleOverrides={addMaterialButton}
+        />
+      </View>
     </View>
   );
 }
@@ -223,10 +238,21 @@ export function MaterialQuantitiesEditor({
 function createStyles(colors: AppColorPalette) {
   return {
     wrap: {
-      gap: spacing.sm,
+      marginTop: spacing.md,
+      paddingTop: spacing.md,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
     },
     section: {
       gap: spacing.sm,
+    },
+    addAfterRows: {
+      marginTop: spacing.sm,
+    },
+    addMaterialButton: {
+      minHeight: control.minTouch,
+      paddingVertical: spacing.sm,
+      justifyContent: 'center' as const,
     },
     fieldWrap: {
       marginBottom: 0,
@@ -235,6 +261,7 @@ function createStyles(colors: AppColorPalette) {
       marginBottom: spacing.xs,
     },
     title: {
+      marginBottom: spacing.xs,
       fontFamily: 'IBMPlexSans_600SemiBold',
       fontSize: 15,
       color: colors.primary,
@@ -273,11 +300,18 @@ function createStyles(colors: AppColorPalette) {
       fontSize: 13,
       color: colors.accent,
     },
-    remove: {
-      alignSelf: 'flex-start' as const,
+    inlineActions: {
+      flexDirection: 'row' as const,
+      justifyContent: 'flex-end' as const,
+      alignItems: 'center' as const,
+      gap: spacing.sm,
+    },
+    inlineAction: {
       minHeight: control.minTouch,
+      minWidth: control.minTouch,
       justifyContent: 'center' as const,
-      paddingVertical: spacing.xs,
+      alignItems: 'center' as const,
+      paddingHorizontal: spacing.sm,
     },
     removePressed: {
       opacity: 0.7,

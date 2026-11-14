@@ -824,6 +824,89 @@ exports[`structure card screenshots matches single-card render snapshot (busines
         1 255,00 €
       </Text>
     </View>
+    <View
+      style={
+        {
+          "borderTopColor": "#E1E8ED",
+          "borderTopWidth": 0.5,
+          "marginTop": 12,
+          "paddingTop": 12,
+        }
+      }
+      testID="structure-materials"
+    >
+      <View>
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 5,
+                "paddingHorizontal": 32,
+                "paddingVertical": 16,
+              },
+              {
+                "backgroundColor": "#FFFFFF",
+                "borderColor": "#C90000",
+                "borderWidth": 1,
+              },
+              {
+                "justifyContent": "center",
+                "minHeight": 44,
+                "paddingVertical": 8,
+              },
+              undefined,
+              null,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 16,
+                },
+                {
+                  "color": "#C90000",
+                },
+              ]
+            }
+          >
+            Lisää materiaali
+          </Text>
+        </View>
+      </View>
+    </View>
   </View>
 </View>
 `;
@@ -1692,6 +1775,89 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         1 255,00 €
       </Text>
     </View>
+    <View
+      style={
+        {
+          "borderTopColor": "#E1E8ED",
+          "borderTopWidth": 0.5,
+          "marginTop": 12,
+          "paddingTop": 12,
+        }
+      }
+      testID="structure-materials"
+    >
+      <View>
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 5,
+                "paddingHorizontal": 32,
+                "paddingVertical": 16,
+              },
+              {
+                "backgroundColor": "#FFFFFF",
+                "borderColor": "#C90000",
+                "borderWidth": 1,
+              },
+              {
+                "justifyContent": "center",
+                "minHeight": 44,
+                "paddingVertical": 8,
+              },
+              undefined,
+              null,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 16,
+                },
+                {
+                  "color": "#C90000",
+                },
+              ]
+            }
+          >
+            Lisää materiaali
+          </Text>
+        </View>
+      </View>
+    </View>
   </View>
   <View
     style={
@@ -2448,6 +2614,89 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         1 255,00 €
       </Text>
     </View>
+    <View
+      style={
+        {
+          "borderTopColor": "#E1E8ED",
+          "borderTopWidth": 0.5,
+          "marginTop": 12,
+          "paddingTop": 12,
+        }
+      }
+      testID="structure-materials"
+    >
+      <View>
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 5,
+                "paddingHorizontal": 32,
+                "paddingVertical": 16,
+              },
+              {
+                "backgroundColor": "#FFFFFF",
+                "borderColor": "#C90000",
+                "borderWidth": 1,
+              },
+              {
+                "justifyContent": "center",
+                "minHeight": 44,
+                "paddingVertical": 8,
+              },
+              undefined,
+              null,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 16,
+                },
+                {
+                  "color": "#C90000",
+                },
+              ]
+            }
+          >
+            Lisää materiaali
+          </Text>
+        </View>
+      </View>
+    </View>
   </View>
   <View
     style={
@@ -3203,6 +3452,89 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
       >
         1 255,00 €
       </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderTopColor": "#E1E8ED",
+          "borderTopWidth": 0.5,
+          "marginTop": 12,
+          "paddingTop": 12,
+        }
+      }
+      testID="structure-materials"
+    >
+      <View>
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 5,
+                "paddingHorizontal": 32,
+                "paddingVertical": 16,
+              },
+              {
+                "backgroundColor": "#FFFFFF",
+                "borderColor": "#C90000",
+                "borderWidth": 1,
+              },
+              {
+                "justifyContent": "center",
+                "minHeight": 44,
+                "paddingVertical": 8,
+              },
+              undefined,
+              null,
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "fontSize": 16,
+                },
+                {
+                  "color": "#C90000",
+                },
+              ]
+            }
+          >
+            Lisää materiaali
+          </Text>
+        </View>
+      </View>
     </View>
   </View>
 </View>

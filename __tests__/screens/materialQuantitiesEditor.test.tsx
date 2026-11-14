@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { TextInput } from 'react-native';
-import { act } from 'react-test-renderer';
+import { Text, TextInput, View } from 'react-native';
+import { act, type ReactTestInstance } from 'react-test-renderer';
 
 import { MaterialQuantitiesEditor } from '@/src/components/calculation/MaterialQuantitiesEditor';
+import { StructureLineCard } from '@/src/components/calculation/StructureLineCard';
 import type { MaterialQuantityRow, StructureLine } from '@/src/core/models/types';
 
 import { line } from '../pdfFixtures';
@@ -71,5 +72,134 @@ describe('MaterialQuantitiesEditor screen layout', () => {
     const inputsAfter = tree.root.findByProps({ testID: 'material-qty-unit-row' }).findAllByType(TextInput);
     expect(inputsAfter[0]?.props.value).toBe('7,25');
     expect(inputsAfter[1]?.props.value).toBe('kg');
+  });
+});
+
+function lineWithMaterial(id: string, productName: string): StructureLine {
+  const row: MaterialQuantityRow = {
+    id: `row-${id}`,
+    productName,
+    quantity: 1,
+    unit: 'l',
+    source: 'manual',
+  };
+  return { ...line(id, 's1', `Rakenne ${id}`), materialQuantities: [row] };
+}
+
+function textInOrder(node: ReactTestInstance): string[] {
+  const out: string[] = [];
+  function walk(current: ReactTestInstance) {
+    if (current.type === Text) {
+      const children = current.props.children;
+      if (typeof children === 'string') out.push(children);
+      else if (Array.isArray(children)) {
+        for (const child of children) {
+          if (typeof child === 'string') out.push(child);
+        }
+      }
+    }
+    for (const child of current.children) {
+      if (typeof child !== 'string') walk(child);
+    }
+  }
+  walk(node);
+  return out;
+}
+
+function materialSections(root: ReactTestInstance): ReactTestInstance[] {
+  return root.findAllByType(View).filter((node) => node.props?.testID === 'structure-materials');
+}
+
+function cardOf(materials: ReactTestInstance): ReactTestInstance {
+  let node = materials;
+  while (node.parent) {
+    if (materialSections(node.parent).length > 1) return node;
+    node = node.parent;
+  }
+  return node;
+}
+
+describe('materials inside structure cards', () => {
+  it('renders each line’s materials below Yhteensä in that card only', () => {
+    const tree = renderScreen(
+      <>
+        <StructureLineCard
+          line={lineWithMaterial('l1', 'Maali A')}
+          onChange={() => undefined}
+          onDelete={() => undefined}
+        />
+        <StructureLineCard
+          line={line('l2', 's2', 'Rakenne B')}
+          onChange={() => undefined}
+          onDelete={() => undefined}
+        />
+      </>,
+    );
+    const sections = materialSections(tree.root);
+    expect(sections).toHaveLength(2);
+
+    const withMaterial = textInOrder(cardOf(sections[0]));
+    const empty = textInOrder(cardOf(sections[1]));
+    const values = (node: ReactTestInstance) =>
+      node.findAllByType(TextInput).map((input) => String(input.props.value ?? ''));
+    expect(withMaterial.indexOf('Yhteensä')).toBeGreaterThanOrEqual(0);
+    expect(withMaterial.indexOf('Yhteensä')).toBeLessThan(withMaterial.indexOf('Materiaalit (urakkakortti)'));
+    expect(values(cardOf(sections[0]))).toContain('Maali A');
+    expect(empty.indexOf('Yhteensä')).toBeLessThan(empty.indexOf('Lisää materiaali'));
+    expect(values(cardOf(sections[1]))).not.toContain('Maali A');
+    expect(empty).not.toContain('Materiaalit (urakkakortti)');
+  });
+
+  it('adds and removes materialQuantities on the same structure line', () => {
+    function Harness() {
+      const [lines, setLines] = useState([lineWithMaterial('l1', 'Maali A'), line('l2', 's2', 'Rakenne B')]);
+      return (
+        <>
+          {lines.map((item) => (
+            <StructureLineCard
+              key={item.id}
+              line={item}
+              onChange={(next) =>
+                setLines((current) => current.map((row) => (row.id === next.id ? next : row)))
+              }
+              onDelete={() => undefined}
+            />
+          ))}
+        </>
+      );
+    }
+    const tree = renderScreen(<Harness />);
+    const removes = () =>
+      tree.root.findAll(
+        (node) =>
+          node.props?.accessibilityLabel === 'Poista materiaali' && typeof node.props.onPress === 'function',
+      );
+    expect(removes()).toHaveLength(1);
+
+    let add: ReactTestInstance | null =
+      materialSections(tree.root)[1]
+        .findAllByType(Text)
+        .find((node) => node.props.children === 'Lisää materiaali') ?? null;
+    while (add && typeof add.props.onPress !== 'function') add = add.parent;
+    if (!add) throw new Error('Lisää materiaali button missing on the second card');
+    act(() => {
+      add.props.onPress();
+    });
+
+    expect(removes()).toHaveLength(2);
+    const sections = materialSections(tree.root);
+    const values = (node: ReactTestInstance) =>
+      node.findAllByType(TextInput).map((input) => String(input.props.value ?? ''));
+    expect(values(cardOf(sections[0]))).toContain('Maali A');
+    expect(values(cardOf(sections[1]))).not.toContain('Maali A');
+    expect(textInOrder(cardOf(sections[1]))).toContain('Materiaalit (urakkakortti)');
+
+    act(() => {
+      removes()[0].props.onPress();
+    });
+    const after = materialSections(tree.root);
+    expect(values(cardOf(after[0]))).not.toContain('Maali A');
+    expect(textInOrder(cardOf(after[1]))).toContain('Materiaalit (urakkakortti)');
+    expect(removes()).toHaveLength(1);
   });
 });

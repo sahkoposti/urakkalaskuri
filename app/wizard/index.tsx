@@ -13,7 +13,6 @@ import {
   View,
 } from 'react-native';
 
-import { MaterialQuantitiesEditor } from '@/src/components/calculation/MaterialQuantitiesEditor';
 import { StructureLineCard } from '@/src/components/calculation/StructureLineCard';
 import { structureRowShowsAdditionalInfo } from '@/src/core/pdf/structureExtraText';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
@@ -889,36 +888,31 @@ export default function CalculationComposerScreen() {
             />
           ) : null}
           <View style={styles.structureLinesList}>
-          {structureLines.map((line) => (
-            <View key={line.id} style={styles.lineBlock}>
-              <StructureLineCard
-                line={line}
-                structure={structures.find((item) => item.id === line.structureId)}
-                weatherReserveFactor={settings.weatherReserveFactor}
-                forceVat0={forceVat0}
-                offerIncludesVat={customerType === 'business' ? businessOfferIncludesVat : undefined}
-                onChange={(next) =>
-                  setStructureLines((current) =>
-                    current.map((item) => (item.id === next.id ? next : item)),
-                  )
-                }
-                onOpenForm={() => void openLineForm(line.id)}
-                onDelete={() => setDeleteLineId(line.id)}
-                showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id, structures)}
-              />
-              <MaterialQuantitiesEditor
-                line={line}
-                form={structures.find((item) => item.id === line.structureId)?.form}
-                products={products}
-                onChange={(next) =>
-                  setStructureLines((current) =>
-                    current.map((item) => (item.id === next.id ? next : item)),
-                  )
-                }
-                onValidityChange={setMaterialLineValidity}
-              />
-            </View>
-          ))}
+          {structureLines.map((line) => {
+            const structure = structures.find((item) => item.id === line.structureId);
+            return (
+              <View key={line.id} style={styles.lineBlock}>
+                <StructureLineCard
+                  line={line}
+                  structure={structure}
+                  form={structure?.form}
+                  products={products}
+                  weatherReserveFactor={settings.weatherReserveFactor}
+                  forceVat0={forceVat0}
+                  offerIncludesVat={customerType === 'business' ? businessOfferIncludesVat : undefined}
+                  onChange={(next) =>
+                    setStructureLines((current) =>
+                      current.map((item) => (item.id === next.id ? next : item)),
+                    )
+                  }
+                  onOpenForm={() => void openLineForm(line.id)}
+                  onDelete={() => setDeleteLineId(line.id)}
+                  showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id, structures)}
+                  onValidityChange={setMaterialLineValidity}
+                />
+              </View>
+            );
+          })}
           </View>
 
           <View style={styles.actions}>
