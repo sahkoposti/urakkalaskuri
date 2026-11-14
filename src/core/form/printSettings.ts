@@ -73,12 +73,10 @@ function catalogFields(form: { fields: FormField[] } | null | undefined): FormFi
 function isValidQuantityKey(
   value: unknown,
   field: FormField,
-  group: PrintGroup | undefined,
   form: { fields: FormField[] } | null | undefined,
 ): value is string {
   if (typeof value !== 'string' || value.length === 0) return false;
   if (field?.type !== 'product_select') return false;
-  if ((group ?? 'tieto') !== 'maali') return false;
   return catalogFields(form).some((item) => item?.key === value);
 }
 
@@ -123,7 +121,7 @@ function readTarget(
   if ('quantityKey' in raw) {
     if (target !== 'urakkakortti') {
       warnings.push(fieldWarning(field, `print.${target}.quantityKey ei ole sallittu, ohitettu`));
-    } else if (!isValidQuantityKey(raw.quantityKey, field, settings.group, form)) {
+    } else if (!isValidQuantityKey(raw.quantityKey, field, form)) {
       warnings.push(
         fieldWarning(field, `virheellinen print.urakkakortti.quantityKey ${shown(raw.quantityKey)} ohitettu`),
       );
@@ -267,7 +265,7 @@ function resolvedFromExplicit(
   if (typeof settings.label === 'string') resolved.label = settings.label;
   if (
     target === 'urakkakortti' &&
-    isValidQuantityKey((settings as UrakkakorttiPrintSettings).quantityKey, field, group, form)
+    isValidQuantityKey((settings as UrakkakorttiPrintSettings).quantityKey, field, form)
   ) {
     resolved.quantityKey = (settings as UrakkakorttiPrintSettings).quantityKey;
   }

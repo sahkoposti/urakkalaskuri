@@ -845,7 +845,6 @@ function PrintSettingsEditor({
     edit((base) => {
       const current = base[target] ?? { group: 'tieto' as const };
       const next: TargetEditorState = { ...current, ...patch };
-      if (next.group !== 'maali') delete next.quantityKey;
       if (patch.when === undefined && Object.prototype.hasOwnProperty.call(patch, 'when')) delete next.when;
       if (patch.label === undefined && Object.prototype.hasOwnProperty.call(patch, 'label')) delete next.label;
       if (patch.order === undefined && Object.prototype.hasOwnProperty.call(patch, 'order')) delete next.order;
@@ -883,7 +882,6 @@ function PrintSettingsEditor({
             patchTarget(target, {
               group,
               esitys: esitysAfterGroupChange(settings.esitys, settings.group, group),
-              quantityKey: group === 'maali' ? settings.quantityKey : undefined,
             });
           }}
           items={groups.map((group) => ({ value: group, label: GROUP_LABELS[group] }))}
@@ -908,7 +906,7 @@ function PrintSettingsEditor({
             onValueChange={(enabled) => patchTarget(target, { label: enabled ? '' : undefined })}
           />
         </View>
-        {target === 'urakkakortti' && field.type === 'product_select' && settings.group === 'maali' ? (
+        {target === 'urakkakortti' && field.type === 'product_select' ? (
           <>
             <AppPicker
               label="Määräkenttä"

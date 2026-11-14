@@ -221,16 +221,6 @@ describe('writePrintEditorState', () => {
     expect(notProduct).toEqual({ urakkakortti: { group: 'maali' } });
     expect(JSON.stringify(notProduct)).not.toContain('quantityKey');
 
-    const wrongGroup = writePrintEditorState(
-      state({
-        offer: null,
-        urakkakortti: target({ group: 'tieto', quantityKey: 'litrat' }),
-      }),
-      paint,
-      catalog,
-    );
-    expect(wrongGroup).toEqual({ urakkakortti: true });
-
     const onOffer = writePrintEditorState(
       state({ offer: target({ quantityKey: 'litrat' }), urakkakortti: null }),
       paint,
