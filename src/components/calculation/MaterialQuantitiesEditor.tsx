@@ -81,6 +81,7 @@ export function MaterialQuantitiesEditor({
   const fieldSpacing = {
     wrap: styles.fieldWrap,
     label: styles.fieldLabel,
+    field: styles.fieldDense,
   };
   const addMaterialButton = {
     button: styles.addMaterialButton,
@@ -238,8 +239,8 @@ export function MaterialQuantitiesEditor({
 function createStyles(colors: AppColorPalette) {
   return {
     wrap: {
-      marginTop: spacing.md,
-      paddingTop: spacing.md,
+      marginTop: spacing.sm,
+      paddingTop: spacing.sm,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
     },
@@ -247,7 +248,7 @@ function createStyles(colors: AppColorPalette) {
       gap: spacing.sm,
     },
     addAfterRows: {
-      marginTop: spacing.sm,
+      marginTop: spacing.xs,
     },
     addMaterialButton: {
       minHeight: control.minTouch,
@@ -259,6 +260,9 @@ function createStyles(colors: AppColorPalette) {
     },
     fieldLabel: {
       marginBottom: spacing.xs,
+    },
+    fieldDense: {
+      paddingVertical: control.denseInputPaddingVertical,
     },
     title: {
       marginBottom: spacing.xs,
@@ -273,7 +277,7 @@ function createStyles(colors: AppColorPalette) {
     },
     row: {
       gap: spacing.sm,
-      paddingBottom: spacing.sm,
+      paddingBottom: spacing.xs,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },

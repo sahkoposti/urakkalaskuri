@@ -829,8 +829,8 @@ exports[`structure card screenshots matches single-card render snapshot (busines
         {
           "borderTopColor": "#E1E8ED",
           "borderTopWidth": 0.5,
-          "marginTop": 12,
-          "paddingTop": 12,
+          "marginTop": 8,
+          "paddingTop": 8,
         }
       }
       testID="structure-materials"
@@ -1780,8 +1780,8 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "borderTopColor": "#E1E8ED",
           "borderTopWidth": 0.5,
-          "marginTop": 12,
-          "paddingTop": 12,
+          "marginTop": 8,
+          "paddingTop": 8,
         }
       }
       testID="structure-materials"
@@ -2619,8 +2619,8 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "borderTopColor": "#E1E8ED",
           "borderTopWidth": 0.5,
-          "marginTop": 12,
-          "paddingTop": 12,
+          "marginTop": 8,
+          "paddingTop": 8,
         }
       }
       testID="structure-materials"
@@ -3458,8 +3458,8 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
         {
           "borderTopColor": "#E1E8ED",
           "borderTopWidth": 0.5,
-          "marginTop": 12,
-          "paddingTop": 12,
+          "marginTop": 8,
+          "paddingTop": 8,
         }
       }
       testID="structure-materials"
