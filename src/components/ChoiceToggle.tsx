@@ -1,4 +1,12 @@
-import { Pressable, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  Text,
+  View,
+  type Insets,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -18,6 +26,8 @@ type ChoiceToggleProps<T extends string | boolean> = {
     row?: StyleProp<ViewStyle>;
     label?: StyleProp<TextStyle>;
     button?: StyleProp<ViewStyle>;
+    /** Vain kutsuja: laajentaa painikkeen kosketusaluetta ilman layout-korkeutta. */
+    buttonHitSlop?: Insets;
   };
 };
 
@@ -43,6 +53,7 @@ export function ChoiceToggle<T extends string | boolean>({
                 ...(spacingOverrides?.button ? [spacingOverrides.button] : []),
                 active && styles.toggleButtonActive,
               ]}
+              hitSlop={spacingOverrides?.buttonHitSlop}
               onPress={() => onChange(option.value)}
             >
               <Text style={[styles.toggleButtonText, active && styles.toggleButtonTextActive]}>

@@ -105,6 +105,7 @@ export function StructureLineCard({
     row: styles.toggleRowDense,
     label: styles.toggleLabelDense,
     button: styles.toggleButtonDense,
+    buttonHitSlop: styles.toggleButtonHitSlop,
   };
 
   return (
@@ -218,7 +219,7 @@ export function StructureLineCard({
         ) : (
           <Pressable
             onPress={() => setAdditionalInfoExpanded(true)}
-            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+            hitSlop={styles.additionalInfoHitSlop}
             style={({ pressed }) => [styles.additionalInfoRow, pressed && styles.additionalInfoRowPressed]}
             accessibilityRole="button"
             accessibilityLabel="Avaa Lisätiedot"
@@ -361,8 +362,14 @@ function createStyles(colors: AppColorPalette) {
   return {
     card: {
       gap: 0,
-      paddingVertical: 8,
+      paddingVertical: 6,
       paddingHorizontal: 16,
+    },
+    additionalInfoHitSlop: {
+      top: 11,
+      bottom: 11,
+      left: 4,
+      right: 4,
     },
     additionalInfoRow: {
       flexDirection: 'row' as const,
@@ -370,8 +377,7 @@ function createStyles(colors: AppColorPalette) {
       gap: 8,
       marginTop: 0,
       marginBottom: 0,
-      paddingVertical: 4,
-      minHeight: 44,
+      paddingVertical: 2,
     },
     additionalInfoRowPressed: {
       opacity: 0.85,
@@ -393,7 +399,7 @@ function createStyles(colors: AppColorPalette) {
       alignItems: 'flex-start' as const,
       justifyContent: 'flex-end' as const,
       gap: 8,
-      marginBottom: 4,
+      marginBottom: 2,
     },
     incomplete: {
       marginTop: 1,
@@ -412,7 +418,7 @@ function createStyles(colors: AppColorPalette) {
     metaRow: {
       flexDirection: 'row' as const,
       justifyContent: 'space-between' as const,
-      marginTop: 2,
+      marginTop: 1,
     },
     metaLabel: {
       fontFamily: 'IBMPlexSans_400Regular',
@@ -425,8 +431,8 @@ function createStyles(colors: AppColorPalette) {
     totalRow: {
       flexDirection: 'row' as const,
       justifyContent: 'space-between' as const,
-      marginTop: 3,
-      paddingTop: 4,
+      marginTop: 2,
+      paddingTop: 3,
       borderTopWidth: 1,
       borderTopColor: colors.border,
     },
@@ -440,29 +446,34 @@ function createStyles(colors: AppColorPalette) {
       fontSize: 16,
     },
     inputWrapDense: {
-      marginBottom: 5,
-    },
-    inputLabelDense: {
       marginBottom: 3,
     },
+    inputLabelDense: {
+      marginBottom: 2,
+    },
     inputFieldDense: {
-      paddingVertical: 7,
+      paddingVertical: 5,
     },
     inputMultilineDense: {
       minHeight: 72,
-      paddingVertical: 7,
+      paddingVertical: 5,
       textAlignVertical: 'top' as const,
     },
     toggleRowDense: {
-      marginBottom: 5,
-    },
-    toggleLabelDense: {
       marginBottom: 3,
     },
+    toggleLabelDense: {
+      marginBottom: 2,
+    },
     toggleButtonDense: {
-      paddingVertical: 8,
-      minHeight: 44,
+      paddingVertical: 6,
       justifyContent: 'center' as const,
+    },
+    toggleButtonHitSlop: {
+      top: 9,
+      bottom: 9,
+      left: 4,
+      right: 4,
     },
   };
 }
