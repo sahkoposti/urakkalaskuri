@@ -1,5 +1,9 @@
+import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
+import { buildOfferRows, buildOfferSections } from '../src/core/pdf/offerDocument';
+import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
+import { parseStructureLines } from '../src/core/database/rowParsers';
 import {
   addManualMaterialRow,
   editMaterialQuantity,
@@ -11,6 +15,7 @@ import {
   mergeMaterialRows,
   mergedMaterialsForLines,
   moveMaterialRow,
+  structureLineQuantityIsZero,
   type MaterialRowSource,
   type MergedMaterialRow,
 } from '../src/core/materials/mergeMaterialRows';
@@ -21,8 +26,13 @@ function row(partial: Partial<MaterialQuantityRow> & Pick<MaterialQuantityRow, '
   return { source: 'manual', ...partial };
 }
 
-function source(lineId: string, lineName: string, item: MaterialQuantityRow): MaterialRowSource {
-  return { lineId, lineName, row: item };
+function source(
+  lineId: string,
+  lineName: string,
+  item: MaterialQuantityRow,
+  lineQuantity?: number,
+): MaterialRowSource {
+  return { lineId, lineName, lineQuantity, row: item };
 }
 
 function withRows(id: string, name: string, rows: MaterialQuantityRow[]): StructureLine {
@@ -285,5 +295,110 @@ describe('screen and urakkakortti PDF share mergeLineMaterials', () => {
       'NCS|1|kpl||true|',
       'Pensseli|1|kpl|||',
     ]);
+  });
+});
+
+describe('quantity 0 stays out of the urakkakortti and the merged materials', () => {
+  const zeroRows = [row({ id: 'z', productId: 'p1', productName: 'Piilomaali', quantity: 4, unit: 'l' })];
+  const keptRows = [
+    row({ id: 'a', productId: 'p1', productName: 'Piilomaali', quantity: 3, unit: 'l' }),
+    row({ id: 'b', productName: 'Pensseli', quantity: 1, unit: 'kpl' }),
+  ];
+
+  function zeroLine(): StructureLine {
+    return {
+      ...withRows('z', 'Nollarivi', zeroRows),
+      quantity: 0,
+      additionalInfo: 'Nollan lisatieto',
+      unitPriceVat0: 999,
+      contractPriceVat0: 999,
+    };
+  }
+
+  function keptLine(): StructureLine {
+    return {
+      ...withRows('a', 'Seinä', keptRows),
+      quantity: 2,
+      additionalInfo: 'Seinan lisatieto',
+    };
+  }
+
+  test('only numeric 0 is excluded; NaN, empty and other numbers stay', () => {
+    expect(structureLineQuantityIsZero({ quantity: 0 })).toBe(true);
+    expect(structureLineQuantityIsZero({ quantity: -0 })).toBe(true);
+    expect(structureLineQuantityIsZero({ quantity: Number.NaN })).toBe(false);
+    expect(structureLineQuantityIsZero({ quantity: undefined })).toBe(false);
+    expect(structureLineQuantityIsZero({ quantity: null })).toBe(false);
+    expect(structureLineQuantityIsZero({ quantity: 0.01 })).toBe(false);
+
+    const nanLine = {
+      ...withRows('n', 'Rikkinainen', [row({ id: 'n', productName: 'Maali', quantity: 1, unit: 'l' })]),
+      quantity: Number.NaN,
+    };
+    const unset = withRows('u', 'TyhjaMaara', [row({ id: 'u', productName: 'Maali', quantity: 2, unit: 'l' })]);
+    delete (unset as { quantity?: number }).quantity;
+    const merged = mergeLineMaterials([
+      source('n', 'Rikkinainen', nanLine.materialQuantities![0], nanLine.quantity),
+      source('u', 'TyhjaMaara', unset.materialQuantities![0], unset.quantity),
+      source('z', 'Nollarivi', zeroRows[0], 0),
+    ]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].quantity).toBe(3);
+    expect(merged[0].contributions.map((item) => item.lineId)).toEqual(['n', 'u']);
+  });
+
+  test('a zero line is left out of the sums and the job card, and a non-zero line is not', () => {
+    const lines = [zeroLine(), keptLine()];
+    const screen = mergedMaterialsForLines(lines.map((line) => ({ line })), []);
+    expect(screen.map((item) => ({ name: item.productName, quantity: item.quantity, lines: item.contributions.map((item) => item.lineId) }))).toEqual([
+      { name: 'Piilomaali', quantity: 3, lines: ['a'] },
+      { name: 'Pensseli', quantity: 1, lines: ['a'] },
+    ]);
+
+    const both = [
+      { ...keptLine(), id: 'a2', quantity: 4, materialQuantities: [row({ id: 'c', productId: 'p1', productName: 'Piilomaali', quantity: 6, unit: 'l' })] },
+      keptLine(),
+    ];
+    expect(mergedMaterialsForLines(both.map((line) => ({ line })), [])[0].quantity).toBe(9);
+
+    const rec = record({}, { structureLines: lines });
+    const before = JSON.stringify(rec);
+    const ctx = buildUrakkakorttiContext(input(rec));
+    expect(JSON.stringify(rec)).toBe(before);
+    expect(pdfProjection(ctx.materials)).toEqual(printableProjection(screen));
+    expect(ctx.contractRows.map((row) => row.label)).not.toContain('Urakka: Nollarivi');
+    expect(ctx.sections.map((section) => section.title)).not.toContain('Nollarivi');
+    expect(ctx.structureLisatiedot).toBe('Seinan lisatieto');
+    const html = renderUrakkakorttiHtml(ctx);
+    expect(html).not.toContain('Nollarivi');
+    expect(html).not.toContain('Nollan lisatieto');
+    expect(html).not.toContain('>4 l<');
+    expect(html).not.toContain('>7 l<');
+    expect(html).toContain('>3 l<');
+    expect(html).toContain('Pensseli');
+    expect(html).toContain('Seinä');
+  });
+
+  test('save and load keep the zero line and its materials', () => {
+    const lines = [zeroLine(), keptLine()];
+    const loaded = parseStructureLines(JSON.stringify(lines));
+    expect(loaded?.map((line) => ({ id: line.id, quantity: line.quantity, materials: line.materialQuantities }))).toEqual([
+      { id: 'z', quantity: 0, materials: zeroRows },
+      { id: 'a', quantity: 2, materials: keptRows },
+    ]);
+  });
+
+  test('the offer PDF still follows its own zero-quantity rules', () => {
+    const zero = { ...line('z', 's1', 'Nollarivi'), quantity: 0, unitPriceVat0: 999, contractPriceVat0: 999 };
+    const kept = line('a', 's1', 'Seinä');
+    const withZero = input(record({}, { structureLines: [zero, kept] }));
+    const without = input(record({}, { structureLines: [kept] }));
+    expect(buildOfferRows(withZero).map((row) => row.name)).toEqual(['Seinä']);
+    expect(buildPdfContext(withZero).price).toEqual(buildPdfContext(without).price);
+    const zeroSection = buildOfferSections(withZero).find((section) => section.title === 'Nollarivi');
+    if (zeroSection) expect(zeroSection.heading).toBeUndefined();
+    const html = renderTarjousHtml(buildPdfContext(withZero));
+    expect(html).not.toContain('999');
+    expect(html).not.toContain('<td class="offer-line-title">Nollarivi</td>');
   });
 });

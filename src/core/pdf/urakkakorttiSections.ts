@@ -3,6 +3,7 @@ import { buildCalculationFormulaContext } from '@/src/core/form/calculationFormu
 import type { AppSettings, CalculationRecord, Product, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
+import { structureLineQuantityIsZero } from '@/src/core/materials/mergeMaterialRows';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import type { ProductStructure } from '@/src/core/structure/types';
@@ -14,7 +15,8 @@ import { buildPrintedBody, type PrintedTableRow, type PrintedTextGroup } from '.
 import type { OfferStructureSettings } from './types';
 
 /**
- * Urakkakortin tulostusosio (P4). Teksti- ja taulukko-osat ovat samat kuin tarjouksessa.
+ * Urakkakortin tulostusosio (P4). Teksti- ja taulukko-osat ovat samat kuin tarjouksessa,
+ * paitsi että Määrä tasan 0 ei tulostu kortille.
  * Kesto ei ole kortin kenttä: se jää info-riveihin.
  */
 export type UrakkakorttiSection = {
@@ -121,6 +123,7 @@ export function buildUrakkakorttiSections(
   const lines = ensureStructureLines(source.record);
   const sections: UrakkakorttiSection[] = [];
   for (const line of lines) {
+    if (structureLineQuantityIsZero(line)) continue;
     const structure = source.structures.find((item) => item.id === line.structureId);
     if (!lineUsesUrakkakorttiPrint(line, source.structures) || !structure?.form) continue;
     const includePaintQuantity = !options?.omitPaintQuantityLineIds?.has(line.id);

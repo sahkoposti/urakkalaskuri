@@ -9,8 +9,18 @@ import type { MaterialQuantityRow, MaterialShade, Product, StructureLine } from 
 export type MaterialRowSource = {
   lineId: string;
   lineName: string;
+  /**
+   * Rakenteen Määrä. Vain tasan 0 jää yhdistelmästä pois.
+   * Puuttuva arvo ei ole 0.
+   */
+  lineQuantity?: number;
   row: MaterialQuantityRow;
 };
+
+/** Määrä on tasan 0, myös -0. NaN, puuttuva ja muu luku eivät ole. */
+export function structureLineQuantityIsZero(line: { quantity: number | null | undefined }): boolean {
+  return line.quantity === 0;
+}
 
 export type MaterialContribution = {
   lineId: string;
@@ -70,13 +80,14 @@ function shadeMergeKey(shade: MaterialShade): string {
  * Avain: productId jos se on, muuten tuotenimi (trim, kirjainkoko). Lisäksi yksikkö samoin.
  * Tyhjä tuotenimi ei yhdisty. Eri yksikkö ei yhdisty. Sävyt yhdistyvät nimen ja yksikön mukaan.
  * Järjestys on ensimmäinen esiintyminen.
+ * Rakenteen Määrä tasan 0 ei osallistu. Riviä ei poisteta tallennuksesta.
  */
 export function mergeLineMaterials(sources: MaterialRowSource[]): MergedMaterialRow[] {
   const groups: MergedMaterialRow[] = [];
   const indexByKey = new Map<string, number>();
 
   for (const source of sources) {
-    if (!source?.row) continue;
+    if (!source?.row || structureLineQuantityIsZero({ quantity: source.lineQuantity })) continue;
     const key = rowMergeKey(source);
     let group = indexByKey.has(key) ? groups[indexByKey.get(key)!] : undefined;
     if (!group) {
@@ -140,7 +151,12 @@ export function mergedMaterialsForLines(
   for (const entry of entries) {
     const rows = effectiveMaterialQuantities(entry.line, entry.form, products);
     for (const row of rows) {
-      sources.push({ lineId: entry.line.id, lineName: entry.line.name, row });
+      sources.push({
+        lineId: entry.line.id,
+        lineName: entry.line.name,
+        lineQuantity: entry.line.quantity,
+        row,
+      });
     }
   }
   return mergeLineMaterials(sources);

@@ -1,6 +1,11 @@
 import type { CompanyProfile } from '@/src/core/company/types';
 import type { FormDefinition } from '@/src/core/form/types';
-import { mergeLineMaterials, type MergedMaterialRow } from '@/src/core/materials/mergeMaterialRows';
+import {
+  mergeLineMaterials,
+  structureLineQuantityIsZero,
+  type MaterialRowSource,
+  type MergedMaterialRow,
+} from '@/src/core/materials/mergeMaterialRows';
 import { effectiveMaterialQuantities, formatQuantity } from '@/src/core/materials/materialQuantities';
 import type { AppSettings, CalculationRecord, MaterialQuantityRow, Product } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
@@ -102,7 +107,7 @@ export function urakkakorttiSpecCards(input: BuildUrakkakorttiInput): SpecCard[]
   const customer = customerFromRecord(input.record);
   // Print-pohja piirretään osioina. Vanha pohja pysyy T9-kortteina (printableFields pudottaa "–"-rivit).
   const lines = ensureStructureLines(input.record).filter(
-    (line) => !lineUsesUrakkakorttiPrint(line, input.structures),
+    (line) => !structureLineQuantityIsZero(line) && !lineUsesUrakkakorttiPrint(line, input.structures),
   );
   const perLine = lines.map((line) => {
     const structure = input.structures.find((item) => item.id === line.structureId);
@@ -204,15 +209,16 @@ function resolveUrakkakorttiMaterialTable(input: BuildUrakkakorttiInput): {
 
   const rows: UrakkakorttiMaterialRow[] = [];
   const omitPaintQuantityLineIds = new Set<string>();
-  const sources: { lineId: string; lineName: string; row: MaterialQuantityRow }[] = [];
+  const sources: MaterialRowSource[] = [];
   for (const line of lines) {
+    if (structureLineQuantityIsZero(line)) continue;
     const quantities = effectiveMaterialQuantities(line, lineForm(input, line.structureId), input.products).filter(
       rowPrintable,
     );
     if (quantities.length === 0) continue;
     omitPaintQuantityLineIds.add(line.id);
     for (const row of quantities) {
-      sources.push({ lineId: line.id, lineName: line.name, row });
+      sources.push({ lineId: line.id, lineName: line.name, lineQuantity: line.quantity, row });
     }
   }
   for (const group of mergeLineMaterials(sources)) appendMergedMaterialRow(rows, group);
@@ -222,7 +228,7 @@ function resolveUrakkakorttiMaterialTable(input: BuildUrakkakorttiInput): {
 export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): UrakkakorttiContext {
   const { record, settings } = input;
   const customer = customerFromRecord(record);
-  const lines = ensureStructureLines(record);
+  const lines = ensureStructureLines(record).filter((line) => !structureLineQuantityIsZero(line));
   const materialTable = resolveUrakkakorttiMaterialTable(input);
   const mode = readUrakkakorttiMode(record.formSnapshot);
   const hidePrices = readUrakkakorttiHidePrices(record.formSnapshot);
