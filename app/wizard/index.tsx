@@ -37,6 +37,7 @@ import {
 } from '@/src/core/structure/types';
 import { isStructureFormIncomplete } from '@/src/core/structure/formPages';
 import { defaultPricesIncludeVat, type BusinessVatMode } from '@/src/core/utils/priceDisplay';
+import { control, spacing } from '@/src/ui/spacing';
 import {
   materialQuantitiesBlockFinish,
   materialQuantitiesSignature,
@@ -835,14 +836,15 @@ export default function CalculationComposerScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <SectionTitle title="Asiakas" />
-          <AppCard onPress={() => void openCustomer()}>
+          <SectionTitle title="Asiakas" containerStyle={styles.sectionTitleFlush} />
+          <AppCard style={styles.screenCard} onPress={() => void openCustomer()}>
             <View style={styles.customerRow}>
               <Text style={styles.customerText}>{customerSummary}</Text>
               <Text style={styles.chevron}>›</Text>
             </View>
           </AppCard>
 
+          <View style={styles.fieldGroup}>
           <AppInput
             label="Kohteen osoite"
             value={siteAddress}
@@ -852,6 +854,7 @@ export default function CalculationComposerScreen() {
             }}
             kind="sentence"
             placeholder="Asiakkaan osoite, voit muuttaa"
+            spacingOverrides={screenFieldSpacing}
           />
           <AppInput
             label="Toimitusajankohta"
@@ -859,6 +862,7 @@ export default function CalculationComposerScreen() {
             onChangeText={setDeliveryScheduleText}
             kind="sentence"
             placeholder="Esim. viikko 42"
+            spacingOverrides={screenFieldSpacing}
           />
           <AppInput
             label="Matka-aika yhteen suuntaan"
@@ -867,9 +871,11 @@ export default function CalculationComposerScreen() {
             kind="decimal"
             placeholder="Esim. 0,75"
             trailing={<Text style={styles.unitHint}>h</Text>}
+            spacingOverrides={screenFieldSpacing}
           />
+          </View>
 
-          <SectionTitle title="Tuoterakenteet" />
+          <SectionTitle title="Tuoterakenteet" containerStyle={styles.sectionTitleFlush} />
           {showBusinessVatChoice ? (
             <ChoiceToggle
               label="Hintojen ALV"
@@ -879,6 +885,7 @@ export default function CalculationComposerScreen() {
                 { value: 'sis', label: 'Sis. ALV' },
               ]}
               onChange={setBusinessVatMode}
+              spacingOverrides={screenToggleSpacing}
             />
           ) : null}
           <View style={styles.structureLinesList}>
@@ -914,6 +921,7 @@ export default function CalculationComposerScreen() {
           ))}
           </View>
 
+          <View style={styles.actions}>
           <OutlinedButton title="Lisää tuoterakenne" onPress={() => setStructurePickerVisible(true)} />
           <PrimaryButton
             title="Yhteenveto"
@@ -930,6 +938,7 @@ export default function CalculationComposerScreen() {
               void finishCalculation(false);
             }}
           />
+          </View>
           {hasIncompleteForm ? (
             <Text style={styles.incompleteHint}>
               Täytä keskeneräiset lomakkeet ennen yhteenvetoa.
@@ -1034,26 +1043,52 @@ function hydrateLines(
   return [];
 }
 
+const screenFieldSpacing = {
+  wrap: { marginBottom: 0 },
+  label: { marginBottom: spacing.xs },
+};
+
+const screenToggleSpacing = {
+  row: { marginBottom: 0 },
+  label: { marginBottom: spacing.xs },
+  button: {
+    minHeight: control.minTouch,
+    paddingVertical: spacing.sm,
+    justifyContent: 'center' as const,
+  },
+};
+
 function createStyles(colors: AppColorPalette) {
   return {
     container: {
       flex: 1,
     },
     content: {
-      padding: 20,
-      paddingBottom: 40,
-      gap: 10,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    sectionTitleFlush: {
+      marginBottom: 0,
+    },
+    screenCard: {
+      padding: spacing.lg,
+    },
+    fieldGroup: {
+      gap: spacing.sm,
+    },
+    actions: {
+      gap: spacing.sm,
     },
     structureLinesList: {
-      gap: 4,
+      gap: spacing.sm,
     },
     lineBlock: {
-      gap: 4,
+      gap: spacing.sm,
     },
     customerRow: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
-      gap: 8,
+      gap: spacing.sm,
     },
     customerText: {
       flex: 1,
@@ -1069,19 +1104,19 @@ function createStyles(colors: AppColorPalette) {
       fontFamily: 'IBMPlexSans_400Regular',
       fontSize: 15,
       color: colors.text,
-      paddingRight: 12,
+      paddingRight: spacing.md,
     },
     incompleteHint: {
       fontFamily: 'IBMPlexSans_400Regular',
       fontSize: 13,
       color: colors.accent,
-      marginTop: -4,
+      marginTop: 0,
     },
     modalBackdrop: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.4)',
       justifyContent: 'center' as const,
-      padding: 20,
+      padding: spacing.lg,
     },
     modalDismiss: {
       ...StyleSheet.absoluteFillObject,
@@ -1089,8 +1124,8 @@ function createStyles(colors: AppColorPalette) {
     modalCard: {
       backgroundColor: colors.secondary,
       borderRadius: 8,
-      padding: 16,
-      gap: 10,
+      padding: spacing.lg,
+      gap: spacing.md,
     },
     modalTitle: {
       fontFamily: 'IBMPlexSans_700Bold',
@@ -1102,7 +1137,9 @@ function createStyles(colors: AppColorPalette) {
       color: colors.text,
     },
     option: {
-      paddingVertical: 12,
+      minHeight: control.minTouch,
+      justifyContent: 'center' as const,
+      paddingVertical: spacing.sm,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },

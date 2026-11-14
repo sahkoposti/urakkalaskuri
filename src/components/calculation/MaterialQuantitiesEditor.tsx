@@ -18,6 +18,7 @@ import {
 import type { MaterialQuantityRow, MaterialShade, Product, StructureLine } from '@/src/core/models/types';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
+import { control, spacing } from '@/src/ui/spacing';
 
 type MaterialQuantitiesEditorProps = {
   line: StructureLine;
@@ -77,6 +78,11 @@ export function MaterialQuantitiesEditor({
     onChange({ ...line, materialQuantities: rows });
   }
 
+  const fieldSpacing = {
+    wrap: styles.fieldWrap,
+    label: styles.fieldLabel,
+  };
+
   return (
     <View style={styles.wrap}>
       {showSection ? (
@@ -94,6 +100,7 @@ export function MaterialQuantitiesEditor({
                   value={row.productName}
                   onChangeText={(value) => commit(editMaterialQuantity(baseRows(), row.id, { productName: value }))}
                   kind="code"
+                  spacingOverrides={fieldSpacing}
                 />
                 {shades.length === 0 ? (
                   <>
@@ -108,6 +115,7 @@ export function MaterialQuantitiesEditor({
                             const parsed = parseQuantityInput(value);
                             if (parsed != null) commit(editMaterialQuantity(baseRows(), row.id, { quantity: parsed }));
                           }}
+                          spacingOverrides={fieldSpacing}
                         />
                       </View>
                       <View style={styles.unitHalf}>
@@ -120,6 +128,7 @@ export function MaterialQuantitiesEditor({
                             )
                           }
                           kind="code"
+                          spacingOverrides={fieldSpacing}
                         />
                       </View>
                     </View>
@@ -140,6 +149,7 @@ export function MaterialQuantitiesEditor({
                               commit(editMaterialShade(baseRows(), row.id, shade.id, { name: value }))
                             }
                             kind="code"
+                            spacingOverrides={fieldSpacing}
                           />
                           <View style={styles.quantityUnitRow}>
                             <View style={styles.quantityHalf}>
@@ -154,6 +164,7 @@ export function MaterialQuantitiesEditor({
                                     commit(editMaterialShade(baseRows(), row.id, shade.id, { quantity: parsed }));
                                   }
                                 }}
+                                spacingOverrides={fieldSpacing}
                               />
                             </View>
                             <View style={styles.unitHalf}>
@@ -168,6 +179,7 @@ export function MaterialQuantitiesEditor({
                                   )
                                 }
                                 kind="code"
+                                spacingOverrides={fieldSpacing}
                               />
                             </View>
                           </View>
@@ -211,10 +223,16 @@ export function MaterialQuantitiesEditor({
 function createStyles(colors: AppColorPalette) {
   return {
     wrap: {
-      gap: 8,
+      gap: spacing.sm,
     },
     section: {
-      gap: 8,
+      gap: spacing.sm,
+    },
+    fieldWrap: {
+      marginBottom: 0,
+    },
+    fieldLabel: {
+      marginBottom: spacing.xs,
     },
     title: {
       fontFamily: 'IBMPlexSans_600SemiBold',
@@ -227,14 +245,14 @@ function createStyles(colors: AppColorPalette) {
       color: colors.text,
     },
     row: {
-      gap: 4,
-      paddingBottom: 8,
+      gap: spacing.sm,
+      paddingBottom: spacing.sm,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
     quantityUnitRow: {
       flexDirection: 'row' as const,
-      gap: 8,
+      gap: spacing.sm,
       alignItems: 'flex-start' as const,
     },
     quantityHalf: {
@@ -244,11 +262,11 @@ function createStyles(colors: AppColorPalette) {
       flex: 0.65,
     },
     shades: {
-      gap: 8,
-      marginLeft: 12,
+      gap: spacing.sm,
+      marginLeft: spacing.md,
     },
     shade: {
-      gap: 4,
+      gap: spacing.sm,
     },
     error: {
       fontFamily: 'IBMPlexSans_400Regular',
@@ -257,9 +275,9 @@ function createStyles(colors: AppColorPalette) {
     },
     remove: {
       alignSelf: 'flex-start' as const,
-      minHeight: 44,
+      minHeight: control.minTouch,
       justifyContent: 'center' as const,
-      paddingVertical: 4,
+      paddingVertical: spacing.xs,
     },
     removePressed: {
       opacity: 0.7,

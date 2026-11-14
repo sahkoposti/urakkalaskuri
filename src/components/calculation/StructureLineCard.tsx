@@ -37,6 +37,7 @@ import {
 } from '@/src/core/utils/formatters';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
+import { collapsedRowHitSlop, control, spacing, titleIconHitSlop } from '@/src/ui/spacing';
 
 type StructureLineCardProps = {
   line: StructureLine;
@@ -91,6 +92,7 @@ export function StructureLineCard({
     onChange(patchStructureLine(priced, next));
   }
 
+  const iconSlop = titleIconHitSlop(spacing.lg);
   const inputDense = {
     wrap: styles.inputWrapDense,
     label: styles.inputLabelDense,
@@ -105,19 +107,18 @@ export function StructureLineCard({
     row: styles.toggleRowDense,
     label: styles.toggleLabelDense,
     button: styles.toggleButtonDense,
-    buttonHitSlop: styles.toggleButtonHitSlop,
   };
 
   return (
     <AppCard style={styles.card}>
       <View style={styles.titleRow}>
         {showGear && onOpenForm ? (
-          <Pressable onPress={onOpenForm} hitSlop={11} accessibilityLabel="Avaa lomake">
-            <ThemedIcon name="settings" size={22} />
+          <Pressable onPress={onOpenForm} hitSlop={iconSlop.gear} accessibilityLabel="Avaa lomake">
+            <ThemedIcon name="settings" size={control.icon} />
           </Pressable>
         ) : null}
-        <Pressable onPress={onDelete} hitSlop={11} accessibilityLabel="Poista rivi">
-          <ThemedIcon name="trash" size={22} />
+        <Pressable onPress={onDelete} hitSlop={iconSlop.remove} accessibilityLabel="Poista rivi">
+          <ThemedIcon name="trash" size={control.icon} />
         </Pressable>
       </View>
       <AppInput
@@ -361,23 +362,19 @@ function DecimalInput({
 function createStyles(colors: AppColorPalette) {
   return {
     card: {
-      gap: 0,
-      paddingVertical: 5,
-      paddingHorizontal: 16,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
     },
-    additionalInfoHitSlop: {
-      top: 11,
-      bottom: 11,
-      left: 4,
-      right: 4,
-    },
+    additionalInfoHitSlop: collapsedRowHitSlop(
+      spacing.xs * 2 + control.textLine,
+      spacing.sm,
+    ),
     additionalInfoRow: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
-      gap: 8,
-      marginTop: 9,
-      marginBottom: 0,
-      paddingVertical: 4,
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
+      paddingVertical: spacing.xs,
     },
     additionalInfoRowPressed: {
       opacity: 0.85,
@@ -398,19 +395,19 @@ function createStyles(colors: AppColorPalette) {
       flexDirection: 'row' as const,
       alignItems: 'flex-start' as const,
       justifyContent: 'flex-end' as const,
-      gap: 22,
-      marginBottom: 1,
+      gap: spacing.lg,
+      marginBottom: spacing.sm,
     },
     incomplete: {
-      marginTop: 1,
-      marginBottom: 3,
+      marginTop: spacing.xs,
+      marginBottom: spacing.xs,
       fontFamily: 'IBMPlexSans_400Regular',
       fontSize: 13,
       color: colors.accent,
     },
     fieldRow: {
       flexDirection: 'row' as const,
-      gap: 8,
+      gap: spacing.sm,
     },
     fieldHalf: {
       flex: 1,
@@ -418,7 +415,6 @@ function createStyles(colors: AppColorPalette) {
     metaRow: {
       flexDirection: 'row' as const,
       justifyContent: 'space-between' as const,
-      marginTop: 0,
     },
     metaLabel: {
       fontFamily: 'IBMPlexSans_400Regular',
@@ -431,8 +427,8 @@ function createStyles(colors: AppColorPalette) {
     totalRow: {
       flexDirection: 'row' as const,
       justifyContent: 'space-between' as const,
-      marginTop: 1,
-      paddingTop: 2,
+      marginTop: spacing.xs,
+      paddingTop: spacing.xs,
       borderTopWidth: 1,
       borderTopColor: colors.border,
     },
@@ -446,34 +442,29 @@ function createStyles(colors: AppColorPalette) {
       fontSize: 16,
     },
     inputWrapDense: {
-      marginBottom: 2,
+      marginBottom: spacing.sm,
     },
     inputLabelDense: {
-      marginBottom: 1,
+      marginBottom: spacing.xs,
     },
     inputFieldDense: {
-      paddingVertical: 10,
+      paddingVertical: control.denseInputPaddingVertical,
     },
     inputMultilineDense: {
-      minHeight: 72,
-      paddingVertical: 10,
+      minHeight: control.denseMultilineMinHeight,
+      paddingVertical: control.denseInputPaddingVertical,
       textAlignVertical: 'top' as const,
     },
     toggleRowDense: {
-      marginBottom: 2,
+      marginBottom: spacing.sm,
     },
     toggleLabelDense: {
-      marginBottom: 1,
+      marginBottom: spacing.xs,
     },
     toggleButtonDense: {
-      paddingVertical: 6,
+      minHeight: control.minTouch,
+      paddingVertical: spacing.sm,
       justifyContent: 'center' as const,
-    },
-    toggleButtonHitSlop: {
-      top: 9,
-      bottom: 9,
-      left: 4,
-      right: 4,
     },
   };
 }

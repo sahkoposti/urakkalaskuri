@@ -59,12 +59,20 @@ export function AppSwitch(props: AppSwitchProps) {
 type SectionTitleProps = {
   title: string;
   center?: boolean;
+  /** Opt-in. Default wrap spacing is unchanged. */
+  containerStyle?: StyleProp<ViewStyle>;
 };
 
-export function SectionTitle({ title, center = false }: SectionTitleProps) {
+export function SectionTitle({ title, center = false, containerStyle }: SectionTitleProps) {
   const styles = useThemedStyles(createCommonStyles);
   return (
-    <View style={[styles.sectionTitleWrap, center && styles.centerAlign]}>
+    <View
+      style={[
+        styles.sectionTitleWrap,
+        center && styles.centerAlign,
+        ...(containerStyle ? [containerStyle] : []),
+      ]}
+    >
       <Text style={[styles.sectionTitle, center && styles.centerText]}>{title}</Text>
       <View style={styles.sectionUnderline} />
     </View>
