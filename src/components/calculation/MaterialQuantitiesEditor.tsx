@@ -97,25 +97,33 @@ export function MaterialQuantitiesEditor({
                 />
                 {shades.length === 0 ? (
                   <>
-                    <AppInput
-                      label="Määrä"
-                      value={text}
-                      kind="decimal"
-                      onChangeText={(value) => {
-                        setTexts((current) => ({ ...current, [row.id]: value }));
-                        const parsed = parseQuantityInput(value);
-                        if (parsed != null) commit(editMaterialQuantity(baseRows(), row.id, { quantity: parsed }));
-                      }}
-                    />
+                    <View style={styles.quantityUnitRow} testID="material-qty-unit-row">
+                      <View style={styles.quantityHalf}>
+                        <AppInput
+                          label="Määrä"
+                          value={text}
+                          kind="decimal"
+                          onChangeText={(value) => {
+                            setTexts((current) => ({ ...current, [row.id]: value }));
+                            const parsed = parseQuantityInput(value);
+                            if (parsed != null) commit(editMaterialQuantity(baseRows(), row.id, { quantity: parsed }));
+                          }}
+                        />
+                      </View>
+                      <View style={styles.unitHalf}>
+                        <AppInput
+                          label="Yksikkö"
+                          value={row.unit ?? ''}
+                          onChangeText={(value) =>
+                            commit(
+                              editMaterialQuantity(baseRows(), row.id, { unit: value.trim() ? value : undefined }),
+                            )
+                          }
+                          kind="code"
+                        />
+                      </View>
+                    </View>
                     {error ? <Text style={styles.error}>{error}</Text> : null}
-                    <AppInput
-                      label="Yksikkö"
-                      value={row.unit ?? ''}
-                      onChangeText={(value) =>
-                        commit(editMaterialQuantity(baseRows(), row.id, { unit: value.trim() ? value : undefined }))
-                      }
-                      kind="code"
-                    />
                   </>
                 ) : (
                   <View style={styles.shades}>
@@ -133,31 +141,37 @@ export function MaterialQuantitiesEditor({
                             }
                             kind="code"
                           />
-                          <AppInput
-                            label="Määrä"
-                            value={shadeText(shade)}
-                            kind="decimal"
-                            onChangeText={(value) => {
-                              setTexts((current) => ({ ...current, [shade.id]: value }));
-                              const parsed = parseQuantityInput(value);
-                              if (parsed != null) {
-                                commit(editMaterialShade(baseRows(), row.id, shade.id, { quantity: parsed }));
-                              }
-                            }}
-                          />
+                          <View style={styles.quantityUnitRow}>
+                            <View style={styles.quantityHalf}>
+                              <AppInput
+                                label="Määrä"
+                                value={shadeText(shade)}
+                                kind="decimal"
+                                onChangeText={(value) => {
+                                  setTexts((current) => ({ ...current, [shade.id]: value }));
+                                  const parsed = parseQuantityInput(value);
+                                  if (parsed != null) {
+                                    commit(editMaterialShade(baseRows(), row.id, shade.id, { quantity: parsed }));
+                                  }
+                                }}
+                              />
+                            </View>
+                            <View style={styles.unitHalf}>
+                              <AppInput
+                                label="Yksikkö"
+                                value={shade.unit ?? ''}
+                                onChangeText={(value) =>
+                                  commit(
+                                    editMaterialShade(baseRows(), row.id, shade.id, {
+                                      unit: value.trim() ? value : undefined,
+                                    }),
+                                  )
+                                }
+                                kind="code"
+                              />
+                            </View>
+                          </View>
                           {shadeError ? <Text style={styles.error}>{shadeError}</Text> : null}
-                          <AppInput
-                            label="Yksikkö"
-                            value={shade.unit ?? ''}
-                            onChangeText={(value) =>
-                              commit(
-                                editMaterialShade(baseRows(), row.id, shade.id, {
-                                  unit: value.trim() ? value : undefined,
-                                }),
-                              )
-                            }
-                            kind="code"
-                          />
                           <Pressable
                             onPress={() => commit(removeMaterialShade(baseRows(), row.id, shade.id))}
                             accessibilityLabel="Poista sävy"
@@ -217,6 +231,17 @@ function createStyles(colors: AppColorPalette) {
       paddingBottom: 8,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
+    },
+    quantityUnitRow: {
+      flexDirection: 'row' as const,
+      gap: 8,
+      alignItems: 'flex-start' as const,
+    },
+    quantityHalf: {
+      flex: 1.35,
+    },
+    unitHalf: {
+      flex: 0.65,
     },
     shades: {
       gap: 8,
