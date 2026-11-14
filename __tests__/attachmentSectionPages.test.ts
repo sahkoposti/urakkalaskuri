@@ -86,7 +86,19 @@ function stopChromeJob(job: { child: ChildProcess; dir: string }) {
   } catch {
     // Prosessi on jo poissa.
   }
-  fs.rmSync(job.dir, { recursive: true, force: true });
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      fs.rmSync(job.dir, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== 'ENOTEMPTY' && code !== 'EBUSY' && code !== 'EPERM') throw error;
+      const until = Date.now() + 40;
+      while (Date.now() < until) {
+        // Chrome may still be releasing the profile directory.
+      }
+    }
+  }
 }
 
 afterAll(() => {
