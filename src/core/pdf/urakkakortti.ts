@@ -233,6 +233,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
   const contractSum = prices ? formatCurrency(prices.alihankkija) : null;
   const employeeSum = prices ? formatCurrency(prices.tyontekija) : null;
   const contractRows: PriceRow[] = [];
+  // Rivikohtaiset Urakka-rivit laskevat vain määrä !== 0. Yksi jäljelle jäävä rivi käyttäytyy kuin yhden rivin kortti.
   if (prices && lines.length > 1) {
     const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
     for (const line of lines) {

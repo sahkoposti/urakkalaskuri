@@ -1,4 +1,5 @@
-import { urakkakorttiDocumentTotal } from '../src/core/documents/documentInputs';
+import { tarjousDocumentTotal, urakkakorttiDocumentTotal } from '../src/core/documents/documentInputs';
+import { buildPdfContext } from '../src/core/pdf/buildPdfContext';
 import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
 import {
@@ -73,5 +74,55 @@ describe('card header prices', () => {
     };
     expect(readUrakkakorttiMode(unknown.formSnapshot)).toBe('alihankkija');
     expect(cardHeaderPrices(unknown, 1.5).alihankkija).toBe(342.39);
+  });
+
+  it('leaves a zero-quantity line out of the header and the document total', () => {
+    const lines = [
+      { ...line('a', 's1', 'Seinä'), contractPriceVat0: 4200 },
+      { ...line('b', 's2', 'Sokkeli'), contractPriceVat0: 1500 },
+      { ...line('z', 's3', 'Piilo'), quantity: 0, contractPriceVat0: 999 },
+    ];
+    const rec = record({}, { structureLines: lines });
+    expect(cardHeaderPrices(rec, 1.5)).toEqual({ alihankkija: 5700, tyontekija: 3800 });
+    expect(urakkakorttiDocumentTotal(rec, 1.5)).toBe(5700);
+    expect(cardHeaderPrices(calculationWithUrakkakorttiRivihinnat(rec, { z: 5000 }), 1.5).alihankkija).toBe(5700);
+    const html = cardHtml(rec, 1.5).replace(/\s/g, ' ');
+    expect(html).toContain('5 700,00');
+    expect(html).not.toContain('999');
+    expect(html).not.toContain('Piilo');
+
+    const allNonZero = record({}, {
+      structureLines: lines.map((item) => (item.id === 'z' ? { ...item, quantity: 1 } : item)),
+    });
+    expect(cardHeaderPrices(allNonZero, 1.5)).toEqual({ alihankkija: 6699, tyontekija: 4466 });
+    expect(urakkakorttiDocumentTotal(allNonZero, 1.5)).toBe(6699);
+
+    const allZero = record({}, { structureLines: lines.map((item) => ({ ...item, quantity: 0 })) });
+    expect(cardHeaderPrices(allZero, 1.5)).toEqual({ alihankkija: 0, tyontekija: 0 });
+    expect(urakkakorttiDocumentTotal(allZero, 1.5)).toBe(0);
+    expect(() => cardHtml(allZero, 1.5)).not.toThrow();
+    expect(cardHeaderPrices(record({}, {
+      structureLines: [{ ...line('z', 's1', 'Miinusnolla'), quantity: -0, contractPriceVat0: 999 }],
+    }), 1.5)).toEqual({ alihankkija: 0, tyontekija: 0 });
+
+    const kept = lines.filter((item) => item.id !== 'z');
+    const offerWith = buildPdfContext(input(rec)).price;
+    const offerWithout = buildPdfContext(input(record({}, { structureLines: kept }))).price;
+    expect(offerWith).toEqual(offerWithout);
+    expect(tarjousDocumentTotal(rec)).toBe(tarjousDocumentTotal(record({}, { structureLines: kept })));
+  });
+
+  it('treats one remaining non-zero line as a single-line card', () => {
+    const rec = record({}, {
+      structureLines: [
+        { ...line('a', 's1', 'Seinä'), contractPriceVat0: 4200, workDurationDays: 7 },
+        { ...line('z', 's3', 'Piilo'), quantity: 0, contractPriceVat0: 999, workDurationDays: 1 },
+      ],
+      workDurationDays: 3,
+    });
+    const ctx = buildUrakkakorttiContext({ ...input(rec), sivukulukerroin: 1.5 });
+    expect(ctx.contractRows).toEqual([]);
+    expect(ctx.contractSum?.replace(/\s/g, ' ')).toBe('4 200,00 €');
+    expect(ctx.infoRows).toContainEqual({ label: 'Työn arvioitu kesto', value: '10 pv' });
   });
 });

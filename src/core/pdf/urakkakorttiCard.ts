@@ -1,3 +1,4 @@
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import type { CalculationRecord, FormSnapshot } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
@@ -345,12 +346,12 @@ export type CardHeaderPrices = {
   tyontekija: number;
 };
 
-/** Otsikon summat. Työntekijä on pyöristettyjen rivien summa, ei raakasumman jako. */
+/** Otsikon summat. Määrä tasan 0 ei kerrytä. Työntekijä on pyöristettyjen rivien summa, ei raakasumman jako. */
 export function cardHeaderPrices(record: CalculationRecord, factor: unknown): CardHeaderPrices {
   const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
-  const parts = ensureStructureLines(record).map((line) =>
-    roundToCents(alihankkijaLineAmount(line, overrides)),
-  );
+  const parts = ensureStructureLines(record)
+    .filter((line) => !structureLineQuantityIsZero(line))
+    .map((line) => roundToCents(alihankkijaLineAmount(line, overrides)));
   const alihankkija = roundToCents(parts.reduce((sum, amount) => sum + amount, 0));
   const usable = printSivukulukerroin(factor);
   const divided = parts.map((amount) => (amount === 0 ? 0 : roundToCents(amount / usable)));
