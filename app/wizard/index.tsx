@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import { MaterialQuantitiesEditor } from '@/src/components/calculation/MaterialQuantitiesEditor';
 import { StructureLineCard } from '@/src/components/calculation/StructureLineCard';
 import { structureRowShowsAdditionalInfo } from '@/src/core/pdf/structureExtraText';
 import { ChoiceToggle } from '@/src/components/ChoiceToggle';
@@ -895,8 +896,6 @@ export default function CalculationComposerScreen() {
                 <StructureLineCard
                   line={line}
                   structure={structure}
-                  form={structure?.form}
-                  products={products}
                   weatherReserveFactor={settings.weatherReserveFactor}
                   forceVat0={forceVat0}
                   offerIncludesVat={customerType === 'business' ? businessOfferIncludesVat : undefined}
@@ -908,12 +907,25 @@ export default function CalculationComposerScreen() {
                   onOpenForm={() => void openLineForm(line.id)}
                   onDelete={() => setDeleteLineId(line.id)}
                   showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id, structures)}
-                  onValidityChange={setMaterialLineValidity}
                 />
               </View>
             );
           })}
           </View>
+
+          {structureLines.length > 0 ? (
+            <MaterialQuantitiesEditor
+              lines={structureLines.map((line) => ({
+                line,
+                form: structures.find((item) => item.id === line.structureId)?.form,
+              }))}
+              products={products}
+              onChangeLine={(next) =>
+                setStructureLines((current) => current.map((item) => (item.id === next.id ? next : item)))
+              }
+              onValidityChange={setMaterialLineValidity}
+            />
+          ) : null}
 
           <View style={styles.actions}>
           <OutlinedButton
