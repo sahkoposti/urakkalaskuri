@@ -20,11 +20,11 @@ import {
   mapMaterialEdit,
   mergedMaterialsForLines,
   moveMaterialRow,
-  structureLineQuantityIsZero,
   type MaterialContribution,
   type MaterialLineEntry,
   type MergedMaterialRow,
 } from '@/src/core/materials/mergeMaterialRows';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import type { MaterialQuantityRow, MaterialShade, Product, StructureLine } from '@/src/core/models/types';
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';

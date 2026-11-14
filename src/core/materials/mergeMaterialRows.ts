@@ -3,6 +3,7 @@ import {
   prefillMaterialQuantities,
   removeMaterialRow,
 } from '@/src/core/materials/materialQuantities';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import type { FormDefinition } from '@/src/core/form/types';
 import type { MaterialQuantityRow, MaterialShade, Product, StructureLine } from '@/src/core/models/types';
 
@@ -16,11 +17,6 @@ export type MaterialRowSource = {
   lineQuantity?: number;
   row: MaterialQuantityRow;
 };
-
-/** Määrä on tasan 0, myös -0. NaN, puuttuva ja muu luku eivät ole. */
-export function structureLineQuantityIsZero(line: { quantity: number | null | undefined }): boolean {
-  return line.quantity === 0;
-}
 
 export type MaterialContribution = {
   lineId: string;

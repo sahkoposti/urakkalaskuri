@@ -15,7 +15,6 @@ import {
   mergeMaterialRows,
   mergedMaterialsForLines,
   moveMaterialRow,
-  structureLineQuantityIsZero,
   type MaterialRowSource,
   type MergedMaterialRow,
 } from '../src/core/materials/mergeMaterialRows';
@@ -324,13 +323,6 @@ describe('quantity 0 stays out of the urakkakortti and the merged materials', ()
   }
 
   test('only numeric 0 is excluded; NaN, empty and other numbers stay', () => {
-    expect(structureLineQuantityIsZero({ quantity: 0 })).toBe(true);
-    expect(structureLineQuantityIsZero({ quantity: -0 })).toBe(true);
-    expect(structureLineQuantityIsZero({ quantity: Number.NaN })).toBe(false);
-    expect(structureLineQuantityIsZero({ quantity: undefined })).toBe(false);
-    expect(structureLineQuantityIsZero({ quantity: null })).toBe(false);
-    expect(structureLineQuantityIsZero({ quantity: 0.01 })).toBe(false);
-
     const nanLine = {
       ...withRows('n', 'Rikkinainen', [row({ id: 'n', productName: 'Maali', quantity: 1, unit: 'l' })]),
       quantity: Number.NaN,

@@ -7,7 +7,7 @@ import type { MaterialQuantityRow, MaterialShade, Product, StructureLine } from 
 import { defaultSettings } from '@/src/core/models/types';
 import { formatPrintedQuantity } from '@/src/core/utils/formatters';
 import { fieldValuesEqual } from '@/src/core/wizard/wizardDraftHelpers';
-import { structureLineQuantityIsZero } from '@/src/core/materials/mergeMaterialRows';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 
 /**
  * Käyttäjän syöttämä enimmäismäärä. Esitäytön kaava-arvoa ei rajata tähän.

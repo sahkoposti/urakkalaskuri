@@ -1,11 +1,7 @@
 import type { CompanyProfile } from '@/src/core/company/types';
 import type { FormDefinition } from '@/src/core/form/types';
-import {
-  mergeLineMaterials,
-  structureLineQuantityIsZero,
-  type MaterialRowSource,
-  type MergedMaterialRow,
-} from '@/src/core/materials/mergeMaterialRows';
+import { mergeLineMaterials, type MaterialRowSource, type MergedMaterialRow } from '@/src/core/materials/mergeMaterialRows';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { effectiveMaterialQuantities, formatQuantity } from '@/src/core/materials/materialQuantities';
 import type { AppSettings, CalculationRecord, MaterialQuantityRow, Product } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';

@@ -3,7 +3,7 @@ import { buildCalculationFormulaContext } from '@/src/core/form/calculationFormu
 import type { AppSettings, CalculationRecord, Product, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
-import { structureLineQuantityIsZero } from '@/src/core/materials/mergeMaterialRows';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
 import type { ProductStructure } from '@/src/core/structure/types';
