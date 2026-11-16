@@ -1,4 +1,5 @@
 import { clampDiscountPercent, type DiscountableTotals } from '@/src/core/calculation/discount';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { scaleByLineQuantity } from '@/src/core/structure/lineQuantityScale';
 import type { StructureLine } from '@/src/core/structure/types';
 import { roundToCents } from '@/src/core/utils/formatters';
@@ -82,7 +83,9 @@ export function aggregateStructureLines(
   vatPercent: number,
   reverseVat: boolean,
 ): StructureTotals {
-  const priced = lines.map(withDerivedLinePricing);
+  const priced = lines
+    .filter((line) => !structureLineQuantityIsZero(line))
+    .map(withDerivedLinePricing);
   const contractPriceVat0 = priced.reduce(
     (sum, line) => sum + scaleByLineQuantity(line.contractPriceVat0, line.quantity),
     0,
@@ -102,11 +105,21 @@ export function aggregateStructureLines(
   const discountPercent =
     totalPriceVat0BeforeDiscount > 0 ? (discountEur / totalPriceVat0BeforeDiscount) * 100 : 0;
 
-  const vatAmount = reverseVat ? 0 : applyVat(totalPriceVat0, vatPercent) - totalPriceVat0;
-  const totalPriceVat = reverseVat ? totalPriceVat0 : totalPriceVat0 + vatAmount;
-  const totalPriceVatBeforeDiscount = reverseVat
-    ? totalPriceVat0BeforeDiscount
-    : applyVat(totalPriceVat0BeforeDiscount, vatPercent);
+  let vatAmount = 0;
+  let totalPriceVat = totalPriceVat0;
+  let totalPriceVatBeforeDiscount = totalPriceVat0BeforeDiscount;
+  if (!reverseVat) {
+    let gross = 0;
+    let listGross = 0;
+    for (const line of priced) {
+      const rate = Number.isFinite(line.vatPercent) ? line.vatPercent : vatPercent;
+      gross += roundToCents(applyVat(lineTotalVat0(line), rate));
+      listGross += roundToCents(applyVat(lineListPriceVat0(line), rate));
+    }
+    totalPriceVat = roundToCents(gross);
+    totalPriceVatBeforeDiscount = roundToCents(listGross);
+    vatAmount = roundToCents(totalPriceVat - totalPriceVat0);
+  }
   const marginPercent =
     totalPriceVat0 > 0 ? (marginEur / totalPriceVat0) * 100 : 0;
 
