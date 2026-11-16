@@ -57,6 +57,8 @@ type StructureLineCardProps = {
   onDelete: () => void;
   /** Myöhemmän rivin oma teksti piilotetaan, kun aiemmalla rivillä on jo lisätiedot. */
   showAdditionalInfo?: boolean;
+  /** Tyhjä määräkenttä: false estää yhteenvedon (kuten materiaalimäärät). */
+  onValidityChange?: (lineId: string, valid: boolean) => void;
 };
 
 export function StructureLineCard({
@@ -70,7 +72,10 @@ export function StructureLineCard({
   onOpenForm,
   onDelete,
   showAdditionalInfo = true,
+  onValidityChange,
 }: StructureLineCardProps) {
+  const onValidityChangeRef = useRef(onValidityChange);
+  onValidityChangeRef.current = onValidityChange;
   const styles = useThemedStyles(createStyles);
   const priced = withDerivedLinePricing(line);
   const manual = isManualStructureId(priced.structureId);
@@ -137,11 +142,13 @@ export function StructureLineCard({
 
       <View style={styles.fieldRow}>
         <View style={styles.fieldHalf}>
-          <DecimalInput
+          <QuantityDecimalInput
             label="Määrä"
             value={priced.quantity}
             onChangeValue={(value) => patch({ quantity: value })}
+            onValidityChange={(valid) => onValidityChangeRef.current?.(priced.id, valid)}
             spacingOverrides={inputDense}
+            errorStyle={styles.error}
           />
         </View>
         <View style={styles.fieldHalf}>
@@ -176,6 +183,7 @@ export function StructureLineCard({
             onChangeValue={(value) =>
               patch({ unitPriceVat0: fromCardAmount(value, includeVat, vatPercent) })
             }
+            emptyAsZero
             spacingOverrides={inputDense}
           />
         </View>
@@ -186,6 +194,7 @@ export function StructureLineCard({
             onChangeValue={(value) =>
               patch({ materialsVat0: fromCardAmount(value, includeVat, vatPercent) })
             }
+            emptyAsZero
             spacingOverrides={inputDense}
           />
         </View>
@@ -197,6 +206,7 @@ export function StructureLineCard({
             label="Urakkahinta € (alv0)"
             value={priced.contractPriceVat0}
             onChangeValue={(value) => patch({ contractPriceVat0: value })}
+            emptyAsZero
             spacingOverrides={inputDense}
           />
         </View>
@@ -318,23 +328,36 @@ function DaysInput({
   );
 }
 
-function DecimalInput({
+function structureQuantityInputError(text: string): string | null {
+  const trimmed = text.trim();
+  if (!trimmed) return 'Anna määrä';
+  const parsed = parseNumber(text);
+  if (parsed === null || parsed < 0) return 'Tarkista määrä';
+  return null;
+}
+
+function QuantityDecimalInput({
   label,
   value,
   onChangeValue,
+  onValidityChange,
   spacingOverrides,
+  errorStyle,
 }: {
   label: string;
   value: number;
   onChangeValue: (value: number) => void;
+  onValidityChange?: (valid: boolean) => void;
   spacingOverrides?: {
     wrap?: object;
     label?: object;
     field?: object;
   };
+  errorStyle: { fontFamily: string; fontSize: number; color: string };
 }) {
   const [text, setText] = useState(formatFixed2(value));
   const lastSent = useRef(roundToCents(value));
+  const error = structureQuantityInputError(text);
 
   useEffect(() => {
     const next = roundToCents(value);
@@ -343,6 +366,65 @@ function DecimalInput({
       setText(formatFixed2(next));
     }
   }, [value]);
+
+  useEffect(() => {
+    onValidityChange?.(error === null);
+  }, [error, onValidityChange]);
+
+  return (
+    <View>
+      <AppInput
+        label={label}
+        value={text}
+        kind="decimal"
+        spacingOverrides={spacingOverrides}
+        onChangeText={(raw) => {
+          const next = limitDecimalInput(raw);
+          setText(next);
+          const inputError = structureQuantityInputError(next);
+          if (inputError !== null) return;
+          const parsed = parseNumber(next);
+          if (parsed === null) return;
+          const rounded = roundToCents(parsed);
+          lastSent.current = rounded;
+          onChangeValue(rounded);
+        }}
+      />
+      {error ? <Text style={errorStyle}>{error}</Text> : null}
+    </View>
+  );
+}
+
+function DecimalInput({
+  label,
+  value,
+  onChangeValue,
+  emptyAsZero = false,
+  spacingOverrides,
+}: {
+  label: string;
+  value: number;
+  onChangeValue: (value: number) => void;
+  emptyAsZero?: boolean;
+  spacingOverrides?: {
+    wrap?: object;
+    label?: object;
+    field?: object;
+  };
+}) {
+  const [text, setText] = useState(formatFixed2(value));
+  const lastSent = useRef(roundToCents(value));
+  const [showEmptyWhileZero, setShowEmptyWhileZero] = useState(false);
+
+  useEffect(() => {
+    if (showEmptyWhileZero && roundToCents(value) === 0) return;
+    const next = roundToCents(value);
+    if (next !== lastSent.current) {
+      lastSent.current = next;
+      setText(formatFixed2(next));
+      setShowEmptyWhileZero(false);
+    }
+  }, [value, showEmptyWhileZero]);
 
   return (
     <AppInput
@@ -353,6 +435,15 @@ function DecimalInput({
       onChangeText={(raw) => {
         const next = limitDecimalInput(raw);
         setText(next);
+        if (!next.trim()) {
+          if (emptyAsZero) {
+            setShowEmptyWhileZero(true);
+            lastSent.current = 0;
+            onChangeValue(0);
+          }
+          return;
+        }
+        setShowEmptyWhileZero(false);
         const parsed = parseNumber(next);
         if (parsed === null) return;
         const rounded = roundToCents(parsed);
@@ -404,6 +495,13 @@ function createStyles(colors: AppColorPalette) {
     },
     incomplete: {
       marginTop: spacing.xs,
+      marginBottom: spacing.xs,
+      fontFamily: 'IBMPlexSans_400Regular',
+      fontSize: 13,
+      color: colors.accent,
+    },
+    error: {
+      marginTop: -spacing.xs,
       marginBottom: spacing.xs,
       fontFamily: 'IBMPlexSans_400Regular',
       fontSize: 13,

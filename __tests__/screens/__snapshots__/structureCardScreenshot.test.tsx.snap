@@ -168,69 +168,71 @@ exports[`structure card screenshots matches single-card render snapshot (busines
           }
         }
       >
-        <View
-          style={
-            [
-              {
-                "marginBottom": 12,
-              },
-              false,
-              {
-                "marginBottom": 8,
-              },
-            ]
-          }
-        >
-          <Text
+        <View>
+          <View
             style={
               [
                 {
-                  "color": "#3C3C3C",
-                  "fontFamily": "IBMPlexSans_600SemiBold",
-                  "marginBottom": 6,
+                  "marginBottom": 12,
                 },
                 false,
                 {
-                  "marginBottom": 4,
+                  "marginBottom": 8,
                 },
               ]
             }
           >
-            Määrä
-          </Text>
-          <TextInput
-            autoCapitalize="none"
-            autoComplete="off"
-            autoCorrect={false}
-            keyboardType="decimal-pad"
-            multiline={false}
-            onChangeText={[Function]}
-            placeholderTextColor="#999"
-            style={
-              [
-                {
-                  "backgroundColor": "#FFFFFF",
-                  "borderColor": "#E1E8ED",
-                  "borderRadius": 5,
-                  "borderWidth": 1,
-                  "color": "#000000",
-                  "fontFamily": "IBMPlexSans_400Regular",
-                  "paddingHorizontal": 14,
-                  "paddingVertical": 12,
-                },
-                null,
-                null,
-                false,
-                false,
-                false,
-                {
-                  "paddingVertical": 10,
-                },
-              ]
-            }
-            textContentType="none"
-            value="1,00"
-          />
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                  {
+                    "marginBottom": 4,
+                  },
+                ]
+              }
+            >
+              Määrä
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect={false}
+              keyboardType="decimal-pad"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                  {
+                    "paddingVertical": 10,
+                  },
+                ]
+              }
+              textContentType="none"
+              value="1,00"
+            />
+          </View>
         </View>
       </View>
       <View
@@ -1016,69 +1018,71 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           }
         }
       >
-        <View
-          style={
-            [
-              {
-                "marginBottom": 12,
-              },
-              false,
-              {
-                "marginBottom": 8,
-              },
-            ]
-          }
-        >
-          <Text
+        <View>
+          <View
             style={
               [
                 {
-                  "color": "#3C3C3C",
-                  "fontFamily": "IBMPlexSans_600SemiBold",
-                  "marginBottom": 6,
+                  "marginBottom": 12,
                 },
                 false,
                 {
-                  "marginBottom": 4,
+                  "marginBottom": 8,
                 },
               ]
             }
           >
-            Määrä
-          </Text>
-          <TextInput
-            autoCapitalize="none"
-            autoComplete="off"
-            autoCorrect={false}
-            keyboardType="decimal-pad"
-            multiline={false}
-            onChangeText={[Function]}
-            placeholderTextColor="#999"
-            style={
-              [
-                {
-                  "backgroundColor": "#FFFFFF",
-                  "borderColor": "#E1E8ED",
-                  "borderRadius": 5,
-                  "borderWidth": 1,
-                  "color": "#000000",
-                  "fontFamily": "IBMPlexSans_400Regular",
-                  "paddingHorizontal": 14,
-                  "paddingVertical": 12,
-                },
-                null,
-                null,
-                false,
-                false,
-                false,
-                {
-                  "paddingVertical": 10,
-                },
-              ]
-            }
-            textContentType="none"
-            value="1,00"
-          />
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                  {
+                    "marginBottom": 4,
+                  },
+                ]
+              }
+            >
+              Määrä
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect={false}
+              keyboardType="decimal-pad"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                  {
+                    "paddingVertical": 10,
+                  },
+                ]
+              }
+              textContentType="none"
+              value="1,00"
+            />
+          </View>
         </View>
       </View>
       <View
@@ -1872,69 +1876,71 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           }
         }
       >
-        <View
-          style={
-            [
-              {
-                "marginBottom": 12,
-              },
-              false,
-              {
-                "marginBottom": 8,
-              },
-            ]
-          }
-        >
-          <Text
+        <View>
+          <View
             style={
               [
                 {
-                  "color": "#3C3C3C",
-                  "fontFamily": "IBMPlexSans_600SemiBold",
-                  "marginBottom": 6,
+                  "marginBottom": 12,
                 },
                 false,
                 {
-                  "marginBottom": 4,
+                  "marginBottom": 8,
                 },
               ]
             }
           >
-            Määrä
-          </Text>
-          <TextInput
-            autoCapitalize="none"
-            autoComplete="off"
-            autoCorrect={false}
-            keyboardType="decimal-pad"
-            multiline={false}
-            onChangeText={[Function]}
-            placeholderTextColor="#999"
-            style={
-              [
-                {
-                  "backgroundColor": "#FFFFFF",
-                  "borderColor": "#E1E8ED",
-                  "borderRadius": 5,
-                  "borderWidth": 1,
-                  "color": "#000000",
-                  "fontFamily": "IBMPlexSans_400Regular",
-                  "paddingHorizontal": 14,
-                  "paddingVertical": 12,
-                },
-                null,
-                null,
-                false,
-                false,
-                false,
-                {
-                  "paddingVertical": 10,
-                },
-              ]
-            }
-            textContentType="none"
-            value="1,00"
-          />
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                  {
+                    "marginBottom": 4,
+                  },
+                ]
+              }
+            >
+              Määrä
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect={false}
+              keyboardType="decimal-pad"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                  {
+                    "paddingVertical": 10,
+                  },
+                ]
+              }
+              textContentType="none"
+              value="1,00"
+            />
+          </View>
         </View>
       </View>
       <View
@@ -2628,69 +2634,71 @@ exports[`structure card screenshots matches three-card stack snapshot 1`] = `
           }
         }
       >
-        <View
-          style={
-            [
-              {
-                "marginBottom": 12,
-              },
-              false,
-              {
-                "marginBottom": 8,
-              },
-            ]
-          }
-        >
-          <Text
+        <View>
+          <View
             style={
               [
                 {
-                  "color": "#3C3C3C",
-                  "fontFamily": "IBMPlexSans_600SemiBold",
-                  "marginBottom": 6,
+                  "marginBottom": 12,
                 },
                 false,
                 {
-                  "marginBottom": 4,
+                  "marginBottom": 8,
                 },
               ]
             }
           >
-            Määrä
-          </Text>
-          <TextInput
-            autoCapitalize="none"
-            autoComplete="off"
-            autoCorrect={false}
-            keyboardType="decimal-pad"
-            multiline={false}
-            onChangeText={[Function]}
-            placeholderTextColor="#999"
-            style={
-              [
-                {
-                  "backgroundColor": "#FFFFFF",
-                  "borderColor": "#E1E8ED",
-                  "borderRadius": 5,
-                  "borderWidth": 1,
-                  "color": "#000000",
-                  "fontFamily": "IBMPlexSans_400Regular",
-                  "paddingHorizontal": 14,
-                  "paddingVertical": 12,
-                },
-                null,
-                null,
-                false,
-                false,
-                false,
-                {
-                  "paddingVertical": 10,
-                },
-              ]
-            }
-            textContentType="none"
-            value="1,00"
-          />
+            <Text
+              style={
+                [
+                  {
+                    "color": "#3C3C3C",
+                    "fontFamily": "IBMPlexSans_600SemiBold",
+                    "marginBottom": 6,
+                  },
+                  false,
+                  {
+                    "marginBottom": 4,
+                  },
+                ]
+              }
+            >
+              Määrä
+            </Text>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect={false}
+              keyboardType="decimal-pad"
+              multiline={false}
+              onChangeText={[Function]}
+              placeholderTextColor="#999"
+              style={
+                [
+                  {
+                    "backgroundColor": "#FFFFFF",
+                    "borderColor": "#E1E8ED",
+                    "borderRadius": 5,
+                    "borderWidth": 1,
+                    "color": "#000000",
+                    "fontFamily": "IBMPlexSans_400Regular",
+                    "paddingHorizontal": 14,
+                    "paddingVertical": 12,
+                  },
+                  null,
+                  null,
+                  false,
+                  false,
+                  false,
+                  {
+                    "paddingVertical": 10,
+                  },
+                ]
+              }
+              textContentType="none"
+              value="1,00"
+            />
+          </View>
         </View>
       </View>
       <View
