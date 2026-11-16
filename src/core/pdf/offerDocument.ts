@@ -4,6 +4,7 @@ import { buildCalculationFormulaContext } from '@/src/core/form/calculationFormu
 import type { AppSettings, CalculationRecord, CustomerInfo, Product, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { lineListPriceVat0, lineTotalVat0 } from '@/src/core/structure/linePricing';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
@@ -113,7 +114,7 @@ export function offerGrossFromVat0(vat0: number, vatPercent: number): number | n
 export function sumOfferHeadingGross(record: CalculationRecord): number | null {
   let sum = 0;
   for (const line of ensureStructureLines(record)) {
-    if (line.quantity === 0) continue;
+    if (structureLineQuantityIsZero(line)) continue;
     if (!Number.isFinite(line.quantity)) return null;
     const gross = offerGrossFromVat0(lineTotalVat0(line), line.vatPercent);
     if (gross == null) return null;
@@ -126,7 +127,7 @@ export function sumOfferHeadingGross(record: CalculationRecord): number | null {
 export function sumOfferListGross(record: CalculationRecord): number | null {
   let sum = 0;
   for (const line of ensureStructureLines(record)) {
-    if (line.quantity === 0) continue;
+    if (structureLineQuantityIsZero(line)) continue;
     if (!Number.isFinite(line.quantity)) return null;
     const gross = offerGrossFromVat0(lineListPriceVat0(line), line.vatPercent);
     if (gross == null) return null;
@@ -152,7 +153,7 @@ export function formatOfferWorkDuration(days: number): string {
  * Määrä NaN/Infinity on virhe, koska rivisumma painuisi muuten nollaksi.
  */
 export function lineOfferPriceInvalid(line: StructureLine, includesVat: boolean): boolean {
-  if (line.quantity === 0) return false;
+  if (structureLineQuantityIsZero(line)) return false;
   if (!Number.isFinite(line.quantity)) return true;
   return (
     offerAmount(line.unitPriceVat0, includesVat, line.vatPercent) == null ||
@@ -166,7 +167,7 @@ export function roundedOfferLineAmount(
   includesVat: boolean,
   basis: 'list' | 'paid',
 ): number | null {
-  if (line.quantity === 0) return 0;
+  if (structureLineQuantityIsZero(line)) return 0;
   const vat0 = basis === 'list' ? lineListPriceVat0(line) : lineTotalVat0(line);
   const amount = offerAmount(vat0, includesVat, line.vatPercent);
   return amount == null ? null : roundToCents(amount);
@@ -207,7 +208,7 @@ export function sumRoundedOfferLines(
 ): number | null {
   let sum = 0;
   for (const line of ensureStructureLines(record)) {
-    if (line.quantity === 0) continue;
+    if (structureLineQuantityIsZero(line)) continue;
     if (!Number.isFinite(line.quantity)) return null;
     const amount = roundedOfferLineAmount(line, includesVat, basis);
     if (amount == null) return null;
@@ -221,7 +222,7 @@ export function offerDocumentProblems(record: CalculationRecord): string[] {
   const customer = customerFromRecord(record);
   const problems: string[] = [];
   for (const line of ensureStructureLines(record)) {
-    if (line.quantity === 0) continue;
+    if (structureLineQuantityIsZero(line)) continue;
     if (lineOfferPriceInvalid(line, offerIncludesVat(customer, record.formSnapshot))) {
       problems.push(invalidOfferPriceWarning(line.name));
     }
@@ -261,14 +262,14 @@ function offerVatLabel(includesVat: boolean, vatPercent: number): string | undef
 function formatOfferUnitPrice(line: StructureLine, includesVat: boolean): string {
   const quantity = line.quantity;
   const total = roundedOfferLineAmount(line, includesVat, 'list');
-  if (total != null && Number.isFinite(quantity) && quantity !== 0) {
+  if (total != null && Number.isFinite(quantity) && !structureLineQuantityIsZero({ quantity })) {
     return formatCurrency(roundToCents(total / quantity));
   }
   return formatOfferMoney(line.unitPriceVat0, includesVat, line.vatPercent);
 }
 
 function offerHeading(line: StructureLine, includesVat: boolean): OfferHeading | undefined {
-  if (line.quantity === 0) return undefined;
+  if (structureLineQuantityIsZero(line)) return undefined;
   const invalid = lineOfferPriceInvalid(line, includesVat);
   const quantity = Number.isFinite(line.quantity) ? formatQuantity(line.quantity) : '';
   const unit = line.unit?.trim() ?? '';
@@ -328,7 +329,7 @@ export function buildOfferRows(source: OfferDocumentSource): OfferRow[] {
   const customer = customerFromRecord(source.record);
   const includesVat = offerIncludesVat(customer, source.record.formSnapshot);
   const structureLines = ensureStructureLines(source.record);
-  const lines = structureLines.filter((line) => line.quantity !== 0);
+  const lines = structureLines.filter((line) => !structureLineQuantityIsZero(line));
   const showDiscount = lines.some((line) => line.discountPercent > 0);
   const rows: OfferRow[] = [];
   for (const line of lines) {
@@ -366,7 +367,11 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
     const structure = matchingStructure(line, source.structures);
     if (!hasOfferForm(structure)) continue;
     const body = buildPrintedBody(offerPrintRows(line, structure, source, reverseVat));
-    const days = resolveDisplayedWorkDurationDays(line, source.settings.weatherReserveFactor);
+    const days = resolveDisplayedWorkDurationDays(
+      line,
+      source.settings.weatherReserveFactor,
+      source.settings.workdayHours,
+    );
     if (days != null && days > 0) {
       const unit = days === 1 ? 'työpäivä' : 'työpäivää';
       body.tableRows.push({ label: 'Työn arvioitu kesto', value: `${days} ${unit}` });
@@ -384,14 +389,14 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
 function calcLevelDiscountOnly(record: CalculationRecord): boolean {
   if (!(record.discountPercent > 0)) return false;
   return !ensureStructureLines(record).some(
-    (line) => line.quantity !== 0 && Number.isFinite(line.quantity) && line.discountPercent > 0,
+    (line) => !structureLineQuantityIsZero(line) && Number.isFinite(line.quantity) && line.discountPercent > 0,
   );
 }
 
 /** Verollinen loppusumma, johon ALV-taulun bruttosumman on täsmättävä. */
 function vatInclusivePayable(record: CalculationRecord, customer: CustomerInfo): number {
   const lineDiscount = ensureStructureLines(record).some(
-    (line) => line.quantity !== 0 && Number.isFinite(line.quantity) && line.discountPercent > 0,
+    (line) => !structureLineQuantityIsZero(line) && Number.isFinite(line.quantity) && line.discountPercent > 0,
   );
   if (lineDiscount) return sumRoundedOfferLines(record, true, 'paid') ?? roundToCents(record.totalPriceVat);
   if (record.discountPercent > 0 && record.totalPriceVat0BeforeDiscount > record.totalPriceVat0) {
@@ -418,7 +423,7 @@ function vatRowsMatchPayable(
  */
 function roundedVatRateRows(record: CalculationRecord): OfferVatSummaryRow[] | null {
   if (calcLevelDiscountOnly(record)) return null;
-  const lines = ensureStructureLines(record).filter((line) => line.quantity !== 0 && Number.isFinite(line.quantity));
+  const lines = ensureStructureLines(record).filter((line) => !structureLineQuantityIsZero(line));
   const rates: number[] = [];
   for (const line of lines) {
     const rate = Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent;
@@ -457,7 +462,7 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
   if (!offerIncludesVat(customer, record.formSnapshot)) return [];
   const businessSis = customer.customerType === 'business';
   const headingGross = businessSis ? sumOfferHeadingGross(record) : null;
-  const lines = ensureStructureLines(record);
+  const lines = ensureStructureLines(record).filter((line) => !structureLineQuantityIsZero(line));
   const rates: number[] = [];
   const weights = new Map<number, number>();
   for (const line of lines) {
@@ -482,7 +487,9 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
     if (calcLevelDiscountOnly(record)) return [];
     const rows = rates.map((rate) => {
       const group = lines.filter(
-        (line) => (Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent) === rate && line.quantity !== 0,
+        (line) =>
+          (Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent) === rate &&
+          !structureLineQuantityIsZero(line),
       );
       const net = roundToCents(group.reduce((sum, line) => sum + Math.max(0, lineTotalVat0(line)), 0));
       const gross = roundToCents(

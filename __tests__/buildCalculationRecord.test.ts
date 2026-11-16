@@ -136,6 +136,7 @@ describe('buildCalculationRecordFromComposer', () => {
     expect(record.deliveryScheduleText).toBe('viikko 42');
     expect(record.travelTimeHoursOneWay).toBeCloseTo(0.75, 5);
     expect(record.totalPriceVat0).toBe(200);
+    expect(record.materialsVat0).toBe(20);
     expect(record.workDurationDays).toBe(0);
     expect(record.structureLines).toHaveLength(1);
   });

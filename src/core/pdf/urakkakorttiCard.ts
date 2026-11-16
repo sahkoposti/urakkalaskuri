@@ -2,6 +2,7 @@ import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQ
 import type { CalculationRecord, FormSnapshot } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
+import { scaleByLineQuantity } from '@/src/core/structure/lineQuantityScale';
 import { formatFixed2, roundToCents } from '@/src/core/utils/formatters';
 import type { BusinessVatMode } from '@/src/core/utils/priceDisplay';
 
@@ -117,15 +118,16 @@ export function applyRefreshedStructurePrices(record: CalculationRecord): Calcul
  * Työntekijä: sama summa ennen Sivukulukerroin-jakoa.
  */
 export function derivedCardContractAmount(
-  line: { contractPriceVat0: number },
+  line: { contractPriceVat0: number; quantity?: number },
   mode: UrakkakorttiMode,
 ): number {
-  return mode === 'tyontekija' ? line.contractPriceVat0 : effectiveContractVat0(line);
+  if (mode === 'tyontekija') return scaleByLineQuantity(line.contractPriceVat0, line.quantity);
+  return effectiveContractVat0(line);
 }
 
 /** Kentän teksti. Yliajo näytetään, jos se on tallennettu. Muuten laskettu summa. */
 export function cardPriceFieldText(
-  line: { id: string; contractPriceVat0: number },
+  line: { id: string; contractPriceVat0: number; quantity?: number },
   mode: UrakkakorttiMode,
   overrides: Record<string, number> | undefined,
 ): string {
@@ -184,12 +186,12 @@ export function urakkakorttiRivihinnatFromFieldTexts(
 
 /** Rivin urakka ennen kerrointa. Yliajo voittaa lasketun hinnan. Orpo avain ei osu mihinkään riviin. */
 export function cardContractBase(
-  line: { id: string; contractPriceVat0: number },
+  line: { id: string; contractPriceVat0: number; quantity?: number },
   mode: UrakkakorttiMode,
   overrides: Record<string, number> | undefined,
 ): number {
   if (overrides && Object.prototype.hasOwnProperty.call(overrides, line.id)) return overrides[line.id];
-  return mode === 'tyontekija' ? line.contractPriceVat0 : effectiveContractVat0(line);
+  return derivedCardContractAmount(line, mode);
 }
 
 /** Vain täsmälleen `true` piilottaa hinnat. Puuttuva ja muu arvo = näytä. */
@@ -312,6 +314,7 @@ export function cardLinesNeedingManualContract(record: CalculationRecord): Retur
   if (readUrakkakorttiHidePrices(record.formSnapshot)) return [];
   const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
   return ensureStructureLines(record).filter((line) => {
+    if (structureLineQuantityIsZero(line)) return false;
     if (overrides && Object.prototype.hasOwnProperty.call(overrides, line.id)) {
       const value = overrides[line.id];
       return !(typeof value === 'number' && Number.isFinite(value) && value > 0);

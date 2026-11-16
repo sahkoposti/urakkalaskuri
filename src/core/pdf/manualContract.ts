@@ -1,20 +1,31 @@
 import type { CalculationRecord, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { patchStructureLine } from '@/src/core/structure/applyFormToLine';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { aggregateStructureLines } from '@/src/core/structure/linePricing';
+import { scaleByLineQuantity } from '@/src/core/structure/lineQuantityScale';
 import { roundToCents } from '@/src/core/utils/formatters';
 
 const positive = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0;
 
-/** Urakkahinta (alv0) = rivin contractPriceVat0 (lomakkeesta tai käsin kirjattu). */
-export function effectiveContractVat0(line: Pick<StructureLine, 'contractPriceVat0'>): number {
-  return positive(line.contractPriceVat0) ? line.contractPriceVat0 : 0;
+/**
+ * Laskettu urakka (alv0) = rivin contractPriceVat0 × määrä.
+ * Puuttuva määrä on yksi kappale. Nolla ja negatiivinen skaalattu summa on 0.
+ * Käsin kirjattu korttiyliajo ei kulje tästä.
+ */
+export function effectiveContractVat0(
+  line: Pick<StructureLine, 'contractPriceVat0'> & { quantity?: number },
+): number {
+  const scaled = scaleByLineQuantity(line.contractPriceVat0, line.quantity);
+  return positive(scaled) ? scaled : 0;
 }
 
-/** Rivit, joille urakka pitää kirjata käsin ennen urakkakorttia (lomaketta ei käytetty / urakka 0). */
+/** Rivit, joille urakka pitää kirjata käsin ennen urakkakorttia (lomaketta ei käytetty / urakka 0). Määrä 0 ei kysy. */
 export function linesNeedingManualContract(record: CalculationRecord): StructureLine[] {
-  return ensureStructureLines(record).filter((line) => effectiveContractVat0(line) <= 0);
+  return ensureStructureLines(record).filter(
+    (line) => !structureLineQuantityIsZero(line) && effectiveContractVat0(line) <= 0,
+  );
 }
 
 /**

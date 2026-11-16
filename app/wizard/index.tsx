@@ -112,6 +112,7 @@ export default function CalculationComposerScreen() {
   const [structureLines, setStructureLines] = useState<StructureLine[]>([]);
   const [businessVatMode, setBusinessVatMode] = useState<BusinessVatMode>('alv0');
   const [materialIssues, setMaterialIssues] = useState<Record<string, boolean>>({});
+  const [structureFieldIssues, setStructureFieldIssues] = useState<Record<string, boolean>>({});
   const [structurePickerVisible, setStructurePickerVisible] = useState(false);
   const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
   const [updateCalcsVisible, setUpdateCalcsVisible] = useState(false);
@@ -176,6 +177,20 @@ export default function CalculationComposerScreen() {
 
   const setMaterialLineValidity = useCallback((lineId: string, valid: boolean) => {
     setMaterialIssues((current) => {
+      const invalid = !valid;
+      if (Boolean(current[lineId]) === invalid) return current;
+      if (!invalid) {
+        if (!(lineId in current)) return current;
+        const next = { ...current };
+        delete next[lineId];
+        return next;
+      }
+      return { ...current, [lineId]: true };
+    });
+  }, []);
+
+  const setStructureLineFieldValidity = useCallback((lineId: string, valid: boolean) => {
+    setStructureFieldIssues((current) => {
       const invalid = !valid;
       if (Boolean(current[lineId]) === invalid) return current;
       if (!invalid) {
@@ -736,6 +751,10 @@ export default function CalculationComposerScreen() {
       showAlert('Materiaalit', 'Tarkista materiaalimäärät ennen yhteenvetoa.');
       return;
     }
+    if (Object.keys(structureFieldIssues).length > 0) {
+      showAlert('Tuoterakenne', 'Tarkista tuoterakenteen määrä ennen yhteenvetoa.');
+      return;
+    }
 
     if (customerId && !prompted) {
       const existing = customers.find((item) => item.id === customerId);
@@ -810,6 +829,7 @@ export default function CalculationComposerScreen() {
   const hasInvalidMaterials =
     Object.keys(materialIssues).length > 0 ||
     structureLines.some((line) => materialQuantitiesBlockFinish(line.materialQuantities, line));
+  const hasInvalidStructureFields = Object.keys(structureFieldIssues).length > 0;
 
   function handleComposerBack() {
     void leaveKeepingDraft(() => router.back());
@@ -897,6 +917,7 @@ export default function CalculationComposerScreen() {
                   line={line}
                   structure={structure}
                   weatherReserveFactor={settings.weatherReserveFactor}
+                  workdayHours={settings.workdayHours}
                   forceVat0={forceVat0}
                   offerIncludesVat={customerType === 'business' ? businessOfferIncludesVat : undefined}
                   onChange={(next) =>
@@ -904,6 +925,7 @@ export default function CalculationComposerScreen() {
                       current.map((item) => (item.id === next.id ? next : item)),
                     )
                   }
+                  onValidityChange={setStructureLineFieldValidity}
                   onOpenForm={() => void openLineForm(line.id)}
                   onDelete={() => setDeleteLineId(line.id)}
                   showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id, structures)}
@@ -936,14 +958,19 @@ export default function CalculationComposerScreen() {
           <PrimaryButton
             title="Yhteenveto"
             onPress={() => void finishCalculation(false)}
-            disabled={hasIncompleteForm || hasInvalidMaterials}
+            disabled={hasIncompleteForm || hasInvalidMaterials || hasInvalidStructureFields}
             styleOverrides={screenButtonOverride}
           />
           <OutlinedButton
             title="Tallenna ja sulje"
             styleOverrides={screenButtonOverride}
             onPress={() => {
-              if (hasIncompleteForm || hasInvalidMaterials || structureLines.length === 0) {
+              if (
+                hasIncompleteForm ||
+                hasInvalidMaterials ||
+                hasInvalidStructureFields ||
+                structureLines.length === 0
+              ) {
                 void saveDraftAndExit();
                 return;
               }
@@ -958,6 +985,9 @@ export default function CalculationComposerScreen() {
           ) : null}
           {hasInvalidMaterials ? (
             <Text style={styles.incompleteHint}>Tarkista materiaalimäärät ennen yhteenvetoa.</Text>
+          ) : null}
+          {hasInvalidStructureFields ? (
+            <Text style={styles.incompleteHint}>Anna määrä jokaiselle tuoterakenteelle.</Text>
           ) : null}
         </ScrollView>
       </KeyboardAvoidingView>

@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AttachmentSection } from '@/src/features/attachments/ui';
@@ -35,14 +35,19 @@ import {
 } from '@/src/core/form/formVersion';
 import type { FormDefinition } from '@/src/core/form/types';
 import { listAttachments, type Attachment } from '@/src/features/attachments';
+import { mergedMaterialDetailRows } from '@/src/core/materials/mergeMaterialRows';
 import type { CalculationRecord, CustomerInfo, MaterialQuantityRow, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { withDerivedLinePricing } from '@/src/core/structure/linePricing';
+import { scaleByLineQuantity, scaleWorkDuration } from '@/src/core/structure/lineQuantityScale';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { formatQuantity } from '@/src/core/materials/materialQuantities';
-import { estimateWorkDurationDays } from '@/src/core/utils/formatters';
-import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
+import {
+  resolveDisplayedWorkDurationDays,
+  resolveRecordDisplayedWorkDurationDays,
+} from '@/src/core/structure/workDurationDisplay';
 import { roundedLineCardPrices } from '@/src/core/pdf/offerDocument';
 import { isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
 import { lineStructureLisatiedot, structureRowShowsAdditionalInfo } from '@/src/core/pdf/structureExtraText';
@@ -68,7 +73,7 @@ type CalculationDetailViewProps = {
 function lineBreakdown(line: StructureLine, reverseVat: boolean) {
   const priced = withDerivedLinePricing(line);
   return {
-    materialsVat0: priced.materialsVat0,
+    materialsVat0: scaleByLineQuantity(priced.materialsVat0, priced.quantity),
     discountPercent: priced.discountPercent,
     vatPercent: priced.vatPercent,
     ...roundedLineCardPrices(priced, reverseVat),
@@ -86,7 +91,7 @@ export function CalculationDetailView({
   onDeletePress,
 }: CalculationDetailViewProps) {
   const styles = useThemedStyles(createStyles);
-  const { settings, structures } = useApp();
+  const { settings, structures, products } = useApp();
   const [tab, setTab] = useState<DetailTab>('laskelma');
   const scrollRef = useRef<ScrollView>(null);
   const attachmentsRef = useRef<View>(null);
@@ -125,10 +130,11 @@ export function CalculationDetailView({
   const privateCustomer = isPrivateCustomer(customer);
   const structureLines = ensureStructureLines(record);
   const showStructureSummaries = structureLines.length > 1;
-  const singleLine = structureLines.length === 1 ? structureLines[0] : undefined;
-  const totalDisplayedDuration = singleLine
-    ? resolveDisplayedWorkDurationDays(singleLine, settings.weatherReserveFactor)
-    : estimateWorkDurationDays(record.workDurationDays, settings.weatherReserveFactor);
+  const totalDisplayedDuration = resolveRecordDisplayedWorkDurationDays(
+    structureLines,
+    settings.weatherReserveFactor,
+    settings.workdayHours,
+  );
   const mismatchLine = structureLines.find((line) => {
     const structure = structures.find((item) => item.id === line.structureId);
     const snapshotVersion = line.formVersion ?? line.snapshot?.formVersion;
@@ -138,6 +144,19 @@ export function CalculationDetailView({
   const snapshotVersion =
     mismatchLine?.formVersion ?? mismatchLine?.snapshot?.formVersion ?? record.formSnapshot?.formVersion;
   const currentVersion = formDefinition.version;
+  const mergedMaterialEntries = useMemo(
+    () =>
+      structureLines.map((item) => ({
+        line: item,
+        form: structures.find((structure) => structure.id === item.structureId)?.form,
+      })),
+    [structureLines, structures],
+  );
+  const showMergedMaterials = structureLines.some((item) => item.materialQuantities !== undefined);
+  const mergedMaterialDetails = useMemo(
+    () => (showMergedMaterials ? mergedMaterialDetailRows(mergedMaterialEntries, products) : []),
+    [showMergedMaterials, mergedMaterialEntries, products],
+  );
 
   return (
     <>
@@ -300,8 +319,12 @@ export function CalculationDetailView({
         lines={structureLines}
         snapshot={record.formSnapshot}
         displayedWorkDurationDays={totalDisplayedDuration}
-        showDuration={structureLines.length <= 1}
+        showDuration={totalDisplayedDuration != null}
       />
+
+      {showMergedMaterials && mergedMaterialDetails.length > 0 ? (
+        <MergedMaterialQuantitiesCard rows={mergedMaterialDetails} />
+      ) : null}
 
       {structureLines.map((line) => (
         <LineDetail
@@ -313,6 +336,7 @@ export function CalculationDetailView({
           showPriceSummary={showStructureSummaries}
           showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id, structures)}
           travelTimeHoursOneWay={record.travelTimeHoursOneWay}
+          showLineMaterials={!showMergedMaterials}
         />
       ))}
         </>
@@ -373,6 +397,7 @@ function LineDetail({
   showPriceSummary,
   showAdditionalInfo,
   travelTimeHoursOneWay,
+  showLineMaterials,
 }: {
   line: StructureLine;
   customer: CustomerInfo;
@@ -381,6 +406,7 @@ function LineDetail({
   showPriceSummary: boolean;
   showAdditionalInfo: boolean;
   travelTimeHoursOneWay?: number;
+  showLineMaterials: boolean;
 }) {
   const { products, structures, settings } = useApp();
   const reverseVat = Boolean(customer.reverseVat);
@@ -404,6 +430,7 @@ function LineDetail({
   const displayedWorkDurationDays = resolveDisplayedWorkDurationDays(
     line,
     weatherReserveFactor,
+    settings.workdayHours,
   );
 
   return (
@@ -424,14 +451,14 @@ function LineDetail({
           <ResultRow label="Lisätiedot" value={lineStructureLisatiedot(line, structures)} />
         </AppCard>
       ) : null}
-      <SavedMaterialQuantities line={line} />
+      {showLineMaterials ? <SavedMaterialQuantities line={line} /> : null}
       <FormSummarySection
         form={structure?.form}
         fieldValues={line.fieldValues}
         context={context}
         products={structureProducts}
         snapshot={snapshot}
-        workDurationDays={line.workDurationDays}
+        workDurationDays={scaleWorkDuration(line.workDurationDays, line.quantity, settings.workdayHours).days}
         weatherReserveFactor={weatherReserveFactor}
         fieldKeyPrefix={`${line.id}:`}
       />
@@ -439,9 +466,11 @@ function LineDetail({
   );
 }
 
-function materialDetailValue(row: MaterialQuantityRow): string {
+function materialDetailValue(row: MaterialQuantityRow, lineQuantity: number): string {
   const unit = row.unit && !row.unit.includes('€') ? row.unit.trim() : '';
-  return [formatQuantity(row.quantity), unit].filter((part) => part.length > 0).join(' ');
+  return [formatQuantity(scaleByLineQuantity(row.quantity, lineQuantity)), unit]
+    .filter((part) => part.length > 0)
+    .join(' ');
 }
 
 function visibleShades(row: MaterialQuantityRow) {
@@ -450,8 +479,31 @@ function visibleShades(row: MaterialQuantityRow) {
   );
 }
 
+function MergedMaterialQuantitiesCard({ rows }: { rows: ReturnType<typeof mergedMaterialDetailRows> }) {
+  const styles = useThemedStyles(createStyles);
+  return (
+    <AppCard>
+      <Text style={styles.materialsTitle}>Materiaalit (urakkakortti)</Text>
+      {rows.map((row) => {
+        if (row.shades.length === 0) {
+          return <ResultRow key={row.productName} label={row.productName} value={row.value} />;
+        }
+        return (
+          <View key={row.productName}>
+            <Text style={styles.materialsProduct}>{row.productName}</Text>
+            {row.shades.map((shade) => (
+              <ResultRow key={`${row.productName}:${shade.name}`} label={shade.name} value={shade.value} />
+            ))}
+          </View>
+        );
+      })}
+    </AppCard>
+  );
+}
+
 function SavedMaterialQuantities({ line }: { line: StructureLine }) {
   const styles = useThemedStyles(createStyles);
+  if (structureLineQuantityIsZero(line)) return null;
   const rows = (line.materialQuantities ?? []).filter((row) => {
     if (!row.productName.trim() || row.productName.includes('€') || row.unit?.includes('€')) return false;
     if (visibleShades(row).length > 0) return true;
@@ -465,7 +517,7 @@ function SavedMaterialQuantities({ line }: { line: StructureLine }) {
         const shades = visibleShades(row);
         const name = row.productName.replaceAll('€', '').trim() || 'Materiaali';
         if (shades.length === 0) {
-          return <ResultRow key={row.id} label={name} value={materialDetailValue(row)} />;
+          return <ResultRow key={row.id} label={name} value={materialDetailValue(row, line.quantity)} />;
         }
         return (
           <View key={row.id}>
@@ -474,7 +526,7 @@ function SavedMaterialQuantities({ line }: { line: StructureLine }) {
               <ResultRow
                 key={shade.id}
                 label={shade.name.trim()}
-                value={[formatQuantity(shade.quantity), shade.unit?.trim() ?? ''].filter((part) => part.length > 0).join(' ')}
+                value={[formatQuantity(scaleByLineQuantity(shade.quantity, line.quantity)), shade.unit?.trim() ?? ''].filter((part) => part.length > 0).join(' ')}
               />
             ))}
           </View>

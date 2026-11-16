@@ -335,7 +335,8 @@ describe('quantity 0 stays out of the urakkakortti and the merged materials', ()
       source('z', 'Nollarivi', zeroRows[0], 0),
     ]);
     expect(merged).toHaveLength(1);
-    expect(merged[0].quantity).toBe(3);
+    // Ei-lukuinen määrä ei kerrytä litroja (sama kerroin kuin hinnalla). Riviä ei pudoteta kuten tasan 0.
+    expect(merged[0].quantity).toBe(2);
     expect(merged[0].contributions.map((item) => item.lineId)).toEqual(['n', 'u']);
   });
 
@@ -343,15 +344,15 @@ describe('quantity 0 stays out of the urakkakortti and the merged materials', ()
     const lines = [zeroLine(), keptLine()];
     const screen = mergedMaterialsForLines(lines.map((line) => ({ line })), []);
     expect(screen.map((item) => ({ name: item.productName, quantity: item.quantity, lines: item.contributions.map((item) => item.lineId) }))).toEqual([
-      { name: 'Piilomaali', quantity: 3, lines: ['a'] },
-      { name: 'Pensseli', quantity: 1, lines: ['a'] },
+      { name: 'Piilomaali', quantity: 6, lines: ['a'] },
+      { name: 'Pensseli', quantity: 2, lines: ['a'] },
     ]);
 
     const both = [
       { ...keptLine(), id: 'a2', quantity: 4, materialQuantities: [row({ id: 'c', productId: 'p1', productName: 'Piilomaali', quantity: 6, unit: 'l' })] },
       keptLine(),
     ];
-    expect(mergedMaterialsForLines(both.map((line) => ({ line })), [])[0].quantity).toBe(9);
+    expect(mergedMaterialsForLines(both.map((line) => ({ line })), [])[0].quantity).toBe(30);
 
     const rec = record({}, { structureLines: lines });
     const before = JSON.stringify(rec);
@@ -366,7 +367,7 @@ describe('quantity 0 stays out of the urakkakortti and the merged materials', ()
     expect(html).not.toContain('Nollan lisatieto');
     expect(html).not.toContain('>4 l<');
     expect(html).not.toContain('>7 l<');
-    expect(html).toContain('>3 l<');
+    expect(html).toContain('>6 l<');
     expect(html).toContain('Pensseli');
     expect(html).toContain('Seinä');
   });

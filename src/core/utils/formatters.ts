@@ -93,9 +93,9 @@ export function formatFixed2(value: number): string {
 }
 
 /** Rajaa syötteen enintään `maxDecimals` desimaaliin (pilkku tai piste). */
-export function limitDecimalInput(raw: string, maxDecimals = 2): string {
-  const normalized = raw.replace('.', ',');
-  const negative = normalized.startsWith('-');
+export function limitDecimalInput(raw: string, maxDecimals = 2, allowNegative = true): string {
+  const normalized = (allowNegative ? raw : raw.replace(/-/g, '')).replace('.', ',');
+  const negative = allowNegative && normalized.startsWith('-');
   const unsigned = negative ? normalized.slice(1) : normalized;
   const commaIndex = unsigned.indexOf(',');
   if (commaIndex < 0) {

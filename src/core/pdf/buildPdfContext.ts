@@ -3,6 +3,8 @@ import type { AppSettings, CalculationRecord, CustomerInfo, Product, StructureLi
 import { customerFromRecord } from '@/src/core/models/types';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { clampDiscountPercent } from '@/src/core/calculation/discount';
+import { scaleByLineQuantity } from '@/src/core/structure/lineQuantityScale';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { formatCurrency, formatPercent, roundToCents } from '@/src/core/utils/formatters';
 import {
@@ -126,7 +128,9 @@ function hasOfferDiscount(record: CalculationRecord): boolean {
 }
 
 function pricedOfferLines(record: CalculationRecord): StructureLine[] {
-  return ensureStructureLines(record).filter((line) => line.quantity !== 0 && Number.isFinite(line.quantity));
+  return ensureStructureLines(record).filter(
+    (line) => !structureLineQuantityIsZero(line) && Number.isFinite(line.quantity),
+  );
 }
 
 function linesCarryDiscount(record: CalculationRecord): boolean {
@@ -157,7 +161,7 @@ function round2(n: number): number {
  * Ilman alennusta yksi verokanta tai ei hinnoiteltuja rivejä: tallennettu summa × laskelman kanta, kerran pyöristettynä.
  * Yksi verokanta ja sama alennus-% kaikilla riveillä, tai pelkkä laskelman alennus: tuo summa × (1 − d/100), kerran.
  * Sekalaiset riviale-prosentit tai usea verokanta: jokainen rivi
- * round2(materiaalit alv0 × (1 + kanta/100) × (1 − d/100)), sitten summa.
+ * round2(materiaalit alv0 × määrä × (1 + kanta/100) × (1 − d/100)), sitten summa.
  * Jos yhdelläkään rivillä ei ole alea ja record.discountPercent > 0, d on laskelman prosentti.
  * Rivin puuttuva kanta on laskelman kanta. Kolmatta tarjoustason alennustyyppiä ei ole.
  */
@@ -180,7 +184,10 @@ export function offerMaterialsVatIncluded(record: CalculationRecord): number {
   }
   return round2(
     lines.reduce((sum, line) => {
-      const materials = Number.isFinite(line.materialsVat0) ? line.materialsVat0 : 0;
+      const materials = scaleByLineQuantity(
+        Number.isFinite(line.materialsVat0) ? line.materialsVat0 : 0,
+        line.quantity,
+      );
       const d = calcDiscount > 0 ? calcDiscount : clampDiscountPercent(line.discountPercent);
       return sum + round2(materials * (1 + lineRate(record, line) / 100) * (1 - d / 100));
     }, 0),
@@ -247,7 +254,9 @@ export function printedOfferAmounts(record: CalculationRecord, customer: Custome
     const net = netLines ?? roundToCents(record.totalPriceVat0);
     return { net, vat: roundToCents(gross - net), gross, source: heading != null ? 'lines' : 'stored' };
   }
-  const priced = ensureStructureLines(record).some((line) => line.quantity !== 0 && Number.isFinite(line.quantity));
+  const priced = ensureStructureLines(record).some(
+    (line) => !structureLineQuantityIsZero(line) && Number.isFinite(line.quantity),
+  );
   const grossLines = priced ? sumRoundedOfferLines(record, true, 'paid') : null;
   const netLines = priced ? sumRoundedOfferLines(record, false, 'paid') : null;
   if (grossLines != null && netLines != null) {
@@ -402,7 +411,7 @@ function legacyCalcDiscountPriceBlock(record: CalculationRecord, customer: Custo
  * Verollinen: Yhteensä alv 0, Alv per verokanta, Yhteensä sis. alv. Luvut ovat
  * pyöristettyjen listahintojen summia. Ilman alennusta viimeinen rivi on lihavoitu
  * loppusumma. Alennus tulee sen jälkeen, ja lihavoitu rivi on Alennettu hinta yhteensä.
- * Usealla kannalla sen perään tulevat "Sisältää ALV" -rivit maksetusta bruttosta.
+ * Rivialennuksen jälkeen tulevat "Sisältää ALV" -rivit maksetusta bruttosta (myös yksi kanta).
  * ALV 0 ja käänteinen ALV: ilman alennusta vain Loppusumma (Alv 0 %). Alennuksella
  * Yhteensä alv 0, nettoalennus ja Loppusumma (Alv 0 %). Ei verokantakohtaisia rivejä.
  * Pelkkä laskelman alennus: vanha lohko ja tallennettu maksettava. Useaa verokantaa ei jaeta.
@@ -459,7 +468,7 @@ export function offerPriceBlock(record: CalculationRecord, customer: CustomerInf
   if (lineDiscount) {
     rows.push(discountRow(record, listGross, printed.gross));
     rows.push({ label: 'Alennettu hinta yhteensä', value: formatCurrency(printed.gross), emphasis: true });
-    if (rates && rates.length > 1) rows.push(...vatIncludedRows(record, printed.gross, true));
+    rows.push(...vatIncludedRows(record, printed.gross, true));
   }
   return { includesVat: true, rows };
 }

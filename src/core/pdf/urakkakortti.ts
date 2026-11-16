@@ -7,8 +7,8 @@ import type { AppSettings, CalculationRecord, MaterialQuantityRow, Product } fro
 import { customerFromRecord } from '@/src/core/models/types';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import type { ProductStructure } from '@/src/core/structure/types';
-import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
-import { estimateWorkDurationDays, formatCurrency, roundToCents } from '@/src/core/utils/formatters';
+import { resolveAggregateDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
+import { formatCurrency, roundToCents } from '@/src/core/utils/formatters';
 
 import { buildFooter, customerHeaderLines, type PdfFooter, type PriceRow } from './buildPdfContext';
 import {
@@ -243,10 +243,11 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
       });
     }
   }
-  const duration =
-    lines.length === 1
-      ? resolveDisplayedWorkDurationDays(lines[0], settings.weatherReserveFactor)
-      : estimateWorkDurationDays(record.workDurationDays, settings.weatherReserveFactor);
+  const duration = resolveAggregateDisplayedWorkDurationDays(
+    lines,
+    settings.weatherReserveFactor,
+    settings.workdayHours,
+  );
   const infoRows: PriceRow[] = [
     ...(duration ? [{ label: 'Työn arvioitu kesto', value: `${duration} pv` }] : []),
     ...(record.deliveryScheduleText?.trim()

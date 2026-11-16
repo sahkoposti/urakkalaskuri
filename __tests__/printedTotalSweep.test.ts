@@ -8,7 +8,7 @@ import {
 import { roundedOfferLineAmount, sumRoundedOfferLines } from '../src/core/pdf/offerDocument';
 import { renderTarjousHtml } from '../src/core/pdf/renderTarjousHtml';
 import { renderUrakkakorttiHtml } from '../src/core/pdf/renderUrakkakorttiHtml';
-import { buildUrakkakorttiContext } from '../src/core/pdf/urakkakortti';
+import { buildUrakkakorttiContext, effectiveContractVat0 } from '../src/core/pdf/urakkakortti';
 import {
   calculationWithBusinessVatMode,
   calculationWithUrakkakorttiHidePrices,
@@ -238,7 +238,10 @@ describe('printed total sweep', () => {
       expect(html).not.toContain('Rivit yhteensä');
       expect(html).not.toContain('Alennettu');
       const lineSum = roundToCents(
-        (cardRecord.structureLines ?? []).reduce((sum, line) => sum + (line.contractPriceVat0 > 0 ? line.contractPriceVat0 : 0), 0),
+        (cardRecord.structureLines ?? []).reduce(
+          (sum, line) => sum + roundToCents(effectiveContractVat0(line)),
+          0,
+        ),
       );
       expect(euros(ctx.contractSum ?? '')).toBe(lineSum);
       expect(ctx.contractRows.map((row) => row.label)).toEqual(

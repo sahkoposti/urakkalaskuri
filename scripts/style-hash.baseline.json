@@ -16,18 +16,6 @@
         "hash": "a95c7556ce74b0d19907a413f2713aedf74a3f23c248cde1f8109024c4f64181"
       }
     ],
-    "app/customers/[id].tsx": [
-      {
-        "index": 0,
-        "hash": "6cb1d6f1c509c598b2d6bb6fa0c5dd715e1b64a55625089a815c7312e681c209"
-      }
-    ],
-    "app/customers/index.tsx": [
-      {
-        "index": 0,
-        "hash": "b25a0224994edb95fade6aa2dc1455a4745ac2a426ee645ec88f7433dff0e89b"
-      }
-    ],
     "app/history/index.tsx": [
       {
         "index": 0,
@@ -38,24 +26,6 @@
       {
         "index": 0,
         "hash": "8a8afaf8fb855b0df3f568c37f9397898c92c1582a64c8bba164c94d3a8b5ed0"
-      }
-    ],
-    "app/products/[id].tsx": [
-      {
-        "index": 0,
-        "hash": "55ceabebf01bad7f9b7561a31cb53aed3865eab64bfe7a4f736ead32a5ff4d1e"
-      }
-    ],
-    "app/products/index.tsx": [
-      {
-        "index": 0,
-        "hash": "f3ad1c680dc6bc75d572540b6f0a217ee43329b5d7323d8fc8f3737fdc940925"
-      }
-    ],
-    "app/products/new.tsx": [
-      {
-        "index": 0,
-        "hash": "55ceabebf01bad7f9b7561a31cb53aed3865eab64bfe7a4f736ead32a5ff4d1e"
       }
     ],
     "app/settings/calculation/fields/[fieldId].tsx": [
@@ -190,12 +160,6 @@
         "hash": "08e378eaf5eebc4a0f3227dba5af44fd6d58bb79f5004aa5fa3252fa09ef6bb1"
       }
     ],
-    "src/components/attachments/AttachmentSection.tsx": [
-      {
-        "index": 0,
-        "hash": "28bd22ccc0bacff29535060c221abde0392b51fb2ef7d0baaf77c41be6176abe"
-      }
-    ],
     "src/components/calculation/CalculationDetailView.tsx": [
       {
         "index": 0,
@@ -229,13 +193,7 @@
     "src/components/calculation/StructureLineCard.tsx": [
       {
         "index": 0,
-        "hash": "9de8089bf7ee51a9628fe8b7f99b7b760ef08a01da049f2f3d692f8d73aa73c9"
-      }
-    ],
-    "src/components/form/CustomerStep.tsx": [
-      {
-        "index": 0,
-        "hash": "40aee2eae75c13ae66b9b387d2a990c71a4caba7b46cfee7a7cc59aaf045e887"
+        "hash": "8cf66f4f918ea2c37bf6def69404d554f5e6e252a25e90ef3d8192ae4617caea"
       }
     ],
     "src/components/form/FieldDefaultValueEditor.tsx": [
@@ -304,16 +262,58 @@
         "hash": "6e23e8717b3b3fa96cdca8a9a1ce8b086cac029b6663056158001b1d938d9a85"
       }
     ],
-    "src/components/product/ProductStructureAssignment.tsx": [
+    "src/context/SaveToastContext.tsx": [
+      {
+        "index": 0,
+        "hash": "9738d5db4b7bf95d51e098fd1813c0b87296b4e5d01ed688c8fff1099a4daf03"
+      }
+    ],
+    "src/features/asiakkaat/components/CustomerStep.tsx": [
+      {
+        "index": 0,
+        "hash": "40aee2eae75c13ae66b9b387d2a990c71a4caba7b46cfee7a7cc59aaf045e887"
+      }
+    ],
+    "src/features/asiakkaat/screens/CustomerDetailScreen.tsx": [
+      {
+        "index": 0,
+        "hash": "6cb1d6f1c509c598b2d6bb6fa0c5dd715e1b64a55625089a815c7312e681c209"
+      }
+    ],
+    "src/features/asiakkaat/screens/CustomersListScreen.tsx": [
+      {
+        "index": 0,
+        "hash": "b25a0224994edb95fade6aa2dc1455a4745ac2a426ee645ec88f7433dff0e89b"
+      }
+    ],
+    "src/features/attachments/components/AttachmentSection.tsx": [
+      {
+        "index": 0,
+        "hash": "28bd22ccc0bacff29535060c221abde0392b51fb2ef7d0baaf77c41be6176abe"
+      }
+    ],
+    "src/features/products/components/ProductStructureAssignment.tsx": [
       {
         "index": 0,
         "hash": "c682255deb910080eefa776c4679ffbb24f7c7fe571ff78c6a2d1b18f5d38397"
       }
     ],
-    "src/context/SaveToastContext.tsx": [
+    "src/features/products/screens/ProductEditScreen.tsx": [
       {
         "index": 0,
-        "hash": "9738d5db4b7bf95d51e098fd1813c0b87296b4e5d01ed688c8fff1099a4daf03"
+        "hash": "55ceabebf01bad7f9b7561a31cb53aed3865eab64bfe7a4f736ead32a5ff4d1e"
+      }
+    ],
+    "src/features/products/screens/ProductNewScreen.tsx": [
+      {
+        "index": 0,
+        "hash": "55ceabebf01bad7f9b7561a31cb53aed3865eab64bfe7a4f736ead32a5ff4d1e"
+      }
+    ],
+    "src/features/products/screens/ProductsListScreen.tsx": [
+      {
+        "index": 0,
+        "hash": "f3ad1c680dc6bc75d572540b6f0a217ee43329b5d7323d8fc8f3737fdc940925"
       }
     ]
   },
@@ -327,17 +327,16 @@
     "27da401c97fe583667dab9a0419e5c36aaeac70112e4e93c1057a95648470ac0",
     "28bd22ccc0bacff29535060c221abde0392b51fb2ef7d0baaf77c41be6176abe",
     "2cc71d06b2f1a4b56a8a21f01a4844bdfcc25570872454d032f96faf2548d16f",
-    "4dbb3ace5e99d27325c24952ceabea4093112f867d09dc28ec06f882deb650ce",
     "38661725d5f87cfd0ad719f48bbb8269d6c0a5793c587db3f1cdae567ec0df95",
     "3f49fe5610f54c2ba1d31cd384a521f2e4ed97e69a298cfdcd1c253ed9aa8736",
     "40aee2eae75c13ae66b9b387d2a990c71a4caba7b46cfee7a7cc59aaf045e887",
+    "4dbb3ace5e99d27325c24952ceabea4093112f867d09dc28ec06f882deb650ce",
     "4ece0b1c8c45670c88645693817088c5b64d64b87a07393eec355412303a1d58",
     "55ceabebf01bad7f9b7561a31cb53aed3865eab64bfe7a4f736ead32a5ff4d1e",
     "55ceabebf01bad7f9b7561a31cb53aed3865eab64bfe7a4f736ead32a5ff4d1e",
     "56fd1c3dc1afcc02f1008f3a71ff2ee0b5355af3b9405c33825f03a9db1b1e6c",
     "5ab4e3ad2bfccadc9e154a0b6175a7296ac4a01142809fd3fdc3b54b695fb473",
     "600e1dd80ed5134644ee5e8bab4ef08d98ffd5d4c3673e4a3ac04d8c4544cf00",
-    "923d20ea448ffa0dabc3c259894fb3c19bae86afaecc6f3f947d1a15f6c7fc3b",
     "654f4784dd179e3592ec29b3a1a6e02a895b18851a3f672558815099231cc898",
     "670ce279fdcbc3490a3edbcf40dff94418ab4c4838c4b90df8d877148f6ee47b",
     "6794e571b819d68480846cc459263ff283a97913b9af37c77eabe073afdd95ae",
@@ -351,9 +350,10 @@
     "85ed7af426a12e3cb6eda4d1992b5e50751249785f95d9540e7f68b40727702a",
     "8650c73b09de7efd1f4f9a820ef1e612aeb6c5bdb6808c8d1d853ddb502024d8",
     "8a8afaf8fb855b0df3f568c37f9397898c92c1582a64c8bba164c94d3a8b5ed0",
+    "8cf66f4f918ea2c37bf6def69404d554f5e6e252a25e90ef3d8192ae4617caea",
+    "923d20ea448ffa0dabc3c259894fb3c19bae86afaecc6f3f947d1a15f6c7fc3b",
     "9738d5db4b7bf95d51e098fd1813c0b87296b4e5d01ed688c8fff1099a4daf03",
     "9da03aa9b7eefaa2ae23ac0c50801ac30354c6543f4994fc141f3096f5dd6139",
-    "9de8089bf7ee51a9628fe8b7f99b7b760ef08a01da049f2f3d692f8d73aa73c9",
     "a1cd7444276eb621a1dd8c71d6f99e342c89f52023d431021a689aebe72d67cd",
     "a924f4f1d3b0fecc960f5060ac936d69acaa1aa00bb85c2a8648cb54ad895548",
     "a95c7556ce74b0d19907a413f2713aedf74a3f23c248cde1f8109024c4f64181",
