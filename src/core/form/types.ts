@@ -77,7 +77,7 @@ export interface PrintTargetSettings {
   esitys?: PrintEsitys;
 }
 
-/** Urakkakortin tulostus. `quantityKey` vain ryhmässä `maali` ja `product_select`-kentällä. */
+/** Urakkakortin tulostus. `quantityKey` vain `product_select`-kentällä, missä ryhmässä tahansa. Tuloste näyttää määrän vain ryhmässä `maali`. */
 export interface UrakkakorttiPrintSettings extends PrintTargetSettings {
   quantityKey?: string;
 }

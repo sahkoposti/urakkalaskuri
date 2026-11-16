@@ -119,16 +119,6 @@ describe('normalizePrintSettings', () => {
     ]);
     expect(missing.print).toEqual({ urakkakortti: { group: 'maali' } });
 
-    const wrongGroup = normalizePrintSettings(
-      { urakkakortti: { group: 'tieto', quantityKey: 'savyjen_lkm' } },
-      paint,
-      catalog,
-    );
-    expect(wrongGroup.warnings).toEqual([
-      'Kenttä "kaytettava_maali": virheellinen print.urakkakortti.quantityKey "savyjen_lkm" ohitettu',
-    ]);
-    expect(wrongGroup.print).toEqual({ urakkakortti: { group: 'tieto' } });
-
     const notProduct = normalizePrintSettings(
       { urakkakortti: { group: 'maali', quantityKey: 'savyjen_lkm' } },
       qty,

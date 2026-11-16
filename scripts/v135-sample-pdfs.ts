@@ -129,7 +129,8 @@ async function main() {
   const totalsAt = offerHtml.indexOf('class="price-block offer-totals"');
   const lisatiedotAt = offerHtml.indexOf('Lisätiedot:');
   if (lisatiedotAt < totalsAt) throw new Error('Lisätiedot ennen hintoja');
-  if (!cardHtml.includes('uk-structure')) throw new Error('materiaalien rakenneotsikot puuttuvat');
+  if (cardHtml.includes('uk-structure')) throw new Error('yhdistetty materiaali ei saa rakenneotsikkoa');
+  if (!cardHtml.includes('Nova 7') || !cardHtml.includes('Pohjuste X')) throw new Error('materiaalit puuttuvat');
   writeHtml('tarjous-1-3-5', offerHtml);
   writeHtml('urakkakortti-1-3-5', cardHtml);
   const files = await Promise.all([describe('tarjous-1-3-5.pdf'), describe('urakkakortti-1-3-5.pdf')]);

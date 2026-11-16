@@ -1,4 +1,12 @@
-import { Pressable, Text, View } from 'react-native';
+import {
+  Pressable,
+  Text,
+  View,
+  type Insets,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 
 import type { AppColorPalette } from '@/src/theme/colors';
 import { useThemedStyles } from '@/src/theme/useThemedStyles';
@@ -13,6 +21,14 @@ type ChoiceToggleProps<T extends string | boolean> = {
   value: T;
   options: ChoiceToggleOption<T>[];
   onChange: (value: T) => void;
+  /** Vain kutsuja: ylimääräiset tyylit pystytiivistykseen. */
+  spacingOverrides?: {
+    row?: StyleProp<ViewStyle>;
+    label?: StyleProp<TextStyle>;
+    button?: StyleProp<ViewStyle>;
+    /** Vain kutsuja: laajentaa painikkeen kosketusaluetta ilman layout-korkeutta. */
+    buttonHitSlop?: Insets;
+  };
 };
 
 export function ChoiceToggle<T extends string | boolean>({
@@ -20,18 +36,24 @@ export function ChoiceToggle<T extends string | boolean>({
   value,
   options,
   onChange,
+  spacingOverrides,
 }: ChoiceToggleProps<T>) {
   const styles = useThemedStyles(createStyles);
   return (
-    <View style={styles.toggleRow}>
-      <Text style={styles.toggleLabel}>{label}</Text>
+    <View style={[styles.toggleRow, ...(spacingOverrides?.row ? [spacingOverrides.row] : [])]}>
+      <Text style={[styles.toggleLabel, ...(spacingOverrides?.label ? [spacingOverrides.label] : [])]}>{label}</Text>
       <View style={styles.toggleActions}>
         {options.map((option) => {
           const active = option.value === value;
           return (
             <Pressable
               key={String(option.value)}
-              style={[styles.toggleButton, active && styles.toggleButtonActive]}
+              style={[
+                styles.toggleButton,
+                ...(spacingOverrides?.button ? [spacingOverrides.button] : []),
+                active && styles.toggleButtonActive,
+              ]}
+              hitSlop={spacingOverrides?.buttonHitSlop}
               onPress={() => onChange(option.value)}
             >
               <Text style={[styles.toggleButtonText, active && styles.toggleButtonTextActive]}>

@@ -1,5 +1,7 @@
 import type { CompanyProfile } from '@/src/core/company/types';
 import type { FormDefinition } from '@/src/core/form/types';
+import { mergeLineMaterials, type MaterialRowSource, type MergedMaterialRow } from '@/src/core/materials/mergeMaterialRows';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { effectiveMaterialQuantities, formatQuantity } from '@/src/core/materials/materialQuantities';
 import type { AppSettings, CalculationRecord, MaterialQuantityRow, Product } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
@@ -101,7 +103,7 @@ export function urakkakorttiSpecCards(input: BuildUrakkakorttiInput): SpecCard[]
   const customer = customerFromRecord(input.record);
   // Print-pohja piirretään osioina. Vanha pohja pysyy T9-kortteina (printableFields pudottaa "–"-rivit).
   const lines = ensureStructureLines(input.record).filter(
-    (line) => !lineUsesUrakkakorttiPrint(line, input.structures),
+    (line) => !structureLineQuantityIsZero(line) && !lineUsesUrakkakorttiPrint(line, input.structures),
   );
   const perLine = lines.map((line) => {
     const structure = input.structures.find((item) => item.id === line.structureId);
@@ -161,12 +163,37 @@ function rowPrintable(row: MaterialQuantityRow): boolean {
   return Number.isFinite(row.quantity) && row.quantity > 0;
 }
 
+function appendMergedMaterialRow(rows: UrakkakorttiMaterialRow[], group: MergedMaterialRow) {
+  const product = group.productName.trim();
+  const shades = group.shades.filter(
+    (shade) => shade.name.trim() && Number.isFinite(shade.quantity) && shade.quantity > 0,
+  );
+  if (shades.length === 0) {
+    rows.push({
+      product,
+      quantity: formatQuantity(group.quantity),
+      unit: group.unit?.trim() ?? '',
+    });
+    return;
+  }
+  rows.push({ product, quantity: '', unit: '', shadeHeader: true });
+  for (const shade of shades) {
+    rows.push({
+      product: shade.name.trim(),
+      quantity: formatQuantity(shade.quantity),
+      unit: shade.unit?.trim() ?? '',
+      shade: true,
+    });
+  }
+}
+
 /**
  * Materiaalitaulukko.
  * Ilman `materialQuantities`-avainta jäädään T9-riveihin (`record.lines`): P4 tulostaa
  * `quantityKey`-määrän jo maali-riville, ja olemassa oleva HTML kieltää ylimääräisen Materiaalit-osion.
- * Kun avain on kirjoitettu, taulukko lukee `effectiveMaterialQuantities`. Tyhjä lista ei palaa T9:ään.
- * Useampi rakennerivi: tuotenimen eteen `rivin nimi: `.
+ * Kun avain on kirjoitettu, taulukko lukee `effectiveMaterialQuantities` ja yhdistää rivit
+ * samalla `mergeLineMaterials`-funktiolla kuin laskentanäyttö. Yhdistetty rivi tulostaa vain tuotenimen.
+ * Tyhjä lista ei palaa T9:ään.
  */
 function resolveUrakkakorttiMaterialTable(input: BuildUrakkakorttiInput): {
   rows: UrakkakorttiMaterialRow[];
@@ -178,48 +205,26 @@ function resolveUrakkakorttiMaterialTable(input: BuildUrakkakorttiInput): {
 
   const rows: UrakkakorttiMaterialRow[] = [];
   const omitPaintQuantityLineIds = new Set<string>();
-  const multiStructure = lines.length > 1;
+  const sources: MaterialRowSource[] = [];
   for (const line of lines) {
+    if (structureLineQuantityIsZero(line)) continue;
     const quantities = effectiveMaterialQuantities(line, lineForm(input, line.structureId), input.products).filter(
       rowPrintable,
     );
     if (quantities.length === 0) continue;
     omitPaintQuantityLineIds.add(line.id);
-    if (multiStructure) {
-      rows.push({ product: line.name.trim(), quantity: '', unit: '', structureHeader: true });
-    }
     for (const row of quantities) {
-      const name = row.productName.trim();
-      const product = name;
-      const shades = (row.shades ?? []).filter(
-        (shade) => shade.name.trim() && Number.isFinite(shade.quantity) && shade.quantity > 0,
-      );
-      if (shades.length === 0) {
-        rows.push({
-          product,
-          quantity: formatQuantity(row.quantity),
-          unit: row.unit?.trim() ?? '',
-        });
-        continue;
-      }
-      rows.push({ product, quantity: '', unit: '', shadeHeader: true });
-      for (const shade of shades) {
-        rows.push({
-          product: shade.name.trim(),
-          quantity: formatQuantity(shade.quantity),
-          unit: shade.unit?.trim() ?? '',
-          shade: true,
-        });
-      }
+      sources.push({ lineId: line.id, lineName: line.name, lineQuantity: line.quantity, row });
     }
   }
+  for (const group of mergeLineMaterials(sources)) appendMergedMaterialRow(rows, group);
   return { rows, omitPaintQuantityLineIds };
 }
 
 export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): UrakkakorttiContext {
   const { record, settings } = input;
   const customer = customerFromRecord(record);
-  const lines = ensureStructureLines(record);
+  const lines = ensureStructureLines(record).filter((line) => !structureLineQuantityIsZero(line));
   const materialTable = resolveUrakkakorttiMaterialTable(input);
   const mode = readUrakkakorttiMode(record.formSnapshot);
   const hidePrices = readUrakkakorttiHidePrices(record.formSnapshot);
@@ -228,6 +233,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
   const contractSum = prices ? formatCurrency(prices.alihankkija) : null;
   const employeeSum = prices ? formatCurrency(prices.tyontekija) : null;
   const contractRows: PriceRow[] = [];
+  // Rivikohtaiset Urakka-rivit laskevat vain määrä !== 0. Yksi jäljelle jäävä rivi käyttäytyy kuin yhden rivin kortti.
   if (prices && lines.length > 1) {
     const overrides = readUrakkakorttiRivihinnat(record.formSnapshot);
     for (const line of lines) {

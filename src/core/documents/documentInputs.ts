@@ -43,7 +43,8 @@ export function tarjousDocumentTotal(record: CalculationRecord): number {
 
 /**
  * Dokumenttien listan ja tallennetun yhteenvedon summa on alihankkijan urakka.
- * Kerrointa ei käytetä. Vanhan rivin `summary.total` luetaan sellaisenaan, tätä ei ajeta sille.
+ * Sama rajaus kuin otsikossa: määrä tasan 0 ei kerrytä. Kerrointa ei käytetä.
+ * Vanhan rivin `summary.total` luetaan sellaisenaan, tätä ei ajeta sille.
  */
 export function urakkakorttiDocumentTotal(record: CalculationRecord, _factor?: number): number | null {
   if (readUrakkakorttiHidePrices(record.formSnapshot)) return null;

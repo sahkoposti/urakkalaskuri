@@ -2,12 +2,12 @@ import { previewFormContext } from '@/src/core/calculation/calculationPipeline';
 import { isFieldVisible } from '@/src/core/form/fieldVisibility';
 import { fieldsForPage, sortedPages } from '@/src/core/form/formDefinitionHelpers';
 import { findProductById, getSelectedProductId } from '@/src/core/form/productFieldUtils';
-import { resolveTargetPrint } from '@/src/core/form/printSettings';
 import type { FormDefinition, FormField } from '@/src/core/form/types';
 import type { MaterialQuantityRow, MaterialShade, Product, StructureLine } from '@/src/core/models/types';
 import { defaultSettings } from '@/src/core/models/types';
 import { formatPrintedQuantity } from '@/src/core/utils/formatters';
 import { fieldValuesEqual } from '@/src/core/wizard/wizardDraftHelpers';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 
 /**
  * Käyttäjän syöttämä enimmäismäärä. Esitäytön kaava-arvoa ei rajata tähän.
@@ -77,6 +77,17 @@ function readQuantity(
   return unit ? { quantity: recomputed, unit } : { quantity: recomputed };
 }
 
+/** Urakkakortin quantityKey product_select-kentältä. Ryhmä ei rajaa. */
+function urakkakorttiQuantityKey(field: FormField, form: FormDefinition): string | undefined {
+  if (field.type !== 'product_select') return undefined;
+  const target = field.print?.urakkakortti;
+  if (!target || target === true) return undefined;
+  const key = target.quantityKey;
+  if (typeof key !== 'string' || key.length === 0) return undefined;
+  if (!form.fields.some((item) => item?.key === key)) return undefined;
+  return key;
+}
+
 function paintCandidates(form: FormDefinition): FormField[] {
   const seen = new Set<string>();
   const candidates: FormField[] = [];
@@ -84,9 +95,7 @@ function paintCandidates(form: FormDefinition): FormField[] {
     for (const field of fieldsForPage(form, page.id)) {
       if (seen.has(field.id)) continue;
       seen.add(field.id);
-      if (field.type !== 'product_select') continue;
-      const resolved = resolveTargetPrint(field, 'urakkakortti', form);
-      if (!resolved?.quantityKey || resolved.group !== 'maali') continue;
+      if (!urakkakorttiQuantityKey(field, form)) continue;
       candidates.push(field);
     }
   }
@@ -94,7 +103,7 @@ function paintCandidates(form: FormDefinition): FormField[] {
 }
 
 /**
- * Esitäyttö: urakkakortin `maali` + kelvollinen `quantityKey`, lomakejärjestyksessä.
+ * Esitäyttö: product_select, jolla on urakkakortin quantityKey, lomakejärjestyksessä.
  * Määrä: tallennettu snapshot ensin, muuten sama kaavakonteksti kuin P1/P4 (`previewFormContext`).
  * Asetuksia, käänteistä ALV:tä ja matka-aikaa ei ole tässä signatuurissa, joten uudelleenlasku käyttää oletusasetuksia.
  */
@@ -118,7 +127,7 @@ export function prefillMaterialQuantities(
       const product = findProductById(catalog, productId);
       const productName = product?.name?.trim();
       if (!product || !productName) continue;
-      const quantityKey = resolveTargetPrint(field, 'urakkakortti', form)?.quantityKey;
+      const quantityKey = urakkakorttiQuantityKey(field, form);
       if (!quantityKey) continue;
       const amount = readQuantity(quantityKey, form, line, context);
       if (!amount) continue;
@@ -289,8 +298,12 @@ export function quantityInputError(text: string): string | null {
   return 'Tarkista määrä';
 }
 
-/** Tallentamattomat tai kelvottomat rivit estävät Yhteenveto-napin. Puuttuva avain ei estä. */
-export function materialQuantitiesBlockFinish(rows: MaterialQuantityRow[] | undefined): boolean {
+/** Tallentamattomat tai kelvottomat rivit estävät Yhteenveto-napin. Puuttuva avain ei estä. Määrä tasan 0 ei estä. */
+export function materialQuantitiesBlockFinish(
+  rows: MaterialQuantityRow[] | undefined,
+  line?: { quantity: number | null | undefined },
+): boolean {
+  if (line && structureLineQuantityIsZero(line)) return false;
   if (!rows) return false;
   return rows.some((row) => {
     if (!row.productName.trim()) return true;

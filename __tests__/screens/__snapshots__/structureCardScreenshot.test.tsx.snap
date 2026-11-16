@@ -1,0 +1,3209 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`structure card screenshots matches single-card render snapshot (business, Lisätiedot collapsed) 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#F9FAFA",
+      "flex": 1,
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#E1E8ED",
+          "borderRadius": 5,
+          "borderWidth": 1,
+          "elevation": 2,
+          "padding": 16,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 2,
+            "width": 0,
+          },
+          "shadowOpacity": 0.08,
+          "shadowRadius": 4,
+        },
+        {
+          "paddingHorizontal": 16,
+          "paddingVertical": 8,
+        },
+      ]
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "flex-start",
+          "flexDirection": "row",
+          "gap": 16,
+          "justifyContent": "flex-end",
+          "marginBottom": 8,
+        }
+      }
+    >
+      <View
+        accessibilityLabel="Poista rivi"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={
+          {
+            "bottom": 11,
+            "left": 8,
+            "right": 14,
+            "top": 11,
+          }
+        }
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+      >
+        <Text />
+      </View>
+    </View>
+    <View
+      style={
+        [
+          {
+            "marginBottom": 12,
+          },
+          false,
+          {
+            "marginBottom": 8,
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#3C3C3C",
+              "fontFamily": "IBMPlexSans_600SemiBold",
+              "marginBottom": 6,
+            },
+            false,
+            {
+              "marginBottom": 4,
+            },
+          ]
+        }
+      >
+        Nimi
+      </Text>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect={false}
+        keyboardType="default"
+        multiline={false}
+        onChangeText={[Function]}
+        placeholder="Tuoterakenne"
+        placeholderTextColor="#999"
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "color": "#000000",
+              "fontFamily": "IBMPlexSans_400Regular",
+              "paddingHorizontal": 14,
+              "paddingVertical": 12,
+            },
+            null,
+            null,
+            false,
+            false,
+            false,
+            {
+              "paddingVertical": 10,
+            },
+          ]
+        }
+        textContentType="none"
+        value="Fiktiivinen rakenne"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Määrä
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Yksikkö
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="default"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value=""
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Hinta €
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1255,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Materiaalit €
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="251,00"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Urakkahinta € (alv0)
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1000,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Työn arvioitu kesto (pv)
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholder="Valinnainen"
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="3"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      accessibilityLabel="Avaa Lisätiedot"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={
+        {
+          "bottom": 14,
+          "left": 4,
+          "right": 4,
+          "top": 8,
+        }
+      }
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+            "marginBottom": 8,
+            "paddingVertical": 4,
+          },
+          false,
+        ]
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#3C3C3C",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 14,
+          }
+        }
+      >
+        Lisätiedot
+      </Text>
+      <Text
+        numberOfLines={1}
+        style={
+          {
+            "color": "#3C3C3C",
+            "flex": 1,
+            "fontFamily": "IBMPlexSans_400Regular",
+            "fontSize": 14,
+            "opacity": 0.65,
+          }
+        }
+      >
+        Valinnainen
+      </Text>
+      <Text />
+    </View>
+    <View
+      style={
+        [
+          {
+            "marginBottom": 12,
+          },
+          false,
+          {
+            "marginBottom": 8,
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#3C3C3C",
+              "fontFamily": "IBMPlexSans_600SemiBold",
+              "marginBottom": 6,
+            },
+            false,
+            {
+              "marginBottom": 4,
+            },
+          ]
+        }
+      >
+        Ale %
+      </Text>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect={false}
+        keyboardType="decimal-pad"
+        multiline={false}
+        onChangeText={[Function]}
+        placeholderTextColor="#999"
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "color": "#000000",
+              "fontFamily": "IBMPlexSans_400Regular",
+              "paddingHorizontal": 14,
+              "paddingVertical": 12,
+            },
+            null,
+            null,
+            false,
+            false,
+            false,
+            {
+              "paddingVertical": 10,
+            },
+          ]
+        }
+        textContentType="none"
+        value="0,00"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#3C3C3C",
+            "fontFamily": "IBMPlexSans_400Regular",
+          }
+        }
+      >
+        Kate (
+        ALV 0
+        )
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#3C3C3C",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+          }
+        }
+      >
+        −250,00 €
+         · 
+        −25 %
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderTopColor": "#E1E8ED",
+          "borderTopWidth": 1,
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+          "marginTop": 4,
+          "paddingTop": 4,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#000000",
+            "fontFamily": "IBMPlexSans_700Bold",
+          }
+        }
+      >
+        Yhteensä
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#C90000",
+            "fontFamily": "IBMPlexSans_700Bold",
+            "fontSize": 16,
+          }
+        }
+      >
+        1 255,00 €
+      </Text>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`structure card screenshots matches three-card stack snapshot 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#F9FAFA",
+      "flex": 1,
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#E1E8ED",
+          "borderRadius": 5,
+          "borderWidth": 1,
+          "elevation": 2,
+          "padding": 16,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 2,
+            "width": 0,
+          },
+          "shadowOpacity": 0.08,
+          "shadowRadius": 4,
+        },
+        {
+          "paddingHorizontal": 16,
+          "paddingVertical": 8,
+        },
+      ]
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "flex-start",
+          "flexDirection": "row",
+          "gap": 16,
+          "justifyContent": "flex-end",
+          "marginBottom": 8,
+        }
+      }
+    >
+      <View
+        accessibilityLabel="Poista rivi"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={
+          {
+            "bottom": 11,
+            "left": 8,
+            "right": 14,
+            "top": 11,
+          }
+        }
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+      >
+        <Text
+          allowFontScaling={false}
+          selectable={false}
+          style={
+            [
+              {
+                "color": "#C90000",
+                "fontSize": 22,
+              },
+              undefined,
+              {
+                "fontFamily": "ionicons",
+                "fontStyle": "normal",
+                "fontWeight": "normal",
+              },
+              {},
+            ]
+          }
+        >
+          
+        </Text>
+      </View>
+    </View>
+    <View
+      style={
+        [
+          {
+            "marginBottom": 12,
+          },
+          false,
+          {
+            "marginBottom": 8,
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#3C3C3C",
+              "fontFamily": "IBMPlexSans_600SemiBold",
+              "marginBottom": 6,
+            },
+            false,
+            {
+              "marginBottom": 4,
+            },
+          ]
+        }
+      >
+        Nimi
+      </Text>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect={false}
+        keyboardType="default"
+        multiline={false}
+        onChangeText={[Function]}
+        placeholder="Tuoterakenne"
+        placeholderTextColor="#999"
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "color": "#000000",
+              "fontFamily": "IBMPlexSans_400Regular",
+              "paddingHorizontal": 14,
+              "paddingVertical": 12,
+            },
+            null,
+            null,
+            false,
+            false,
+            false,
+            {
+              "paddingVertical": 10,
+            },
+          ]
+        }
+        textContentType="none"
+        value="Fiktiivinen ulkomaalaus"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Määrä
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Yksikkö
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="default"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="m²"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Hinta €
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1255,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Materiaalit €
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="251,00"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Urakkahinta € (alv0)
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1000,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Työn arvioitu kesto (pv)
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholder="Valinnainen"
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="3"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      accessibilityLabel="Avaa Lisätiedot"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={
+        {
+          "bottom": 14,
+          "left": 4,
+          "right": 4,
+          "top": 8,
+        }
+      }
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 8,
+            "marginBottom": 8,
+            "paddingVertical": 4,
+          },
+          false,
+        ]
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#3C3C3C",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+            "fontSize": 14,
+          }
+        }
+      >
+        Lisätiedot
+      </Text>
+      <Text
+        numberOfLines={1}
+        style={
+          {
+            "color": "#3C3C3C",
+            "flex": 1,
+            "fontFamily": "IBMPlexSans_400Regular",
+            "fontSize": 14,
+            "opacity": 0.65,
+          }
+        }
+      >
+        Valinnainen
+      </Text>
+      <Text
+        allowFontScaling={false}
+        selectable={false}
+        style={
+          [
+            {
+              "color": "#C90000",
+              "fontSize": 18,
+            },
+            undefined,
+            {
+              "fontFamily": "ionicons",
+              "fontStyle": "normal",
+              "fontWeight": "normal",
+            },
+            {},
+          ]
+        }
+      >
+        
+      </Text>
+    </View>
+    <View
+      style={
+        [
+          {
+            "marginBottom": 12,
+          },
+          false,
+          {
+            "marginBottom": 8,
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#3C3C3C",
+              "fontFamily": "IBMPlexSans_600SemiBold",
+              "marginBottom": 6,
+            },
+            false,
+            {
+              "marginBottom": 4,
+            },
+          ]
+        }
+      >
+        Ale %
+      </Text>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect={false}
+        keyboardType="decimal-pad"
+        multiline={false}
+        onChangeText={[Function]}
+        placeholderTextColor="#999"
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "color": "#000000",
+              "fontFamily": "IBMPlexSans_400Regular",
+              "paddingHorizontal": 14,
+              "paddingVertical": 12,
+            },
+            null,
+            null,
+            false,
+            false,
+            false,
+            {
+              "paddingVertical": 10,
+            },
+          ]
+        }
+        textContentType="none"
+        value="0,00"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#3C3C3C",
+            "fontFamily": "IBMPlexSans_400Regular",
+          }
+        }
+      >
+        Kate (
+        ALV 0
+        )
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#3C3C3C",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+          }
+        }
+      >
+        −250,00 €
+         · 
+        −25 %
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderTopColor": "#E1E8ED",
+          "borderTopWidth": 1,
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+          "marginTop": 4,
+          "paddingTop": 4,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#000000",
+            "fontFamily": "IBMPlexSans_700Bold",
+          }
+        }
+      >
+        Yhteensä
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#C90000",
+            "fontFamily": "IBMPlexSans_700Bold",
+            "fontSize": 16,
+          }
+        }
+      >
+        1 255,00 €
+      </Text>
+    </View>
+  </View>
+  <View
+    style={
+      [
+        {
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#E1E8ED",
+          "borderRadius": 5,
+          "borderWidth": 1,
+          "elevation": 2,
+          "padding": 16,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 2,
+            "width": 0,
+          },
+          "shadowOpacity": 0.08,
+          "shadowRadius": 4,
+        },
+        {
+          "paddingHorizontal": 16,
+          "paddingVertical": 8,
+        },
+      ]
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "flex-start",
+          "flexDirection": "row",
+          "gap": 16,
+          "justifyContent": "flex-end",
+          "marginBottom": 8,
+        }
+      }
+    >
+      <View
+        accessibilityLabel="Poista rivi"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={
+          {
+            "bottom": 11,
+            "left": 8,
+            "right": 14,
+            "top": 11,
+          }
+        }
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+      >
+        <Text
+          allowFontScaling={false}
+          selectable={false}
+          style={
+            [
+              {
+                "color": "#C90000",
+                "fontSize": 22,
+              },
+              undefined,
+              {
+                "fontFamily": "ionicons",
+                "fontStyle": "normal",
+                "fontWeight": "normal",
+              },
+              {},
+            ]
+          }
+        >
+          
+        </Text>
+      </View>
+    </View>
+    <View
+      style={
+        [
+          {
+            "marginBottom": 12,
+          },
+          false,
+          {
+            "marginBottom": 8,
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#3C3C3C",
+              "fontFamily": "IBMPlexSans_600SemiBold",
+              "marginBottom": 6,
+            },
+            false,
+            {
+              "marginBottom": 4,
+            },
+          ]
+        }
+      >
+        Nimi
+      </Text>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect={false}
+        keyboardType="default"
+        multiline={false}
+        onChangeText={[Function]}
+        placeholder="Tuoterakenne"
+        placeholderTextColor="#999"
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "color": "#000000",
+              "fontFamily": "IBMPlexSans_400Regular",
+              "paddingHorizontal": 14,
+              "paddingVertical": 12,
+            },
+            null,
+            null,
+            false,
+            false,
+            false,
+            {
+              "paddingVertical": 10,
+            },
+          ]
+        }
+        textContentType="none"
+        value="Fiktiivinen sokkeli"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Määrä
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Yksikkö
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="default"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="jm"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Hinta €
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1255,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Materiaalit €
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="251,00"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Urakkahinta € (alv0)
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1000,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Työn arvioitu kesto (pv)
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholder="Valinnainen"
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="3"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        [
+          {
+            "marginBottom": 12,
+          },
+          false,
+          {
+            "marginBottom": 8,
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#3C3C3C",
+              "fontFamily": "IBMPlexSans_600SemiBold",
+              "marginBottom": 6,
+            },
+            false,
+            {
+              "marginBottom": 4,
+            },
+          ]
+        }
+      >
+        Ale %
+      </Text>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect={false}
+        keyboardType="decimal-pad"
+        multiline={false}
+        onChangeText={[Function]}
+        placeholderTextColor="#999"
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "color": "#000000",
+              "fontFamily": "IBMPlexSans_400Regular",
+              "paddingHorizontal": 14,
+              "paddingVertical": 12,
+            },
+            null,
+            null,
+            false,
+            false,
+            false,
+            {
+              "paddingVertical": 10,
+            },
+          ]
+        }
+        textContentType="none"
+        value="0,00"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#3C3C3C",
+            "fontFamily": "IBMPlexSans_400Regular",
+          }
+        }
+      >
+        Kate (
+        ALV 0
+        )
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#3C3C3C",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+          }
+        }
+      >
+        −250,00 €
+         · 
+        −25 %
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderTopColor": "#E1E8ED",
+          "borderTopWidth": 1,
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+          "marginTop": 4,
+          "paddingTop": 4,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#000000",
+            "fontFamily": "IBMPlexSans_700Bold",
+          }
+        }
+      >
+        Yhteensä
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#C90000",
+            "fontFamily": "IBMPlexSans_700Bold",
+            "fontSize": 16,
+          }
+        }
+      >
+        1 255,00 €
+      </Text>
+    </View>
+  </View>
+  <View
+    style={
+      [
+        {
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#E1E8ED",
+          "borderRadius": 5,
+          "borderWidth": 1,
+          "elevation": 2,
+          "padding": 16,
+          "shadowColor": "#000",
+          "shadowOffset": {
+            "height": 2,
+            "width": 0,
+          },
+          "shadowOpacity": 0.08,
+          "shadowRadius": 4,
+        },
+        {
+          "paddingHorizontal": 16,
+          "paddingVertical": 8,
+        },
+      ]
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "flex-start",
+          "flexDirection": "row",
+          "gap": 16,
+          "justifyContent": "flex-end",
+          "marginBottom": 8,
+        }
+      }
+    >
+      <View
+        accessibilityLabel="Poista rivi"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": undefined,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        hitSlop={
+          {
+            "bottom": 11,
+            "left": 8,
+            "right": 14,
+            "top": 11,
+          }
+        }
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+      >
+        <Text
+          allowFontScaling={false}
+          selectable={false}
+          style={
+            [
+              {
+                "color": "#C90000",
+                "fontSize": 22,
+              },
+              undefined,
+              {
+                "fontFamily": "ionicons",
+                "fontStyle": "normal",
+                "fontWeight": "normal",
+              },
+              {},
+            ]
+          }
+        >
+          
+        </Text>
+      </View>
+    </View>
+    <View
+      style={
+        [
+          {
+            "marginBottom": 12,
+          },
+          false,
+          {
+            "marginBottom": 8,
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#3C3C3C",
+              "fontFamily": "IBMPlexSans_600SemiBold",
+              "marginBottom": 6,
+            },
+            false,
+            {
+              "marginBottom": 4,
+            },
+          ]
+        }
+      >
+        Nimi
+      </Text>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect={false}
+        keyboardType="default"
+        multiline={false}
+        onChangeText={[Function]}
+        placeholder="Tuoterakenne"
+        placeholderTextColor="#999"
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "color": "#000000",
+              "fontFamily": "IBMPlexSans_400Regular",
+              "paddingHorizontal": 14,
+              "paddingVertical": 12,
+            },
+            null,
+            null,
+            false,
+            false,
+            false,
+            {
+              "paddingVertical": 10,
+            },
+          ]
+        }
+        textContentType="none"
+        value="Fiktiivinen katto"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Määrä
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Yksikkö
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="default"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="m²"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Hinta €
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1255,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Materiaalit €
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="251,00"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "gap": 8,
+        }
+      }
+    >
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Urakkahinta € (alv0)
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="1000,00"
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "marginBottom": 12,
+              },
+              false,
+              {
+                "marginBottom": 8,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "color": "#3C3C3C",
+                  "fontFamily": "IBMPlexSans_600SemiBold",
+                  "marginBottom": 6,
+                },
+                false,
+                {
+                  "marginBottom": 4,
+                },
+              ]
+            }
+          >
+            Työn arvioitu kesto (pv)
+          </Text>
+          <TextInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect={false}
+            keyboardType="decimal-pad"
+            multiline={false}
+            onChangeText={[Function]}
+            placeholder="Valinnainen"
+            placeholderTextColor="#999"
+            style={
+              [
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#E1E8ED",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "color": "#000000",
+                  "fontFamily": "IBMPlexSans_400Regular",
+                  "paddingHorizontal": 14,
+                  "paddingVertical": 12,
+                },
+                null,
+                null,
+                false,
+                false,
+                false,
+                {
+                  "paddingVertical": 10,
+                },
+              ]
+            }
+            textContentType="none"
+            value="3"
+          />
+        </View>
+      </View>
+    </View>
+    <View
+      style={
+        [
+          {
+            "marginBottom": 12,
+          },
+          false,
+          {
+            "marginBottom": 8,
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "color": "#3C3C3C",
+              "fontFamily": "IBMPlexSans_600SemiBold",
+              "marginBottom": 6,
+            },
+            false,
+            {
+              "marginBottom": 4,
+            },
+          ]
+        }
+      >
+        Ale %
+      </Text>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect={false}
+        keyboardType="decimal-pad"
+        multiline={false}
+        onChangeText={[Function]}
+        placeholderTextColor="#999"
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderColor": "#E1E8ED",
+              "borderRadius": 5,
+              "borderWidth": 1,
+              "color": "#000000",
+              "fontFamily": "IBMPlexSans_400Regular",
+              "paddingHorizontal": 14,
+              "paddingVertical": 12,
+            },
+            null,
+            null,
+            false,
+            false,
+            false,
+            {
+              "paddingVertical": 10,
+            },
+          ]
+        }
+        textContentType="none"
+        value="0,00"
+      />
+    </View>
+    <View
+      style={
+        {
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#3C3C3C",
+            "fontFamily": "IBMPlexSans_400Regular",
+          }
+        }
+      >
+        Kate (
+        ALV 0
+        )
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#3C3C3C",
+            "fontFamily": "IBMPlexSans_600SemiBold",
+          }
+        }
+      >
+        −250,00 €
+         · 
+        −25 %
+      </Text>
+    </View>
+    <View
+      style={
+        {
+          "borderTopColor": "#E1E8ED",
+          "borderTopWidth": 1,
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+          "marginTop": 4,
+          "paddingTop": 4,
+        }
+      }
+    >
+      <Text
+        style={
+          {
+            "color": "#000000",
+            "fontFamily": "IBMPlexSans_700Bold",
+          }
+        }
+      >
+        Yhteensä
+      </Text>
+      <Text
+        style={
+          {
+            "color": "#C90000",
+            "fontFamily": "IBMPlexSans_700Bold",
+            "fontSize": 16,
+          }
+        }
+      >
+        1 255,00 €
+      </Text>
+    </View>
+  </View>
+</View>
+`;

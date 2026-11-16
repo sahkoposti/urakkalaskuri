@@ -158,7 +158,10 @@ function collectPrintableFields(input: PrintableFieldsInput): PrintRow[] {
         numeric: field.type === 'number' || field.type === 'computed',
       };
       if (field.unit) row.unit = field.unit;
-      const quantity = quantityFromField(resolved.quantityKey, form, fieldValues, context, products, snapshotFields);
+      const quantity =
+        resolved.group === 'maali'
+          ? quantityFromField(resolved.quantityKey, form, fieldValues, context, products, snapshotFields)
+          : undefined;
       if (quantity) row.quantity = quantity;
       rows.push(row);
     }

@@ -282,7 +282,13 @@ describe('v1.3.4 Nov 7 feedback', () => {
     expect(wizard).toContain('refreshCalculations');
     expect(wizard).not.toContain('Kesken jäänyt laskenta');
     expect(wizard).toContain('setSiteAddressTouched(true)');
+    expect(wizard).toContain('onValidityChange={setMaterialLineValidity}');
     expect(wizard).toContain('<MaterialQuantitiesEditor');
+    const structureCard = fs.readFileSync(
+      path.join(__dirname, '../src/components/calculation/StructureLineCard.tsx'),
+      'utf8',
+    );
+    expect(structureCard).not.toContain('MaterialQuantitiesEditor');
 
     const history = fs.readFileSync(path.join(__dirname, '../app/history/index.tsx'), 'utf8');
     expect(history).toContain('useFocusEffect');

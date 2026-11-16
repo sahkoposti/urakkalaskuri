@@ -50,13 +50,14 @@ describe('v1.3.5', () => {
       },
     );
     const ctx = buildUrakkakorttiContext(input(rec));
-    expect(ctx.materials.filter((row) => row.structureHeader).map((row) => row.product)).toEqual([
-      'Ulkomaalaus',
-      'Sokkeli',
-    ]);
+    expect(ctx.materials.filter((row) => row.structureHeader)).toEqual([]);
+    expect(ctx.materials.map((row) => row.product)).toEqual(['Nova 7', 'G47', '505X', 'Pohjuste']);
     expect(urakkakorttiBodyBlocks(ctx).at(-1)).toBe('materials');
     const html = renderUrakkakorttiHtml(ctx);
     const materials = html.slice(html.indexOf('class="uk-materials'));
+    expect(materials).not.toContain('uk-structure');
+    expect(materials).not.toContain('Ulkomaalaus:');
+    expect(materials).not.toContain('Sokkeli:');
     expect(materials).toContain('G47');
     expect(materials).toContain('<td class="value">3 l</td>');
     expect(materials).toContain('<td class="value">5 l</td>');

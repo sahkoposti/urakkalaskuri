@@ -9,6 +9,7 @@ import {
   type StyleProp,
   type SwitchProps,
   type TextInputProps,
+  type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -58,14 +59,24 @@ export function AppSwitch(props: AppSwitchProps) {
 type SectionTitleProps = {
   title: string;
   center?: boolean;
+  /** Opt-in. Default wrap spacing is unchanged. */
+  containerStyle?: StyleProp<ViewStyle>;
+  /** Opt-in. Default underline spacing is unchanged. */
+  underlineStyle?: StyleProp<ViewStyle>;
 };
 
-export function SectionTitle({ title, center = false }: SectionTitleProps) {
+export function SectionTitle({ title, center = false, containerStyle, underlineStyle }: SectionTitleProps) {
   const styles = useThemedStyles(createCommonStyles);
   return (
-    <View style={[styles.sectionTitleWrap, center && styles.centerAlign]}>
+    <View
+      style={[
+        styles.sectionTitleWrap,
+        center && styles.centerAlign,
+        ...(containerStyle ? [containerStyle] : []),
+      ]}
+    >
       <Text style={[styles.sectionTitle, center && styles.centerText]}>{title}</Text>
-      <View style={styles.sectionUnderline} />
+      <View style={underlineStyle ? [styles.sectionUnderline, underlineStyle] : styles.sectionUnderline} />
     </View>
   );
 }
@@ -144,15 +155,18 @@ type PrimaryButtonProps = {
   title: string;
   onPress: () => void;
   disabled?: boolean;
+  /** Opt-in. Default button spacing is unchanged. */
+  styleOverrides?: { button?: StyleProp<ViewStyle> };
 };
 
-export function PrimaryButton({ title, onPress, disabled }: PrimaryButtonProps) {
+export function PrimaryButton({ title, onPress, disabled, styleOverrides }: PrimaryButtonProps) {
   return (
     <PressableButton
       title={title}
       onPress={onPress}
       disabled={disabled}
       variant="primary"
+      styleOverrides={styleOverrides}
     />
   );
 }
@@ -161,15 +175,17 @@ type OutlinedButtonProps = {
   title: string;
   onPress: () => void;
   disabled?: boolean;
+  styleOverrides?: { button?: StyleProp<ViewStyle> };
 };
 
-export function OutlinedButton({ title, onPress, disabled }: OutlinedButtonProps) {
+export function OutlinedButton({ title, onPress, disabled, styleOverrides }: OutlinedButtonProps) {
   return (
     <PressableButton
       title={title}
       onPress={onPress}
       disabled={disabled}
       variant="outlined"
+      styleOverrides={styleOverrides}
     />
   );
 }
@@ -179,17 +195,20 @@ type PressableButtonProps = {
   onPress: () => void;
   disabled?: boolean;
   variant: 'primary' | 'outlined';
+  styleOverrides?: { button?: StyleProp<ViewStyle> };
 };
 
-function PressableButton({ title, onPress, disabled, variant }: PressableButtonProps) {
+function PressableButton({ title, onPress, disabled, variant, styleOverrides }: PressableButtonProps) {
   const styles = useThemedStyles(createCommonStyles);
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityState={disabled ? { disabled: true } : undefined}
       style={({ pressed }) => [
         styles.buttonBase,
         variant === 'primary' ? styles.primaryButton : styles.outlinedButton,
+        ...(styleOverrides?.button ? [styleOverrides.button] : []),
         disabled && styles.buttonDisabled,
         pressed && !disabled ? styles.buttonPressed : null,
       ]}
@@ -260,6 +279,12 @@ type AppInputProps = {
   multiline?: boolean;
   placeholder?: string;
   compact?: boolean;
+  /** Vain kutsuja: ylimääräiset tyylit pystytiivistykseen (ei vaikuta oletustyyleihin). */
+  spacingOverrides?: {
+    wrap?: StyleProp<ViewStyle>;
+    label?: StyleProp<TextStyle>;
+    field?: StyleProp<TextStyle>;
+  };
   trailing?: ReactNode;
   onFocus?: TextInputProps['onFocus'];
   onBlur?: TextInputProps['onBlur'];
@@ -278,6 +303,7 @@ export function AppInput({
   multiline = false,
   placeholder,
   compact = false,
+  spacingOverrides,
   trailing,
   onFocus,
   onBlur,
@@ -291,6 +317,7 @@ export function AppInput({
     compact && styles.inputCompact,
     multiline && styles.inputMultiline,
     compact && multiline && styles.inputMultilineCompact,
+    ...(spacingOverrides?.field ? [spacingOverrides.field] : []),
   ];
 
   const field = (
@@ -312,8 +339,22 @@ export function AppInput({
   );
 
   return (
-    <View style={[styles.inputWrap, compact && styles.inputWrapCompact]}>
-      <Text style={[styles.inputLabel, compact && styles.inputLabelCompact]}>{label}</Text>
+    <View
+      style={[
+        styles.inputWrap,
+        compact && styles.inputWrapCompact,
+        ...(spacingOverrides?.wrap ? [spacingOverrides.wrap] : []),
+      ]}
+    >
+      <Text
+        style={[
+          styles.inputLabel,
+          compact && styles.inputLabelCompact,
+          ...(spacingOverrides?.label ? [spacingOverrides.label] : []),
+        ]}
+      >
+        {label}
+      </Text>
       {trailing ? (
         <View style={styles.inputInnerRow}>
           {field}
