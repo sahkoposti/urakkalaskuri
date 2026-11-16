@@ -40,6 +40,8 @@ import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { withDerivedLinePricing } from '@/src/core/structure/linePricing';
+import { scaleByLineQuantity, scaleWorkDuration } from '@/src/core/structure/lineQuantityScale';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { formatQuantity } from '@/src/core/materials/materialQuantities';
 import { estimateWorkDurationDays } from '@/src/core/utils/formatters';
 import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
@@ -68,7 +70,7 @@ type CalculationDetailViewProps = {
 function lineBreakdown(line: StructureLine, reverseVat: boolean) {
   const priced = withDerivedLinePricing(line);
   return {
-    materialsVat0: priced.materialsVat0,
+    materialsVat0: scaleByLineQuantity(priced.materialsVat0, priced.quantity),
     discountPercent: priced.discountPercent,
     vatPercent: priced.vatPercent,
     ...roundedLineCardPrices(priced, reverseVat),
@@ -127,7 +129,11 @@ export function CalculationDetailView({
   const showStructureSummaries = structureLines.length > 1;
   const singleLine = structureLines.length === 1 ? structureLines[0] : undefined;
   const totalDisplayedDuration = singleLine
-    ? resolveDisplayedWorkDurationDays(singleLine, settings.weatherReserveFactor)
+    ? resolveDisplayedWorkDurationDays(
+        singleLine,
+        settings.weatherReserveFactor,
+        settings.workdayHours,
+      )
     : estimateWorkDurationDays(record.workDurationDays, settings.weatherReserveFactor);
   const mismatchLine = structureLines.find((line) => {
     const structure = structures.find((item) => item.id === line.structureId);
@@ -404,6 +410,7 @@ function LineDetail({
   const displayedWorkDurationDays = resolveDisplayedWorkDurationDays(
     line,
     weatherReserveFactor,
+    settings.workdayHours,
   );
 
   return (
@@ -431,7 +438,7 @@ function LineDetail({
         context={context}
         products={structureProducts}
         snapshot={snapshot}
-        workDurationDays={line.workDurationDays}
+        workDurationDays={scaleWorkDuration(line.workDurationDays, line.quantity, settings.workdayHours).days}
         weatherReserveFactor={weatherReserveFactor}
         fieldKeyPrefix={`${line.id}:`}
       />
@@ -439,9 +446,11 @@ function LineDetail({
   );
 }
 
-function materialDetailValue(row: MaterialQuantityRow): string {
+function materialDetailValue(row: MaterialQuantityRow, lineQuantity: number): string {
   const unit = row.unit && !row.unit.includes('€') ? row.unit.trim() : '';
-  return [formatQuantity(row.quantity), unit].filter((part) => part.length > 0).join(' ');
+  return [formatQuantity(scaleByLineQuantity(row.quantity, lineQuantity)), unit]
+    .filter((part) => part.length > 0)
+    .join(' ');
 }
 
 function visibleShades(row: MaterialQuantityRow) {
@@ -452,6 +461,7 @@ function visibleShades(row: MaterialQuantityRow) {
 
 function SavedMaterialQuantities({ line }: { line: StructureLine }) {
   const styles = useThemedStyles(createStyles);
+  if (structureLineQuantityIsZero(line)) return null;
   const rows = (line.materialQuantities ?? []).filter((row) => {
     if (!row.productName.trim() || row.productName.includes('€') || row.unit?.includes('€')) return false;
     if (visibleShades(row).length > 0) return true;
@@ -465,7 +475,7 @@ function SavedMaterialQuantities({ line }: { line: StructureLine }) {
         const shades = visibleShades(row);
         const name = row.productName.replaceAll('€', '').trim() || 'Materiaali';
         if (shades.length === 0) {
-          return <ResultRow key={row.id} label={name} value={materialDetailValue(row)} />;
+          return <ResultRow key={row.id} label={name} value={materialDetailValue(row, line.quantity)} />;
         }
         return (
           <View key={row.id}>
@@ -474,7 +484,7 @@ function SavedMaterialQuantities({ line }: { line: StructureLine }) {
               <ResultRow
                 key={shade.id}
                 label={shade.name.trim()}
-                value={[formatQuantity(shade.quantity), shade.unit?.trim() ?? ''].filter((part) => part.length > 0).join(' ')}
+                value={[formatQuantity(scaleByLineQuantity(shade.quantity, line.quantity)), shade.unit?.trim() ?? ''].filter((part) => part.length > 0).join(' ')}
               />
             ))}
           </View>

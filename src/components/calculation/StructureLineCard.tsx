@@ -19,7 +19,7 @@ import {
   toCardAmount,
   withDerivedLinePricing,
 } from '@/src/core/structure/linePricing';
-import type { StructureLine } from '@/src/core/models/types';
+import { defaultSettings, type StructureLine } from '@/src/core/models/types';
 import { isManualStructureId, type ProductStructure } from '@/src/core/structure/types';
 import { vat0Tag, vatInclTag } from '@/src/core/utils/priceDisplay';
 import {
@@ -43,6 +43,8 @@ type StructureLineCardProps = {
   line: StructureLine;
   structure?: ProductStructure;
   weatherReserveFactor?: number;
+  /** Asetusten työpäivän pituus (h). Kesto päiviin: tunnit / tämä. */
+  workdayHours?: number;
   /** Käänteinen ALV: hinnat aina ALV 0, valintaa ei näytetä. */
   forceVat0?: boolean;
   /**
@@ -61,6 +63,7 @@ export function StructureLineCard({
   line,
   structure,
   weatherReserveFactor = 1,
+  workdayHours = defaultSettings.workdayHours,
   forceVat0 = false,
   offerIncludesVat,
   onChange,
@@ -82,6 +85,7 @@ export function StructureLineCard({
   const displayedWorkDurationDays = resolveDisplayedWorkDurationDays(
     priced,
     weatherReserveFactor,
+    workdayHours,
   );
   const additionalInfoValue = structureLineAdditionalInfoInputValue(priced, structure);
   const [additionalInfoExpanded, setAdditionalInfoExpanded] = useState(

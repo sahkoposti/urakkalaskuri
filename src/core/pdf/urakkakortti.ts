@@ -245,7 +245,7 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
   }
   const duration =
     lines.length === 1
-      ? resolveDisplayedWorkDurationDays(lines[0], settings.weatherReserveFactor)
+      ? resolveDisplayedWorkDurationDays(lines[0], settings.weatherReserveFactor, settings.workdayHours)
       : estimateWorkDurationDays(record.workDurationDays, settings.weatherReserveFactor);
   const infoRows: PriceRow[] = [
     ...(duration ? [{ label: 'Työn arvioitu kesto', value: `${duration} pv` }] : []),

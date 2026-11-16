@@ -1,4 +1,5 @@
 import { clampDiscountPercent, type DiscountableTotals } from '@/src/core/calculation/discount';
+import { scaleByLineQuantity } from '@/src/core/structure/lineQuantityScale';
 import type { StructureLine } from '@/src/core/structure/types';
 import { roundToCents } from '@/src/core/utils/formatters';
 import { applyVat, removeVat } from '@/src/core/utils/priceDisplay';
@@ -17,8 +18,7 @@ export function fromCardAmount(entered: number, includeVat: boolean, vatPercent:
 }
 
 export function lineListPriceVat0(line: Pick<StructureLine, 'unitPriceVat0' | 'quantity'>): number {
-  const quantity = Number.isFinite(line.quantity) && line.quantity > 0 ? line.quantity : 0;
-  return line.unitPriceVat0 * quantity;
+  return scaleByLineQuantity(line.unitPriceVat0, line.quantity);
 }
 
 export function lineTotalVat0(
@@ -56,8 +56,8 @@ export function withDerivedLinePricing(line: StructureLine): StructureLine {
   const commissionEur = lineCommissionEur(total, line.commissionPercent);
   const marginEur = lineMarginEur(
     total,
-    line.contractPriceVat0,
-    line.materialsVat0,
+    scaleByLineQuantity(line.contractPriceVat0, line.quantity),
+    scaleByLineQuantity(line.materialsVat0, line.quantity),
     commissionEur,
   );
   return {
@@ -83,8 +83,14 @@ export function aggregateStructureLines(
   reverseVat: boolean,
 ): StructureTotals {
   const priced = lines.map(withDerivedLinePricing);
-  const contractPriceVat0 = priced.reduce((sum, line) => sum + line.contractPriceVat0, 0);
-  const materialsVat0 = priced.reduce((sum, line) => sum + line.materialsVat0, 0);
+  const contractPriceVat0 = priced.reduce(
+    (sum, line) => sum + scaleByLineQuantity(line.contractPriceVat0, line.quantity),
+    0,
+  );
+  const materialsVat0 = priced.reduce(
+    (sum, line) => sum + scaleByLineQuantity(line.materialsVat0, line.quantity),
+    0,
+  );
   const marginEur = priced.reduce((sum, line) => sum + line.marginEur, 0);
   const commissionEur = priced.reduce((sum, line) => sum + line.commissionEur, 0);
   const totalPriceVat0 = priced.reduce((sum, line) => sum + lineTotalVat0(line), 0);

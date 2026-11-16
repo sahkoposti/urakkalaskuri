@@ -3,6 +3,7 @@ import type { AppSettings, CalculationRecord, CustomerInfo, Product, StructureLi
 import { customerFromRecord } from '@/src/core/models/types';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { clampDiscountPercent } from '@/src/core/calculation/discount';
+import { scaleByLineQuantity } from '@/src/core/structure/lineQuantityScale';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { formatCurrency, formatPercent, roundToCents } from '@/src/core/utils/formatters';
 import {
@@ -157,7 +158,7 @@ function round2(n: number): number {
  * Ilman alennusta yksi verokanta tai ei hinnoiteltuja rivejä: tallennettu summa × laskelman kanta, kerran pyöristettynä.
  * Yksi verokanta ja sama alennus-% kaikilla riveillä, tai pelkkä laskelman alennus: tuo summa × (1 − d/100), kerran.
  * Sekalaiset riviale-prosentit tai usea verokanta: jokainen rivi
- * round2(materiaalit alv0 × (1 + kanta/100) × (1 − d/100)), sitten summa.
+ * round2(materiaalit alv0 × määrä × (1 + kanta/100) × (1 − d/100)), sitten summa.
  * Jos yhdelläkään rivillä ei ole alea ja record.discountPercent > 0, d on laskelman prosentti.
  * Rivin puuttuva kanta on laskelman kanta. Kolmatta tarjoustason alennustyyppiä ei ole.
  */
@@ -180,7 +181,10 @@ export function offerMaterialsVatIncluded(record: CalculationRecord): number {
   }
   return round2(
     lines.reduce((sum, line) => {
-      const materials = Number.isFinite(line.materialsVat0) ? line.materialsVat0 : 0;
+      const materials = scaleByLineQuantity(
+        Number.isFinite(line.materialsVat0) ? line.materialsVat0 : 0,
+        line.quantity,
+      );
       const d = calcDiscount > 0 ? calcDiscount : clampDiscountPercent(line.discountPercent);
       return sum + round2(materials * (1 + lineRate(record, line) / 100) * (1 - d / 100));
     }, 0),

@@ -1,4 +1,5 @@
-import type { StructureLine } from '@/src/core/models/types';
+import { defaultSettings, type StructureLine } from '@/src/core/models/types';
+import { scaleWorkDuration } from '@/src/core/structure/lineQuantityScale';
 import { ceilWorkDurationDays, estimateWorkDurationDays } from '@/src/core/utils/formatters';
 
 export const WORK_DURATION_DISPLAY_LABEL = 'Työn arvioitu kesto (pv)';
@@ -6,7 +7,7 @@ export const WORK_DURATION_DISPLAY_LABEL = 'Työn arvioitu kesto (pv)';
 export type WorkDurationDisplayLine = Pick<
   StructureLine,
   'overrides' | 'displayWorkDurationDays' | 'workDurationDays'
->;
+> & { quantity?: number };
 
 /** Yhteenvedon päiväluku (säävaraus mukana): kokonaisluku, vähintään 1. */
 export function normalizeDisplayWorkDurationDays(
@@ -28,6 +29,7 @@ export function formatDurationDisplayValue(days: number | undefined): string | u
 export function resolveDisplayedWorkDurationDays(
   line: WorkDurationDisplayLine,
   weatherReserveFactor = 1,
+  workdayHours = defaultSettings.workdayHours,
 ): number | undefined {
   const overrides = line.overrides ?? [];
   if (overrides.includes('workDurationDisplay')) {
@@ -35,7 +37,8 @@ export function resolveDisplayedWorkDurationDays(
     if (overridden != null) return overridden;
   }
   if (line.workDurationDays > 0) {
-    return estimateWorkDurationDays(line.workDurationDays, weatherReserveFactor);
+    const scaled = scaleWorkDuration(line.workDurationDays, line.quantity, workdayHours).days;
+    return estimateWorkDurationDays(scaled, weatherReserveFactor);
   }
   return normalizeDisplayWorkDurationDays(line.displayWorkDurationDays);
 }

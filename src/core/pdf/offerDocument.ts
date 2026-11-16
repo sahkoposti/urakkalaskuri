@@ -366,7 +366,11 @@ export function buildOfferSections(source: OfferDocumentSource): OfferSection[] 
     const structure = matchingStructure(line, source.structures);
     if (!hasOfferForm(structure)) continue;
     const body = buildPrintedBody(offerPrintRows(line, structure, source, reverseVat));
-    const days = resolveDisplayedWorkDurationDays(line, source.settings.weatherReserveFactor);
+    const days = resolveDisplayedWorkDurationDays(
+      line,
+      source.settings.weatherReserveFactor,
+      source.settings.workdayHours,
+    );
     if (days != null && days > 0) {
       const unit = days === 1 ? 'työpäivä' : 'työpäivää';
       body.tableRows.push({ label: 'Työn arvioitu kesto', value: `${days} ${unit}` });

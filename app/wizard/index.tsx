@@ -897,6 +897,7 @@ export default function CalculationComposerScreen() {
                   line={line}
                   structure={structure}
                   weatherReserveFactor={settings.weatherReserveFactor}
+                  workdayHours={settings.workdayHours}
                   forceVat0={forceVat0}
                   offerIncludesVat={customerType === 'business' ? businessOfferIncludesVat : undefined}
                   onChange={(next) =>

@@ -4,6 +4,7 @@ import {
   removeMaterialRow,
 } from '@/src/core/materials/materialQuantities';
 import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
+import { scaleByLineQuantity } from '@/src/core/structure/lineQuantityScale';
 import type { FormDefinition } from '@/src/core/form/types';
 import type { MaterialQuantityRow, MaterialShade, Product, StructureLine } from '@/src/core/models/types';
 
@@ -11,8 +12,8 @@ export type MaterialRowSource = {
   lineId: string;
   lineName: string;
   /**
-   * Rakenteen Määrä. Vain tasan 0 jää yhdistelmästä pois.
-   * Puuttuva arvo ei ole 0.
+   * Rakenteen Määrä. Kertoo tuotteen ja sävyjen määrät.
+   * Tasan 0 jää yhdistelmästä pois. Puuttuva arvo on yksi kappale.
    */
   lineQuantity?: number;
   row: MaterialQuantityRow;
@@ -76,7 +77,8 @@ function shadeMergeKey(shade: MaterialShade): string {
  * Avain: productId jos se on, muuten tuotenimi (trim, kirjainkoko). Lisäksi yksikkö samoin.
  * Tyhjä tuotenimi ei yhdisty. Eri yksikkö ei yhdisty. Sävyt yhdistyvät nimen ja yksikön mukaan.
  * Järjestys on ensimmäinen esiintyminen.
- * Rakenteen Määrä tasan 0 ei osallistu. Riviä ei poisteta tallennuksesta.
+ * Rakenteen Määrä tasan 0 ei osallistu. Muu määrä kertoo litrat ja kappaleet.
+ * Riviä ei poisteta tallennuksesta.
  */
 export function mergeLineMaterials(sources: MaterialRowSource[]): MergedMaterialRow[] {
   const groups: MergedMaterialRow[] = [];
@@ -99,21 +101,23 @@ export function mergeLineMaterials(sources: MaterialRowSource[]): MergedMaterial
       indexByKey.set(key, groups.length);
       groups.push(group);
     }
-    group.quantity += source.row.quantity;
+    const quantity = source.lineQuantity === undefined ? 1 : source.lineQuantity;
+    const rowQuantity = scaleByLineQuantity(source.row.quantity, quantity);
+    group.quantity += rowQuantity;
     group.contributions.push({
       lineId: source.lineId,
       lineName: source.lineName,
       rowId: source.row.id,
-      quantity: source.row.quantity,
+      quantity: rowQuantity,
     });
-    mergeShades(group, source);
+    mergeShades(group, source, quantity);
   }
   return groups;
 }
 
 export const mergeMaterialRows = mergeLineMaterials;
 
-function mergeShades(group: MergedMaterialRow, source: MaterialRowSource) {
+function mergeShades(group: MergedMaterialRow, source: MaterialRowSource, quantity: number | null | undefined) {
   const shades = source.row.shades ?? [];
   for (const shade of shades) {
     const key = shadeMergeKey(shade);
@@ -128,12 +132,13 @@ function mergeShades(group: MergedMaterialRow, source: MaterialRowSource) {
       if (shade.unit !== undefined) merged.unit = shade.unit;
       group.shades.push(merged);
     }
-    merged.quantity += shade.quantity;
+    const shadeQuantity = scaleByLineQuantity(shade.quantity, quantity);
+    merged.quantity += shadeQuantity;
     merged.contributions.push({
       lineId: source.lineId,
       rowId: source.row.id,
       shadeId: shade.id,
-      quantity: shade.quantity,
+      quantity: shadeQuantity,
     });
   }
 }
