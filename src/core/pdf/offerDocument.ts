@@ -4,6 +4,7 @@ import { buildCalculationFormulaContext } from '@/src/core/form/calculationFormu
 import type { AppSettings, CalculationRecord, CustomerInfo, Product, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { lineListPriceVat0, lineTotalVat0 } from '@/src/core/structure/linePricing';
 import { settingsForStructure } from '@/src/core/structure/structureSettings';
@@ -422,7 +423,7 @@ function vatRowsMatchPayable(
  */
 function roundedVatRateRows(record: CalculationRecord): OfferVatSummaryRow[] | null {
   if (calcLevelDiscountOnly(record)) return null;
-  const lines = ensureStructureLines(record).filter((line) => line.quantity !== 0 && Number.isFinite(line.quantity));
+  const lines = ensureStructureLines(record).filter((line) => !structureLineQuantityIsZero(line));
   const rates: number[] = [];
   for (const line of lines) {
     const rate = Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent;
@@ -461,7 +462,7 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
   if (!offerIncludesVat(customer, record.formSnapshot)) return [];
   const businessSis = customer.customerType === 'business';
   const headingGross = businessSis ? sumOfferHeadingGross(record) : null;
-  const lines = ensureStructureLines(record);
+  const lines = ensureStructureLines(record).filter((line) => !structureLineQuantityIsZero(line));
   const rates: number[] = [];
   const weights = new Map<number, number>();
   for (const line of lines) {
@@ -486,7 +487,9 @@ export function offerVatSummary(record: CalculationRecord, customer: CustomerInf
     if (calcLevelDiscountOnly(record)) return [];
     const rows = rates.map((rate) => {
       const group = lines.filter(
-        (line) => (Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent) === rate && line.quantity !== 0,
+        (line) =>
+          (Number.isFinite(line.vatPercent) ? line.vatPercent : record.vatPercent) === rate &&
+          !structureLineQuantityIsZero(line),
       );
       const net = roundToCents(group.reduce((sum, line) => sum + Math.max(0, lineTotalVat0(line)), 0));
       const gross = roundToCents(
