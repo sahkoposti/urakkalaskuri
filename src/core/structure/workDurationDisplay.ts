@@ -83,3 +83,21 @@ export function resolveAggregateDisplayedWorkDurationDays(
   if (!(totalHours > 0)) return undefined;
   return estimateWorkDurationDays(totalHours / dayLength, weatherReserveFactor);
 }
+
+/**
+ * Laskelmanäkymän kokonaiskesto (PriceBreakdownCard).
+ * Yksi rivi tai legacy-rivi: kuten kortilla. Usea rivi: sama kuin urakkakortti.
+ */
+export function resolveRecordDisplayedWorkDurationDays(
+  lines: readonly WorkDurationDisplayLine[],
+  weatherReserveFactor = 1,
+  workdayHours = defaultSettings.workdayHours,
+): number | undefined {
+  if (lines.length > 1) {
+    return resolveAggregateDisplayedWorkDurationDays(lines, weatherReserveFactor, workdayHours);
+  }
+  if (lines.length === 1) {
+    return resolveDisplayedWorkDurationDays(lines[0], weatherReserveFactor, workdayHours);
+  }
+  return undefined;
+}

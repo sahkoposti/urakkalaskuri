@@ -44,8 +44,10 @@ import { withDerivedLinePricing } from '@/src/core/structure/linePricing';
 import { scaleByLineQuantity, scaleWorkDuration } from '@/src/core/structure/lineQuantityScale';
 import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { formatQuantity } from '@/src/core/materials/materialQuantities';
-import { estimateWorkDurationDays } from '@/src/core/utils/formatters';
-import { resolveDisplayedWorkDurationDays } from '@/src/core/structure/workDurationDisplay';
+import {
+  resolveDisplayedWorkDurationDays,
+  resolveRecordDisplayedWorkDurationDays,
+} from '@/src/core/structure/workDurationDisplay';
 import { roundedLineCardPrices } from '@/src/core/pdf/offerDocument';
 import { isPrivateCustomer, reverseVatLabel } from '@/src/core/utils/priceDisplay';
 import { lineStructureLisatiedot, structureRowShowsAdditionalInfo } from '@/src/core/pdf/structureExtraText';
@@ -128,14 +130,11 @@ export function CalculationDetailView({
   const privateCustomer = isPrivateCustomer(customer);
   const structureLines = ensureStructureLines(record);
   const showStructureSummaries = structureLines.length > 1;
-  const singleLine = structureLines.length === 1 ? structureLines[0] : undefined;
-  const totalDisplayedDuration = singleLine
-    ? resolveDisplayedWorkDurationDays(
-        singleLine,
-        settings.weatherReserveFactor,
-        settings.workdayHours,
-      )
-    : estimateWorkDurationDays(record.workDurationDays, settings.weatherReserveFactor);
+  const totalDisplayedDuration = resolveRecordDisplayedWorkDurationDays(
+    structureLines,
+    settings.weatherReserveFactor,
+    settings.workdayHours,
+  );
   const mismatchLine = structureLines.find((line) => {
     const structure = structures.find((item) => item.id === line.structureId);
     const snapshotVersion = line.formVersion ?? line.snapshot?.formVersion;
@@ -320,7 +319,7 @@ export function CalculationDetailView({
         lines={structureLines}
         snapshot={record.formSnapshot}
         displayedWorkDurationDays={totalDisplayedDuration}
-        showDuration={structureLines.length <= 1}
+        showDuration={totalDisplayedDuration != null}
       />
 
       {showMergedMaterials && mergedMaterialDetails.length > 0 ? (
