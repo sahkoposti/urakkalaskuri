@@ -999,12 +999,14 @@ describe('offer heading price columns', () => {
       'Yhteensä sis. alv',
       'Alennus yhteensä 10 %',
       'Alennettu hinta yhteensä',
+      'Sisältää ALV 25,5 %',
     ]);
     const yht = roundToCents(ctx.sections.reduce((sum, section) => sum + parseEuro(section.heading?.price ?? ''), 0));
     expect(yht).toBe(5848.3);
     expect(plain(ctx.price.rows.find((row) => row.label === 'Yhteensä sis. alv')?.value ?? '')).toBe('5 848,30 €');
     expect(plain(ctx.price.rows.find((row) => row.label.startsWith('Alennus'))?.value ?? '')).toBe('−584,83 €');
     expect(plain(ctx.price.rows.find((row) => row.label === 'Alennettu hinta yhteensä')?.value ?? '')).toBe('5 263,47 €');
+    expect(plain(ctx.price.rows.find((row) => row.label.startsWith('Sisältää ALV'))?.value ?? '')).toBe('1 069,47 €');
     expect(roundToCents(5848.3 - 584.83)).toBe(5263.47);
     expect(plain(ctx.sections.map((section) => section.heading?.price ?? '').join(' '))).toBe('4 643,50 € 1 204,80 €');
   });
