@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AttachmentSection } from '@/src/features/attachments/ui';
@@ -35,6 +35,7 @@ import {
 } from '@/src/core/form/formVersion';
 import type { FormDefinition } from '@/src/core/form/types';
 import { listAttachments, type Attachment } from '@/src/features/attachments';
+import { mergedMaterialDetailRows } from '@/src/core/materials/mergeMaterialRows';
 import type { CalculationRecord, CustomerInfo, MaterialQuantityRow, StructureLine } from '@/src/core/models/types';
 import { customerFromRecord } from '@/src/core/models/types';
 import { productBelongsToStructure } from '@/src/core/product/productStructures';
@@ -88,7 +89,7 @@ export function CalculationDetailView({
   onDeletePress,
 }: CalculationDetailViewProps) {
   const styles = useThemedStyles(createStyles);
-  const { settings, structures } = useApp();
+  const { settings, structures, products } = useApp();
   const [tab, setTab] = useState<DetailTab>('laskelma');
   const scrollRef = useRef<ScrollView>(null);
   const attachmentsRef = useRef<View>(null);
@@ -144,6 +145,19 @@ export function CalculationDetailView({
   const snapshotVersion =
     mismatchLine?.formVersion ?? mismatchLine?.snapshot?.formVersion ?? record.formSnapshot?.formVersion;
   const currentVersion = formDefinition.version;
+  const mergedMaterialEntries = useMemo(
+    () =>
+      structureLines.map((item) => ({
+        line: item,
+        form: structures.find((structure) => structure.id === item.structureId)?.form,
+      })),
+    [structureLines, structures],
+  );
+  const showMergedMaterials = structureLines.some((item) => item.materialQuantities !== undefined);
+  const mergedMaterialDetails = useMemo(
+    () => (showMergedMaterials ? mergedMaterialDetailRows(mergedMaterialEntries, products) : []),
+    [showMergedMaterials, mergedMaterialEntries, products],
+  );
 
   return (
     <>
@@ -309,6 +323,10 @@ export function CalculationDetailView({
         showDuration={structureLines.length <= 1}
       />
 
+      {showMergedMaterials && mergedMaterialDetails.length > 0 ? (
+        <MergedMaterialQuantitiesCard rows={mergedMaterialDetails} />
+      ) : null}
+
       {structureLines.map((line) => (
         <LineDetail
           key={line.id}
@@ -319,6 +337,7 @@ export function CalculationDetailView({
           showPriceSummary={showStructureSummaries}
           showAdditionalInfo={structureRowShowsAdditionalInfo(structureLines, line.id, structures)}
           travelTimeHoursOneWay={record.travelTimeHoursOneWay}
+          showLineMaterials={!showMergedMaterials}
         />
       ))}
         </>
@@ -379,6 +398,7 @@ function LineDetail({
   showPriceSummary,
   showAdditionalInfo,
   travelTimeHoursOneWay,
+  showLineMaterials,
 }: {
   line: StructureLine;
   customer: CustomerInfo;
@@ -387,6 +407,7 @@ function LineDetail({
   showPriceSummary: boolean;
   showAdditionalInfo: boolean;
   travelTimeHoursOneWay?: number;
+  showLineMaterials: boolean;
 }) {
   const { products, structures, settings } = useApp();
   const reverseVat = Boolean(customer.reverseVat);
@@ -431,7 +452,7 @@ function LineDetail({
           <ResultRow label="Lisätiedot" value={lineStructureLisatiedot(line, structures)} />
         </AppCard>
       ) : null}
-      <SavedMaterialQuantities line={line} />
+      {showLineMaterials ? <SavedMaterialQuantities line={line} /> : null}
       <FormSummarySection
         form={structure?.form}
         fieldValues={line.fieldValues}
@@ -456,6 +477,28 @@ function materialDetailValue(row: MaterialQuantityRow, lineQuantity: number): st
 function visibleShades(row: MaterialQuantityRow) {
   return (row.shades ?? []).filter(
     (shade) => shade.name.trim() && shade.quantity > 0 && !shade.name.includes('€') && !shade.unit?.includes('€'),
+  );
+}
+
+function MergedMaterialQuantitiesCard({ rows }: { rows: ReturnType<typeof mergedMaterialDetailRows> }) {
+  const styles = useThemedStyles(createStyles);
+  return (
+    <AppCard>
+      <Text style={styles.materialsTitle}>Materiaalit (urakkakortti)</Text>
+      {rows.map((row) => {
+        if (row.shades.length === 0) {
+          return <ResultRow key={row.productName} label={row.productName} value={row.value} />;
+        }
+        return (
+          <View key={row.productName}>
+            <Text style={styles.materialsProduct}>{row.productName}</Text>
+            {row.shades.map((shade) => (
+              <ResultRow key={`${row.productName}:${shade.name}`} label={shade.name} value={shade.value} />
+            ))}
+          </View>
+        );
+      })}
+    </AppCard>
   );
 }
 

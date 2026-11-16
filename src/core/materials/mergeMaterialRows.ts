@@ -1,5 +1,6 @@
 import {
   effectiveMaterialQuantities,
+  formatQuantity,
   prefillMaterialQuantities,
   removeMaterialRow,
 } from '@/src/core/materials/materialQuantities';
@@ -144,6 +145,54 @@ function mergeShades(group: MergedMaterialRow, source: MaterialRowSource, quanti
 }
 
 /** Jokaisen rivin effectiveMaterialQuantities, lomakejärjestyksessä. Ei muuta rivejä. */
+export type MergedMaterialDetailRow = {
+  productName: string;
+  value: string;
+  shades: { name: string; value: string }[];
+};
+
+function materialAmountLabel(quantity: number, unit: string | undefined): string {
+  const trimmed = unit?.trim() ?? '';
+  const safeUnit = trimmed.includes('€') ? '' : trimmed;
+  return [formatQuantity(quantity), safeUnit].filter((part) => part.length > 0).join(' ');
+}
+
+/** Laskelmanäkymän rivit samasta yhdistelmästä kuin editori ja PDF. */
+export function mergedMaterialDetailRows(
+  entries: MaterialLineEntry[],
+  products: Product[],
+): MergedMaterialDetailRow[] {
+  return mergedMaterialsForLines(entries, products)
+    .filter((group) => {
+      if (!group.productName.trim() || group.productName.includes('€') || group.unit?.includes('€')) return false;
+      const shades = group.shades.filter(
+        (shade) => shade.name.trim() && shade.quantity > 0 && !shade.name.includes('€') && !shade.unit?.includes('€'),
+      );
+      return shades.length > 0 || group.quantity > 0;
+    })
+    .map((group) => {
+      const productName = group.productName.replaceAll('€', '').trim() || 'Materiaali';
+      const shades = group.shades.filter(
+        (shade) => shade.name.trim() && shade.quantity > 0 && !shade.name.includes('€') && !shade.unit?.includes('€'),
+      );
+      if (shades.length > 0) {
+        return {
+          productName,
+          value: '',
+          shades: shades.map((shade) => ({
+            name: shade.name.trim(),
+            value: materialAmountLabel(shade.quantity, shade.unit),
+          })),
+        };
+      }
+      return {
+        productName,
+        value: materialAmountLabel(group.quantity, group.unit),
+        shades: [],
+      };
+    });
+}
+
 export function mergedMaterialsForLines(
   entries: MaterialLineEntry[],
   products: Product[],
