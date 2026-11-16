@@ -4,6 +4,7 @@ import { customerFromRecord } from '@/src/core/models/types';
 import type { ProductStructure } from '@/src/core/structure/types';
 import { clampDiscountPercent } from '@/src/core/calculation/discount';
 import { scaleByLineQuantity } from '@/src/core/structure/lineQuantityScale';
+import { structureLineQuantityIsZero } from '@/src/core/materials/structureLineQuantity';
 import { ensureStructureLines } from '@/src/core/structure/legacyCalculation';
 import { formatCurrency, formatPercent, roundToCents } from '@/src/core/utils/formatters';
 import {
@@ -127,7 +128,9 @@ function hasOfferDiscount(record: CalculationRecord): boolean {
 }
 
 function pricedOfferLines(record: CalculationRecord): StructureLine[] {
-  return ensureStructureLines(record).filter((line) => line.quantity !== 0 && Number.isFinite(line.quantity));
+  return ensureStructureLines(record).filter(
+    (line) => !structureLineQuantityIsZero(line) && Number.isFinite(line.quantity),
+  );
 }
 
 function linesCarryDiscount(record: CalculationRecord): boolean {
@@ -251,7 +254,9 @@ export function printedOfferAmounts(record: CalculationRecord, customer: Custome
     const net = netLines ?? roundToCents(record.totalPriceVat0);
     return { net, vat: roundToCents(gross - net), gross, source: heading != null ? 'lines' : 'stored' };
   }
-  const priced = ensureStructureLines(record).some((line) => line.quantity !== 0 && Number.isFinite(line.quantity));
+  const priced = ensureStructureLines(record).some(
+    (line) => !structureLineQuantityIsZero(line) && Number.isFinite(line.quantity),
+  );
   const grossLines = priced ? sumRoundedOfferLines(record, true, 'paid') : null;
   const netLines = priced ? sumRoundedOfferLines(record, false, 'paid') : null;
   if (grossLines != null && netLines != null) {

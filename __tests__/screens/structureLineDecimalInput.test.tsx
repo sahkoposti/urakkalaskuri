@@ -145,6 +145,22 @@ describe('StructureLineCard decimal inputs', () => {
     expect(current.quantity).toBe(0);
   });
 
+  it('does not accept a minus sign in määrä', () => {
+    const tree = renderScreen(
+      <StructureLineCard
+        line={fictionalLine({ quantity: 2 })}
+        onChange={() => undefined}
+        onDelete={() => undefined}
+      />,
+    );
+    const quantityInput = findInputByLabel(tree.root, 'Määrä');
+    act(() => {
+      quantityInput.props.onChangeText('-2');
+    });
+    expect(quantityInput.props.value).toBe('2');
+    expect(String(quantityInput.props.value)).not.toContain('-');
+  });
+
   it('confirms clearing hinta does not keep the previous unit price', () => {
     let current = fictionalLine();
     const onChange = jest.fn((next: StructureLine) => {

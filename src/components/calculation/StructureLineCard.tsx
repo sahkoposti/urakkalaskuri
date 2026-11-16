@@ -379,7 +379,7 @@ function QuantityDecimalInput({
         kind="decimal"
         spacingOverrides={spacingOverrides}
         onChangeText={(raw) => {
-          const next = limitDecimalInput(raw);
+          const next = limitDecimalInput(raw, 2, false);
           setText(next);
           const inputError = structureQuantityInputError(next);
           if (inputError !== null) return;
