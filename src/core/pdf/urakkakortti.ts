@@ -28,6 +28,9 @@ import { specGridLayout, type SpecGridLayout } from './specGridLayout';
 import { buildUrakkakorttiSections, lineUsesUrakkakorttiPrint, type UrakkakorttiSection } from './urakkakorttiSections';
 import type { OfferStructureSettings } from './types';
 import { formatFinnishDate } from './validUntil';
+import { printSivukulukerroin } from './defaultOfferSettings';
+import { contractId } from '../online/contractOffer';
+import type { OnlineCardPrint } from '../online/onlinePrint';
 
 export { effectiveContractVat0, linesNeedingManualContract, withManualContractPrices } from './manualContract';
 export type { UrakkakorttiSection } from './urakkakorttiSections';
@@ -92,7 +95,33 @@ export type BuildUrakkakorttiInput = {
   sivukulukerroin?: number;
   /** Rakenteen Muuta-teksti. Yrityksen Lisätiedot-ehtoja ei välitetä kortille. */
   offerStructureSettings?: Record<string, OfferStructureSettings | undefined>;
+  /**
+   * Online-lähetys: urakkasummat sopimuksen kokonaissenteistä (rivit line_id:n mukaan).
+   * Puuttuu = vanha laskenta laitteella.
+   */
+  onlineCard?: OnlineCardPrint;
 };
+
+/** Rivin urakka sopimuksesta senteissä → euroina. Puuttuva rivi = 0. */
+function onlineLineAmount(online: OnlineCardPrint, lineId: string): number {
+  return (online.pieceRateCentsByLine[contractId('', lineId)] ?? 0) / 100;
+}
+
+function onlineCardHeaderPrices(
+  online: OnlineCardPrint,
+  lineIds: string[],
+  factor: unknown,
+): { alihankkija: number; tyontekija: number } {
+  const usable = printSivukulukerroin(factor);
+  const divided = lineIds.map((id) => {
+    const amount = onlineLineAmount(online, id);
+    return amount === 0 ? 0 : roundToCents(amount / usable);
+  });
+  return {
+    alihankkija: online.pieceRateCents / 100,
+    tyontekija: roundToCents(divided.reduce((sum, amount) => sum + amount, 0)),
+  };
+}
 
 /** €-arvoiset speksirivit pois (voivat paljastaa hintoja, esim. Hinnoittelu-sivu). */
 function withoutEuroRows(card: SpecCard): SpecCard {
@@ -228,7 +257,11 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
   const materialTable = resolveUrakkakorttiMaterialTable(input);
   const mode = readUrakkakorttiMode(record.formSnapshot);
   const hidePrices = readUrakkakorttiHidePrices(record.formSnapshot);
-  const prices = hidePrices ? null : cardHeaderPrices(record, input.sivukulukerroin);
+  const prices = hidePrices
+    ? null
+    : input.onlineCard
+      ? onlineCardHeaderPrices(input.onlineCard, lines.map((line) => line.id), input.sivukulukerroin)
+      : cardHeaderPrices(record, input.sivukulukerroin);
   if (!hidePrices) assertPrintableEmployeeContracts(record);
   const contractSum = prices ? formatCurrency(prices.alihankkija) : null;
   const employeeSum = prices ? formatCurrency(prices.tyontekija) : null;
@@ -239,7 +272,9 @@ export function buildUrakkakorttiContext(input: BuildUrakkakorttiInput): Urakkak
     for (const line of lines) {
       contractRows.push({
         label: `Urakka: ${line.name}`,
-        value: formatCurrency(roundToCents(alihankkijaLineAmount(line, overrides))),
+        value: formatCurrency(
+          input.onlineCard ? onlineLineAmount(input.onlineCard, line.id) : roundToCents(alihankkijaLineAmount(line, overrides)),
+        ),
       });
     }
   }

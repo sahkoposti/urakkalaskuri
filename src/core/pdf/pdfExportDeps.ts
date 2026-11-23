@@ -16,6 +16,9 @@ import {
 import type { PdfExportDeps } from './exportPdf';
 import { generatePdf } from './generatePdf';
 import { loadPdfLogoDataUri } from './logoDataUri';
+import { isOnlineSendEnabled } from '../online/flag';
+import { buildContractOffer } from '../online/contractOffer';
+import { onlineCardPrint } from '../online/onlinePrint';
 
 /** Oikeat riippuvuudet (SQLite, expo-print, expo-sharing, paketoitu logo). */
 export const pdfExportDeps: PdfExportDeps = {
@@ -41,4 +44,13 @@ export const pdfExportDeps: PdfExportDeps = {
   now: () => new Date(),
   listAttachments,
   attachmentPdfDeps: defaultAttachmentPdfDeps(),
+  ...(isOnlineSendEnabled()
+    ? {
+        // Online-tila: kortin urakat samoista kokonaissenteistä kuin palvelimelle lähtevä tarjous.
+        onlineCard: (record, settings) => {
+          const built = buildContractOffer({ record, workdayHours: settings.workdayHours, now: new Date() });
+          return built.ok ? onlineCardPrint(built.draft) : null;
+        },
+      }
+    : {}),
 };

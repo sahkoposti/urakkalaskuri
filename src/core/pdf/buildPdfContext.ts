@@ -34,6 +34,12 @@ import { readOfferValidDays } from './offerValidDays';
 import { documentSiteAddress } from './siteAddress';
 import { firstStructureLisatiedot } from './structureExtraText';
 import { formatFinnishDate, validUntil } from './validUntil';
+import {
+  onlinePayable,
+  onlinePriceBlock,
+  onlineVatSummary,
+  type OnlineOfferPrint,
+} from '../online/onlinePrint';
 
 export type PriceRow = { label: string; value: string; emphasis?: boolean };
 
@@ -95,6 +101,11 @@ export type BuildPdfContextInput = {
   generatedAt: Date;
   /** Myönnetty tarjousnumero (T5); puuttuu → rivi jätetään pois. */
   offerNumber?: number;
+  /**
+   * Online-lähetys: palvelimen numero, versio ja kokonaissenttisummat.
+   * Kun annettu, numero ja summalohko tulevat tästä eikä laitteen laskurista.
+   */
+  online?: OnlineOfferPrint;
 };
 
 const nonEmpty = (values: (string | undefined)[]) =>
@@ -477,15 +488,25 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
   const { record, company, offerCompany, generatedAt } = input;
   const customer = customerFromRecord(record);
   const siteAddress = documentSiteAddress(customer, record.formSnapshot);
+  const online = input.online;
+  const numberRows: PriceRow[] = online
+    ? [
+        { label: 'Tarjousnumero', value: online.offerNumber },
+        ...(online.version > 1 ? [{ label: 'Versio', value: String(online.version) }] : []),
+      ]
+    : input.offerNumber != null
+      ? [{ label: 'Tarjousnumero', value: String(input.offerNumber) }]
+      : [];
   const offerInfo: PriceRow[] = [
-    ...(input.offerNumber != null ? [{ label: 'Tarjousnumero', value: String(input.offerNumber) }] : []),
+    ...numberRows,
     { label: 'Päiväys', value: formatFinnishDate(generatedAt) },
     { label: 'Voimassa', value: formatFinnishDate(validUntil(generatedAt, readOfferValidDays(record.formSnapshot, offerCompany.offerValidDays))) },
   ];
   const ktvApplicable =
     isPrivateCustomer(customer) && !customer.reverseVat && readKtvPageIncluded(record.formSnapshot);
-  const payable = printedOfferAmounts(record, customer).gross;
-  const price = offerPriceBlock(record, customer);
+  const includesVat = offerIncludesVat(customer, record.formSnapshot);
+  const payable = online ? onlinePayable(online, includesVat) : printedOfferAmounts(record, customer).gross;
+  const price = online ? onlinePriceBlock(online, includesVat) : offerPriceBlock(record, customer);
   return {
     kind: 'tarjous',
     logoUri: company.logoUri,
@@ -494,7 +515,7 @@ export function buildPdfContext(input: BuildPdfContextInput): TarjousPdfContext 
     rows: buildOfferRows(input),
     sections: buildOfferSections(input),
     deliveryScheduleText: record.deliveryScheduleText?.trim() ?? '',
-    vatSummary: offerVatSummary(record, customer),
+    vatSummary: online ? onlineVatSummary(online, includesVat) : offerVatSummary(record, customer),
     price,
     additionalInfo: typeof offerCompany.additionalInfoText === 'string' ? offerCompany.additionalInfoText : '',
     structureLisatiedot: firstStructureLisatiedot(ensureStructureLines(record), input.structures)?.text ?? '',

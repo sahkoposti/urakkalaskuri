@@ -36,6 +36,7 @@ import { buildPdfFileName } from './pdfFileName';
 import { renderTarjousHtml } from './renderTarjousHtml';
 import { renderUrakkakorttiHtml } from './renderUrakkakorttiHtml';
 import { buildUrakkakorttiContext } from './urakkakortti';
+import type { OnlineCardPrint, OnlineOfferPrint } from '../online/onlinePrint';
 
 /** Sovelluksen muistissa olevat tiedot (AppContext). */
 export type PdfAppData = {
@@ -63,7 +64,19 @@ export type PdfExportDeps = {
   /** Puuttuu testeissä ja vanhassa kutsussa: tuloste ilman liitteitä. */
   listAttachments?: (calculationId: string) => Promise<Attachment[]>;
   attachmentPdfDeps?: AttachmentPdfDeps;
+  /**
+   * Online-lähetys päällä: urakkakortin summat sopimuksen kokonaissenteistä.
+   * Puuttuu tai palauttaa null → vanha laskenta.
+   */
+  onlineCard?: (record: CalculationRecord, settings: AppSettings) => OnlineCardPrint | null;
 };
+
+/** Palvelimen numero paikalliseen dokumenttiriviin, jos se on kokonaisluku. Muuten null. */
+export function localOfferNumber(serverNumber: string): number | null {
+  if (!/^[1-9]\d{0,14}$/.test(serverNumber)) return null;
+  const n = Number(serverNumber);
+  return Number.isSafeInteger(n) ? n : null;
+}
 
 async function storeExportedPdf(
   deps: PdfExportDeps,
@@ -145,13 +158,17 @@ export async function exportTarjousPdf(
   calculationId: string,
   app: PdfAppData,
   deps: PdfExportDeps,
+  /** Online-lähetys: palvelimen numero ja summat. Laitteen laskuria ei silloin käytetä. */
+  online?: OnlineOfferPrint,
 ): Promise<ExportedDocument> {
   const existing = await requireCalculation(deps, calculationId);
   const problems = offerDocumentProblems(existing);
   if (problems.length > 0) {
     throw new Error(problems.join('\n'));
   }
-  const { offerNumber } = await deps.assignOfferNumber(calculationId);
+  const offerNumber = online
+    ? localOfferNumber(online.offerNumber)
+    : (await deps.assignOfferNumber(calculationId)).offerNumber;
   const record = await requireCalculation(deps, calculationId);
   const [company, offerCompany] = await Promise.all([
     deps.getCompanyProfile(),
@@ -172,7 +189,8 @@ export async function exportTarjousPdf(
     products: app.products,
     settings: app.settings,
     generatedAt,
-    offerNumber,
+    ...(offerNumber != null ? { offerNumber } : {}),
+    ...(online ? { online } : {}),
   });
   const items = await listedAttachments(deps, calculationId);
   const renderOffer = (sectionHtml: string) =>
@@ -267,6 +285,7 @@ export async function exportUrakkakorttiPdf(
   if (missing.length > 0) {
     return { status: 'needsManualContract', lines: missing.map((line) => ({ id: line.id, name: line.name })) };
   }
+  const onlineCard = hidePrices ? null : (deps.onlineCard?.(record, app.settings) ?? null);
   const [company, offerCompany] = await Promise.all([
     deps.getCompanyProfile(),
     deps.getOfferCompanySettings(),
@@ -286,6 +305,7 @@ export async function exportUrakkakorttiPdf(
     generatedAt,
     sivukulukerroin: offerCompany.sivukulukerroin,
     offerStructureSettings,
+    ...(onlineCard ? { onlineCard } : {}),
   });
   const items = await listedAttachments(deps, calculationId);
   const renderCard = (sectionHtml: string) =>
