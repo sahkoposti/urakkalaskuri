@@ -1,0 +1,236 @@
+/**
+ * Palvelimen /v1-asiakas myyjälle: kirjautuminen, tarjouksen valmistelu ja lähetys, listaus, käynnit.
+ * fetch ja tokenien tallennus annetaan riippuvuuksina (testit käyttävät väärennöksiä).
+ * Pääsytoken pidetään vain muistissa. Uusintatoken tallennetaan TokenStoreen.
+ * Mitään tokenia, salasanaa tai niiden osaa ei kirjoiteta lokiin eikä virheviestiin.
+ */
+import type { ContractOfferDraft, ContractTotals } from './contractOffer';
+
+export type FetchLike = (
+  url: string,
+  init: { method: string; headers: Record<string, string>; body?: string },
+) => Promise<{ status: number; json: () => Promise<unknown> }>;
+
+export interface TokenStore {
+  getRefreshToken(): Promise<string | null>;
+  setRefreshToken(token: string | null): Promise<void>;
+}
+
+export type OnlineFile = {
+  file_id: string;
+  kind: 'offer_pdf' | 'photo';
+  name: string;
+  content_type: 'application/pdf' | 'image/jpeg' | 'image/png';
+  data_base64: string;
+};
+
+export type PreparedOffer = { offer_id: string; offer_number: string; version: number; totals: ContractTotals };
+export type SentOffer = { offer_id: string; offer_number: string; version: number; status?: string; sent_at?: number };
+export type OfferListItem = {
+  offer_id: string;
+  offer_number: string;
+  version: number;
+  status: string;
+  sent_at: number | null;
+  changed_at: number | null;
+  customer_name: string | null;
+  site_address: string | null;
+  gross_cents: number | null;
+};
+export type Visit = {
+  visit_id: string;
+  task_id: string;
+  starts_at: number;
+  ends_at: number;
+  status: string;
+  notes?: string;
+  customer: { customer_id: string | null; name?: string };
+  site: { site_id: string | null; address?: string; postcode?: string; city?: string };
+};
+
+export type ServerErrorCode =
+  | 'not_signed_in'
+  | 'invalid_credentials'
+  | 'too_many_attempts'
+  | 'conflict'
+  | 'invalid_offer'
+  | 'forbidden'
+  | 'network'
+  | 'server';
+
+/** Virhe ilman salaisuuksia. `fields` = palvelimen kenttävirheet, `conflictCode` = 409-syy. */
+export class OnlineServerError extends Error {
+  constructor(
+    readonly code: ServerErrorCode,
+    message: string,
+    readonly status?: number,
+    readonly fields?: { field: string; code: string }[],
+    readonly conflictCode?: string,
+  ) {
+    super(message);
+    this.name = 'OnlineServerError';
+  }
+}
+
+const DEVICE_ID_RE = /^[A-Za-z0-9_-]{8,128}$/;
+
+/** Palvelimen osoite: vain https, paitsi paikallinen kehityspalvelin. Loppukauttaviiva pois. */
+export function normalizeServerUrl(raw: string): string | null {
+  const text = raw.trim().replace(/\/+$/, '');
+  const match = /^(https?):\/\/([^/\s?#]+)(\/[^\s?#]*)?$/.exec(text);
+  if (!match) return null;
+  const host = match[2]!.toLowerCase();
+  const local = host.startsWith('localhost') || host.startsWith('127.0.0.1') || host.startsWith('10.0.2.2');
+  if (match[1] === 'http' && !local) return null;
+  return text;
+}
+
+function isObj(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+export type ServerClientDeps = {
+  baseUrl: string;
+  deviceId: string;
+  fetch: FetchLike;
+  tokens: TokenStore;
+};
+
+export function createServerClient(deps: ServerClientDeps) {
+  if (!DEVICE_ID_RE.test(deps.deviceId)) throw new Error('Laitetunniste ei kelpaa.');
+  let accessToken: string | null = null;
+
+  async function raw(method: string, path: string, body?: unknown, auth?: string) {
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (auth) headers.Authorization = `Bearer ${auth}`;
+    let res: { status: number; json: () => Promise<unknown> };
+    try {
+      res = await deps.fetch(`${deps.baseUrl}${path}`, {
+        method,
+        headers,
+        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      });
+    } catch {
+      throw new OnlineServerError('network', 'Palvelimeen ei saatu yhteyttä.');
+    }
+    let data: unknown = null;
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+    return { status: res.status, data };
+  }
+
+  function storePair(data: unknown): void {
+    if (!isObj(data) || typeof data.accessToken !== 'string' || typeof data.refreshToken !== 'string') {
+      throw new OnlineServerError('server', 'Palvelimen vastaus oli virheellinen.');
+    }
+    accessToken = data.accessToken;
+  }
+
+  async function login(username: string, password: string): Promise<void> {
+    const r = await raw('POST', '/v1/auth/login', { username, password, deviceId: deps.deviceId });
+    if (r.status === 429) throw new OnlineServerError('too_many_attempts', 'Liian monta yritystä. Yritä hetken päästä.', 429);
+    if (r.status === 401 || r.status === 400) throw new OnlineServerError('invalid_credentials', 'Väärä käyttäjätunnus tai salasana.', r.status);
+    if (r.status !== 200) throw new OnlineServerError('server', `Kirjautuminen epäonnistui (${r.status}).`, r.status);
+    storePair(r.data);
+    await deps.tokens.setRefreshToken((r.data as { refreshToken: string }).refreshToken);
+  }
+
+  async function refresh(): Promise<boolean> {
+    const stored = await deps.tokens.getRefreshToken();
+    if (!stored) return false;
+    const r = await raw('POST', '/v1/auth/refresh', { refreshToken: stored, deviceId: deps.deviceId });
+    if (r.status !== 200) {
+      accessToken = null;
+      if (r.status === 401 || r.status === 400) await deps.tokens.setRefreshToken(null);
+      return false;
+    }
+    storePair(r.data);
+    await deps.tokens.setRefreshToken((r.data as { refreshToken: string }).refreshToken);
+    return true;
+  }
+
+  /** Pyyntö pääsytokenilla. 401 → yksi uusinta uusintatokenilla. */
+  async function authed(method: string, path: string, body?: unknown) {
+    if (!accessToken && !(await refresh())) {
+      throw new OnlineServerError('not_signed_in', 'Kirjaudu ensin palvelimelle (Asetukset).');
+    }
+    let r = await raw(method, path, body, accessToken!);
+    if (r.status === 401) {
+      if (!(await refresh())) throw new OnlineServerError('not_signed_in', 'Kirjautuminen vanhentui. Kirjaudu uudelleen.', 401);
+      r = await raw(method, path, body, accessToken!);
+    }
+    if (r.status === 401) throw new OnlineServerError('not_signed_in', 'Kirjautuminen vanhentui. Kirjaudu uudelleen.', 401);
+    if (r.status === 403) throw new OnlineServerError('forbidden', 'Tunnuksella ei ole oikeutta tähän.', 403);
+    return r;
+  }
+
+  function offerError(r: { status: number; data: unknown }): never {
+    const d = isObj(r.data) ? r.data : {};
+    if (r.status === 409) {
+      const code = typeof d.code === 'string' ? d.code : undefined;
+      throw new OnlineServerError('conflict', 'Tarjous on muuttunut palvelimella. Valmistele uudelleen.', 409, undefined, code);
+    }
+    if (r.status === 400 && d.error === 'invalid_offer') {
+      const fields = Array.isArray(d.fields)
+        ? d.fields.filter(isObj).map((f) => ({ field: String(f.field), code: String(f.code) }))
+        : [];
+      throw new OnlineServerError('invalid_offer', 'Palvelin hylkäsi tarjouksen tiedot.', 400, fields);
+    }
+    throw new OnlineServerError('server', `Palvelin vastasi ${r.status}.`, r.status);
+  }
+
+  return {
+    login,
+    refresh,
+    isSignedIn: async () => accessToken != null || (await deps.tokens.getRefreshToken()) != null,
+    async logout(): Promise<void> {
+      if (accessToken) {
+        try {
+          await raw('POST', '/v1/auth/logout', {}, accessToken);
+        } catch {
+          // Paikallinen uloskirjautuminen onnistuu silti.
+        }
+      }
+      accessToken = null;
+      await deps.tokens.setRefreshToken(null);
+    },
+    async prepare(offer: ContractOfferDraft): Promise<PreparedOffer> {
+      const r = await authed('POST', '/v1/tarjoukset/valmistele', { offer });
+      if (r.status !== 200) offerError(r);
+      const d = r.data;
+      if (!isObj(d) || typeof d.offer_number !== 'string' || typeof d.version !== 'number' || !isObj(d.totals)) {
+        throw new OnlineServerError('server', 'Palvelimen vastaus oli virheellinen.');
+      }
+      return d as unknown as PreparedOffer;
+    },
+    async send(
+      offer: ContractOfferDraft,
+      expect: { offer_number: string; version: number },
+      files: OnlineFile[],
+    ): Promise<SentOffer> {
+      const r = await authed('POST', '/v1/tarjoukset', { offer, expect, files });
+      if (r.status !== 201 && r.status !== 200) offerError(r);
+      const d = r.data;
+      if (!isObj(d) || typeof d.offer_number !== 'string' || typeof d.version !== 'number') {
+        throw new OnlineServerError('server', 'Palvelimen vastaus oli virheellinen.');
+      }
+      return d as unknown as SentOffer;
+    },
+    async listOffers(): Promise<OfferListItem[]> {
+      const r = await authed('GET', '/v1/tarjoukset');
+      if (r.status !== 200 || !isObj(r.data) || !Array.isArray(r.data.tarjoukset)) offerError(r);
+      return (r.data as { tarjoukset: OfferListItem[] }).tarjoukset;
+    },
+    async visits(): Promise<Visit[]> {
+      const r = await authed('GET', '/v1/kaynnit');
+      if (r.status !== 200 || !isObj(r.data) || !Array.isArray(r.data.kaynnit)) offerError(r);
+      return (r.data as { kaynnit: Visit[] }).kaynnit;
+    },
+  };
+}
+
+export type ServerClient = ReturnType<typeof createServerClient>;
