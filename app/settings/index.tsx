@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text } from 'react-native';
 import { SectionTitle } from '@/src/components/common';
 import { SettingsNavCard } from '@/src/components/SettingsNavCard';
 import { formatAppVersionLabel, readAppVersion } from '@/src/core/documents/appVersion';
+import { isOnlineSendEnabled } from '@/src/core/online/flag';
 
 export default function SettingsScreen() {
   return (
@@ -36,6 +37,13 @@ export default function SettingsScreen() {
           subtitle="Värit, taustakuva"
           onPress={() => router.push('/settings/theme')}
         />
+        {isOnlineSendEnabled() ? (
+          <SettingsNavCard
+            title="Palvelin"
+            subtitle="Kirjautuminen, tarjousten lähetys, käynnit"
+            onPress={() => router.push('/settings/online' as Href)}
+          />
+        ) : null}
         <Text style={styles.version}>{formatAppVersionLabel(readAppVersion())}</Text>
       </ScrollView>
     </>

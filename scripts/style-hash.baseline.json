@@ -88,6 +88,18 @@
         "hash": "85ed7af426a12e3cb6eda4d1992b5e50751249785f95d9540e7f68b40727702a"
       }
     ],
+    "app/settings/kaynnit.tsx": [
+      {
+        "index": 0,
+        "hash": "dadf22a7bae047f26d690497f3d44090a7ee5a7e4246889ed8429c911f5653be"
+      }
+    ],
+    "app/settings/online.tsx": [
+      {
+        "index": 0,
+        "hash": "5e1ff07af4296f8633430bde4253a0df42c8685a9b4da36d6491e0959d35ac2c"
+      }
+    ],
     "app/settings/structures/[id].tsx": [
       {
         "index": 0,
@@ -336,6 +348,7 @@
     "55ceabebf01bad7f9b7561a31cb53aed3865eab64bfe7a4f736ead32a5ff4d1e",
     "56fd1c3dc1afcc02f1008f3a71ff2ee0b5355af3b9405c33825f03a9db1b1e6c",
     "5ab4e3ad2bfccadc9e154a0b6175a7296ac4a01142809fd3fdc3b54b695fb473",
+    "5e1ff07af4296f8633430bde4253a0df42c8685a9b4da36d6491e0959d35ac2c",
     "600e1dd80ed5134644ee5e8bab4ef08d98ffd5d4c3673e4a3ac04d8c4544cf00",
     "654f4784dd179e3592ec29b3a1a6e02a895b18851a3f672558815099231cc898",
     "670ce279fdcbc3490a3edbcf40dff94418ab4c4838c4b90df8d877148f6ee47b",
@@ -366,6 +379,7 @@
     "c682255deb910080eefa776c4679ffbb24f7c7fe571ff78c6a2d1b18f5d38397",
     "caa720f97e4a09f3587b6617baea02c811a662e1521a6242af19029c7d2aae00",
     "d28553dbbb7b4ec9ba9afe7085c5193d2629bc29ae1f701e07ad527e9b945bfe",
+    "dadf22a7bae047f26d690497f3d44090a7ee5a7e4246889ed8429c911f5653be",
     "e1e23410ae4bf2c824894c31c6f9c64ad0a5750bba4e015f5fa7639d08a1e433",
     "eec6c82565e5076ff1e7e794742327a6b87e4d4188aee6cd6d50dcf5dc03abb9",
     "f3ad1c680dc6bc75d572540b6f0a217ee43329b5d7323d8fc8f3737fdc940925"
