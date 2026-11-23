@@ -1,18 +1,10 @@
-import { Asset } from 'expo-asset';
 import { File } from 'expo-file-system';
 
-/**
- * PDF:n logo: pienennetty kopio (1000 px leveä, ~30 KB) brändilogosta.
- * Alkuperäinen logo-colorajaton.png on 20077 px leveä / 661 KB, liian raskas
- * base64-upotukseen jokaiseen PDF:ään.
- */
-const PDF_LOGO_MODULE = require('../../../assets/images/logo-colorajaton-pdf.png');
+import { PDF_LOGO_PNG_BASE64 } from './pdfLogoPng';
 
 export function pngDataUri(base64: string): string {
   return `data:image/png;base64,${base64.replace(/\s+/g, '')}`;
 }
-
-let cached: string | null = null;
 
 const DATA_IMAGE = /^data:image\/(png|jpeg|jpg|webp);base64,([a-zA-Z0-9+/=\s]+)$/i;
 
@@ -49,23 +41,16 @@ export async function customLogoDataUri(uri: string | null | undefined): Promise
 }
 
 /**
- * PDF:n logo. Oma tallennettu URI ensin, sitten paketoitu ColoRajaton-logo.
- * Paketoidun logon latausvirhe heittää; kutsuja voi jättää logon pois.
+ * PDF:n logo. Oma tallennettu URI ensin, sitten paketoitu ColoRajaton-logo
+ * (pienennetty 1000 px kopio, upotettu vakiona: ks. pdfLogoPng.ts). Ei heitä.
  */
 export async function loadPdfLogoDataUri(customUri?: string | null): Promise<string> {
   const custom = await customLogoDataUri(customUri);
   if (custom) return custom;
-  if (cached) return cached;
-  const asset = Asset.fromModule(PDF_LOGO_MODULE);
-  await asset.downloadAsync();
-  const uri = asset.localUri ?? asset.uri;
-  if (!uri) throw new Error('PDF-logon polkua ei löytynyt');
-  const base64 = await new File(uri).base64();
-  cached = pngDataUri(base64);
-  return cached;
+  return bundledPdfLogoDataUri();
 }
 
-/** Vain testejä varten. */
-export function resetPdfLogoCache(): void {
-  cached = null;
+/** Paketoitu ColoRajaton-logo data-URI:na. Ei lue tiedostoja. */
+export function bundledPdfLogoDataUri(): string {
+  return pngDataUri(PDF_LOGO_PNG_BASE64);
 }

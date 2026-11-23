@@ -1,16 +1,5 @@
-const mockDownload = jest.fn();
 const mockBase64 = jest.fn();
 
-jest.mock('../assets/images/logo-colorajaton-pdf.png', () => 1);
-jest.mock('expo-asset', () => ({
-  Asset: {
-    fromModule: () => ({
-      downloadAsync: mockDownload,
-      localUri: 'file:///assets/logo.png',
-      uri: 'asset:/logo.png',
-    }),
-  },
-}));
 jest.mock('expo-file-system', () => ({
   File: class {
     constructor(public uri: string) {}
@@ -23,14 +12,13 @@ jest.mock('expo-file-system', () => ({
 import {
   customLogoDataUri,
   imageMimeFromBase64,
+  bundledPdfLogoDataUri,
   loadPdfLogoDataUri,
   pngDataUri,
-  resetPdfLogoCache,
 } from '../src/core/pdf/logoDataUri';
 
 describe('logoDataUri', () => {
   beforeEach(() => {
-    resetPdfLogoCache();
     jest.clearAllMocks();
     mockBase64.mockResolvedValue('iVBO\nRw0K');
   });
@@ -39,28 +27,26 @@ describe('logoDataUri', () => {
     expect(pngDataUri('ab c\nd')).toBe('data:image/png;base64,abcd');
   });
 
-  it('loads the bundled logo once and caches it', async () => {
-    await expect(loadPdfLogoDataUri()).resolves.toBe('data:image/png;base64,iVBORw0K');
-    await loadPdfLogoDataUri();
-    expect(mockDownload).toHaveBeenCalledTimes(1);
-    expect(mockBase64).toHaveBeenCalledWith('file:///assets/logo.png');
+  it('returns the bundled logo without reading any file (works in release APKs)', async () => {
+    const bundled = bundledPdfLogoDataUri();
+    expect(bundled.startsWith('data:image/png;base64,iVBORw0K')).toBe(true);
+    await expect(loadPdfLogoDataUri()).resolves.toBe(bundled);
+    await expect(loadPdfLogoDataUri('')).resolves.toBe(bundled);
+    await expect(loadPdfLogoDataUri(null)).resolves.toBe(bundled);
+    expect(mockBase64).not.toHaveBeenCalled();
   });
 
   it('uses a saved data or file logo and falls back when it is broken', async () => {
     await expect(customLogoDataUri('data:image/png;base64,abc def')).resolves.toBe('data:image/png;base64,abcdef');
     await expect(loadPdfLogoDataUri('data:image/jpeg;base64,qqqq')).resolves.toBe('data:image/jpeg;base64,qqqq');
-    expect(mockDownload).not.toHaveBeenCalled();
+    expect(mockBase64).not.toHaveBeenCalled();
 
-    resetPdfLogoCache();
     mockBase64.mockImplementation(async (uri: string) => {
       if (uri === 'file:///custom/logo.png') throw new Error('broken');
       return 'iVBORw0K';
     });
-    await expect(loadPdfLogoDataUri('file:///custom/logo.png')).resolves.toBe('data:image/png;base64,iVBORw0K');
-    expect(mockDownload).toHaveBeenCalledTimes(1);
+    await expect(loadPdfLogoDataUri('file:///custom/logo.png')).resolves.toBe(bundledPdfLogoDataUri());
 
-    resetPdfLogoCache();
-    mockDownload.mockClear();
     mockBase64.mockImplementation(async (uri: string) => {
       if (uri === 'content://media/logo.jpg') return '/9j/FILEDATA';
       if (uri === 'content://media/42') return 'iVBORw0KGgo';
@@ -73,9 +59,7 @@ describe('logoDataUri', () => {
     expect(imageMimeFromBase64('not-an-image')).toBeNull();
     await expect(loadPdfLogoDataUri('content://media/logo.jpg')).resolves.toBe('data:image/jpeg;base64,/9j/FILEDATA');
     await expect(loadPdfLogoDataUri('content://media/42')).resolves.toBe('data:image/png;base64,iVBORw0KGgo');
-    expect(mockDownload).not.toHaveBeenCalled();
-    await expect(loadPdfLogoDataUri('content://media/unknown')).resolves.toBe('data:image/png;base64,iVBORw0K');
-    expect(mockDownload).toHaveBeenCalledTimes(1);
+    await expect(loadPdfLogoDataUri('content://media/unknown')).resolves.toBe(bundledPdfLogoDataUri());
     await expect(customLogoDataUri('https://example.invalid/logo.png')).resolves.toBeNull();
   });
 });
