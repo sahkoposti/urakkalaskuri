@@ -143,7 +143,7 @@ function stripLegacyFieldProps(fields: LegacyFormField[]): FormField[] {
 }
 
 function normalizeFieldKeys(fields: FormField[]): FormField[] {
-  return fields.map((field) => {
+  const normalized = fields.map((field) => {
     const mapped = LEGACY_KEY_MAP[field.key];
     const key = mapped ?? (/^[a-z0-9_]+$/.test(field.key) ? field.key : slugifyKey(field.key));
     const rawType = String(field.type);
@@ -167,7 +167,7 @@ function normalizeFieldKeys(fields: FormField[]): FormField[] {
       ...field,
       key,
       type,
-      formula: field.formula ? migrateFormulaKeys(field.formula) : field.formula,
+      formula: field.formula,
       effects: effects && effects.length > 0 ? effects : undefined,
       showWhen,
       showOnSummaryWhen,
@@ -175,6 +175,10 @@ function normalizeFieldKeys(fields: FormField[]): FormField[] {
         type !== 'section' && field.sameRowAsPrevious === true ? true : undefined,
     };
   });
+  const definedKeys = new Set(normalized.map((field) => field.key));
+  return normalized.map((field) =>
+    field.formula ? { ...field, formula: migrateFormulaKeys(field.formula, definedKeys) } : field,
+  );
 }
 
 function dedupePageFieldAssignments(pages: FormPage[]): FormPage[] {

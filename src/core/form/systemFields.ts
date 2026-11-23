@@ -233,6 +233,7 @@ export function mergeSystemFields(fields: FormField[]): FormField[] {
       reservedKeys.has(field.key) &&
       !PIPELINE_CONTEXT_KEYS.has(field.key),
   );
+  const definedKeys = new Set(fields.map((field) => field.key));
   const mergedSystem = systemDefaults.map((template) => {
     const current =
       existingSystem.find((field) => field.systemKey === template.systemKey) ??
@@ -247,7 +248,7 @@ export function mergeSystemFields(fields: FormField[]): FormField[] {
       label: displayWorkDurationText(current.label || template.label),
       formula: ownedFormula
         ? template.formula
-        : migrateFormulaKeys(current.formula ?? template.formula ?? ''),
+        : migrateFormulaKeys(current.formula ?? template.formula ?? '', definedKeys),
       showOnSummary: isSystemFieldHiddenFromUi(template) ? false : current.showOnSummary,
       helpText: current.helpText ?? (importedFormula ? undefined : template.helpText),
       unit: current.unit ?? template.unit,
@@ -277,12 +278,36 @@ export const LEGACY_KEY_MAP: Record<string, string> = {
   'settings.workday_hours': 'asetukset.tyopaivan_pituus',
 };
 
-export function migrateFormulaKeys(formula: string): string {
-  if (!formula) return formula;
-  let result = formula;
-  const entries = Object.entries(LEGACY_KEY_MAP).sort((a, b) => b[0].length - a[0].length);
-  for (const [legacy, next] of entries) {
-    result = result.replaceAll(legacy, next);
+/** Sama tunnistekuvio kuin kaavamoottorissa (evaluator.extractFormulaIdentifiers). */
+const FORMULA_IDENTIFIER_PATTERN = /[a-zA-Z_äöåÄÖÅ][a-zA-Z0-9_äöåÄÖÅ.]*/g;
+
+const LEGACY_KEY_TARGETS = new Set(Object.values(LEGACY_KEY_MAP));
+
+/**
+ * Korjaa aiemman osamerkkijonomigraation rikkomat tunnisteet (esim.
+ * `ikkunanpokat_materiaalit_alv0` → `ikkunanpokat_materiaalit`). Tunniste
+ * korjataan vain, kun se itse ei ole lomakkeen kenttä ja korjattu nimi on.
+ */
+function repairBrokenFormulaIdentifier(ident: string, definedKeys: ReadonlySet<string>): string {
+  if (definedKeys.has(ident) || LEGACY_KEY_TARGETS.has(ident)) return ident;
+  if (ident.includes('.')) return ident;
+  for (const [legacy, next] of Object.entries(LEGACY_KEY_MAP)) {
+    if (!next || legacy.includes('.') || !ident.includes(next)) continue;
+    const candidate = ident.split(next).join(legacy);
+    if (candidate !== ident && definedKeys.has(candidate)) return candidate;
   }
-  return result;
+  return ident;
+}
+
+/**
+ * Vanhojen avainten migraatio kaavoissa. Korvaa vain kokonaisia tunnisteita
+ * (ei osamerkkijonoja). Kun `definedKeys` annetaan, korjaa myös aiemmin
+ * osamerkkijonona rikkoutuneet tunnisteet. Idempotentti.
+ */
+export function migrateFormulaKeys(formula: string, definedKeys?: ReadonlySet<string>): string {
+  if (!formula) return formula;
+  return formula.replace(FORMULA_IDENTIFIER_PATTERN, (ident) => {
+    const migrated = LEGACY_KEY_MAP[ident] ?? ident;
+    return definedKeys ? repairBrokenFormulaIdentifier(migrated, definedKeys) : migrated;
+  });
 }
