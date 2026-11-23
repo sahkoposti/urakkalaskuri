@@ -3660,7 +3660,7 @@ exports[`main screen render snapshots app/settings/index.tsx 1`] = `
           }
         }
       >
-        Versio 1.3.5
+        Versio 1.3.6
       </Text>
     </View>
   </RCTScrollView>

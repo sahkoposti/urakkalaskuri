@@ -32,7 +32,7 @@ jest.mock('expo-router', () => {
 jest.mock('expo-constants', () => ({
   __esModule: true,
   default: {
-    expoConfig: { version: '1.3.5' },
+    expoConfig: { version: '1.3.6' },
   },
 }));
 
