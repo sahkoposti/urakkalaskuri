@@ -60,6 +60,9 @@ type ShareTarget = {
   createdAt: string;
 };
 import { pdfExportDeps } from '@/src/core/pdf/pdfExportDeps';
+import { isOnlineSendEnabled } from '@/src/core/online/flag';
+import { getServerClient, readFileBase64 } from '@/src/core/online/onlineRuntime';
+import { onlineSendErrorMessage, sendOnlineOffer } from '@/src/core/online/sendOnlineOffer';
 import type { ListedDocument } from './CalculationDocumentList';
 import {
   calculationWithBusinessVatMode,
@@ -94,7 +97,7 @@ import {
   type PdfFormDirty,
 } from './pdfExportFormModel';
 
-type Busy = 'tarjous' | 'urakkakortti' | null;
+type Busy = 'tarjous' | 'online' | 'urakkakortti' | null;
 
 const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -410,8 +413,12 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     } catch (error) {
       console.error(error);
       showAlert(
-        kind === 'tarjous' ? 'Tarjouksen luonti epäonnistui' : 'Urakkakortin luonti epäonnistui',
-        errorMessage(error),
+        kind === 'online'
+          ? 'Lähetys palvelimelle epäonnistui'
+          : kind === 'tarjous'
+            ? 'Tarjouksen luonti epäonnistui'
+            : 'Urakkakortin luonti epäonnistui',
+        kind === 'online' ? onlineSendErrorMessage(error) : errorMessage(error),
       );
     } finally {
       busyRef.current = false;
@@ -427,25 +434,59 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
     }
     if (companyValidDays == null) return;
     return run('tarjous', async () => {
-      if (fields.showKtvPageChoice) await persistKtvPageIncluded(ktvPageIncluded);
-      if (fields.showKtvPersons && parsedPersons !== 'invalid') {
-        await persistPersons(parsedPersons);
-        markDirty({ personsText: false });
-      }
-      const days = offerValidDaysForSave({
-        snapshot: record.formSnapshot,
-        fieldText: validDaysText,
-        companyDefault: companyValidDays,
-        touched: dirtyRef.current.validDays,
-      });
-      if (typeof days === 'number') {
-        await persistValidDays(days);
-        markDirty({ validDays: false });
-      }
+      await persistOfferFields();
       const saved = await exportTarjousPdf(calculationId, app, pdfExportDeps);
       await showReady(saved);
       await refreshCalculations();
     });
+  };
+
+  /** Online-lähetys (lippu päällä): palvelin antaa numeron ja summat, PDF tehdään niistä. */
+  const handleOnlineSend = () => {
+    if (exportBlocked) return;
+    if (blockingMessages.length > 0) {
+      showAlert('Tarjousta ei voi lähettää', blockingMessages.join('\n'));
+      return;
+    }
+    if (companyValidDays == null) return;
+    return run('online', async () => {
+      const client = await getServerClient();
+      if (!client || !(await client.isSignedIn())) {
+        showAlert('Ei kirjautunut', 'Kirjaudu palvelimelle: Asetukset → Palvelin.');
+        return;
+      }
+      await persistOfferFields();
+      const result = await sendOnlineOffer(calculationId, {
+        client,
+        getCalculation: (id) => db.getCalculation(id),
+        saveCalculation: (next) => db.saveCalculation(next),
+        exportOffer: (id, online) => exportTarjousPdf(id, app, pdfExportDeps, online),
+        readFileBase64,
+        workdayHours: settings.workdayHours,
+        companyOfferValidDays: companyValidDays,
+        now: () => new Date(),
+      });
+      await refreshCalculations();
+      await showReady(result.document);
+    });
+  };
+
+  const persistOfferFields = async () => {
+    if (fields.showKtvPageChoice) await persistKtvPageIncluded(ktvPageIncluded);
+    if (fields.showKtvPersons && parsedPersons !== 'invalid') {
+      await persistPersons(parsedPersons);
+      markDirty({ personsText: false });
+    }
+    const days = offerValidDaysForSave({
+      snapshot: record.formSnapshot,
+      fieldText: validDaysText,
+      companyDefault: companyValidDays,
+      touched: dirtyRef.current.validDays,
+    });
+    if (typeof days === 'number') {
+      await persistValidDays(days);
+      markDirty({ validDays: false });
+    }
   };
 
   const handleUrakkakortti = (manualValues?: Record<string, number>) => {
@@ -637,6 +678,19 @@ export function usePdfExportForm(calculationId: string, record: CalculationRecor
           blockingMessages,
         }),
       onCreate: handleTarjous,
+      onlineSend: isOnlineSendEnabled()
+        ? {
+            title: busy === 'online' ? 'Lähetetään…' : 'Lähetä palvelimelle',
+            disabled:
+              exportBlocked ||
+              tarjousCreateDisabled({
+                busy: anyBusy,
+                companyValidDaysLoaded: companyValidDays != null,
+                blockingMessages,
+              }),
+            onPress: handleOnlineSend,
+          }
+        : null,
     },
     card: {
       cardMode,

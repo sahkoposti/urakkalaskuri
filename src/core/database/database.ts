@@ -314,7 +314,7 @@ export type CalculationCopyResult = {
   attachmentCopyFailures: AttachmentCopyFailure[];
 };
 
-function cloneCalculationRecord(
+export function cloneCalculationRecord(
   source: CalculationRecord,
   newId: string,
   createdAt: Date,
@@ -331,6 +331,11 @@ function cloneCalculationRecord(
     })),
   };
   delete copy.offerNumber;
+  if (copy.formSnapshot && 'onlineOffer' in copy.formSnapshot) {
+    // Kopio on uusi tarjous: palvelimen numero ja versio eivät kuulu sille.
+    const { onlineOffer: _sent, ...snapshot } = copy.formSnapshot;
+    copy.formSnapshot = snapshot;
+  }
   return copy;
 }
 
@@ -692,6 +697,20 @@ export async function saveOfferStructureSettings(
   settings: OfferStructureSettings,
 ): Promise<void> {
   await writeSettingValue(offerStructureSettingsKey(structureId), JSON.stringify(settings));
+}
+
+/** Online-lähetyksen asetusavaimet. Vain tämä lista on luettavissa näillä apureilla. */
+export const ONLINE_SETTING_KEYS = ['online_server_url', 'online_device_id', 'online_refresh_token', 'online_username'] as const;
+export type OnlineSettingKey = (typeof ONLINE_SETTING_KEYS)[number];
+
+export async function getOnlineSetting(key: OnlineSettingKey): Promise<string | null> {
+  const value = await readSettingValue(key);
+  return typeof value === 'string' && value !== '' ? value : null;
+}
+
+/** null poistaa arvon (tyhjä merkkijono). */
+export async function saveOnlineSetting(key: OnlineSettingKey, value: string | null): Promise<void> {
+  await writeSettingValue(key, value ?? '');
 }
 
 export async function getStoredNextOfferNumber(): Promise<number | undefined> {

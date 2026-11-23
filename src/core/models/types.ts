@@ -171,6 +171,19 @@ export interface FormSnapshot {
    * Ei lomakepohjan avain. Valmis laskelma ei kirjoita tätä.
    */
   wizardDraft?: PersistedWizardDraft;
+  /**
+   * Online-lähetyksen tila (palvelin). Valinnainen avain samassa `form_snapshot`-JSON:ssa.
+   * Ei lomakepohjan avain eikä SQL-migraatio. Puuttuu = tarjousta ei ole lähetetty palvelimelle.
+   */
+  onlineOffer?: OnlineOfferState;
+}
+
+export interface OnlineOfferState {
+  offerId: string;
+  offerNumber: string;
+  version: number;
+  /** Lähetysaika ms (palvelimen sent_at tai puhelimen kello). */
+  sentAt: number;
 }
 
 export interface CalculationRecord {

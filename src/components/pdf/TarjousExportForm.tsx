@@ -96,6 +96,13 @@ export function TarjousExportForm({
       ) : null}
       <AttachmentSummaryLink attachments={attachments} target="offer" onPress={onShowAttachments} />
       <OutlinedButton title={offer.createTitle} onPress={offer.onCreate} disabled={offer.createDisabled} />
+      {offer.onlineSend ? (
+        <OutlinedButton
+          title={offer.onlineSend.title}
+          onPress={offer.onlineSend.onPress}
+          disabled={offer.onlineSend.disabled}
+        />
+      ) : null}
     </>
   );
 }
