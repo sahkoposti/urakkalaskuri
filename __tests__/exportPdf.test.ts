@@ -12,6 +12,18 @@ import {
 } from '../src/core/pdf/urakkakorttiCard';
 import { input, line, record } from './pdfFixtures';
 
+jest.mock('expo-file-system', () => ({
+  File: class {
+    constructor(public uri: string) {}
+    async base64() {
+      if (this.uri === 'file:///saved/oma-logo.jpg') return '/9j/OMALOGO';
+      throw new Error(`no such file: ${this.uri}`);
+    }
+  },
+}));
+// eslint-disable-next-line import/first
+import { bundledPdfLogoDataUri, loadPdfLogoDataUri } from '../src/core/pdf/logoDataUri';
+
 function setup(rec: CalculationRecord) {
   let stored: CalculationRecord = rec;
   let next: number | undefined;
@@ -320,5 +332,50 @@ describe('exportUrakkakorttiPdf', () => {
     const empty = printed[0].composeHtml?.('') ?? '';
     expect(empty).toContain('Urakkakortti');
     expect(empty).not.toContain('class="liitteet');
+  });
+});
+
+describe('logo on both printouts (real logo loader, as in the app)', () => {
+  const offerRecord = () => record({ name: 'Testi Asiakas' }, { projectName: 'Testi Asiakas' });
+  const cardRecord = () =>
+    record({ name: 'Testi' }, { projectName: 'Testi', structureLines: [{ ...line('a', 's1', 'Ulkomaalaus'), contractPriceVat0: 640 }] });
+  const withLogo = (ctx: ReturnType<typeof setup>, logoUri?: string) => {
+    const company = ctx.deps.getCompanyProfile;
+    ctx.deps.getCompanyProfile = async () => ({ ...(await company()), ...(logoUri ? { logoUri } : {}) });
+    ctx.deps.loadLogoDataUri = (uri) => loadPdfLogoDataUri(uri);
+    return ctx;
+  };
+  const logoSrc = (html: string) => /<img class="logo" src="([^"]+)"/.exec(html)?.[1] ?? null;
+  const bundled = bundledPdfLogoDataUri();
+
+  it('offer PDF: bundled ColoRajaton logo when no logo is saved', async () => {
+    const ctx = withLogo(setup(offerRecord()));
+    await exportTarjousPdf('c1', ctx.app, ctx.deps);
+    expect(logoSrc(ctx.printed[0].html)).toBe(bundled);
+  });
+
+  it('contract card: bundled ColoRajaton logo when no logo is saved', async () => {
+    const ctx = withLogo(setup(cardRecord()));
+    const done = await exportUrakkakorttiPdf('c1', ctx.app, ctx.deps);
+    expect(done.status).toBe('done');
+    expect(logoSrc(ctx.printed[0].html)).toBe(bundled);
+  });
+
+  it('offer PDF and contract card: the saved logo is used', async () => {
+    const offer = withLogo(setup(offerRecord()), 'file:///saved/oma-logo.jpg');
+    await exportTarjousPdf('c1', offer.app, offer.deps);
+    expect(logoSrc(offer.printed[0].html)).toBe('data:image/jpeg;base64,/9j/OMALOGO');
+    const card = withLogo(setup(cardRecord()), 'file:///saved/oma-logo.jpg');
+    await exportUrakkakorttiPdf('c1', card.app, card.deps);
+    expect(logoSrc(card.printed[0].html)).toBe('data:image/jpeg;base64,/9j/OMALOGO');
+  });
+
+  it('a saved logo that can no longer be read falls back to the bundled logo on both printouts', async () => {
+    const offer = withLogo(setup(offerRecord()), 'file:///saved/poistettu.png');
+    await exportTarjousPdf('c1', offer.app, offer.deps);
+    expect(logoSrc(offer.printed[0].html)).toBe(bundled);
+    const card = withLogo(setup(cardRecord()), 'file:///saved/poistettu.png');
+    await exportUrakkakorttiPdf('c1', card.app, card.deps);
+    expect(logoSrc(card.printed[0].html)).toBe(bundled);
   });
 });
