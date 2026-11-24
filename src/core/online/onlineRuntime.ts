@@ -31,8 +31,13 @@ const deviceId = createDeviceIdProvider(
   () => randomUUID(),
 );
 
+/**
+ * Tallennettu osoite tarkistetaan joka lukukerralla uudelleen (B6): vanhalla versiolla, käsin tai
+ * palautuksessa tallentunut kelvoton osoite tarkoittaa, ettei palvelinta ole asetettu.
+ */
 export async function getServerUrl(): Promise<string | null> {
-  return getOnlineSetting('online_server_url');
+  const stored = await getOnlineSetting('online_server_url');
+  return stored == null ? null : normalizeServerUrl(stored);
 }
 
 /** Tallentaa osoitteen. Palauttaa false, jos osoite ei kelpaa (vain https). */
