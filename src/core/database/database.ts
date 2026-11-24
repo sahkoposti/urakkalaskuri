@@ -708,9 +708,14 @@ export async function getOnlineSetting(key: OnlineSettingKey): Promise<string | 
   return typeof value === 'string' && value !== '' ? value : null;
 }
 
-/** null poistaa arvon (tyhjä merkkijono). */
+/** null (tai tyhjä) poistaa rivin kokonaan (B8: vanha token ei jää tyhjänä rivinä tauluun). */
 export async function saveOnlineSetting(key: OnlineSettingKey, value: string | null): Promise<void> {
-  await writeSettingValue(key, value ?? '');
+  if (value == null || value === '') {
+    const db = await getDb();
+    await db.runAsync('DELETE FROM settings WHERE key = ?', key);
+    return;
+  }
+  await writeSettingValue(key, value);
 }
 
 export async function getStoredNextOfferNumber(): Promise<number | undefined> {
