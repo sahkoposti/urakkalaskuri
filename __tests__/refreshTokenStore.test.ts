@@ -57,4 +57,14 @@ describe('refresh token store (secure-store + SQLite migration)', () => {
     expect(f.secureMap.has(SECURE_REFRESH_TOKEN_KEY)).toBe(false);
     expect(await store.getRefreshToken()).toBeNull();
   });
+
+  it('logout-pending flag lives in secure storage', async () => {
+    const f = fakes(null);
+    const store = createRefreshTokenStore(f.secure, f.legacy);
+    expect(await store.getLogoutPending()).toBe(false);
+    await store.setLogoutPending(true);
+    expect(await createRefreshTokenStore(f.secure, f.legacy).getLogoutPending()).toBe(true);
+    await store.setLogoutPending(false);
+    expect(await store.getLogoutPending()).toBe(false);
+  });
 });

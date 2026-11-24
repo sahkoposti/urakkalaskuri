@@ -148,12 +148,18 @@ describe('serverClient', () => {
   }
   const memoryTokens = () => {
     let token: string | null = null;
+    let pending = false;
     return {
       getRefreshToken: async () => token,
       setRefreshToken: async (t: string | null) => {
         token = t;
       },
+      getLogoutPending: async () => pending,
+      setLogoutPending: async (p: boolean) => {
+        pending = p;
+      },
       peek: () => token,
+      peekPending: () => pending,
     };
   };
 
@@ -242,6 +248,112 @@ describe('serverClient', () => {
     await expect(client.visits()).resolves.toEqual([]);
     expect(calls.filter((c) => c.url === '/v1/auth/refresh')).toHaveLength(2);
     expect(tokens.peek()).toBe('R3');
+  });
+
+  describe('logout always revokes the server session (T-38)', () => {
+    function logoutServer(opts: { online: () => boolean }) {
+      const sessions = new Set<string>();
+      let n = 0;
+      const routes = {
+        'POST /v1/auth/login': () => {
+          n += 1;
+          sessions.add(`R${n}`);
+          return { status: 200, body: { accessToken: `A${n}`, refreshToken: `R${n}`, tokenType: 'Bearer', expiresIn: 900 } };
+        },
+        'POST /v1/auth/refresh': (b: Record<string, unknown>) => {
+          const old = String(b.refreshToken);
+          if (!sessions.has(old)) return { status: 401 };
+          const id = old.slice(1);
+          return { status: 200, body: { accessToken: `A${id}`, refreshToken: old, tokenType: 'Bearer', expiresIn: 900 } };
+        },
+        'POST /v1/auth/logout': (_b: Record<string, unknown>, auth?: string) => {
+          const id = String(auth ?? '').replace('Bearer A', '');
+          if (!sessions.has(`R${id}`)) return { status: 401 };
+          sessions.delete(`R${id}`);
+          return { status: 200, body: { status: 'ok' } };
+        },
+      };
+      const base = fakeServer(routes);
+      const fetch: FetchLike = async (url, init) => {
+        if (!opts.online()) throw new Error('offline');
+        return base.fetch(url, init);
+      };
+      return { fetch, calls: base.calls, sessions };
+    }
+    const mk = (fetch: FetchLike, tokens: ReturnType<typeof memoryTokens>) =>
+      createServerClient({ baseUrl: 'https://palvelin.test', deviceId: 'testdevice01', fetch, tokens });
+
+    it('online: logout revokes the session and clears the token', async () => {
+      const srv = logoutServer({ online: () => true });
+      const tokens = memoryTokens();
+      const c = mk(srv.fetch, tokens);
+      await c.login('myyja', 'oikea');
+      expect(await c.logout()).toBe(true);
+      expect(srv.sessions.size).toBe(0);
+      expect(tokens.peek()).toBeNull();
+      expect(tokens.peekPending()).toBe(false);
+      expect(await c.isSignedIn()).toBe(false);
+    });
+
+    it('after an app restart (no access token in memory) logout refreshes and still revokes', async () => {
+      const srv = logoutServer({ online: () => true });
+      const tokens = memoryTokens();
+      await mk(srv.fetch, tokens).login('myyja', 'oikea');
+      const restarted = mk(srv.fetch, tokens);
+      expect(await restarted.logout()).toBe(true);
+      expect(srv.sessions.size).toBe(0);
+      expect(srv.calls.filter((x) => x.url === '/v1/auth/logout')).toHaveLength(1);
+      expect(tokens.peek()).toBeNull();
+    });
+
+    it('offline: signed out locally at once, token kept, revoke retried after restart', async () => {
+      let online = true;
+      const srv = logoutServer({ online: () => online });
+      const tokens = memoryTokens();
+      await mk(srv.fetch, tokens).login('myyja', 'oikea');
+      online = false;
+      const c = mk(srv.fetch, tokens);
+      expect(await c.logout()).toBe(false);
+      expect(await c.isSignedIn()).toBe(false);
+      expect(tokens.peek()).toBe('R1');
+      expect(tokens.peekPending()).toBe(true);
+      await expect(c.visits()).rejects.toMatchObject({ code: 'not_signed_in' });
+      expect(srv.sessions.has('R1')).toBe(true);
+      online = true;
+      const restarted = mk(srv.fetch, tokens);
+      expect(await restarted.retryPendingLogout()).toBe(true);
+      expect(srv.sessions.size).toBe(0);
+      expect(tokens.peek()).toBeNull();
+      expect(tokens.peekPending()).toBe(false);
+      expect(await restarted.retryPendingLogout()).toBe(false);
+    });
+
+    it('a pending logout is revoked before the next login', async () => {
+      let online = true;
+      const srv = logoutServer({ online: () => online });
+      const tokens = memoryTokens();
+      await mk(srv.fetch, tokens).login('myyja', 'oikea');
+      online = false;
+      await mk(srv.fetch, tokens).logout();
+      online = true;
+      const c = mk(srv.fetch, tokens);
+      await c.login('myyja', 'oikea');
+      expect(srv.sessions.has('R1')).toBe(false);
+      expect(srv.sessions.has('R2')).toBe(true);
+      expect(tokens.peek()).toBe('R2');
+      expect(tokens.peekPending()).toBe(false);
+      expect(await c.isSignedIn()).toBe(true);
+    });
+
+    it('a session already gone on the server counts as revoked', async () => {
+      const srv = logoutServer({ online: () => true });
+      const tokens = memoryTokens();
+      await mk(srv.fetch, tokens).login('myyja', 'oikea');
+      srv.sessions.clear();
+      expect(await mk(srv.fetch, tokens).logout()).toBe(true);
+      expect(tokens.peek()).toBeNull();
+      expect(tokens.peekPending()).toBe(false);
+    });
   });
 
   it('maps 409 and invalid_offer; error text carries no tokens', async () => {

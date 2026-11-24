@@ -14,6 +14,13 @@ export type FetchLike = (
 export interface TokenStore {
   getRefreshToken(): Promise<string | null>;
   setRefreshToken(token: string | null): Promise<void>;
+  /**
+   * Uloskirjautuminen odottaa palvelimen vahvistusta (T-38). Uusintatoken pidetään tallessa,
+   * kunnes palvelin on mitätöinyt istunnon, jotta mitätöinti voidaan yrittää uudelleen myös
+   * sovelluksen uudelleenkäynnistyksen jälkeen. Sillä välin sovellus on uloskirjautunut.
+   */
+  getLogoutPending(): Promise<boolean>;
+  setLogoutPending(pending: boolean): Promise<void>;
 }
 
 export type OnlineFile = {
@@ -160,12 +167,15 @@ export function createServerClient(deps: ServerClientDeps) {
   }
 
   async function login(username: string, password: string): Promise<void> {
+    // Kesken jäänyt uloskirjautuminen yritetään ensin; epäonnistuessa vanha istunto vanhenee palvelimella itsestään.
+    if (await deps.tokens.getLogoutPending()) await revokePending();
     const r = await raw('POST', '/v1/auth/login', { username, password, deviceId: deps.deviceId });
     if (r.status === 429) throw new OnlineServerError('too_many_attempts', 'Liian monta yritystä. Yritä hetken päästä.', 429);
     if (r.status === 401 || r.status === 400) throw new OnlineServerError('invalid_credentials', 'Väärä käyttäjätunnus tai salasana.', r.status);
     if (r.status !== 200) throw new OnlineServerError('server', `Kirjautuminen epäonnistui (${r.status}).`, r.status);
     storePair(r.data);
     await deps.tokens.setRefreshToken((r.data as { refreshToken: string }).refreshToken);
+    await deps.tokens.setLogoutPending(false);
   }
 
   let refreshInFlight: Promise<boolean> | null = null;
@@ -194,8 +204,53 @@ export function createServerClient(deps: ServerClientDeps) {
     return true;
   }
 
+  async function clearSession(): Promise<void> {
+    accessToken = null;
+    await deps.tokens.setRefreshToken(null);
+    await deps.tokens.setLogoutPending(false);
+  }
+
+  /** Mitätöi palvelimen istunnon. Pitää uusintatokenin, kunnes palvelin vahvistaa. */
+  async function revokePending(): Promise<boolean> {
+    try {
+      if (!accessToken) {
+        const refreshed = await refresh();
+        if (!refreshed) {
+          // 401/400: uusintatoken oli jo mitätön (refresh tyhjensi sen) → istunto on jo poissa.
+          if (!(await deps.tokens.getRefreshToken())) {
+            await clearSession();
+            return true;
+          }
+          return false;
+        }
+      }
+      const r = await raw('POST', '/v1/auth/logout', {}, accessToken!);
+      if (r.status === 200 || r.status === 401) {
+        // 401 = pääsytoken ei enää kelpaa; yritetään vielä uusinnan kautta kerran.
+        if (r.status === 401 && (await refresh())) {
+          const again = await raw('POST', '/v1/auth/logout', {}, accessToken!);
+          if (again.status !== 200 && again.status !== 401) {
+            accessToken = null;
+            return false;
+          }
+        }
+        await clearSession();
+        return true;
+      }
+      accessToken = null;
+      return false;
+    } catch {
+      // Ei verkkoa tms.: token jää talteen ja uloskirjautuminen jää kesken.
+      accessToken = null;
+      return false;
+    }
+  }
+
   /** Pyyntö pääsytokenilla. 401 → yksi uusinta uusintatokenilla. */
   async function authed(method: string, path: string, body?: unknown) {
+    if (await deps.tokens.getLogoutPending()) {
+      throw new OnlineServerError('not_signed_in', 'Kirjaudu ensin palvelimelle (Asetukset).');
+    }
     if (!accessToken && !(await refresh())) {
       throw new OnlineServerError('not_signed_in', 'Kirjaudu ensin palvelimelle (Asetukset).');
     }
@@ -227,17 +282,22 @@ export function createServerClient(deps: ServerClientDeps) {
   return {
     login,
     refresh,
-    isSignedIn: async () => accessToken != null || (await deps.tokens.getRefreshToken()) != null,
-    async logout(): Promise<void> {
-      if (accessToken) {
-        try {
-          await raw('POST', '/v1/auth/logout', {}, accessToken);
-        } catch {
-          // Paikallinen uloskirjautuminen onnistuu silti.
-        }
-      }
-      accessToken = null;
-      await deps.tokens.setRefreshToken(null);
+    isSignedIn: async () =>
+      !(await deps.tokens.getLogoutPending()) && (accessToken != null || (await deps.tokens.getRefreshToken()) != null),
+    /**
+     * Uloskirjautuminen: sovellus on heti uloskirjautunut. Palvelimen istunto mitätöidään; jos se ei
+     * onnistu (ei verkkoa), uusintatoken jää talteen ja mitätöinti yritetään uudelleen
+     * (retryPendingLogout käynnistyksessä, tai ennen seuraavaa kirjautumista).
+     * Palauttaa true, kun palvelin vahvisti mitätöinnin tai istunto oli jo mitätön.
+     */
+    async logout(): Promise<boolean> {
+      await deps.tokens.setLogoutPending(true);
+      return revokePending();
+    },
+    /** Kesken jäänyt uloskirjautuminen uudelleen. false = ei kesken tai ei vielä onnistunut. */
+    async retryPendingLogout(): Promise<boolean> {
+      if (!(await deps.tokens.getLogoutPending())) return false;
+      return revokePending();
     },
     async prepare(offer: ContractOfferDraft): Promise<PreparedOffer> {
       const r = await authed('POST', '/v1/tarjoukset/valmistele', { offer });

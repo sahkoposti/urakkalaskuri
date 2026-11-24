@@ -6,6 +6,7 @@
 import type { TokenStore } from './serverClient';
 
 export const SECURE_REFRESH_TOKEN_KEY = 'online_refresh_token';
+export const SECURE_LOGOUT_PENDING_KEY = 'online_logout_pending';
 
 export type SecureStoreLike = {
   getItemAsync(key: string): Promise<string | null>;
@@ -51,6 +52,13 @@ export function createRefreshTokenStore(secure: SecureStoreLike, legacy: LegacyT
         await legacy.clear();
         legacyChecked = true;
       }
+    },
+    async getLogoutPending() {
+      return (await secure.getItemAsync(SECURE_LOGOUT_PENDING_KEY)) === '1';
+    },
+    async setLogoutPending(pending) {
+      if (pending) await secure.setItemAsync(SECURE_LOGOUT_PENDING_KEY, '1');
+      else await secure.deleteItemAsync(SECURE_LOGOUT_PENDING_KEY);
     },
   };
 }
