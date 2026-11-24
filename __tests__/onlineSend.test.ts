@@ -13,6 +13,7 @@ import {
   type ContractOfferDraft,
 } from '../src/core/online/contractOffer';
 import { isOnlineSendEnabled } from '../src/core/online/flag';
+import { onlineJobCardForRecord } from '../src/core/online/onlineJobCard';
 import { onlineCardPrint, onlinePayable, onlinePriceBlock, onlineVatSummary } from '../src/core/online/onlinePrint';
 import { onlineSendErrorMessage, sendOnlineOffer, type SendOnlineOfferDeps } from '../src/core/online/sendOnlineOffer';
 import { createServerClient, normalizeServerUrl, OnlineServerError, type FetchLike } from '../src/core/online/serverClient';
@@ -331,6 +332,16 @@ describe('onlinePrint', () => {
       }),
     );
     expect(html).toMatch(/1\s?234,56/);
+  });
+
+  it('job card uses contract cents only for offers sent online (B5)', () => {
+    const unsent = record({});
+    expect(onlineJobCardForRecord(unsent, { workdayHours: 8 }, NOW)).toBeNull();
+    const sent = {
+      ...unsent,
+      formSnapshot: { ...unsent.formSnapshot, onlineOffer: { offerId: unsent.id, offerNumber: '10431', version: 1, sentAt: 1 } },
+    } as CalculationRecord;
+    expect(onlineJobCardForRecord(sent, { workdayHours: 8 }, NOW)).toEqual(onlineCardPrint(draftOf(sent)));
   });
 
   it('job card throws (no silent 0) when an online line amount is missing', () => {

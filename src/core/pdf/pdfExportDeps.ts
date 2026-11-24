@@ -17,8 +17,7 @@ import type { PdfExportDeps } from './exportPdf';
 import { generatePdf } from './generatePdf';
 import { loadPdfLogoDataUri } from './logoDataUri';
 import { isOnlineSendEnabled } from '../online/flag';
-import { buildContractOffer } from '../online/contractOffer';
-import { onlineCardPrint } from '../online/onlinePrint';
+import { onlineJobCardForRecord } from '../online/onlineJobCard';
 
 /** Oikeat riippuvuudet (SQLite, expo-print, expo-sharing, paketoitu logo). */
 export const pdfExportDeps: PdfExportDeps = {
@@ -46,11 +45,9 @@ export const pdfExportDeps: PdfExportDeps = {
   attachmentPdfDeps: defaultAttachmentPdfDeps(),
   ...(isOnlineSendEnabled()
     ? {
-        // Online-tila: kortin urakat samoista kokonaissenteistä kuin palvelimelle lähtevä tarjous.
-        onlineCard: (record, settings) => {
-          const built = buildContractOffer({ record, workdayHours: settings.workdayHours, now: new Date() });
-          return built.ok ? onlineCardPrint(built.draft) : null;
-        },
+        // Online-tila: online-lähetetyn tarjouksen kortti samoista kokonaissenteistä kuin palvelimelle
+        // lähtenyt tarjous. Lähettämätön tarjous: laitteen oma laskenta.
+        onlineCard: (record, settings) => onlineJobCardForRecord(record, settings),
       }
     : {}),
 };
