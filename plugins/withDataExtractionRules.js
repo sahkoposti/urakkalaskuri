@@ -8,8 +8,9 @@
  * device-to-device transfer (Android 12+, dataExtractionRules) and from Android <= 11 backup
  * (fullBackupContent). A restored phone therefore has no session and gets a new device id.
  * Note: the online settings (server URL, username) are SQLite rows and are backed up with the database;
- * they are not secrets. Legacy secrets in SQLite (preview builds) are moved to secure storage and the rows
- * deleted on first use (B8), so they cannot be excluded by path; see the remnant noted in the D1 commit.
+ * they are not secrets. Legacy secrets in SQLite (preview builds: online_refresh_token, online_device_id) are
+ * NOT migrated: src/core/database/legacyOnlineSecrets.ts deletes them on every database open (secure_delete,
+ * one-time checkpoint + VACUUM), so a restored or upgraded install has no session and signs in again.
  *
  * Policy 'off' (previous behaviour, kept for a one-line swap back): allowBackup=false and every domain
  * excluded from cloud backup and device transfer.
