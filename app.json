@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "fi.colorajaton.urakkalaskuri",
+      "allowBackup": false,
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
