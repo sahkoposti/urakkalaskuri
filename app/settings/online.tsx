@@ -26,9 +26,14 @@ function OnlineSettingsScreen() {
 
   useEffect(() => {
     void (async () => {
-      setUrl((await getServerUrl()) ?? '');
-      const client = await getServerClient();
-      setSignedIn(client ? await client.isSignedIn() : false);
+      try {
+        setUrl((await getServerUrl()) ?? '');
+        const client = await getServerClient();
+        setSignedIn(client ? await client.isSignedIn() : false);
+      } catch {
+        // Esim. salatun säilön lukuvirhe: näytetään uloskirjautuneena, ei kaatumista (T-42).
+        setSignedIn(false);
+      }
     })();
   }, []);
 
@@ -60,6 +65,8 @@ function OnlineSettingsScreen() {
       const revoked = client ? await client.logout() : true;
       setSignedIn(false);
       setMessage(revoked ? 'Kirjauduttu ulos.' : 'Kirjauduttu ulos. Palvelimen istunto suljetaan, kun yhteys palaa.');
+    } catch {
+      setMessage('Uloskirjautuminen ei onnistunut. Yritä uudelleen.');
     } finally {
       setBusy(false);
     }
