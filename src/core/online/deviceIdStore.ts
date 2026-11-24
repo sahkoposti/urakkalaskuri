@@ -1,6 +1,6 @@
 /**
  * Laitetunniste online-palvelimelle salatussa säilössä (expo-secure-store), ei SQLite-tietokannassa.
- * Android-varmuuskopio on pois päältä, eikä salatun säilön avain siirry palautuksessa toiseen laitteeseen,
+ * Salattu säilö on rajattu pois Android-varmuuskopiosta ja laitesiirrosta (D1), eikä sen avain siirry,
  * joten palautettu tai kopioitu asennus saa aina uuden tunnisteen (T-36).
  * Vanhaa SQLite-tunnistetta ei siirretä (se olisi voinut tulla palautuksesta); se poistetaan.
  */

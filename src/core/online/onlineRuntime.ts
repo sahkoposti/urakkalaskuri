@@ -1,14 +1,14 @@
 /**
  * Online-lähetyksen oikeat riippuvuudet puhelimessa: palvelimen osoite, laitetunniste ja
  * fetch, PDF:n luku base64:ksi. Uusintatoken ja laitetunniste ovat salatussa säilössä (expo-secure-store);
- * vanha SQLite-token siirretään ja poistetaan ensimmäisellä lukukerralla; vanhaa SQLite-laitetunnistetta
- * ei siirretä vaan se poistetaan (palautettu asennus saa uuden tunnisteen).
+ * vanhoja SQLite-salaisuuksia (token, laitetunniste) ei siirretä, vaan ne poistetaan käynnistyksessä
+ * (tietokannan avaus) ja ensimmäisellä käytöllä; esiversiosta päivittävä kirjautuu kerran uudelleen.
  */
 import { randomUUID } from 'expo-crypto';
 import { File } from 'expo-file-system';
 import * as SecureStore from 'expo-secure-store';
 
-import { getOnlineSetting, saveOnlineSetting } from '../database/database';
+import { getOnlineSetting, purgeLegacyOnlineSecretRows, saveOnlineSetting } from '../database/database';
 import { createDeviceIdProvider } from './deviceIdStore';
 import { createRefreshTokenStore } from './refreshTokenStore';
 import { createServerClient, normalizeServerUrl, type FetchLike, type ServerClient } from './serverClient';
@@ -20,14 +20,11 @@ const fetchAdapter: FetchLike = async (url, init) => {
 
 let cached: { baseUrl: string; client: ServerClient } | null = null;
 
-const refreshTokens = createRefreshTokenStore(SecureStore, {
-  get: () => getOnlineSetting('online_refresh_token'),
-  clear: () => saveOnlineSetting('online_refresh_token', null),
-});
+const refreshTokens = createRefreshTokenStore(SecureStore, { clear: purgeLegacyOnlineSecretRows });
 
 const deviceId = createDeviceIdProvider(
   SecureStore,
-  () => saveOnlineSetting('online_device_id', null),
+  purgeLegacyOnlineSecretRows,
   () => randomUUID(),
 );
 

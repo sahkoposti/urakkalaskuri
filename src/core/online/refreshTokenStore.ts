@@ -1,7 +1,7 @@
 /**
  * Online-palvelimen uusintatoken salatussa säilössä (expo-secure-store).
- * Siirto: vanha token SQLite-asetuksessa `online_refresh_token` siirretään ensimmäisellä
- * lukukerralla salattuun säilöön ja vanha kopio poistetaan.
+ * Vanhaa SQLite-tokenia (`online_refresh_token`, esiversiot) EI siirretä: se poistetaan käynnistyksessä ja
+ * varmuuden vuoksi vielä ensimmäisellä lukukerralla (varmuuskopio on päällä, D1). Seuraus: yksi uusi kirjautuminen.
  */
 import type { TokenStore } from './serverClient';
 
@@ -31,33 +31,31 @@ export async function readSecureOrNull(secure: SecureStoreLike, key: string): Pr
   }
 }
 
+/** Vanhan SQLite-tokenin poisto. Arvoa ei lueta eikä kopioida. */
 export type LegacyTokenSetting = {
-  get(): Promise<string | null>;
   clear(): Promise<void>;
 };
 
 export function createRefreshTokenStore(secure: SecureStoreLike, legacy: LegacyTokenSetting): TokenStore {
   let legacyChecked = false;
 
-  async function migrateLegacy(current: string | null): Promise<string | null> {
-    if (legacyChecked) return current;
-    const old = await legacy.get();
-    if (old) {
-      if (!current) {
-        await secure.setItemAsync(SECURE_REFRESH_TOKEN_KEY, old);
-        current = old;
-      }
+  /** Poistaa vanhan SQLite-kopion kerran; epäonnistuessa yritetään seuraavalla kerralla. Ei kopioi mitään. */
+  async function purgeLegacy(): Promise<void> {
+    if (legacyChecked) return;
+    try {
       await legacy.clear();
+      legacyChecked = true;
+    } catch {
+      /* yritetään uudelleen seuraavalla kerralla */
     }
-    legacyChecked = true;
-    return current;
   }
 
   return {
     async getRefreshToken() {
       // Lukuvirhe → ei tokenia → uloskirjautunut.
       const current = await readSecureOrNull(secure, SECURE_REFRESH_TOKEN_KEY);
-      return migrateLegacy(current);
+      await purgeLegacy();
+      return current;
     },
     async setRefreshToken(token) {
       if (token) {
@@ -66,10 +64,7 @@ export function createRefreshTokenStore(secure: SecureStoreLike, legacy: LegacyT
         await secure.deleteItemAsync(SECURE_REFRESH_TOKEN_KEY);
       }
       // Kirjoitus ohittaa mahdollisen vanhan kopion: siivotaan se aina.
-      if (!legacyChecked) {
-        await legacy.clear();
-        legacyChecked = true;
-      }
+      await purgeLegacy();
     },
     async getLogoutPending() {
       try {
