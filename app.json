@@ -24,6 +24,13 @@
       "expo-router",
       "expo-sqlite",
       [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": false,
+          "faceIDPermission": false
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Sovellus tarvitsee kuvat liitteiden valitsemiseen.",
