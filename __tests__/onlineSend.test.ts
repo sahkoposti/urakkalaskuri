@@ -459,9 +459,9 @@ describe('sendOnlineOffer', () => {
 
 describe('flag and visits', () => {
   it('online send is off unless EXPO_PUBLIC_ONLINE_SEND=1', () => {
-    expect(isOnlineSendEnabled({})).toBe(false);
-    expect(isOnlineSendEnabled({ EXPO_PUBLIC_ONLINE_SEND: 'true' })).toBe(false);
-    expect(isOnlineSendEnabled({ EXPO_PUBLIC_ONLINE_SEND: '1' })).toBe(true);
+    expect(isOnlineSendEnabled(undefined)).toBe(false);
+    expect(isOnlineSendEnabled('true')).toBe(false);
+    expect(isOnlineSendEnabled('1')).toBe(true);
   });
   it('visit time and address', () => {
     const v = {
