@@ -67,14 +67,15 @@ function snapshot(raw: SqlDb) {
 
 /**
  * After the migrations, the current connection deletes legacy online secret rows (legacyOnlineSecrets.ts,
- * CTO 24.11.2026). That one statement is not part of the frozen 13a0c86 init: check it is the last entry,
+ * CTO 24.11.2026). Those two statements (PRAGMA secure_delete + DELETE) are not part of the frozen 13a0c86 init: check they are the last entries,
  * exactly once, and compare the rest.
  */
 function migrationTrace(trace: TraceEntry[]): TraceEntry[] {
   const purges = trace.filter((t) => t.sql.startsWith('DELETE FROM settings WHERE key IN'));
   expect(purges).toEqual([{ sql: 'DELETE FROM settings WHERE key IN (?, ?)', params: ['online_refresh_token', 'online_device_id'] }]);
-  expect(trace[trace.length - 1]).toBe(purges[0]);
-  return trace.slice(0, -1);
+  // Nothing to delete on these fixtures, so no checkpoint / VACUUM: the purge is the last statement.
+  expect(trace.slice(-2)).toEqual([{ sql: 'PRAGMA secure_delete = ON', params: [] }, purges[0]]);
+  return trace.slice(0, -2);
 }
 
 async function initWith(mod: { resetDatabaseConnection(): void; getDb(): Promise<unknown> }, adapter: object) {
