@@ -168,7 +168,19 @@ export function createServerClient(deps: ServerClientDeps) {
     await deps.tokens.setRefreshToken((r.data as { refreshToken: string }).refreshToken);
   }
 
-  async function refresh(): Promise<boolean> {
+  let refreshInFlight: Promise<boolean> | null = null;
+
+  /** Yksi uusinta kerrallaan: samanaikaiset 401:t jakavat saman uusintalupauksen. */
+  function refresh(): Promise<boolean> {
+    if (!refreshInFlight) {
+      refreshInFlight = doRefresh().finally(() => {
+        refreshInFlight = null;
+      });
+    }
+    return refreshInFlight;
+  }
+
+  async function doRefresh(): Promise<boolean> {
     const stored = await deps.tokens.getRefreshToken();
     if (!stored) return false;
     const r = await raw('POST', '/v1/auth/refresh', { refreshToken: stored, deviceId: deps.deviceId });

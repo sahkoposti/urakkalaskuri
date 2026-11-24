@@ -211,6 +211,35 @@ describe('serverClient', () => {
     expect(JSON.parse(calls[1].body!).deviceId).toBe('testdevice01');
   });
 
+  it('concurrent 401s share one refresh (single-flight, rotating refresh token survives)', async () => {
+    let accessValid = 'A1';
+    let currentRefresh = 'R1';
+    let n = 1;
+    const { fetch, calls } = fakeServer({
+      'POST /v1/auth/login': () => ({ status: 200, body: { accessToken: 'A1', refreshToken: 'R1', tokenType: 'Bearer', expiresIn: 900 } }),
+      'POST /v1/auth/refresh': (b) => {
+        if (b.refreshToken !== currentRefresh) return { status: 401 };
+        n += 1;
+        currentRefresh = `R${n}`;
+        accessValid = `A${n}`;
+        return { status: 200, body: { accessToken: `A${n}`, refreshToken: currentRefresh, tokenType: 'Bearer', expiresIn: 900 } };
+      },
+      'GET /v1/kaynnit': (_b, auth) => (auth === `Bearer ${accessValid}` ? { status: 200, body: { kaynnit: [] } } : { status: 401 }),
+    });
+    const tokens = memoryTokens();
+    const client = createServerClient({ baseUrl: 'https://palvelin.test', deviceId: 'testdevice01', fetch, tokens });
+    await client.login('myyja', 'oikea');
+    accessValid = 'expired';
+    await expect(Promise.all([client.visits(), client.visits(), client.visits()])).resolves.toEqual([[], [], []]);
+    expect(calls.filter((c) => c.url === '/v1/auth/refresh')).toHaveLength(1);
+    expect(tokens.peek()).toBe('R2');
+    // after it settles, a later 401 can refresh again
+    accessValid = 'expired';
+    await expect(client.visits()).resolves.toEqual([]);
+    expect(calls.filter((c) => c.url === '/v1/auth/refresh')).toHaveLength(2);
+    expect(tokens.peek()).toBe('R3');
+  });
+
   it('maps 409 and invalid_offer; error text carries no tokens', async () => {
     const { fetch } = fakeServer({
       'POST /v1/auth/refresh': () => ({ status: 200, body: { accessToken: 'FAKE_TOKEN_A', refreshToken: 'FAKE_TOKEN_R' } }),
