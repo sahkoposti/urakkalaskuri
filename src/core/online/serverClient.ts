@@ -135,6 +135,11 @@ export type ServerClientDeps = {
 export function createServerClient(deps: ServerClientDeps) {
   if (!DEVICE_ID_RE.test(deps.deviceId)) throw new Error('Laitetunniste ei kelpaa.');
   let accessToken: string | null = null;
+  /**
+   * Istunnon sukupolvi (B7): kasvaa, kun istunto tyhjennetään tai uusi kirjautuminen tallentuu.
+   * Ennen sitä alkanut uusinta ei saa kirjoittaa tulostaan (tokeneita) sen jälkeen.
+   */
+  let sessionGeneration = 0;
 
   async function raw(method: string, path: string, body?: unknown, auth?: string) {
     const headers: Record<string, string> = { Accept: 'application/json' };
@@ -173,6 +178,8 @@ export function createServerClient(deps: ServerClientDeps) {
     if (r.status === 429) throw new OnlineServerError('too_many_attempts', 'Liian monta yritystä. Yritä hetken päästä.', 429);
     if (r.status === 401 || r.status === 400) throw new OnlineServerError('invalid_credentials', 'Väärä käyttäjätunnus tai salasana.', r.status);
     if (r.status !== 200) throw new OnlineServerError('server', `Kirjautuminen epäonnistui (${r.status}).`, r.status);
+    sessionGeneration += 1;
+    refreshInFlight = null;
     storePair(r.data);
     await deps.tokens.setRefreshToken((r.data as { refreshToken: string }).refreshToken);
     await deps.tokens.setLogoutPending(false);
@@ -183,28 +190,43 @@ export function createServerClient(deps: ServerClientDeps) {
   /** Yksi uusinta kerrallaan: samanaikaiset 401:t jakavat saman uusintalupauksen. */
   function refresh(): Promise<boolean> {
     if (!refreshInFlight) {
-      refreshInFlight = doRefresh().finally(() => {
-        refreshInFlight = null;
+      const p: Promise<boolean> = doRefresh().finally(() => {
+        if (refreshInFlight === p) refreshInFlight = null;
       });
+      refreshInFlight = p;
     }
     return refreshInFlight;
   }
 
   async function doRefresh(): Promise<boolean> {
+    const generation = sessionGeneration;
     const stored = await deps.tokens.getRefreshToken();
-    if (!stored) return false;
+    if (!stored || generation !== sessionGeneration) return false;
     const r = await raw('POST', '/v1/auth/refresh', { refreshToken: stored, deviceId: deps.deviceId });
+    // Istunto tyhjennettiin (uloskirjautuminen) tai vaihtui (uusi kirjautuminen) kesken: tulosta ei kirjoiteta.
+    if (generation !== sessionGeneration) return false;
     if (r.status !== 200) {
       accessToken = null;
       if (r.status === 401 || r.status === 400) await deps.tokens.setRefreshToken(null);
       return false;
     }
-    storePair(r.data);
-    await deps.tokens.setRefreshToken((r.data as { refreshToken: string }).refreshToken);
+    if (!isObj(r.data) || typeof r.data.accessToken !== 'string' || typeof r.data.refreshToken !== 'string') {
+      throw new OnlineServerError('server', 'Palvelimen vastaus oli virheellinen.');
+    }
+    const next = r.data.refreshToken;
+    await deps.tokens.setRefreshToken(next);
+    if (generation !== sessionGeneration) {
+      // clearSession/login ehti väliin tallennuksen aikana: palautetaan sen tila (ei jätetä vanhaa tokenia).
+      if ((await deps.tokens.getRefreshToken()) === next) await deps.tokens.setRefreshToken(null);
+      return false;
+    }
+    accessToken = r.data.accessToken;
     return true;
   }
 
   async function clearSession(): Promise<void> {
+    sessionGeneration += 1;
+    refreshInFlight = null;
     accessToken = null;
     await deps.tokens.setRefreshToken(null);
     await deps.tokens.setLogoutPending(false);
