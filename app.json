@@ -30,6 +30,7 @@
           "faceIDPermission": false
         }
       ],
+      "./plugins/withDataExtractionRules",
       [
         "expo-image-picker",
         {

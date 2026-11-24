@@ -66,7 +66,8 @@ describe('Android backup config (T-36)', () => {
 
   it('allowBackup is false and no backup / data-extraction rules are configured', () => {
     expect(app.android.allowBackup).toBe(false);
-    const text = JSON.stringify(app);
+    // The only data-extraction rules are the exclude-all ones from our own plugin (T-41, own test file).
+    const text = JSON.stringify({ ...app, plugins: (app.plugins ?? []).filter((p: unknown) => p !== './plugins/withDataExtractionRules') });
     expect(text).not.toMatch(/fullBackupContent|dataExtractionRules|backup_rules/i);
   });
 
