@@ -354,6 +354,64 @@ describe('serverClient', () => {
       expect(tokens.peek()).toBeNull();
       expect(tokens.peekPending()).toBe(false);
     });
+
+    describe('the token is deleted only after the server confirms (T-42)', () => {
+      /** logoutServer with a switch that makes the refresh route fail with 5xx or a network error. */
+      function flakyRefresh(mode: () => 'ok' | '5xx' | 'network') {
+        const srv = logoutServer({ online: () => true });
+        const fetch: FetchLike = async (url, init) => {
+          if (url.endsWith('/v1/auth/refresh')) {
+            if (mode() === 'network') throw new Error('offline');
+            if (mode() === '5xx') return { status: 503, json: async () => null };
+          }
+          return srv.fetch(url, init);
+        };
+        return { ...srv, fetch };
+      }
+
+      it.each(['5xx', 'network'] as const)('after a restart, refresh %s: token and pending kept, revoked later', async (fail) => {
+        let mode: 'ok' | '5xx' | 'network' = 'ok';
+        const srv = flakyRefresh(() => mode);
+        const tokens = memoryTokens();
+        await mk(srv.fetch, tokens).login('myyja', 'oikea');
+        mode = fail;
+        const c = mk(srv.fetch, tokens);
+        expect(await c.logout()).toBe(false);
+        expect(tokens.peek()).toBe('R1');
+        expect(tokens.peekPending()).toBe(true);
+        expect(await c.isSignedIn()).toBe(false);
+        expect(srv.sessions.has('R1')).toBe(true);
+        mode = 'ok';
+        expect(await mk(srv.fetch, tokens).retryPendingLogout()).toBe(true);
+        expect(srv.sessions.size).toBe(0);
+        expect(tokens.peek()).toBeNull();
+      });
+
+      it.each(['5xx', 'network'] as const)('logout 401 (stale access token) then refresh %s: not counted as revoked (N4)', async (fail) => {
+        let mode: 'ok' | '5xx' | 'network' = 'ok';
+        let staleAccess = true;
+        const srv = flakyRefresh(() => mode);
+        // The access token in memory is no longer accepted by logout; the session itself is still valid.
+        const fetch: FetchLike = async (url, init) => {
+          if (staleAccess && url.endsWith('/v1/auth/logout')) return { status: 401, json: async () => null };
+          return srv.fetch(url, init);
+        };
+        const tokens = memoryTokens();
+        const c = mk(fetch, tokens);
+        await c.login('myyja', 'oikea');
+        mode = fail;
+        expect(await c.logout()).toBe(false);
+        expect(tokens.peek()).toBe('R1');
+        expect(tokens.peekPending()).toBe(true);
+        expect(srv.sessions.has('R1')).toBe(true);
+        mode = 'ok';
+        staleAccess = false;
+        expect(await mk(fetch, tokens).retryPendingLogout()).toBe(true);
+        expect(srv.sessions.has('R1')).toBe(false);
+        expect(tokens.peek()).toBeNull();
+        expect(tokens.peekPending()).toBe(false);
+      });
+    });
   });
 
   it('maps 409 and invalid_offer; error text carries no tokens', async () => {

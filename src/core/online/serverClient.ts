@@ -227,12 +227,20 @@ export function createServerClient(deps: ServerClientDeps) {
       const r = await raw('POST', '/v1/auth/logout', {}, accessToken!);
       if (r.status === 200 || r.status === 401) {
         // 401 = pääsytoken ei enää kelpaa; yritetään vielä uusinnan kautta kerran.
-        if (r.status === 401 && (await refresh())) {
-          const again = await raw('POST', '/v1/auth/logout', {}, accessToken!);
-          if (again.status !== 200 && again.status !== 401) {
+        if (r.status === 401) {
+          if (await refresh()) {
+            const again = await raw('POST', '/v1/auth/logout', {}, accessToken!);
+            if (again.status !== 200 && again.status !== 401) {
+              accessToken = null;
+              return false;
+            }
+          } else if (await deps.tokens.getRefreshToken()) {
+            // Uusinta epäonnistui 5xx:ään tms. eikä palvelin hylännyt tokenia: istunto voi olla yhä
+            // voimassa, joten token ja kesken-lippu jäävät talteen (T-42 / N4).
             accessToken = null;
             return false;
           }
+          // Muuten palvelin hylkäsi uusintatokenin (401/400) → istunto on jo poissa.
         }
         await clearSession();
         return true;
