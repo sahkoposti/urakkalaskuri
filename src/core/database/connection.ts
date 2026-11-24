@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
+import { purgeLegacyOnlineSecrets } from './legacyOnlineSecrets';
 import { runDatabaseInit } from './migrationRunner';
 import {
   ATTACHMENT_SCHEMA_VERSION,
@@ -58,5 +59,11 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
     useNewConnection: true,
   });
   await runDatabaseInit(db);
+  try {
+    // Vanhat SQLite-salaisuudet poistetaan joka käynnistyksessä, ei siirretä (legacyOnlineSecrets.ts).
+    await purgeLegacyOnlineSecrets(db);
+  } catch {
+    // Ei estä avausta; uusintatokenin säilö yrittää poistoa uudelleen ensimmäisellä käytöllä.
+  }
   return db;
 }

@@ -14,6 +14,7 @@ import { productStructureIds } from '../product/productStructures';
 import { getProducts, upsertProduct } from '../../features/products/storage/products';
 import { createDefaultFormDefinition } from '../form/defaultFormDefinition';
 import { normalizeFormDefinition } from '../form/formDefinitionHelpers';
+import { purgeLegacyOnlineSecrets } from './legacyOnlineSecrets';
 import { bumpFormVersion } from '../form/formVersion';
 import type { FormDebugSettings, FormDefinition } from '../form/types';
 import { parseStoredCompanyProfile } from '../company/defaultCompany';
@@ -699,8 +700,11 @@ export async function saveOfferStructureSettings(
   await writeSettingValue(offerStructureSettingsKey(structureId), JSON.stringify(settings));
 }
 
-/** Online-lähetyksen asetusavaimet. Vain tämä lista on luettavissa näillä apureilla. */
-export const ONLINE_SETTING_KEYS = ['online_server_url', 'online_device_id', 'online_refresh_token', 'online_username'] as const;
+/**
+ * Online-lähetyksen asetusavaimet. Vain tämä lista on luettavissa näillä apureilla. Vanhoja salaisuusrivejä
+ * (online_refresh_token, online_device_id) ei voi lukea; ne poistetaan (purgeLegacyOnlineSecretRows).
+ */
+export const ONLINE_SETTING_KEYS = ['online_server_url', 'online_username'] as const;
 export type OnlineSettingKey = (typeof ONLINE_SETTING_KEYS)[number];
 
 export async function getOnlineSetting(key: OnlineSettingKey): Promise<string | null> {
@@ -716,6 +720,11 @@ export async function saveOnlineSetting(key: OnlineSettingKey, value: string | n
     return;
   }
   await writeSettingValue(key, value);
+}
+
+/** Poistaa vanhat SQLite-salaisuusrivit (uusintatoken, laitetunniste) kopioimatta niitä minnekään. */
+export async function purgeLegacyOnlineSecretRows(): Promise<void> {
+  await purgeLegacyOnlineSecrets(await getDb());
 }
 
 export async function getStoredNextOfferNumber(): Promise<number | undefined> {

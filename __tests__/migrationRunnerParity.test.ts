@@ -65,6 +65,18 @@ function snapshot(raw: SqlDb) {
   return { master, tableInfo, rows, version };
 }
 
+/**
+ * After the migrations, the current connection deletes legacy online secret rows (legacyOnlineSecrets.ts,
+ * CTO 24.11.2026). That one statement is not part of the frozen 13a0c86 init: check it is the last entry,
+ * exactly once, and compare the rest.
+ */
+function migrationTrace(trace: TraceEntry[]): TraceEntry[] {
+  const purges = trace.filter((t) => t.sql.startsWith('DELETE FROM settings WHERE key IN'));
+  expect(purges).toEqual([{ sql: 'DELETE FROM settings WHERE key IN (?, ?)', params: ['online_refresh_token', 'online_device_id'] }]);
+  expect(trace[trace.length - 1]).toBe(purges[0]);
+  return trace.slice(0, -1);
+}
+
 async function initWith(mod: { resetDatabaseConnection(): void; getDb(): Promise<unknown> }, adapter: object) {
   (SQLite.openDatabaseAsync as jest.Mock).mockResolvedValue(adapter);
   mod.resetDatabaseConnection();
@@ -298,7 +310,7 @@ describe('migration runner parity with 13a0c86 connection.ts', () => {
     const right = createDb();
     await initWith(legacy, left.adapter);
     await initWith(current, right.adapter);
-    expect(right.trace).toEqual(left.trace);
+    expect(migrationTrace(right.trace)).toEqual(left.trace);
     expect(snapshot(right.raw)).toEqual(snapshot(left.raw));
   });
 
@@ -309,7 +321,7 @@ describe('migration runner parity with 13a0c86 connection.ts', () => {
     applyV134Fixture(right.raw);
     await initWith(legacy, left.adapter);
     await initWith(current, right.adapter);
-    expect(right.trace).toEqual(left.trace);
+    expect(migrationTrace(right.trace)).toEqual(left.trace);
     const after = snapshot(right.raw);
     expect(after).toEqual(snapshot(left.raw));
     expect(after.version).toEqual({ user_version: 4 });
@@ -331,7 +343,7 @@ describe('migration runner parity with 13a0c86 connection.ts', () => {
     right.trace.length = 0;
     await initWith(legacy, left.adapter);
     await initWith(current, right.adapter);
-    expect(right.trace).toEqual(left.trace);
+    expect(migrationTrace(right.trace)).toEqual(left.trace);
     expect(snapshot(left.raw)).toEqual(leftAfterFirst);
     expect(snapshot(right.raw)).toEqual(rightAfterFirst);
   });
