@@ -56,6 +56,8 @@ export async function getServerClient(): Promise<ServerClient | null> {
     tokens: refreshTokens,
   });
   cached = { baseUrl, client };
+  // Kesken jäänyt uloskirjautuminen (T-38): yritetään sulkea palvelimen istunto taustalla.
+  void client.retryPendingLogout().catch(() => undefined);
   return client;
 }
 

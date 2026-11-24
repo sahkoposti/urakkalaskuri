@@ -57,9 +57,9 @@ function OnlineSettingsScreen() {
     setBusy(true);
     try {
       const client = await getServerClient();
-      await client?.logout();
+      const revoked = client ? await client.logout() : true;
       setSignedIn(false);
-      setMessage('Kirjauduttu ulos.');
+      setMessage(revoked ? 'Kirjauduttu ulos.' : 'Kirjauduttu ulos. Palvelimen istunto suljetaan, kun yhteys palaa.');
     } finally {
       setBusy(false);
     }
