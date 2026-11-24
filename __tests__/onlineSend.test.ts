@@ -332,6 +332,22 @@ describe('onlinePrint', () => {
     );
     expect(html).toMatch(/1\s?234,56/);
   });
+
+  it('job card throws (no silent 0) when an online line amount is missing', () => {
+    const rec = record({});
+    const base = input(rec);
+    expect(() =>
+      buildUrakkakorttiContext({
+        record: rec,
+        company: base.company,
+        structures: base.structures,
+        products: base.products,
+        settings: base.settings,
+        generatedAt: new Date(2026, 9, 10),
+        onlineCard: { pieceRateCents: 123456, pieceRateCentsByLine: { other: 123456 } },
+      }),
+    ).toThrow(/rivi puuttuu/);
+  });
 });
 
 describe('sendOnlineOffer', () => {

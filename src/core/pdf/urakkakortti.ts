@@ -102,9 +102,16 @@ export type BuildUrakkakorttiInput = {
   onlineCard?: OnlineCardPrint;
 };
 
-/** Rivin urakka sopimuksesta senteissä → euroina. Puuttuva rivi = 0. */
+/**
+ * Rivin urakka sopimuksesta senteissä → euroina. Puuttuva rivi on virhe (ei hiljaista nollaa):
+ * kortti ja sopimus eivät silloin vastaa toisiaan.
+ */
 function onlineLineAmount(online: OnlineCardPrint, lineId: string): number {
-  return (online.pieceRateCentsByLine[contractId('', lineId)] ?? 0) / 100;
+  const cents = online.pieceRateCentsByLine[contractId('', lineId)];
+  if (typeof cents !== 'number' || !Number.isFinite(cents)) {
+    throw new Error('Urakkakortin rivi puuttuu lähetetyn tarjouksen summista. Lähetä tarjous uudelleen.');
+  }
+  return cents / 100;
 }
 
 function onlineCardHeaderPrices(
