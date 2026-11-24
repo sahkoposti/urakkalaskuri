@@ -50,7 +50,7 @@ export function bpOf(cents: number, bp: number): number {
 
 /**
  * Liukuluku kokonaisluvuksi kertoimella (esim. euro → sentti, 100).
- * Desimaaliesitys pyöristetään ensin 9 desimaaliin, jotta 0.1 + 0.2 -tyyppinen virhe ei käännä puolikasta.
+ * Tulo (value × factor) pyöristetään ensin 6 desimaaliin (toFixed(6)), jotta 0.1 + 0.2 -tyyppinen virhe ei käännä puolikasta.
  * null = ei luku tai liian suuri.
  */
 export function scaledInt(value: number, factor: number): number | null {

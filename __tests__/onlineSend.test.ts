@@ -53,6 +53,9 @@ describe('contractMoney (server rules)', () => {
   });
   it('scaledInt: float noise, half away, invalid', () => {
     expect(scaledInt(0.1 + 0.2, 100)).toBe(30);
+    // product is cleaned to 6 decimals before rounding (comment in contractMoney.ts)
+    expect(scaledInt(1.0049999999, 100)).toBe(101);
+    expect(scaledInt(1.00499, 100)).toBe(100);
     expect(scaledInt(1.005, 100)).toBe(101);
     expect(scaledInt(-1.005, 100)).toBe(-101);
     expect(scaledInt(Number.NaN, 100)).toBeNull();
