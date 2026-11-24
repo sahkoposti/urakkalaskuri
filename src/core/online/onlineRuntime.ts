@@ -1,12 +1,14 @@
 /**
  * Online-lähetyksen oikeat riippuvuudet puhelimessa: palvelimen osoite, laitetunniste ja
- * uusintatoken settings-taulussa, fetch, PDF:n luku base64:ksi.
- * Huom: uusintatoken on SQLite-asetuksissa (ei salattua säilöä; expo-secure-store ei ole asennettu).
+ * fetch, PDF:n luku base64:ksi. Uusintatoken on salatussa säilössä (expo-secure-store);
+ * vanha SQLite-kopio siirretään ja poistetaan ensimmäisellä lukukerralla.
  */
 import { randomUUID } from 'expo-crypto';
 import { File } from 'expo-file-system';
+import * as SecureStore from 'expo-secure-store';
 
 import { getOnlineSetting, saveOnlineSetting } from '../database/database';
+import { createRefreshTokenStore } from './refreshTokenStore';
 import { createServerClient, normalizeServerUrl, type FetchLike, type ServerClient } from './serverClient';
 
 const fetchAdapter: FetchLike = async (url, init) => {
@@ -15,6 +17,11 @@ const fetchAdapter: FetchLike = async (url, init) => {
 };
 
 let cached: { baseUrl: string; client: ServerClient } | null = null;
+
+const refreshTokens = createRefreshTokenStore(SecureStore, {
+  get: () => getOnlineSetting('online_refresh_token'),
+  clear: () => saveOnlineSetting('online_refresh_token', null),
+});
 
 async function deviceId(): Promise<string> {
   const stored = await getOnlineSetting('online_device_id');
@@ -46,10 +53,7 @@ export async function getServerClient(): Promise<ServerClient | null> {
     baseUrl,
     deviceId: await deviceId(),
     fetch: fetchAdapter,
-    tokens: {
-      getRefreshToken: () => getOnlineSetting('online_refresh_token'),
-      setRefreshToken: (token) => saveOnlineSetting('online_refresh_token', token),
-    },
+    tokens: refreshTokens,
   });
   cached = { baseUrl, client };
   return client;
