@@ -1,4 +1,4 @@
-/** B8: clearing an online setting (e.g. the legacy SQLite refresh token) deletes the row instead of storing ''. */
+/** B8: clearing an online setting deletes the row instead of storing ''. Legacy secret rows: legacyOnlineSecrets.test.ts. */
 jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
 
 import * as SQLite from 'expo-sqlite';
@@ -34,29 +34,29 @@ beforeEach(async () => {
 const rowOf = (key: string) => raw.prepare('SELECT key, value FROM settings WHERE key = ?').get(key);
 
 describe('online settings are deleted, not blanked (B8)', () => {
-  it('null deletes the legacy refresh token row', async () => {
-    await saveOnlineSetting('online_refresh_token', 'R_LEGACY_SYNTHETIC');
-    expect(rowOf('online_refresh_token')).toEqual({ key: 'online_refresh_token', value: 'R_LEGACY_SYNTHETIC' });
-    await saveOnlineSetting('online_refresh_token', null);
-    expect(rowOf('online_refresh_token')).toBeUndefined();
-    expect(await getOnlineSetting('online_refresh_token')).toBeNull();
+  it('null deletes the row', async () => {
+    await saveOnlineSetting('online_username', 'synthetic-user');
+    expect(rowOf('online_username')).toEqual({ key: 'online_username', value: 'synthetic-user' });
+    await saveOnlineSetting('online_username', null);
+    expect(rowOf('online_username')).toBeUndefined();
+    expect(await getOnlineSetting('online_username')).toBeNull();
   });
 
   it('an empty string also deletes the row', async () => {
-    await saveOnlineSetting('online_device_id', 'legacy-device-1');
-    await saveOnlineSetting('online_device_id', '');
-    expect(rowOf('online_device_id')).toBeUndefined();
+    await saveOnlineSetting('online_username', 'synthetic-user-2');
+    await saveOnlineSetting('online_username', '');
+    expect(rowOf('online_username')).toBeUndefined();
   });
 
   it('clearing a key that does not exist is a no-op, and other settings stay', async () => {
     await saveOnlineSetting('online_server_url', 'https://palvelin.example.invalid');
-    await saveOnlineSetting('online_refresh_token', null);
-    expect(rowOf('online_refresh_token')).toBeUndefined();
+    await saveOnlineSetting('online_username', null);
+    expect(rowOf('online_username')).toBeUndefined();
     expect(await getOnlineSetting('online_server_url')).toBe('https://palvelin.example.invalid');
   });
 
   it('an old blank row left by earlier versions still reads as null', async () => {
-    raw.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('online_refresh_token', '');
-    expect(await getOnlineSetting('online_refresh_token')).toBeNull();
+    raw.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('online_username', '');
+    expect(await getOnlineSetting('online_username')).toBeNull();
   });
 });
