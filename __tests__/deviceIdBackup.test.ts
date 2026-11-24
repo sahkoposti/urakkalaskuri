@@ -1,4 +1,4 @@
-/** T-36: no Android backup of app data, and the device id lives in secure storage so a restore gets a new one. */
+/** T-36: the device id lives in secure storage (excluded from Android backup, D1) so a restore gets a new one. */
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -64,9 +64,9 @@ describe('device id in secure storage (T-36)', () => {
 describe('Android backup config (T-36)', () => {
   const app = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../app.json'), 'utf8')).expo;
 
-  it('allowBackup is false and no backup / data-extraction rules are configured', () => {
-    expect(app.android.allowBackup).toBe(false);
-    // The only data-extraction rules are the exclude-all ones from our own plugin (T-41, own test file).
+  it('allowBackup is on (D1) and the only backup rules come from our own plugin', () => {
+    expect(app.android.allowBackup).toBe(true);
+    // Backup / data-extraction rules come only from our plugin (T-41/D1, own test file), which excludes secure storage.
     const text = JSON.stringify({ ...app, plugins: (app.plugins ?? []).filter((p: unknown) => p !== './plugins/withDataExtractionRules') });
     expect(text).not.toMatch(/fullBackupContent|dataExtractionRules|backup_rules/i);
   });
