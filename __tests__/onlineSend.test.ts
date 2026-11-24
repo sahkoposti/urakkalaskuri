@@ -153,11 +153,37 @@ describe('serverClient', () => {
     };
   };
 
-  it('normalizeServerUrl accepts https and local dev only', () => {
+  it('normalizeServerUrl: https only; plain http only in dev builds for exact local hosts', () => {
     expect(normalizeServerUrl('https://palvelin.test/')).toBe('https://palvelin.test');
+    expect(normalizeServerUrl('HTTPS://Palvelin.Test:8443/api/')).toBe('https://palvelin.test:8443/api');
     expect(normalizeServerUrl('http://palvelin.test')).toBeNull();
-    expect(normalizeServerUrl('http://10.0.2.2:8080')).toBe('http://10.0.2.2:8080');
     expect(normalizeServerUrl('ftp://x')).toBeNull();
+    expect(normalizeServerUrl('https://palvelin.test/?a=1')).toBeNull();
+    expect(normalizeServerUrl('https://palvelin.test:99999')).toBeNull();
+    for (const local of ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://10.0.2.2:8080']) {
+      expect(normalizeServerUrl(local, { dev: true })).toBe(local);
+      expect(normalizeServerUrl(local, { dev: false })).toBeNull();
+    }
+    // jest (node) has no __DEV__: treated as a release build
+    expect(normalizeServerUrl('http://localhost:8080')).toBeNull();
+  });
+
+  it('normalizeServerUrl rejects the QA bypass strings and userinfo', () => {
+    for (const dev of [true, false]) {
+      for (const bad of [
+        'http://localhost@evil.example',
+        'http://localhost.evil.example',
+        'http://127.0.0.1.nip.io',
+        'http://10.0.2.2.evil.example',
+        'https://user:pw@palvelin.test',
+        'https://palvelin.test@evil.example',
+        'http://localhost:8080@evil.example',
+      ]) {
+        expect([bad, dev, normalizeServerUrl(bad, { dev })]).toEqual([bad, dev, null]);
+      }
+    }
+    // https to a lookalike host is allowed (it is just another https server), never downgraded to http
+    expect(normalizeServerUrl('https://localhost.evil.example')).toBe('https://localhost.evil.example');
   });
 
   it('login stores only the refresh token; 401 triggers one refresh and retry', async () => {

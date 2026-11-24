@@ -74,15 +74,44 @@ export class OnlineServerError extends Error {
 
 const DEVICE_ID_RE = /^[A-Za-z0-9_-]{8,128}$/;
 
-/** Palvelimen osoite: vain https, paitsi paikallinen kehityspalvelin. Loppukauttaviiva pois. */
-export function normalizeServerUrl(raw: string): string | null {
+const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1', '10.0.2.2']);
+const HOSTNAME_RE = /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/;
+
+function isDevBuild(): boolean {
+  return typeof __DEV__ !== 'undefined' && __DEV__ === true;
+}
+
+/**
+ * Palvelimen osoite: vain https. Pelkkä http sallitaan vain kehitysversiossa (__DEV__) ja vain
+ * täsmälleen osoitteille localhost, 127.0.0.1 ja 10.0.2.2. Käyttäjätunnus/salasana osoitteessa
+ * (user@host) hylätään. Loppukauttaviiva pois; kysely- ja ankkuriosat hylätään.
+ */
+export function normalizeServerUrl(raw: string, options: { dev?: boolean } = {}): string | null {
+  const dev = options.dev ?? isDevBuild();
   const text = raw.trim().replace(/\/+$/, '');
-  const match = /^(https?):\/\/([^/\s?#]+)(\/[^\s?#]*)?$/.exec(text);
+  const match = /^(https?):\/\/([^/\s?#]+)(\/[^\s?#]*)?$/i.exec(text);
   if (!match) return null;
-  const host = match[2]!.toLowerCase();
-  const local = host.startsWith('localhost') || host.startsWith('127.0.0.1') || host.startsWith('10.0.2.2');
-  if (match[1] === 'http' && !local) return null;
-  return text;
+  const scheme = match[1]!.toLowerCase();
+  const authority = match[2]!;
+  if (authority.includes('@')) return null;
+  const hostPort = /^([^:]+)(?::(\d{1,5}))?$/.exec(authority);
+  if (!hostPort) return null;
+  const hostname = hostPort[1]!.toLowerCase();
+  const port = hostPort[2];
+  if (port != null && (Number(port) < 1 || Number(port) > 65535)) return null;
+  if (!HOSTNAME_RE.test(hostname)) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(text);
+  } catch {
+    return null;
+  }
+  // URL-jäsennys ja oma jäsennys samaa mieltä isännästä ja ettei tunnuksia ole.
+  if (parsed.username || parsed.password) return null;
+  if (parsed.hostname.toLowerCase() !== hostname) return null;
+  if (parsed.protocol !== `${scheme}:`) return null;
+  if (scheme === 'http' && !(dev && LOCAL_DEV_HOSTS.has(hostname))) return null;
+  return `${scheme}://${hostname}${port != null ? `:${port}` : ''}${match[3] ?? ''}`;
 }
 
 function isObj(v: unknown): v is Record<string, unknown> {
